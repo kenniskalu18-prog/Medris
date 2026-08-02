@@ -243,14 +243,14 @@ async function submitAuth() {
         alert("Check your email for a confirmation link, then log in.");
         return;
       }
+      await refreshAuthStateOnce();
       hideLogin();
-      await refreshAuthState();
       navigate(role === "vendor" ? "vendorApply" : "home");
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      await refreshAuthStateOnce();
       hideLogin();
-      await refreshAuthState();
       navigate("home");
     }
   } catch (err) {
@@ -263,7 +263,7 @@ async function submitAuth() {
 
 async function logout() {
   await sb.auth.signOut();
-  await refreshAuthState();
+  await refreshAuthStateOnce();
   navigate("home");
 }
 
@@ -965,11 +965,24 @@ async function resolveDispute(id) {
 }
 
 // ---------- INIT ----------
+// Fires on sign-in, sign-out, and token refresh — including the background
+// sign-in Supabase performs when a user lands here via an email
+// confirmation link. Re-running the full profile lookup (not just the bare
+// session) is what keeps the header in sync with that background event.
+let __authRefreshInFlight = null;
+function refreshAuthStateOnce() {
+  if (!__authRefreshInFlight) {
+    __authRefreshInFlight = refreshAuthState().finally(() => { __authRefreshInFlight = null; });
+  }
+  return __authRefreshInFlight;
+}
+
+sb.auth.onAuthStateChange((_event) => {
+  refreshAuthStateOnce();
+});
+
 (async function init() {
-  await refreshAuthState();
-  sb.auth.onAuthStateChange((_event, newSession) => {
-    session = newSession;
-  });
+  await refreshAuthStateOnce();
   navigate("home");
 })();
 </script>
