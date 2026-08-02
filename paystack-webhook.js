@@ -3,7 +3,7 @@
 // depend on the buyer's browser being open, unlike verify-payment.js.
 // Configure this URL in the Paystack dashboard: Settings -> API Keys & Webhooks.
 const crypto = require("crypto");
-const { env } = require("./_util");
+const { env, settleReference } = require("./_util");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).end(); return; }
@@ -15,14 +15,7 @@ module.exports = async function handler(req, res) {
 
     const event = JSON.parse(rawBody);
     if (event.event === "charge.success") {
-      const reference = event.data.reference;
-      const SUPABASE_URL = env("SUPABASE_URL");
-      const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-      await fetch(`${SUPABASE_URL}/rest/v1/payments?provider_reference=eq.${encodeURIComponent(reference)}`, {
-        method: "PATCH",
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ status: "paid" }),
-      });
+      await settleReference(event.data.reference);
     }
     res.status(200).json({ received: true });
   } catch (err) {

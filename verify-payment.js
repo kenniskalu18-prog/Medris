@@ -1,8 +1,9 @@
 // GET /api/verify-payment?reference=... -> { status }
-// Called when the buyer lands back on the app after Paystack checkout, so
-// the UI can confirm immediately instead of waiting on the webhook. The
-// webhook (paystack-webhook.js) remains the source of truth either way.
-const { env } = require("./_util");
+// Called when the buyer (or vendor, for a commission settlement) lands
+// back on the app after Paystack checkout, so the UI can confirm
+// immediately instead of waiting on the webhook. The webhook
+// (paystack-webhook.js) remains the source of truth either way.
+const { env, settleReference } = require("./_util");
 
 module.exports = async function handler(req, res) {
   try {
@@ -18,13 +19,7 @@ module.exports = async function handler(req, res) {
     if (!verifyRes.ok || !verifyJson.status) { res.status(400).json({ error: verifyJson.message || "Verify failed" }); return; }
 
     if (verifyJson.data.status === "success") {
-      const SUPABASE_URL = env("SUPABASE_URL");
-      const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-      await fetch(`${SUPABASE_URL}/rest/v1/payments?provider_reference=eq.${encodeURIComponent(reference)}`, {
-        method: "PATCH",
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ status: "paid" }),
-      });
+      await settleReference(reference);
     }
     res.status(200).json({ status: verifyJson.data.status });
   } catch (err) {
