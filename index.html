@@ -74,7 +74,7 @@
   html { width: 100%; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
   body {
     font-family: system-ui, -apple-system, sans-serif; color: var(--text); min-height: 100vh; display: flex; flex-direction: column;
-    width: 100%; max-width: 100%; overflow-x: hidden; background-color: var(--bg); background-image: var(--bg-wash); background-attachment: fixed;
+    width: 100%; max-width: 100%; background-color: var(--bg); background-image: var(--bg-wash); background-attachment: fixed;
     transition: background-color 0.25s ease, color 0.25s ease;
   }
   header {
@@ -209,7 +209,8 @@
 
   /* ---- header icon buttons ---- */
   .icon-wrap { position: relative; display: inline-flex; }
-  .icon-btn { position: relative; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: none; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .icon-btn { position: relative; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: none; background: none; color: var(--primary); font-size: 1.1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.15s; }
+  .icon-btn:hover, .icon-btn:active { background: color-mix(in srgb, var(--primary) 12%, transparent); }
   .icon-btn:hover { background: color-mix(in srgb, var(--primary) 22%, transparent); }
   .notif-dot { position: absolute; top: -2px; right: -2px; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 700; min-width: 1.1rem; height: 1.1rem; border-radius: 1rem; display: flex; align-items: center; justify-content: center; padding: 0 0.25rem; box-shadow: 0 0 0 2px var(--primary); }
 
@@ -293,7 +294,7 @@
   .avatar-edit-badge:hover { filter: brightness(1.1); }
 
   /* ---- homepage: hero, categories, horizontal scroll sections ---- */
-  .hero { position: relative; overflow: visible; padding: 1.8rem 0 0.6rem; margin-bottom: 0.6rem; }
+  .hero { position: relative; overflow: visible; padding: 0.9rem 0 0.6rem; margin-bottom: 0.6rem; }
   .hero-aurora { position: absolute; left: -15%; right: -15%; top: -60%; height: 220%; pointer-events: none; filter: blur(60px); opacity: 0.55;
     background:
       radial-gradient(ellipse 40% 34% at 15% 30%, var(--primary) 0%, transparent 72%),
@@ -325,7 +326,9 @@
   .search-suggest-item .ss-meta { color: var(--text-muted); font-size: 0.76rem; margin-left: auto; flex-shrink: 0; padding-left: 0.6rem; }
   .search-suggest-item .ss-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 600px) { .hero-quick-actions { gap: 1rem; } .quick-action-icon { width: 2.9rem; height: 2.9rem; font-size: 1.1rem; } .quick-action { font-size: 0.68rem; } }
-  .section-title { margin: 1.6rem 0 0.8rem; font-size: 1.15rem; }
+  .section-title { margin: 1.6rem 0 0.8rem; font-size: 1.15rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+  .section-title-link { font-size: 0.82rem; font-weight: 500; color: var(--primary); text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem; }
+  .section-title-link:hover { text-decoration: underline; }
   .cat-row { display: flex; gap: 0.9rem; overflow-x: auto; padding: 0.6rem 0.2rem 1rem; margin-bottom: 0.4rem; scrollbar-width: thin; scroll-snap-type: x proximity; scroll-behavior: smooth; }
   .cat-chip { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; padding: 0.7rem 1rem; cursor: pointer; font-size: 0.78rem; color: var(--text); min-width: 76px; box-shadow: var(--shadow-float); scroll-snap-align: start; transition: border-color 0.15s, transform 0.2s ease, box-shadow 0.2s ease; }
   .cat-chip:hover { border-color: var(--primary); transform: translateY(-4px); }
@@ -745,6 +748,10 @@ function showConfirmDialog(message, opts = {}) {
     okBtn.addEventListener("click", onOk);
     cancelBtn.addEventListener("click", onCancel);
   });
+}
+function greetingWord() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 function initials(name, email) {
   const s = (name || email || "?").trim();
@@ -1267,7 +1274,7 @@ function updateAuthUI() {
           <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
           <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
         </div>
-        <div><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${esc(profile.role)}</span></div>
+        <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${esc(profile.role)}</span></div>
       </div>
       <div class="divider"></div>
       ${links.map((l) => `<a class="notif-item" onclick="closeAllPanels();${l.action};">${l.label}</a>`).join("")}
@@ -1433,6 +1440,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "home": app.innerHTML = await renderHome(); break;
       case "productDetail": app.innerHTML = await renderProductDetail(params.productId); break;
       case "storefront": app.innerHTML = await renderStorefront(params.vendorId); break;
+      case "vendors": app.innerHTML = renderVendorsDirectory(); break;
       case "vendorApply": app.innerHTML = await renderVendorApply(); break;
       case "vendorDashboard": app.innerHTML = await renderVendorDashboard(); break;
       case "vendorEditProfile": app.innerHTML = await renderVendorEditProfile(); break;
@@ -1528,7 +1536,7 @@ async function renderHome() {
     html += `<h3 class="section-title"><i class='fa-solid fa-fire'></i> Trending equipment</h3><div class="hscroll">${trending.map(productCardHtml).join("")}</div>`;
   }
   if (topVendors && topVendors.length) {
-    html += `<h3 class="section-title"><i class='fa-solid fa-medal'></i> Top-rated vendors</h3><div class="hscroll">${topVendors.map(vendorCardHtml).join("")}</div>`;
+    html += `<h3 class="section-title"><span><i class='fa-solid fa-medal'></i> Top-rated vendors</span><a class="section-title-link" onclick="navigate('vendors')">See all <i class="fa-solid fa-arrow-right"></i></a></h3><div class="hscroll">${topVendors.map(vendorCardHtml).join("")}</div>`;
   }
 
   html += `<h3 class="section-title" id="browseSection"><i class='fa-solid fa-stethoscope'></i> Browse all equipment</h3>`;
@@ -1783,17 +1791,6 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
-// Fire-and-forget — a failed/slow email should never hold up the buyer or
-// vendor's own flow, so this is never awaited by its callers.
-function notifyOrderEmail(orderId, eventType) {
-  if (!session) return;
-  fetch("/api/order-notify", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orderId, eventType, accessToken: session.access_token }),
-  }).catch(() => {});
-}
-
 async function confirmRental(vendorId, productId) {
   if (!session) { showLogin(); return; }
   const start = byId("rentStart").value;
@@ -1813,7 +1810,6 @@ async function confirmRental(vendorId, productId) {
     p_delivery_address: "",
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
-  notifyOrderEmail(orderId, "placed");
   navigate("orderDetail", { orderId });
 }
 
@@ -1831,8 +1827,42 @@ async function buyNow(vendorId, productId) {
     p_delivery_address: "",
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
-  notifyOrderEmail(orderId, "placed");
   navigate("orderDetail", { orderId });
+}
+
+// ---------- VENDORS DIRECTORY ----------
+function renderVendorsDirectory() {
+  let html = `<h2><i class="fa-solid fa-store"></i> All vendors</h2>`;
+  html += `<div class="flex" style="margin-bottom:1.2rem;">
+    <input type="text" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
+    <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
+  </div>`;
+  html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
+  setTimeout(loadVendorsDirectory, 0);
+  return html;
+}
+
+async function loadVendorsDirectory() {
+  const { data: vendors } = await sb.from("vendors").select("id, business_name, city, avg_rating")
+    .eq("verification_status", "verified").eq("is_active", true).order("business_name");
+  window.__allVendors = vendors || [];
+  const citySel = byId("vendorCityFilter");
+  if (citySel) {
+    const cities = [...new Set((vendors || []).map((v) => v.city).filter(Boolean))].sort();
+    citySel.innerHTML = '<option value="">All cities</option>' + cities.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  }
+  filterVendorsDirectory();
+}
+
+function filterVendorsDirectory() {
+  const search = (byId("vendorSearchInput")?.value || "").trim().toLowerCase();
+  const city = byId("vendorCityFilter")?.value || "";
+  let list = window.__allVendors || [];
+  if (search) list = list.filter((v) => (v.business_name || "").toLowerCase().includes(search));
+  if (city) list = list.filter((v) => v.city === city);
+  const grid = byId("vendorsGrid");
+  if (!grid) return;
+  grid.innerHTML = list.length ? list.map(vendorCardHtml).join("") : '<div class="empty-state">No vendors match that search.</div>';
 }
 
 // ---------- STOREFRONT (public vendor page) ----------
@@ -1932,7 +1962,7 @@ async function renderRequestEquipment() {
           <div class="flex">
             ${o.price != null ? `<strong>${naira(o.price)}</strong>` : ""}
             <span class="badge ${o.status === "accepted" ? "success" : o.status === "declined" ? "danger" : ""}">${esc(o.status)}</span>
-            ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button>` : ""}
+            ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-outline" onclick="declineOffer('${o.id}')">Decline</button>` : ""}
             ${o.status === "accepted" && o.vendor?.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(o.vendor.whatsapp_number, "Hi, about my equipment request: " + r.title)}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
             ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}"><i class='fa-solid fa-phone'></i></a>` : ""}
           </div>
@@ -1971,6 +2001,13 @@ async function submitEquipmentRequest() {
 async function acceptOffer(offerId) {
   if (!(await showConfirmDialog("Accept this offer? The vendor's contact details will be shared so you can finalize the order.", { title: "Accept offer", okLabel: "Accept" }))) return;
   const { error } = await sb.rpc("accept_request_offer", { p_offer_id: offerId });
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("requestEquipment");
+}
+
+async function declineOffer(offerId) {
+  if (!(await showConfirmDialog("Decline this offer? The vendor will be notified.", { title: "Decline offer", okLabel: "Decline" }))) return;
+  const { error } = await sb.from("request_offers").update({ status: "declined" }).eq("id", offerId);
   if (error) { showToast(error.message, "error"); return; }
   navigate("requestEquipment");
 }
@@ -2696,7 +2733,6 @@ const ORDER_STATUS_HELP = {
 async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
-  notifyOrderEmail(orderId, "status_changed");
   navigate("orderDetail", { orderId });
 }
 
@@ -3258,6 +3294,12 @@ function toggleAiChat() {
     byId("aiChatInput").focus();
   }
 }
+document.addEventListener("click", (e) => {
+  const panel = byId("aiChatPanel");
+  if (!panel || panel.classList.contains("hidden")) return;
+  if (e.target.closest("#aiChatPanel, #aiChatFab")) return;
+  panel.classList.add("hidden");
+});
 function appendAiChatMessage(role, content) {
   if (role !== "typing") aiChatMessages.push({ role, content });
   const wrap = byId("aiChatMessages");
@@ -3372,6 +3414,16 @@ window.addEventListener("popstate", (e) => {
     const orderId = urlParams.get("order");
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
     if (session) { await navigate("orderDetail", { orderId }); return; }
+    showLogin();
+  }
+
+  // Generic deep link from any notification email (see api/notify-email.js)
+  if (urlParams.get("nview")) {
+    const view = urlParams.get("nview");
+    let params = {};
+    try { params = JSON.parse(urlParams.get("nparams") || "{}"); } catch (e) {}
+    history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    if (session) { await navigate(view, params); return; }
     showLogin();
   }
 
