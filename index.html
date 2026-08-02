@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>Medris – Medical Equipment Marketplace</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --primary: #0f766e;
+    --primary-light: #14b8a6;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1e293b;
+    --border: #e2e8f0;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--primary); color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  header h1 { font-size: 1.6rem; cursor: pointer; user-select: none; }
+  .nav-links { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; }
+  .btn { padding: 0.5rem 1.2rem; border: none; border-radius: 0.5rem; background: var(--primary-light); color: white; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s; }
+  .btn:hover { background: #0d9488; }
+  .btn-outline { background: transparent; border: 2px solid white; color: white; }
+  .btn-outline:hover { background: rgba(255,255,255,0.15); }
+  .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.85rem; }
+  .btn-danger { background: var(--danger); }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .container { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; flex: 1; width: 100%; }
+  .card { background: var(--card); padding: 1.3rem; border-radius: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 1rem; border: 1px solid var(--border); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
+  .flex { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
+  .badge { padding: 0.2rem 0.8rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; background: #e0f2fe; color: #0369a1; text-transform: capitalize; }
+  .badge.success { background: #dcfce7; color: #166534; }
+  .badge.warning { background: #fef9c3; color: #854d0e; }
+  .badge.danger { background: #fee2e2; color: #991b1b; }
+  label { display: block; font-size: 0.85rem; font-weight: 500; margin-top: 0.6rem; }
+  input, select, textarea { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 0.5rem; margin: 0.3rem 0 0.5rem; font-size: 1rem; font-family: inherit; background: white; color: var(--text); }
+  fieldset { border: none; padding: 0; margin-top: 0.5rem; }
+  legend { font-size: 0.85rem; font-weight: 500; color: #475569; }
+  .hidden { display: none !important; }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; }
+  .modal-content { background: white; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+  .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.9rem; }
+  .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .empty-state { text-align: center; padding: 3rem; color: #64748b; }
+  .error-text { color: var(--danger); font-size: 0.85rem; margin: 0.3rem 0; }
+  .muted { color: #64748b; font-size: 0.9rem; }
+  .tabs { display: flex; gap: 1rem; border-bottom: 1px solid var(--border); margin: 1rem 0; flex-wrap: wrap; }
+  .tabs a { padding-bottom: 0.5rem; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; font-size: 0.9rem; cursor: pointer; text-transform: capitalize; }
+  .tabs a.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 0.8rem; padding: 1rem; text-align: center; }
+  .stat .n { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+  .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 0.4rem; }
+  @media (max-width: 600px) { header { flex-direction: column; align-items: flex-start; } .nav-links { width: 100%; justify-content: space-between; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 onclick="navigate('home')">🏥 Medris</h1>
+  <div class="nav-links">
+    <span id="userInfo"></span>
+    <span id="authButtons"></span>
+  </div>
+</header>
+
+<div class="container" id="app"><p class="muted">Loading…</p></div>
+
+<!-- Login / Signup Modal -->
+<div id="loginModal" class="modal hidden">
+  <div class="modal-content">
+    <h3 id="authModalTitle">👋 Welcome to Medris</h3>
+    <div id="authError" class="error-text hidden"></div>
+
+    <div id="signupExtraFields" class="hidden">
+      <label>Full name</label>
+      <input type="text" id="loginName" placeholder="Full name" />
+      <label>I am a…</label>
+      <select id="loginRole">
+        <option value="buyer">Buyer (Student / Clinic / Health worker)</option>
+        <option value="vendor">Vendor (Equipment owner)</option>
+      </select>
+      <label>City</label>
+      <input type="text" id="loginCity" placeholder="City" value="Lagos" />
+      <label>Phone</label>
+      <input type="tel" id="loginPhone" placeholder="Phone" />
+    </div>
+
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="Email address" />
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
+
+    <div class="flex" style="justify-content: space-between; margin-top: 0.8rem;">
+      <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
+      <button class="btn btn-sm" style="background:#6b7280;" onclick="hideLogin()">Cancel</button>
+    </div>
+    <p style="font-size:0.85rem;margin-top:0.8rem;">
+      <a href="#" onclick="toggleAuthMode();return false;" id="authToggleLink">Need an account? Register</a>
+    </p>
+  </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div id="productModal" class="modal hidden">
+  <div class="modal-content" style="max-width:550px;">
+    <h3 id="productModalTitle">Add New Product</h3>
+    <div id="productError" class="error-text hidden"></div>
+    <label>Product name</label>
+    <input type="text" id="prodName" placeholder="e.g. BP Monitor" />
+    <label>Description</label>
+    <textarea id="prodDesc" placeholder="Description" rows="2"></textarea>
+    <label>Category</label>
+    <select id="prodCategory"><option value="">Uncategorized</option></select>
+    <div class="flex">
+      <div style="flex:1;">
+        <label>Condition</label>
+        <select id="prodCondition"><option value="new">New</option><option value="used-good" selected>Used - good</option><option value="used-fair">Used - fair</option></select>
+      </div>
+      <div style="flex:1;">
+        <label>Listing type</label>
+        <select id="prodListingType" onchange="updateProductFormFields()"><option value="rent">Rent only</option><option value="sale">Sale only</option><option value="both">Rent &amp; Sale</option></select>
+      </div>
+    </div>
+    <div class="flex">
+      <div style="flex:1;" id="prodSalePriceWrap"><label>Sale price (₦)</label><input type="number" id="prodSalePrice" step="0.01" /></div>
+      <div style="flex:1;" id="prodRentalRateWrap"><label>Rental rate (₦)</label><input type="number" id="prodRentalRate" step="0.01" /></div>
+    </div>
+    <div id="prodRateUnitWrap"><label>Per</label><select id="prodRateUnit"><option value="day">Day</option><option value="week">Week</option></select></div>
+    <div id="prodDepositWrap"><label>Refundable deposit (₦, optional)</label><input type="number" id="prodDeposit" step="0.01" /></div>
+    <label>Quantity available</label>
+    <input type="number" id="prodQtyTotal" value="1" min="1" />
+    <div id="prodExistingPhotos" class="flex" style="margin:0.4rem 0;"></div>
+    <label>Add photos</label>
+    <input type="file" id="prodPhotoFiles" accept="image/*" multiple />
+    <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
+      <button class="btn btn-sm" style="background:#6b7280;" onclick="closeProductModal()">Cancel</button>
+      <button class="btn" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- SUPABASE ----------
+// Public project URL + anon key — safe to expose client-side. Row Level
+// Security on every table is what actually protects the data; this key
+// alone cannot bypass it. Never put the service-role key or a payment
+// provider's secret key in client-side code like this file.
+const SUPABASE_URL = "https://ovklnoroyxobijgvsyfp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_SjOSMDFWO-u9t5sKRp1sXQ_GsnrO2a7";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let session = null;   // supabase auth session
+let profile = null;   // row from public.users for the signed-in user
+let vendor = null;    // row from public.vendors for the signed-in user, if any
+let editingProductId = null;
+let authMode = "login"; // 'login' | 'register'
+
+// ---------- UTILS ----------
+function naira(n) { return "₦" + Number(n ?? 0).toLocaleString(); }
+function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+function byId(id) { return document.getElementById(id); }
+
+// ---------- AUTH ----------
+async function refreshAuthState() {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  profile = null;
+  vendor = null;
+  if (session) {
+    const { data: p } = await sb.from("users").select("*").eq("id", session.user.id).single();
+    profile = p;
+    if (profile?.role === "vendor") {
+      const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).maybeSingle();
+      vendor = v;
+    }
+  }
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const authDiv = byId("authButtons");
+  const userDiv = byId("userInfo");
+  if (session && profile) {
+    authDiv.innerHTML = `<button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>`;
+    let roleLinks = "";
+    if (profile.role === "vendor") {
+      roleLinks = `<button class="btn btn-sm" onclick="navigate('vendorDashboard')">📦 My Shop</button>`;
+    } else if (profile.role === "buyer") {
+      roleLinks = `<button class="btn btn-sm" onclick="navigate('buyerOrders')">📋 My Orders</button>`;
+    } else if (profile.role === "admin") {
+      roleLinks = `<button class="btn btn-sm" onclick="navigate('adminPanel')">⚙️ Admin</button>`;
+    }
+    userDiv.innerHTML = `<span style="font-weight:500;">👤 ${esc(profile.name || profile.email)}</span> ${roleLinks}`;
+  } else {
+    authDiv.innerHTML = `<button class="btn btn-outline btn-sm" onclick="showLogin()">Login / Register</button>`;
+    userDiv.innerHTML = "";
+  }
+}
+
+function showLogin() { authMode = "login"; applyAuthMode(); byId("loginModal").classList.remove("hidden"); }
+function hideLogin() { byId("loginModal").classList.add("hidden"); byId("authError").classList.add("hidden"); }
+function toggleAuthMode() { authMode = authMode === "login" ? "register" : "login"; applyAuthMode(); }
+function applyAuthMode() {
+  const isRegister = authMode === "register";
+  byId("authModalTitle").textContent = isRegister ? "📝 Create your Medris account" : "👋 Welcome back to Medris";
+  byId("signupExtraFields").classList.toggle("hidden", !isRegister);
+  byId("authSubmitBtn").textContent = isRegister ? "Create account" : "Login";
+  byId("authToggleLink").textContent = isRegister ? "Already have an account? Login" : "Need an account? Register";
+}
+
+async function submitAuth() {
+  const email = byId("loginEmail").value.trim();
+  const password = byId("loginPassword").value;
+  const errorEl = byId("authError");
+  errorEl.classList.add("hidden");
+  if (!email || !password) { errorEl.textContent = "Email and password are required."; errorEl.classList.remove("hidden"); return; }
+
+  const btn = byId("authSubmitBtn");
+  btn.disabled = true;
+
+  try {
+    if (authMode === "register") {
+      const name = byId("loginName").value.trim();
+      const role = byId("loginRole").value;
+      const city = byId("loginCity").value.trim();
+      const phone = byId("loginPhone").value.trim();
+      if (!name) throw new Error("Full name is required.");
+      if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { name, phone, city, role } },
+      });
+      if (error) throw error;
+
+      if (!data.session) {
+        hideLogin();
+        alert("Check your email for a confirmation link, then log in.");
+        return;
+      }
+      hideLogin();
+      await refreshAuthState();
+      navigate(role === "vendor" ? "vendorApply" : "home");
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      hideLogin();
+      await refreshAuthState();
+      navigate("home");
+    }
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  await refreshAuthState();
+  navigate("home");
+}
+
+// ---------- NAVIGATION ----------
+async function navigate(view, params = {}) {
+  const app = byId("app");
+  app.innerHTML = '<p class="muted">Loading…</p>';
+  updateAuthUI();
+  try {
+    switch (view) {
+      case "home": app.innerHTML = await renderHome(); break;
+      case "productDetail": app.innerHTML = await renderProductDetail(params.productId); break;
+      case "storefront": app.innerHTML = await renderStorefront(params.vendorId); break;
+      case "vendorApply": app.innerHTML = await renderVendorApply(); break;
+      case "vendorDashboard": app.innerHTML = await renderVendorDashboard(); break;
+      case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
+      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status); break;
+      case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
+      case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
+      case "adminPanel": app.innerHTML = await renderAdminPanel(params.status); break;
+      case "adminDisputes": app.innerHTML = await renderAdminDisputes(); break;
+      default: app.innerHTML = await renderHome();
+    }
+  } catch (err) {
+    app.innerHTML = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
+  }
+  window.scrollTo(0, 0);
+}
+
+// ---------- HOME (marketplace browse) ----------
+async function renderHome() {
+  const { data: categories } = await sb.from("categories").select("*").order("name");
+  window.__categories = categories || [];
+
+  let html = `<h2 style="margin-bottom:1rem;">🩺 Medical Equipment Marketplace</h2>`;
+  html += `<div class="flex" style="margin-bottom:1.2rem;">
+    <input type="text" id="searchInput" placeholder="Search equipment…" oninput="filterHomeProducts()" style="max-width:280px;" />
+    <select id="filterListing" onchange="filterHomeProducts()"><option value="">All types</option><option value="rent">Rent</option><option value="sale">Buy</option></select>
+    <select id="filterCategory" onchange="filterHomeProducts()"><option value="">All categories</option>${(categories || []).filter((c) => c.parent_category_id).map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select>
+  </div>`;
+  html += `<div class="grid" id="productGrid"><p class="muted">Loading…</p></div>`;
+  setTimeout(filterHomeProducts, 0);
+  return html;
+}
+
+async function filterHomeProducts() {
+  const search = byId("searchInput")?.value.trim() || "";
+  const listing = byId("filterListing")?.value || "";
+  const catId = byId("filterCategory")?.value || "";
+
+  let query = sb
+    .from("products")
+    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, vendor:vendors!inner(id, business_name, verification_status)")
+    .eq("status", "active")
+    .eq("vendor.verification_status", "verified");
+
+  if (search) query = query.ilike("name", `%${search}%`);
+  if (listing === "rent") query = query.in("listing_type", ["rent", "both"]);
+  if (listing === "sale") query = query.in("listing_type", ["sale", "both"]);
+  if (catId) query = query.eq("category_id", catId);
+
+  const { data: products, error } = await query.order("created_at", { ascending: false });
+  const grid = byId("productGrid");
+  if (!grid) return;
+  if (error || !products || products.length === 0) {
+    grid.innerHTML = `<div class="empty-state">No products found. Vendors, start listing!</div>`;
+    return;
+  }
+  grid.innerHTML = products.map(productCardHtml).join("");
+}
+
+function productCardHtml(p) {
+  const img = p.photos?.[0];
+  return `<div class="card" style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
+    <div class="product-img">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;">` : "📷 No image"}</div>
+    <h4 style="margin:0.6rem 0 0.2rem;">${esc(p.name)}</h4>
+    <div class="flex" style="justify-content:space-between;">
+      <span class="badge">${p.listing_type}</span>
+      <span style="font-size:0.85rem;">${esc(p.vendor?.business_name || "")}</span>
+    </div>
+    <div style="margin:0.5rem 0;">
+      ${p.sale_price != null ? `<span><strong>Buy:</strong> ${naira(p.sale_price)}</span> ` : ""}
+      ${p.rental_rate != null ? `<span><strong>Rent:</strong> ${naira(p.rental_rate)}/${p.rental_rate_unit}</span>` : ""}
+    </div>
+    <p class="muted">Available: ${p.quantity_available} · ${esc((p.condition || "").replace("-", " "))}</p>
+  </div>`;
+}
+
+// ---------- PRODUCT DETAIL ----------
+async function renderProductDetail(productId) {
+  const { data: product, error } = await sb
+    .from("products")
+    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status)")
+    .eq("id", productId)
+    .eq("status", "active")
+    .eq("vendor.verification_status", "verified")
+    .maybeSingle();
+
+  if (error || !product) return '<div class="empty-state">Product not found.</div>';
+
+  const canRent = product.listing_type === "rent" || product.listing_type === "both";
+  const canBuy = product.listing_type === "sale" || product.listing_type === "both";
+  const photosHtml = (product.photos && product.photos.length > 0)
+    ? `<div class="grid" style="grid-template-columns:repeat(2,1fr);">${product.photos.map((u) => `<img src="${esc(u)}" style="width:100%;border-radius:0.5rem;object-fit:cover;aspect-ratio:1;">`).join("")}</div>`
+    : `<div class="product-img" style="height:220px;">📷 No image</div>`;
+
+  let html = `<div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>${photosHtml}</div>
+    <div>
+      <h2>${esc(product.name)}</h2>
+      <p>${esc(product.description || "No description")}</p>
+      <p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>
+      <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a> ✅</p>
+      <p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>
+      ${product.sale_price != null ? `<p><strong>Buy price:</strong> ${naira(product.sale_price)}</p>` : ""}
+      ${product.rental_rate != null ? `<p><strong>Rent:</strong> ${naira(product.rental_rate)} per ${product.rental_rate_unit}</p>` : ""}
+      ${product.deposit_amount ? `<p><strong>Refundable deposit:</strong> ${naira(product.deposit_amount)}</p>` : ""}
+    </div>
+  </div>`;
+
+  if (canRent) {
+    const today = new Date().toISOString().slice(0, 10);
+    html += `<div class="card"><h3>📅 Rent this item</h3>
+      <div class="flex">
+        <input type="date" id="rentStart" min="${today}" />
+        <input type="date" id="rentEnd" min="${today}" />
+        <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
+      </div>
+      <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
+      <p id="rentError" class="error-text hidden"></p>
+    </div>`;
+  }
+  if (canBuy) {
+    html += `<div class="card"><h3>🛒 Buy Now</h3>
+      <div class="flex">
+        <input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />
+        <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">Buy Now</button>
+      </div>
+      <p id="buyError" class="error-text hidden"></p>
+    </div>`;
+  }
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')">← Back to Marketplace</button>`;
+  return html;
+}
+
+async function confirmRental(vendorId, productId) {
+  if (!session) { showLogin(); return; }
+  const start = byId("rentStart").value;
+  const end = byId("rentEnd").value;
+  const qty = parseInt(byId("rentQty").value) || 1;
+  const errorEl = byId("rentError");
+  errorEl.classList.add("hidden");
+  if (!start || !end) { errorEl.textContent = "Select both dates."; errorEl.classList.remove("hidden"); return; }
+
+  const { data: orderId, error } = await sb.rpc("create_rental_order", {
+    p_vendor_id: vendorId,
+    p_product_id: productId,
+    p_quantity: qty,
+    p_start_date: start,
+    p_end_date: end,
+    p_delivery_method: "pickup",
+    p_delivery_address: "",
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+async function buyNow(vendorId, productId) {
+  if (!session) { showLogin(); return; }
+  const qty = parseInt(byId("buyQty").value) || 1;
+  const errorEl = byId("buyError");
+  errorEl.classList.add("hidden");
+
+  const { data: orderId, error } = await sb.rpc("create_sale_order", {
+    p_vendor_id: vendorId,
+    p_product_id: productId,
+    p_quantity: qty,
+    p_delivery_method: "pickup",
+    p_delivery_address: "",
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+// ---------- STOREFRONT (public vendor page) ----------
+async function renderStorefront(vendorId) {
+  const { data: v, error } = await sb.from("vendors").select("*").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
+  if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
+  const { data: products } = await sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false });
+
+  let html = `<div class="flex" style="justify-content:space-between;">
+    <div><h2>${esc(v.business_name)}</h2><p class="muted">${esc(v.address || "")}${v.city ? ", " + esc(v.city) : ""}</p></div>
+    <span class="badge success">Verified</span>
+  </div>`;
+  if (v.bio) html += `<p style="margin:0.6rem 0;">${esc(v.bio)}</p>`;
+  html += `<div class="flex muted">${v.phone ? `<span>${esc(v.phone)}</span>` : ""}${v.whatsapp_number ? `<span>WhatsApp: ${esc(v.whatsapp_number)}</span>` : ""}${v.avg_rating != null ? `<span>★ ${Number(v.avg_rating).toFixed(1)}</span>` : ""}</div>`;
+  html += `<h3 style="margin-top:1.2rem;">Available equipment</h3>`;
+  html += `<div class="grid">${(products && products.length > 0) ? products.map(productCardHtml).join("") : '<div class="empty-state">No products listed yet.</div>'}</div>`;
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')">← Back to Marketplace</button>`;
+  return html;
+}
+
+// ---------- VENDOR APPLICATION ----------
+async function renderVendorApply() {
+  if (!session || profile?.role !== "vendor") return '<div class="empty-state">This page is for vendor accounts only.</div>';
+  const { data: existing } = await sb.from("vendors").select("id").eq("user_id", session.user.id).maybeSingle();
+  if (existing) { navigate("vendorDashboard"); return '<p class="muted">Redirecting…</p>'; }
+
+  return `<div class="card" style="max-width:480px;margin:0 auto;">
+    <h2>Apply as a vendor</h2>
+    <p class="muted">Tell us about your business. An admin will review this manually.</p>
+    <div id="vendorApplyError" class="error-text hidden"></div>
+    <label>Business name *</label><input id="vaBusinessName" />
+    <label>Address *</label><input id="vaAddress" />
+    <label>City</label><input id="vaCity" value="Lagos" />
+    <label>Phone *</label><input id="vaPhone" type="tel" />
+    <label>WhatsApp number</label><input id="vaWhatsapp" type="tel" />
+    <label>CAC number</label><input id="vaCac" />
+    <label>CAC document (optional upload)</label><input id="vaDoc" type="file" accept="application/pdf,image/*" />
+    <label>About your business</label><textarea id="vaBio" rows="3"></textarea>
+    <button class="btn" style="margin-top:0.8rem;" onclick="submitVendorApply()">Submit application</button>
+  </div>`;
+}
+
+async function submitVendorApply() {
+  const errorEl = byId("vendorApplyError");
+  errorEl.classList.add("hidden");
+  const business_name = byId("vaBusinessName").value.trim();
+  const address = byId("vaAddress").value.trim();
+  const phone = byId("vaPhone").value.trim();
+  if (!business_name || !address || !phone) {
+    errorEl.textContent = "Business name, address, and phone are required.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    let verification_docs = [];
+    const file = byId("vaDoc").files[0];
+    if (file) {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${session.user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from("vendor-docs").upload(path, file, { contentType: file.type });
+      if (upErr) throw new Error(`Document upload failed: ${upErr.message}`);
+      verification_docs = [path];
+    }
+
+    const { error } = await sb.from("vendors").insert({
+      user_id: session.user.id,
+      business_name, address,
+      city: byId("vaCity").value.trim() || null,
+      phone,
+      whatsapp_number: byId("vaWhatsapp").value.trim() || null,
+      cac_number: byId("vaCac").value.trim() || null,
+      bio: byId("vaBio").value.trim() || null,
+      verification_docs,
+    });
+    if (error) throw new Error(error.message);
+
+    await refreshAuthState();
+    navigate("vendorDashboard");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  }
+}
+
+// ---------- VENDOR DASHBOARD ----------
+async function renderVendorDashboard() {
+  if (!session || profile?.role !== "vendor") return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).maybeSingle();
+  if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
+  vendor = v;
+
+  let statusBanner = "";
+  if (v.verification_status === "pending") statusBanner = `<div class="card" style="background:#fef9c3;border-color:#fde68a;"><strong>⏳ Verification pending.</strong> Your shop is under review — once approved you can list products.</div>`;
+  else if (v.verification_status === "rejected") statusBanner = `<div class="card" style="background:#fee2e2;border-color:#fecaca;"><strong>Application not approved.</strong> Contact support if this seems wrong.</div>`;
+  else statusBanner = `<div class="card" style="background:#dcfce7;border-color:#bbf7d0;"><strong>✅ Verified.</strong> Your storefront: <a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">view it</a>.</div>`;
+
+  const { data: orders } = await sb.from("orders").select("status, total_amount").eq("vendor_id", v.id);
+  const totalOrders = orders?.length ?? 0;
+  const revenue = orders?.filter((o) => o.status === "completed").reduce((s, o) => s + o.total_amount, 0) ?? 0;
+
+  let html = `<div class="flex" style="justify-content:space-between;"><h2>📦 ${esc(v.business_name)}</h2>
+    <div class="flex"><button class="btn btn-sm" onclick="navigate('vendorProducts')">Products</button><button class="btn btn-sm" onclick="navigate('vendorOrders',{status:'all'})">Orders</button></div></div>`;
+  html += statusBanner;
+  html += `<div class="grid" style="grid-template-columns:repeat(2,1fr);max-width:500px;">
+    <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
+    <div class="stat"><div class="n">${naira(revenue)}</div><div class="muted">Revenue (completed)</div></div>
+  </div>`;
+  return html;
+}
+
+// ---------- VENDOR PRODUCTS ----------
+async function renderVendorProducts() {
+  if (!session || profile?.role !== "vendor") return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).maybeSingle();
+  if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
+  vendor = v;
+
+  const { data: products } = await sb.from("products").select("*").eq("vendor_id", v.id).order("created_at", { ascending: false });
+
+  let html = `<div class="flex" style="justify-content:space-between;"><h2>My Products</h2><button class="btn" onclick="openAddProductModal()">+ Add product</button></div>`;
+  if (v.verification_status !== "verified") html += `<p class="muted">Products won't appear publicly until your vendor account is verified.</p>`;
+  html += `<div class="grid" style="margin-top:1rem;">`;
+  (products || []).forEach((p) => {
+    const img = p.photos?.[0];
+    html += `<div class="card">
+      <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "📷 No image"}</div>
+      <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
+      <p class="muted">${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available · ${p.status}</p>
+      <div class="flex">
+        <button class="btn btn-sm" onclick="openEditProductModal('${p.id}')">✏️ Edit</button>
+        ${p.status === "active" ? `<button class="btn btn-sm" style="background:#6b7280;" onclick="setProductStatus('${p.id}','paused')">Pause</button>` : ""}
+        ${p.status === "paused" ? `<button class="btn btn-sm" onclick="setProductStatus('${p.id}','active')">Activate</button>` : ""}
+        ${p.status !== "removed" ? `<button class="btn btn-sm btn-danger" onclick="removeProduct('${p.id}')">🗑️ Remove</button>` : ""}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  if (!products || products.length === 0) html += `<div class="empty-state">No products yet.</div>`;
+  return html;
+}
+
+async function openAddProductModal() {
+  editingProductId = null;
+  await showProductModal();
+}
+async function openEditProductModal(productId) {
+  editingProductId = productId;
+  await showProductModal();
+}
+
+async function showProductModal() {
+  const { data: categories } = await sb.from("categories").select("*").order("name");
+  const select = byId("prodCategory");
+  select.innerHTML = '<option value="">Uncategorized</option>';
+  (categories || []).filter((c) => !c.parent_category_id).forEach((parent) => {
+    const group = document.createElement("optgroup");
+    group.label = parent.name;
+    categories.filter((c) => c.parent_category_id === parent.id).forEach((child) => {
+      const opt = document.createElement("option");
+      opt.value = child.id; opt.textContent = child.name;
+      group.appendChild(opt);
+    });
+    select.appendChild(group);
+  });
+
+  byId("productError").classList.add("hidden");
+  byId("prodExistingPhotos").innerHTML = "";
+  window.__existingPhotos = [];
+
+  if (editingProductId) {
+    const { data: p } = await sb.from("products").select("*").eq("id", editingProductId).single();
+    byId("productModalTitle").textContent = "Edit Product";
+    byId("prodName").value = p.name;
+    byId("prodDesc").value = p.description || "";
+    byId("prodCategory").value = p.category_id || "";
+    byId("prodCondition").value = p.condition;
+    byId("prodListingType").value = p.listing_type;
+    byId("prodSalePrice").value = p.sale_price ?? "";
+    byId("prodRentalRate").value = p.rental_rate ?? "";
+    byId("prodRateUnit").value = p.rental_rate_unit || "day";
+    byId("prodDeposit").value = p.deposit_amount ?? "";
+    byId("prodQtyTotal").value = p.quantity_total;
+    window.__existingPhotos = p.photos || [];
+    renderExistingPhotos();
+  } else {
+    byId("productModalTitle").textContent = "Add New Product";
+    ["prodName", "prodDesc", "prodSalePrice", "prodRentalRate", "prodDeposit"].forEach((id) => (byId(id).value = ""));
+    byId("prodQtyTotal").value = 1;
+    byId("prodListingType").value = "rent";
+  }
+  updateProductFormFields();
+  byId("productModal").classList.remove("hidden");
+}
+
+function renderExistingPhotos() {
+  byId("prodExistingPhotos").innerHTML = (window.__existingPhotos || [])
+    .map((url) => `<div style="position:relative;"><img src="${esc(url)}" class="thumb" /><button type="button" onclick="removeExistingPhoto('${esc(url)}')" style="position:absolute;top:-6px;right:-6px;border-radius:999px;background:var(--danger);color:white;border:none;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;">×</button></div>`)
+    .join("");
+}
+function removeExistingPhoto(url) {
+  window.__existingPhotos = (window.__existingPhotos || []).filter((u) => u !== url);
+  renderExistingPhotos();
+}
+
+function updateProductFormFields() {
+  const type = byId("prodListingType").value;
+  byId("prodSalePriceWrap").classList.toggle("hidden", type === "rent");
+  byId("prodRentalRateWrap").classList.toggle("hidden", type === "sale");
+  byId("prodRateUnitWrap").classList.toggle("hidden", type === "sale");
+  byId("prodDepositWrap").classList.toggle("hidden", type === "sale");
+}
+
+function closeProductModal() { byId("productModal").classList.add("hidden"); }
+
+async function saveProduct() {
+  const errorEl = byId("productError");
+  errorEl.classList.add("hidden");
+  const btn = byId("saveProductBtn");
+  btn.disabled = true;
+
+  try {
+    const listing_type = byId("prodListingType").value;
+    const name = byId("prodName").value.trim();
+    const quantity_total = parseInt(byId("prodQtyTotal").value) || 1;
+    const sale_price = byId("prodSalePrice").value ? Number(byId("prodSalePrice").value) : null;
+    const rental_rate = byId("prodRentalRate").value ? Number(byId("prodRentalRate").value) : null;
+    const rental_rate_unit = byId("prodRateUnit").value;
+    if (!name) throw new Error("Product name is required.");
+    if (listing_type !== "rent" && !sale_price) throw new Error("Sale price is required for a sale listing.");
+    if (listing_type !== "sale" && !rental_rate) throw new Error("Rental rate is required for a rental listing.");
+
+    const fields = {
+      name,
+      description: byId("prodDesc").value.trim() || null,
+      category_id: byId("prodCategory").value || null,
+      condition: byId("prodCondition").value,
+      listing_type,
+      sale_price: listing_type === "rent" ? null : sale_price,
+      rental_rate: listing_type === "sale" ? null : rental_rate,
+      rental_rate_unit: listing_type === "sale" ? null : rental_rate_unit,
+      deposit_amount: byId("prodDeposit").value ? Number(byId("prodDeposit").value) : null,
+      quantity_total,
+    };
+
+    const newFiles = [...byId("prodPhotoFiles").files];
+    const newPhotoUrls = [];
+    for (const file of newFiles) {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${vendor.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await sb.storage.from("product-photos").upload(path, file, { contentType: file.type });
+      if (upErr) throw new Error(`Photo upload failed: ${upErr.message}`);
+      const { data } = sb.storage.from("product-photos").getPublicUrl(path);
+      newPhotoUrls.push(data.publicUrl);
+    }
+    const photos = [...(window.__existingPhotos || []), ...newPhotoUrls];
+
+    if (editingProductId) {
+      const { data: existing } = await sb.from("products").select("quantity_total, quantity_available").eq("id", editingProductId).single();
+      const sold = existing ? existing.quantity_total - existing.quantity_available : 0;
+      const quantity_available = Math.max(quantity_total - sold, 0);
+      const { error } = await sb.from("products").update({ ...fields, quantity_available, photos }).eq("id", editingProductId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb.from("products").insert({ ...fields, vendor_id: vendor.id, quantity_available: quantity_total, photos });
+      if (error) throw new Error(error.message);
+    }
+
+    closeProductModal();
+    navigate("vendorProducts");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function setProductStatus(id, status) {
+  const { error } = await sb.from("products").update({ status }).eq("id", id).eq("vendor_id", vendor.id);
+  if (error) { alert(error.message); return; }
+  navigate("vendorProducts");
+}
+function removeProduct(id) {
+  if (confirm("Remove this listing? It will no longer be visible to buyers.")) setProductStatus(id, "removed");
+}
+
+// ---------- VENDOR / BUYER ORDERS ----------
+const ORDER_TABS = ["all", "pending", "confirmed", "handed_over", "returned", "completed", "cancelled", "disputed"];
+
+async function renderVendorOrders(status) {
+  if (!session || profile?.role !== "vendor") return '<div class="empty-state">Access denied.</div>';
+  if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).maybeSingle(); vendor = v; }
+  if (!vendor) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
+  status = ORDER_TABS.includes(status) ? status : "all";
+
+  let query = sb.from("orders").select("id, order_type, status, total_amount, buyer:users(name)").eq("vendor_id", vendor.id);
+  if (status !== "all") query = query.eq("status", status);
+  const { data: orders } = await query.order("created_at", { ascending: false });
+
+  let html = `<h2>Orders</h2><div class="tabs">${ORDER_TABS.map((t) => `<a class="${t === status ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${t}'})">${t}</a>`).join("")}</div>`;
+  html += orderListHtml(orders, false);
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')">← Back to Dashboard</button>`;
+  return html;
+}
+
+async function renderBuyerOrders() {
+  if (!session) return '<div class="empty-state">Please log in.</div>';
+  const { data: orders } = await sb.from("orders").select("id, order_type, status, total_amount, vendor:vendors(business_name)").eq("buyer_id", session.user.id).order("created_at", { ascending: false });
+  let html = `<h2>📋 My Orders</h2>`;
+  html += orderListHtml(orders, true);
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')">← Continue shopping</button>`;
+  return html;
+}
+
+function orderListHtml(orders, isBuyerView) {
+  if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
+  return orders.map((o) => `
+    <div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
+      <div>
+        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
+        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
+      </div>
+      <span class="badge">${o.status}</span>
+    </div>`).join("");
+}
+
+// ---------- ORDER DETAIL ----------
+async function renderOrderDetail(orderId) {
+  if (!session) return '<div class="empty-state">Please log in.</div>';
+  const { data: order, error } = await sb
+    .from("orders")
+    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, user_id), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id)")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (error || !order) return '<div class="empty-state">Order not found.</div>';
+
+  const isBuyer = order.buyer_id === session.user.id;
+  const isVendor = order.vendor?.user_id === session.user.id;
+  if (!isBuyer && !isVendor && profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
+
+  const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
+  const feePaid = order.payments.some((p) => p.payment_type === feeType && p.status === "paid");
+  const depositPaid = order.deposit_amount === 0 || order.payments.some((p) => p.payment_type === "deposit" && p.status === "paid");
+  const canRecordPayment = isVendor && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
+
+  let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge">${order.status}</span></div>
+  <p class="muted">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}</p>`;
+
+  html += order.items.map((item) => `<div class="card">
+    <strong>${esc(item.product?.name || "")}</strong>
+    <p class="muted">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
+  </div>`).join("");
+
+  html += `<div class="grid" style="grid-template-columns:repeat(2,1fr);">
+    <div><p class="muted">Total</p><strong>${naira(order.total_amount)}</strong></div>
+    ${order.deposit_amount > 0 ? `<div><p class="muted">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
+    <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong></div>
+  </div>`;
+
+  if (order.payments.length > 0) {
+    html += `<h3 style="margin-top:1rem;">Payments</h3>` + order.payments.map((p) => `<div class="flex" style="justify-content:space-between;font-size:0.9rem;"><span style="text-transform:capitalize;">${p.payment_type.replace("_", " ")}</span><span>${naira(p.amount)} · ${p.status}</span></div>`).join("");
+  }
+
+  if (canRecordPayment) {
+    html += `<div class="card"><h3>Record a payment you collected</h3>
+      <div id="recordPaymentError" class="error-text hidden"></div>
+      <div class="flex">
+        <select id="rpType"><option value="${feeType}">${feeType === "sale_price" ? "Sale price" : "Rental fee"}</option><option value="deposit">Deposit</option></select>
+        <input type="number" id="rpAmount" value="${feePaid ? order.deposit_amount : order.total_amount}" style="width:120px;" />
+        <select id="rpMethod"><option value="cash">Cash</option><option value="transfer">Transfer</option></select>
+        <button class="btn btn-sm" onclick="recordOfflinePayment('${order.id}')">Record payment received</button>
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="flex" style="margin-top:1rem;">${orderActionButtonsHtml(order, isBuyer, isVendor)}</div>`;
+
+  if (isBuyer && order.status === "completed" && !order.review) {
+    html += `<div class="card"><h3>Leave a review</h3>
+      <div id="reviewError" class="error-text hidden"></div>
+      <select id="reviewRating"><option value="5">5★</option><option value="4">4★</option><option value="3">3★</option><option value="2">2★</option><option value="1">1★</option></select>
+      <textarea id="reviewComment" rows="2" placeholder="How was the equipment and vendor?"></textarea>
+      <button class="btn btn-sm" onclick="submitReview('${order.id}','${order.vendor.id}')">Submit review</button>
+    </div>`;
+  }
+
+  if ((isBuyer || isVendor) && order.status !== "disputed" && order.status !== "cancelled") {
+    html += `<div style="margin-top:1rem;">
+      <a href="#" onclick="byId('disputeForm').classList.remove('hidden');this.classList.add('hidden');return false;" style="color:var(--danger);">Report an issue with this order</a>
+      <div id="disputeForm" class="card hidden" style="border-color:var(--danger);margin-top:0.5rem;">
+        <div id="disputeError" class="error-text hidden"></div>
+        <textarea id="disputeReason" rows="2" placeholder="What went wrong?"></textarea>
+        <button class="btn btn-sm btn-danger" onclick="fileDispute('${order.id}')">Submit report</button>
+      </div>
+    </div>`;
+  }
+
+  html += `<button class="btn btn-sm" style="margin-top:1rem;background:#6b7280;" onclick="navigate('${isVendor ? "vendorOrders" : "buyerOrders"}',{status:'all'})">← Back to orders</button>`;
+  return html;
+}
+
+function orderActionButtonsHtml(order, isBuyer, isVendor) {
+  const buttons = [];
+  if (isVendor) {
+    if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
+    if (order.status === "confirmed") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
+    if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
+    if (order.status === "handed_over" && order.order_type === "sale") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','completed')">Mark completed</button>`);
+    if (order.status === "returned") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','completed')">Mark completed</button>`);
+  }
+  if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
+  return buttons.join("");
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
+  if (error) { alert(error.message); return; }
+  navigate("orderDetail", { orderId });
+}
+
+async function recordOfflinePayment(orderId) {
+  const errorEl = byId("recordPaymentError");
+  errorEl.classList.add("hidden");
+  const { error } = await sb.rpc("record_offline_payment", {
+    p_order_id: orderId,
+    p_payment_type: byId("rpType").value,
+    p_amount: Number(byId("rpAmount").value),
+    p_method: byId("rpMethod").value,
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+async function submitReview(orderId, vendorId) {
+  const errorEl = byId("reviewError");
+  errorEl.classList.add("hidden");
+  const { error } = await sb.from("reviews").insert({
+    order_id: orderId, buyer_id: session.user.id, vendor_id: vendorId,
+    rating: Number(byId("reviewRating").value),
+    comment: byId("reviewComment").value.trim() || null,
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+async function fileDispute(orderId) {
+  const errorEl = byId("disputeError");
+  errorEl.classList.add("hidden");
+  const reason = byId("disputeReason").value.trim();
+  if (!reason) { errorEl.textContent = "Reason is required."; errorEl.classList.remove("hidden"); return; }
+  const { error } = await sb.rpc("raise_dispute", { p_order_id: orderId, p_reason: reason });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+// ---------- ADMIN ----------
+async function renderAdminPanel(status) {
+  if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
+  status = ["pending", "verified", "rejected"].includes(status) ? status : "pending";
+  const { data: vendors } = await sb.from("vendors").select("id, business_name, address, city, phone, cac_number").eq("verification_status", status).order("created_at", { ascending: true });
+
+  let html = `<h2>⚙️ Admin — Vendor applications</h2>
+    <div class="tabs">
+      <a class="${status === "pending" ? "active" : ""}" onclick="navigate('adminPanel',{status:'pending'})">pending</a>
+      <a class="${status === "verified" ? "active" : ""}" onclick="navigate('adminPanel',{status:'verified'})">verified</a>
+      <a class="${status === "rejected" ? "active" : ""}" onclick="navigate('adminPanel',{status:'rejected'})">rejected</a>
+    </div>`;
+
+  if (!vendors || vendors.length === 0) html += `<p class="muted">No ${status} vendors.</p>`;
+  (vendors || []).forEach((v) => {
+    html += `<div class="card flex" style="justify-content:space-between;">
+      <div><strong>${esc(v.business_name)}</strong><p class="muted">${esc(v.address || "")}${v.city ? ", " + esc(v.city) : ""} · ${esc(v.phone || "")}${v.cac_number ? " · CAC " + esc(v.cac_number) : ""}</p></div>
+      ${status === "pending" ? `<div class="flex"><button class="btn btn-sm" onclick="setVendorStatus('${v.id}','verified','${status}')">Approve</button><button class="btn btn-sm btn-danger" onclick="setVendorStatus('${v.id}','rejected','${status}')">Reject</button></div>` : ""}
+    </div>`;
+  });
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('adminDisputes')">View disputes →</button>`;
+  return html;
+}
+
+async function setVendorStatus(id, status) {
+  const { error } = await sb.from("vendors").update({ verification_status: status }).eq("id", id);
+  if (error) { alert(error.message); return; }
+  navigate("adminPanel", { status: "pending" });
+}
+
+async function renderAdminDisputes() {
+  if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
+  const { data: disputes } = await sb.from("disputes").select("*, order:orders(id, order_type, vendor:vendors(business_name))").eq("status", "open").order("created_at", { ascending: true });
+
+  let html = `<h2>Open disputes</h2>`;
+  if (!disputes || disputes.length === 0) html += `<p class="muted">No open disputes.</p>`;
+  (disputes || []).forEach((d) => {
+    html += `<div class="card">
+      <div class="flex" style="justify-content:space-between;">
+        <a href="#" onclick="navigate('orderDetail',{orderId:'${d.order?.id}'});return false;">${esc(d.order?.vendor?.business_name || "")} · ${esc(d.order?.order_type || "")} order</a>
+        <span class="muted" style="text-transform:capitalize;">raised by ${d.raised_by}</span>
+      </div>
+      <p style="margin:0.5rem 0;">${esc(d.reason)}</p>
+      <div class="flex">
+        <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
+        <select id="newstatus-${d.id}"><option value="">Leave order as-is</option><option value="completed">Set order: completed</option><option value="cancelled">Set order: cancelled</option></select>
+        <button class="btn btn-sm" onclick="resolveDispute('${d.id}')">Mark resolved</button>
+      </div>
+    </div>`;
+  });
+  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('adminPanel',{status:'pending'})">← Back to admin</button>`;
+  return html;
+}
+
+async function resolveDispute(id) {
+  const notes = byId(`notes-${id}`).value.trim() || "Resolved.";
+  const newStatus = byId(`newstatus-${id}`).value || undefined;
+  const { error } = await sb.rpc("resolve_dispute", { p_dispute_id: id, p_admin_notes: notes, p_new_order_status: newStatus });
+  if (error) { alert(error.message); return; }
+  navigate("adminDisputes");
+}
+
+// ---------- INIT ----------
+(async function init() {
+  await refreshAuthState();
+  sb.auth.onAuthStateChange((_event, newSession) => {
+    session = newSession;
+  });
+  navigate("home");
+})();
+</script>
+</body>
+</html>
