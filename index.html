@@ -104,6 +104,14 @@
   .btn-warning { background: var(--warning); color: white; }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .container { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; flex: 1; width: 100%; }
+  .site-footer { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: center; justify-content: center; padding: 1.4rem 1rem; margin-top: 1rem; border-top: 1px solid var(--border); }
+  .site-footer a { color: var(--text-muted); font-size: 0.82rem; text-decoration: none; }
+  .site-footer a:hover { color: var(--primary); text-decoration: underline; }
+  .legal-page { max-width: 720px; margin: 0 auto; line-height: 1.65; }
+  .legal-page h2 { margin-bottom: 0.3rem; }
+  .legal-page h3 { margin: 1.4rem 0 0.4rem; font-size: 1.05rem; }
+  .legal-page p, .legal-page li { color: var(--text); font-size: 0.94rem; }
+  .legal-page ul { padding-left: 1.3rem; margin: 0.4rem 0; }
   .card { background: var(--card); padding: 1.3rem; border-radius: 0.9rem; box-shadow: var(--shadow); margin-bottom: 1rem; border: 1px solid var(--border); transition: background-color 0.25s ease, border-color 0.25s ease; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
   .flex { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
@@ -132,7 +140,7 @@
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
-  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
   .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1.1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
   .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
   .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
@@ -235,6 +243,20 @@
   .notif-action-btn { width: 1.8rem; height: 1.8rem; border-radius: 50%; border: none; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; transition: background-color 0.15s, color 0.15s; }
   .notif-action-btn:hover { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); }
   .notif-action-btn.danger:hover { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+  .notif-item-wrap { position: relative; overflow: hidden; border-radius: 0.7rem; margin-bottom: 0.15rem; touch-action: pan-y; }
+  .notif-item-wrap .notif-item { position: relative; z-index: 1; background: var(--card); touch-action: pan-y; }
+  .notif-item-wrap .notif-item.unread { background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
+  .notif-swipe-bg { position: absolute; top: 0; bottom: 0; width: 100%; display: flex; align-items: center; font-size: 1.1rem; opacity: 0; z-index: 0; }
+  .notif-swipe-bg.left { left: 0; justify-content: flex-start; padding-left: 1rem; background: color-mix(in srgb, var(--primary) 22%, var(--card)); color: var(--primary); }
+  .notif-swipe-bg.right { right: 0; justify-content: flex-end; padding-right: 1rem; background: color-mix(in srgb, var(--danger) 22%, var(--card)); color: var(--danger); }
+  .notif-select-check { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: none; align-items: center; justify-content: center; font-size: 0.65rem; color: transparent; margin-top: 0.2rem; }
+  .notif-item.selected { background: color-mix(in srgb, var(--primary) 14%, var(--card)) !important; }
+  .notif-item.selected .notif-select-check { background: var(--primary); border-color: var(--primary); color: #fff; }
+  #notifPanel.selecting .notif-select-check { display: inline-flex; }
+  .notif-select-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.4rem 0.2rem 0.8rem; }
+  .notif-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.2rem; }
+  .notif-tab { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 0.6rem; padding: 0.4rem 0.3rem; font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+  .notif-tab.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
   .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .accent-swatch { width: 2rem; height: 2rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s; flex-shrink: 0; }
   .accent-swatch:hover { transform: scale(1.1); }
@@ -277,7 +299,7 @@
   .quick-action-icon { width: 3.3rem; height: 3.3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-float); transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .quick-action.outline .quick-action-icon { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); }
   .quick-action:hover .quick-action-icon { transform: translateY(-4px) scale(1.05); }
-  .dash-actions { display: flex; gap: 1.3rem; flex-wrap: wrap; margin: 1rem 0 1.4rem; }
+  .dash-actions { display: flex; gap: 1.3rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0 1.4rem; }
   .dash-actions .quick-action-icon { width: 2.9rem; height: 2.9rem; font-size: 1.1rem; }
   .verified-tick { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); font-size: 0.85rem; cursor: pointer; flex-shrink: 0; }
   .hero-search { position: relative; background: var(--glass-bg); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.2rem; box-shadow: var(--shadow-float); max-width: 460px; margin: 0 auto 1.4rem; }
@@ -336,6 +358,8 @@
     .bottom-nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; color: var(--text-muted); font-size: 0.62rem; font-family: inherit; cursor: pointer; padding: 0.2rem 0.4rem; flex: 1; }
     .bottom-nav-item i, .bottom-nav-item .bn-icon { font-size: 1.2rem; }
     .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item.active .bn-icon { background: color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 0.6rem; padding: 0.15rem 0.6rem; margin: -0.15rem -0.6rem; }
+    .bottom-nav-item.active span:last-child { font-weight: 600; }
     .bottom-nav-add { position: absolute; left: 50%; top: -1.15rem; transform: translateX(-50%); width: 3.2rem; height: 3.2rem; border-radius: 50%; background: var(--primary-grad); color: #fff; border: 4px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; box-shadow: var(--shadow-float); cursor: pointer; transition: transform 0.15s ease; }
     .bottom-nav-add:active { transform: translateX(-50%) scale(0.92); }
   }
@@ -350,6 +374,7 @@
   .toast-success i { color: var(--success); }
   .toast-error i { color: var(--danger); }
   .toast-info i { color: var(--primary); }
+  .toast-undo-btn { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; pointer-events: auto; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -395,6 +420,13 @@
 
 <div class="container" id="app"><p class="muted">Loading…</p></div>
 
+<footer class="site-footer">
+  <a href="#" onclick="navigate('terms');return false;">Terms of Service</a>
+  <a href="#" onclick="navigate('privacy');return false;">Privacy Policy</a>
+  <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation</a>
+  <span class="muted" style="font-size:0.78rem;">© <span id="footerYear"></span> Medris</span>
+</footer>
+
 <nav class="bottom-nav" id="bottomNav"></nav>
 
 <!-- Login / Signup Modal -->
@@ -420,16 +452,36 @@
 
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="Email address" />
-    <label>Password</label>
-    <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
+    <div id="loginPasswordWrap">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
+    </div>
+    <p id="forgotPasswordMsg" class="muted hidden" style="font-size:0.85rem;">We'll email you a link to set a new password.</p>
+    <p id="authAgreementMsg" class="muted hidden" style="font-size:0.78rem;">By creating an account you agree to Medris's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
 
     <div class="flex" style="justify-content: space-between; margin-top: 0.8rem;">
       <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
       <button class="btn btn-sm" style="background:#6b7280;" onclick="hideLogin()">Cancel</button>
     </div>
     <p style="font-size:0.85rem;margin-top:0.8rem;">
-      <a href="#" onclick="toggleAuthMode();return false;" id="authToggleLink">Need an account? Register</a>
+      <a href="#" id="authToggleLink">Need an account? Register</a>
     </p>
+    <p id="forgotPasswordLinkWrap" style="font-size:0.85rem;margin-top:0.3rem;">
+      <a href="#" onclick="setAuthMode('forgot');return false;" id="forgotPasswordLink">Forgot password?</a>
+    </p>
+  </div>
+</div>
+
+<!-- Set new password (opened automatically from the emailed reset link) -->
+<div id="resetPasswordModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-key"></i> Set a new password</h3>
+    <div id="resetPasswordError" class="error-text hidden"></div>
+    <label>New password</label>
+    <input type="password" id="newPasswordInput" placeholder="New password (min 8 characters)" />
+    <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
+      <button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
+    </div>
   </div>
 </div>
 
@@ -481,6 +533,19 @@
     <div class="flex" style="justify-content:flex-end;">
       <button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
       <button class="btn btn-sm" id="confirmModalOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="adminPasswordModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-shield-halved"></i> Confirm action</h3>
+    <p id="adminPasswordModalMsg" class="muted" style="margin:0.6rem 0;"></p>
+    <input type="password" id="adminPasswordInput" placeholder="Admin action password" autocomplete="off" />
+    <p id="adminPasswordError" class="error-text hidden">Incorrect password.</p>
+    <div class="flex" style="justify-content:flex-end;">
+      <button class="btn btn-sm" id="adminPasswordCancel" style="background:#6b7280;">Cancel</button>
+      <button class="btn btn-sm btn-danger" id="adminPasswordOk">Confirm</button>
     </div>
   </div>
 </div>
@@ -761,7 +826,7 @@ function openDrawer(id) {
   }
 }
 function toggleSettingsPanel() { openDrawer("settingsPanel"); }
-function toggleNotifPanel() { notifShowingArchived = false; openDrawer("notifPanel"); renderNotifPanel(); markNotificationsRead(); }
+function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); markNotificationsRead(); }
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) {
@@ -837,7 +902,9 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-let notifShowingArchived = false;
+let notifViewMode = "inbox"; // inbox | archived | trash
+let notifSelectMode = false;
+let notifSelectedIds = new Set();
 
 async function refreshNotifications() {
   notifCount = 0;
@@ -845,7 +912,7 @@ async function refreshNotifications() {
   if (!session || !profile) { notifWrap?.classList.add("hidden"); return; }
   notifWrap?.classList.remove("hidden");
 
-  const { data: unreadItems } = await sb.from("notifications").select("id, read").eq("user_id", session.user.id).eq("archived", false).eq("read", false);
+  const { data: unreadItems } = await sb.from("notifications").select("id").eq("user_id", session.user.id).eq("archived", false).eq("read", false).is("deleted_at", null);
   notifCount = (unreadItems || []).length;
 
   const dot = byId("notifDot");
@@ -860,45 +927,207 @@ async function refreshNotifications() {
 async function renderNotifPanel() {
   const panel = byId("notifPanel");
   if (!panel) return;
-  const { data: items } = await sb.from("notifications").select("*").eq("user_id", session.user.id).eq("archived", notifShowingArchived).order("created_at", { ascending: false }).limit(30);
+  let q = sb.from("notifications").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(30);
+  q = notifViewMode === "trash" ? q.not("deleted_at", "is", null) : q.is("deleted_at", null).eq("archived", notifViewMode === "archived");
+  const { data: items } = await q;
 
-  const header = `<div class="drawer-header"><h4>${notifShowingArchived ? "Archived notifications" : "Notifications"}</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
-    <button class="btn btn-sm btn-outline" style="margin-bottom:0.6rem;" onclick="toggleNotifArchiveView()">${notifShowingArchived ? "<i class='fa-solid fa-arrow-left'></i> Back to notifications" : "<i class='fa-solid fa-box-archive'></i> View archived"}</button>`;
+  const modeLabel = { inbox: "Notifications", archived: "Archived", trash: "Recently deleted" }[notifViewMode];
+  const tabs = `<div class="notif-tabs">
+      <button class="notif-tab ${notifViewMode === "inbox" ? "active" : ""}" onclick="switchNotifView('inbox')">Inbox</button>
+      <button class="notif-tab ${notifViewMode === "archived" ? "active" : ""}" onclick="switchNotifView('archived')">Archived</button>
+      <button class="notif-tab ${notifViewMode === "trash" ? "active" : ""}" onclick="switchNotifView('trash')">Trash</button>
+    </div>`;
 
+  const topBar = notifSelectMode
+    ? `<div class="notif-select-bar">
+        <button class="icon-btn" onclick="exitNotifSelectMode()" title="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
+        <strong>${notifSelectedIds.size} selected</strong>
+        <div class="flex" style="gap:0.5rem;margin:0;">
+          ${notifViewMode === "trash"
+            ? `<button class="notif-action-btn" title="Restore" onclick="batchRestoreSelected()"><i class="fa-solid fa-trash-arrow-up"></i></button>
+               <button class="notif-action-btn danger" title="Delete forever" onclick="batchPurgeSelected()"><i class="fa-solid fa-trash-can"></i></button>`
+            : `<button class="notif-action-btn" title="${notifViewMode === "archived" ? "Restore" : "Archive"}" onclick="batchArchiveOrRestoreSelected()"><i class="fa-solid ${notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></button>
+               <button class="notif-action-btn danger" title="Delete" onclick="batchTrashSelected()"><i class="fa-solid fa-trash"></i></button>`}
+        </div>
+      </div>`
+    : `<div class="drawer-header"><h4>${modeLabel}</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
+      ${tabs}
+      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe left to restore, right to delete forever." : `Swipe left to ${notifViewMode === "archived" ? "restore" : "archive"}, right to delete.`} Hold an item to select several.</p>`;
+
+  const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const list = (items && items.length)
-    ? items.map((n) => `<div class="notif-item ${n.read ? "" : "unread"}" onclick='closeAllPanels();navigate(${JSON.stringify(n.target_view || "home")}, ${JSON.stringify(n.target_params || {})});'>
-        ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
-        <span style="flex:1;min-width:0;"><strong style="display:block;">${esc(n.title)}</strong>${n.body ? `<span class="muted" style="font-size:0.8rem;">${esc(n.body)}</span><br/>` : ""}<span class="muted" style="font-size:0.72rem;">${timeAgo(n.created_at)}</span></span>
-        <span class="notif-actions">
-          ${notifShowingArchived
-            ? `<button class="notif-action-btn" title="Restore" onclick="event.stopPropagation();unarchiveNotification('${n.id}')"><i class="fa-solid fa-box-open"></i></button>`
-            : `<button class="notif-action-btn" title="Archive" onclick="event.stopPropagation();archiveNotification('${n.id}')"><i class="fa-solid fa-box-archive"></i></button>`}
-          <button class="notif-action-btn danger" title="Delete permanently" onclick="event.stopPropagation();deleteNotification('${n.id}')"><i class="fa-solid fa-trash"></i></button>
-        </span>
+    ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
+        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></div>
+        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i></div>
+        <div class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
+          <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
+          ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
+          <span style="flex:1;min-width:0;"><strong style="display:block;">${esc(n.title)}</strong>${n.body ? `<span class="muted" style="font-size:0.8rem;">${esc(n.body)}</span><br/>` : ""}<span class="muted" style="font-size:0.72rem;">${timeAgo(n.created_at)}</span></span>
+        </div>
       </div>`).join("")
-    : `<p class="muted" style="padding:0.4rem;">${notifShowingArchived ? "No archived notifications." : "You're all caught up."}</p>`;
+    : `<p class="muted" style="padding:0.4rem;">${emptyMsg}</p>`;
 
-  panel.innerHTML = header + list;
-}
-
-function toggleNotifArchiveView() {
-  notifShowingArchived = !notifShowingArchived;
-  renderNotifPanel();
+  panel.innerHTML = topBar + list;
+  panel.classList.toggle("selecting", notifSelectMode);
+  setupNotifItemGestures(panel);
 }
 
-async function archiveNotification(id) {
-  await sb.from("notifications").update({ archived: true }).eq("id", id);
+function setupNotifItemGestures(panel) {
+  panel.querySelectorAll(".notif-item-wrap").forEach((wrap) => {
+    const item = wrap.querySelector(".notif-item");
+    const id = wrap.dataset.id;
+    let startX = 0, startY = 0, dx = 0, dragging = false, longPressTimer = null, longPressFired = false;
+
+    const onStart = (clientX, clientY, evt) => {
+      evt.stopPropagation();
+      startX = clientX; startY = clientY; dx = 0; dragging = false; longPressFired = false;
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        longPressFired = true;
+        if (navigator.vibrate) navigator.vibrate(15);
+        if (!notifSelectMode) enterNotifSelectMode(id); else toggleNotifSelect(id);
+      }, 450);
+    };
+    const onMove = (clientX, clientY, evt) => {
+      const mdx = clientX - startX, mdy = clientY - startY;
+      if (Math.abs(mdx) > 10 || Math.abs(mdy) > 10) clearTimeout(longPressTimer);
+      if (notifSelectMode || Math.abs(mdy) > 40) return;
+      if (Math.abs(mdx) > 6) { evt.preventDefault(); evt.stopPropagation(); }
+      dragging = true;
+      dx = Math.max(-110, Math.min(110, mdx));
+      item.style.transform = `translateX(${dx}px)`;
+      wrap.querySelector(".notif-swipe-bg.left").style.opacity = dx < -20 ? Math.min(1, -dx / 90) : 0;
+      wrap.querySelector(".notif-swipe-bg.right").style.opacity = dx > 20 ? Math.min(1, dx / 90) : 0;
+    };
+    const onEnd = (evt) => {
+      evt.stopPropagation();
+      clearTimeout(longPressTimer);
+      if (dragging) {
+        item.style.transition = "transform 0.2s ease";
+        if (dx <= -85) {
+          item.style.transform = "translateX(-105%)";
+          setTimeout(() => (notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id)), 150);
+        } else if (dx >= 85) {
+          item.style.transform = "translateX(105%)";
+          if (notifViewMode === "trash") { setTimeout(() => confirmPurgeOne(id), 150); }
+          else { setTimeout(() => quickTrashNotif(id), 150); }
+        } else {
+          item.style.transform = "translateX(0)";
+        }
+        setTimeout(() => { if (item) item.style.transition = ""; }, 220);
+      } else if (!longPressFired) {
+        if (notifSelectMode) toggleNotifSelect(id);
+        else { closeAllPanels(); navigate(item.dataset.view || "home", JSON.parse(item.dataset.params || "{}")); }
+      }
+      dragging = false;
+    };
+
+    wrap.addEventListener("touchstart", (e) => onStart(e.touches[0].clientX, e.touches[0].clientY, e), { passive: true });
+    wrap.addEventListener("touchmove", (e) => onMove(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
+    wrap.addEventListener("touchend", onEnd);
+    // mouse fallback for desktop testing
+    wrap.addEventListener("mousedown", (e) => onStart(e.clientX, e.clientY, e));
+    wrap.addEventListener("mousemove", (e) => { if (e.buttons === 1) onMove(e.clientX, e.clientY, e); });
+    wrap.addEventListener("mouseup", onEnd);
+  });
+}
+
+function switchNotifView(mode) {
+  notifViewMode = mode;
+  exitNotifSelectMode(false);
   renderNotifPanel();
 }
-async function unarchiveNotification(id) {
-  await sb.from("notifications").update({ archived: false }).eq("id", id);
+
+function enterNotifSelectMode(id) {
+  notifSelectMode = true;
+  notifSelectedIds = new Set([id]);
   renderNotifPanel();
 }
-async function deleteNotification(id) {
-  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete notification", okLabel: "Delete", danger: true }))) return;
-  await sb.from("notifications").delete().eq("id", id);
+function toggleNotifSelect(id) {
+  if (notifSelectedIds.has(id)) notifSelectedIds.delete(id); else notifSelectedIds.add(id);
+  if (notifSelectedIds.size === 0) { notifSelectMode = false; }
   renderNotifPanel();
+}
+function exitNotifSelectMode(rerender = true) {
+  notifSelectMode = false;
+  notifSelectedIds.clear();
+  if (rerender) renderNotifPanel();
+}
+
+// ---- inbox <-> archive (always reversible, no confirmation needed) ----
+async function batchArchiveOrRestoreSelected() {
+  const ids = [...notifSelectedIds];
+  await sb.from("notifications").update({ archived: notifViewMode !== "archived" }).in("id", ids);
+  exitNotifSelectMode(false);
   refreshNotifications();
+  showToast(notifViewMode === "archived" ? `${ids.length} restored.` : `${ids.length} archived.`, "success");
+}
+async function quickArchiveNotif(id) {
+  await sb.from("notifications").update({ archived: true }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification archived.", async () => { await sb.from("notifications").update({ archived: false }).eq("id", id); refreshNotifications(); });
+}
+async function quickUnarchiveNotif(id) {
+  await sb.from("notifications").update({ archived: false }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification restored.", async () => { await sb.from("notifications").update({ archived: true }).eq("id", id); refreshNotifications(); });
+}
+
+// ---- inbox/archive -> trash (soft delete, reversible, no confirmation) ----
+async function batchTrashSelected() {
+  const ids = [...notifSelectedIds];
+  await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+  exitNotifSelectMode(false);
+  refreshNotifications();
+  showToast(`${ids.length} moved to trash.`, "success");
+}
+async function quickTrashNotif(id) {
+  await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification moved to trash.", async () => { await sb.from("notifications").update({ deleted_at: null }).eq("id", id); refreshNotifications(); });
+}
+
+// ---- trash -> restore (reversible) ----
+async function batchRestoreSelected() {
+  const ids = [...notifSelectedIds];
+  await sb.from("notifications").update({ deleted_at: null }).in("id", ids);
+  exitNotifSelectMode(false);
+  refreshNotifications();
+  showToast(`${ids.length} restored.`, "success");
+}
+async function quickRestoreFromTrash(id) {
+  await sb.from("notifications").update({ deleted_at: null }).eq("id", id);
+  refreshNotifications();
+  showToast("Notification restored.", "success");
+}
+
+// ---- trash -> gone forever (irreversible: always confirm) ----
+async function confirmPurgeOne(id) {
+  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete forever", okLabel: "Delete forever", danger: true }))) { renderNotifPanel(); return; }
+  await sb.from("notifications").delete().eq("id", id);
+  refreshNotifications();
+}
+async function batchPurgeSelected() {
+  const ids = [...notifSelectedIds];
+  if (!(await showConfirmDialog(`Permanently delete ${ids.length} notification${ids.length === 1 ? "" : "s"}? This can't be undone.`, { title: "Delete forever", okLabel: "Delete forever", danger: true }))) return;
+  await sb.from("notifications").delete().in("id", ids);
+  exitNotifSelectMode(false);
+  refreshNotifications();
+}
+
+function showUndoToast(message, undoFn) {
+  playSound("notify");
+  const wrap = byId("toastStack");
+  if (!wrap) return;
+  const el = document.createElement("div");
+  el.className = "toast toast-info";
+  el.innerHTML = `<i class="fa-solid fa-circle-info"></i><span style="flex:1;">${esc(message)}</span><button class="toast-undo-btn">Undo</button>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  let done = false;
+  const dismiss = () => { if (done) return; done = true; el.classList.remove("show"); setTimeout(() => el.remove(), 300); };
+  el.querySelector(".toast-undo-btn").addEventListener("click", () => { undoFn(); dismiss(); });
+  setTimeout(dismiss, 5000);
 }
 
 async function markNotificationsRead() {
@@ -1009,22 +1238,22 @@ async function uploadAvatar(event) {
 function renderBottomNav() {
   const nav = byId("bottomNav");
   if (!nav) return;
-  const items = [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')" }];
+  const items = [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
   if (session) {
-    items.push({ icon: "<i class='fa-solid fa-heart'></i>", label: "Wishlist", action: "navigate('wishlist')" });
+    items.push({ icon: "<i class='fa-solid fa-heart'></i>", label: "Wishlist", action: "navigate('wishlist')", view: "wishlist" });
     if (vendor) {
-      items.push({ icon: "<i class='fa-solid fa-clipboard-list'></i>", label: "Requests", action: "navigate('vendorRequests')" });
-      items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')" });
+      items.push({ icon: "<i class='fa-solid fa-clipboard-list'></i>", label: "Requests", action: "navigate('vendorRequests')", view: "vendorRequests" });
+      items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')", view: "vendorDashboard" });
     } else {
-      items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')" });
-      items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')" });
+      items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')", view: "requestEquipment" });
+      items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders" });
     }
   } else {
-    items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')" });
-    items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()" });
+    items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')", view: "requestEquipment" });
+    items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()", view: null });
   }
   const addBtn = vendor ? `<button class="bottom-nav-add" onclick="openAddProductModal()" title="Add product"><i class="fa-solid fa-plus"></i></button>` : "";
-  nav.innerHTML = addBtn + items.map((it) => `<button class="bottom-nav-item" onclick="${it.action}"><span class="bn-icon">${it.icon}</span><span>${it.label}</span></button>`).join("");
+  nav.innerHTML = addBtn + items.map((it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}</span><span>${it.label}</span></button>`).join("");
 }
 function requireLoginThen(view) {
   if (!session) { showLogin(); return; }
@@ -1034,12 +1263,22 @@ function requireLoginThen(view) {
 function showLogin() { authMode = "login"; applyAuthMode(); byId("loginModal").classList.remove("hidden"); }
 function hideLogin() { byId("loginModal").classList.add("hidden"); byId("authError").classList.add("hidden"); }
 function toggleAuthMode() { authMode = authMode === "login" ? "register" : "login"; applyAuthMode(); }
+function setAuthMode(mode) { authMode = mode; applyAuthMode(); }
 function applyAuthMode() {
   const isRegister = authMode === "register";
-  byId("authModalTitle").innerHTML = isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Medris account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Medris";
+  const isForgot = authMode === "forgot";
+  byId("authModalTitle").innerHTML = isForgot
+    ? "<i class='fa-solid fa-key'></i> Reset your password"
+    : isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Medris account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Medris";
   byId("signupExtraFields").classList.toggle("hidden", !isRegister);
-  byId("authSubmitBtn").textContent = isRegister ? "Create account" : "Login";
-  byId("authToggleLink").textContent = isRegister ? "Already have an account? Login" : "Need an account? Register";
+  byId("loginPasswordWrap").classList.toggle("hidden", isForgot);
+  byId("forgotPasswordMsg").classList.toggle("hidden", !isForgot);
+  byId("authAgreementMsg").classList.toggle("hidden", !isRegister);
+  byId("forgotPasswordLinkWrap").classList.toggle("hidden", isRegister || isForgot);
+  byId("authSubmitBtn").textContent = isForgot ? "Send reset link" : isRegister ? "Create account" : "Login";
+  byId("authToggleLink").textContent = isForgot ? "Back to login" : isRegister ? "Already have an account? Login" : "Need an account? Register";
+  byId("authToggleLink").onclick = (e) => { e.preventDefault(); isForgot ? setAuthMode("login") : toggleAuthMode(); };
+  byId("authError").classList.add("hidden");
 }
 
 async function submitAuth() {
@@ -1047,6 +1286,25 @@ async function submitAuth() {
   const password = byId("loginPassword").value;
   const errorEl = byId("authError");
   errorEl.classList.add("hidden");
+
+  if (authMode === "forgot") {
+    if (!email) { errorEl.textContent = "Enter your email address."; errorEl.classList.remove("hidden"); return; }
+    const btn = byId("authSubmitBtn");
+    btn.disabled = true;
+    try {
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      if (error) throw error;
+      hideLogin();
+      showToast("Check your email for a password reset link.", "success");
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.classList.remove("hidden");
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+
   if (!email || !password) { errorEl.textContent = "Email and password are required."; errorEl.classList.remove("hidden"); return; }
 
   const btn = byId("authSubmitBtn");
@@ -1097,10 +1355,13 @@ async function logout() {
 }
 
 // ---------- NAVIGATION ----------
+let currentView = "home";
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
   app.innerHTML = '<p class="muted">Loading…</p>';
+  currentView = view;
   updateAuthUI();
+  renderBottomNav();
   if (pushHistory) history.pushState({ view, params }, "", location.pathname + location.search);
   try {
     switch (view) {
@@ -1118,9 +1379,13 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "adminDisputes": app.innerHTML = await renderAdminDisputes(); break;
       case "adminUsers": app.innerHTML = await renderAdminUsers(); break;
       case "adminFinance": app.innerHTML = await renderAdminFinance(); break;
+      case "adminLog": app.innerHTML = await renderAdminLog(); break;
       case "wishlist": app.innerHTML = await renderWishlist(); break;
       case "requestEquipment": app.innerHTML = await renderRequestEquipment(); break;
       case "vendorRequests": app.innerHTML = await renderVendorRequests(); break;
+      case "terms": app.innerHTML = renderTerms(); break;
+      case "privacy": app.innerHTML = renderPrivacy(); break;
+      case "refundPolicy": app.innerHTML = renderRefundPolicy(); break;
       default: app.innerHTML = await renderHome();
     }
   } catch (err) {
@@ -2464,6 +2729,7 @@ function adminNavHtml(active) {
     ["adminFinance", "fa-sack-dollar", "Finance"],
     ["adminDisputes", "fa-scale-balanced", "Disputes"],
     ["adminUsers", "fa-user-shield", "Admins"],
+    ["adminLog", "fa-clock-rotate-left", "Log"],
   ];
   return `<div class="dash-actions">${items.map(([view, icon, label]) => `<button class="quick-action ${view === active ? "" : "outline"}" onclick="navigate('${view}')"><span class="quick-action-icon"><i class="fa-solid ${icon}"></i></span><span>${label}</span></button>`).join("")}</div>`;
 }
@@ -2500,8 +2766,8 @@ async function renderAdminPanel(status) {
       ${v.bio ? `<p style="margin:0.3rem 0;">${esc(v.bio)}</p>` : ""}
       <p class="muted" style="margin:0.3rem 0;">${doc ? `<a href="#" onclick="viewVendorDoc('${doc}');return false;"><i class='fa-solid fa-file-lines'></i> View submitted document</a>` : "No document uploaded"} · applied ${new Date(v.created_at).toLocaleDateString()}</p>
       <div class="flex" style="margin-top:0.5rem;">
-        ${v.verification_status !== "verified" ? `<button class="btn btn-sm" onclick="setVendorStatus('${v.id}','verified','${status}')">Approve</button>` : ""}
-        ${v.verification_status !== "rejected" ? `<button class="btn btn-sm btn-danger" onclick="setVendorStatus('${v.id}','rejected','${status}')">Reject</button>` : ""}
+        ${v.verification_status !== "verified" ? `<button class="btn btn-sm" onclick="setVendorStatus('${v.id}','verified','${status}','${esc(v.business_name)}')">Approve</button>` : ""}
+        ${v.verification_status !== "rejected" ? `<button class="btn btn-sm btn-danger" onclick="setVendorStatus('${v.id}','rejected','${status}','${esc(v.business_name)}')">Reject</button>` : ""}
       </div>
     </div>`;
   });
@@ -2514,13 +2780,61 @@ async function viewVendorDoc(path) {
   window.open(data.signedUrl, "_blank");
 }
 
-async function setVendorStatus(id, status) {
-  const { error } = await sb.from("vendors").update({ verification_status: status }).eq("id", id);
-  if (error) { showToast(error.message, "error"); return; }
-  navigate("adminPanel", { status });
+// Client-side password prompt for the two "hurts a vendor" admin actions
+// (reject, pause). This is a fat-finger guard, not real security — anyone
+// with admin access already passed real auth to get this far, and this
+// password is visible to anyone who reads the page source.
+const ADMIN_ACTION_PASSWORD = "medris2026";
+function promptAdminPassword(actionLabel) {
+  return new Promise((resolve) => {
+    const modal = byId("adminPasswordModal");
+    const input = byId("adminPasswordInput");
+    input.value = "";
+    byId("adminPasswordError").classList.add("hidden");
+    byId("adminPasswordModalMsg").textContent = `Type the admin action password to ${actionLabel}.`;
+    modal.classList.remove("hidden");
+    setTimeout(() => input.focus(), 50);
+    const okBtn = byId("adminPasswordOk");
+    const cancelBtn = byId("adminPasswordCancel");
+    const cleanup = (result) => {
+      modal.classList.add("hidden");
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      input.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onOk = () => {
+      if (input.value === ADMIN_ACTION_PASSWORD) cleanup(true);
+      else { byId("adminPasswordError").classList.remove("hidden"); input.value = ""; input.focus(); }
+    };
+    const onCancel = () => cleanup(false);
+    const onKey = (e) => { if (e.key === "Enter") onOk(); };
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+    input.addEventListener("keydown", onKey);
+  });
 }
 
-async function adminToggleVendorActive(vendorId, currentlyActive) {
+// Immutable trail of the actions that actually affect a vendor's ability
+// to trade — who did what, and when. Insert-only; nothing can edit or
+// delete rows here (see the RLS policy), so it stays trustworthy.
+async function logAdminAction(action, targetType, targetId, targetLabel) {
+  await sb.from("admin_actions").insert({
+    admin_id: session.user.id,
+    admin_name: profile?.name || profile?.email || "Admin",
+    action, target_type: targetType, target_id: targetId, target_label: targetLabel,
+  });
+}
+
+async function setVendorStatus(id, status, filterStatus, businessName) {
+  if (status === "rejected" && !(await promptAdminPassword("reject this vendor"))) return;
+  const { error } = await sb.from("vendors").update({ verification_status: status }).eq("id", id);
+  if (error) { showToast(error.message, "error"); return; }
+  logAdminAction(status === "verified" ? "approve_vendor" : "reject_vendor", "vendor", id, businessName);
+  navigate("adminPanel", { status: filterStatus });
+}
+
+async function adminToggleVendorActive(vendorId, currentlyActive, businessName) {
   const action = currentlyActive ? "pause" : "reactivate";
   if (!(await showConfirmDialog(
     currentlyActive
@@ -2528,8 +2842,10 @@ async function adminToggleVendorActive(vendorId, currentlyActive) {
       : "Reactivate this vendor's storefront?",
     { title: `${action[0].toUpperCase()}${action.slice(1)} storefront`, okLabel: action[0].toUpperCase() + action.slice(1), danger: currentlyActive }
   ))) return;
+  if (currentlyActive && !(await promptAdminPassword("pause this vendor's storefront"))) return;
   const { error } = await sb.from("vendors").update({ is_active: !currentlyActive }).eq("id", vendorId);
   if (error) { showToast(error.message, "error"); return; }
+  logAdminAction(currentlyActive ? "pause_storefront" : "reactivate_storefront", "vendor", vendorId, businessName);
   showToast(`Storefront ${currentlyActive ? "paused" : "reactivated"}.`, "success");
   navigate("adminFinance");
 }
@@ -2574,6 +2890,36 @@ async function demoteAdmin(email) {
   navigate("adminUsers");
 }
 
+async function renderAdminLog() {
+  if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
+  const { data: log } = await sb.from("admin_actions").select("*").order("created_at", { ascending: false }).limit(100);
+
+  const ACTION_LABEL = {
+    approve_vendor: { text: "approved vendor", icon: "fa-circle-check", cls: "success" },
+    reject_vendor: { text: "rejected vendor", icon: "fa-circle-xmark", cls: "danger" },
+    pause_storefront: { text: "paused storefront", icon: "fa-pause", cls: "warning" },
+    reactivate_storefront: { text: "reactivated storefront", icon: "fa-play", cls: "success" },
+  };
+
+  let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log</h2><p class="muted">Every reject, approve, pause and reactivate — who did it, and when. This trail can't be edited or deleted, even by admins.</p>`;
+  html += adminNavHtml("adminLog");
+
+  if (!log || log.length === 0) { html += `<p class="muted">No admin actions logged yet.</p>`; return html; }
+
+  html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Target</th></tr></thead><tbody>`;
+  log.forEach((entry) => {
+    const meta = ACTION_LABEL[entry.action] || { text: entry.action, icon: "fa-circle-info", cls: "" };
+    html += `<tr>
+      <td>${new Date(entry.created_at).toLocaleString()}</td>
+      <td>${esc(entry.admin_name || "—")}</td>
+      <td><span class="badge ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${esc(meta.text)}</span></td>
+      <td>${esc(entry.target_label || entry.target_id || "—")}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
 async function renderAdminFinance() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
   const [{ data: vendors }, { data: txns }] = await Promise.all([
@@ -2600,7 +2946,7 @@ async function renderAdminFinance() {
       <td>${owed > 0 ? `<span class="badge warning">${naira(owed)}</span>` : naira(0)}</td>
       <td>
         <span class="badge ${v.is_active ? "success" : "danger"}">${v.is_active ? "Active" : "Paused"}</span>
-        <button class="btn btn-sm btn-outline" style="margin-left:0.4rem;" onclick="adminToggleVendorActive('${v.vendor_id}', ${v.is_active})">${v.is_active ? "Pause" : "Reactivate"}</button>
+        <button class="btn btn-sm btn-outline" style="margin-left:0.4rem;" onclick="adminToggleVendorActive('${v.vendor_id}', ${v.is_active}, '${esc(v.business_name)}')">${v.is_active ? "Pause" : "Reactivate"}</button>
       </td>
     </tr>`;
   });
@@ -2683,9 +3029,138 @@ function refreshAuthStateOnce() {
   return __authRefreshInFlight;
 }
 
+// ---------- LEGAL PAGES ----------
+function renderTerms() {
+  return `<div class="legal-page">
+    <h2>Terms of Service</h2>
+    <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+    <p>Medris is an online marketplace that connects buyers of medical equipment with independent vendors across Lagos, for both rental and outright purchase. By creating an account or using Medris, you agree to these terms.</p>
+
+    <h3>1. What Medris is (and isn't)</h3>
+    <p>Medris provides the platform, payment processing, and vendor verification. We are not the seller or renter of record — every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their equipment and its description.</p>
+
+    <h3>2. Accounts</h3>
+    <p>You must provide accurate information when registering. You're responsible for keeping your password secure and for all activity under your account. Vendor accounts additionally require identity/business verification before their storefront goes live.</p>
+
+    <h3>3. Orders, rentals &amp; payments</h3>
+    <ul>
+      <li>Payments are processed through Paystack. Medris never stores your card details.</li>
+      <li>Rentals may require a refundable deposit, held and returned per the vendor's stated terms once equipment is returned in its original condition.</li>
+      <li>Vendors set their own prices; Medris deducts a commission on completed transactions, disclosed to vendors in their dashboard.</li>
+      <li>Some vendors accept offline payment (cash/transfer) on handover — Medris still tracks commission owed on these orders.</li>
+    </ul>
+
+    <h3>4. Cancellations &amp; disputes</h3>
+    <p>See our <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation Policy</a> for cancellation windows. If something goes wrong with an order, either party can raise a dispute from the order page; Medris admins review and resolve disputes in good faith, but are not a court of law.</p>
+
+    <h3>5. Prohibited use</h3>
+    <p>No listing or use of counterfeit, unsafe, expired, or unlicensed medical equipment. No harassment of other users. No attempting to circumvent Medris payments to avoid commission — this undermines the buyer protections (verified vendors, dispute resolution, payment records) that come with paying through the platform.</p>
+
+    <h3>6. Account suspension</h3>
+    <p>Medris may pause or suspend a vendor's storefront or a user's account for violations of these terms, fraud, or repeated disputes, with notice where practical.</p>
+
+    <h3>7. Liability</h3>
+    <p>Medris facilitates transactions between independent parties and is not liable for the performance, safety, or fitness of any equipment listed by a vendor. Always inspect rented/purchased equipment and consult a licensed healthcare provider for clinical use questions.</p>
+
+    <h3>8. Contact</h3>
+    <p>Questions about these terms can be raised through your account, or with a Medris admin via a support request.</p>
+  </div>`;
+}
+
+function renderPrivacy() {
+  return `<div class="legal-page">
+    <h2>Privacy Policy</h2>
+    <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+    <p>This explains what personal data Medris collects, why, and how it's protected.</p>
+
+    <h3>1. What we collect</h3>
+    <ul>
+      <li><strong>Account data:</strong> name, email, phone, city, and (for vendors) business details and verification documents.</li>
+      <li><strong>Order data:</strong> what you bought/rented, delivery address, order status, and payment status (not your card number — that's handled entirely by Paystack).</li>
+      <li><strong>Usage data:</strong> product views, wishlist saves, and searches, used to show relevant listings.</li>
+      <li><strong>Photos:</strong> profile pictures and vendor product photos you choose to upload.</li>
+    </ul>
+
+    <h3>2. How we use it</h3>
+    <p>To run the marketplace: process orders and payments, verify vendors, show buyers and vendors each other's contact details once an order is placed, send order/notification updates, and improve search relevance. We do not sell your personal data to third parties.</p>
+
+    <h3>3. Who it's shared with</h3>
+    <ul>
+      <li><strong>Paystack</strong> — to process payments.</li>
+      <li><strong>Supabase</strong> — our database and file storage provider, which hosts the data described above.</li>
+      <li><strong>Google Gemini</strong> — powers the in-app AI assistant; only the text of your chat messages is sent, never your account or order data.</li>
+      <li>The vendor or buyer on an order you're part of, so they can fulfill/receive it.</li>
+    </ul>
+
+    <h3>4. Your choices</h3>
+    <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Medris admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
+
+    <h3>5. Security</h3>
+    <p>Passwords are never stored in plain text (handled by Supabase Auth). Access to vendor verification documents and payment records is restricted to the account owner and admins.</p>
+
+    <h3>6. Contact</h3>
+    <p>Privacy questions can be raised through your account, or with a Medris admin via a support request.</p>
+  </div>`;
+}
+
+function renderRefundPolicy() {
+  return `<div class="legal-page">
+    <h2>Refund &amp; Cancellation Policy</h2>
+    <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+
+    <h3>1. Before a vendor confirms your order</h3>
+    <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5–10 business days, per Paystack's processing time).</p>
+
+    <h3>2. After a vendor confirms your order</h3>
+    <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable — only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
+
+    <h3>3. Refundable deposits</h3>
+    <p>Rental deposits are held to cover damage or non-return. Once you mark equipment as returned and the vendor confirms its condition, the deposit is released back to you. If there's a disagreement about the equipment's condition, either side can raise a dispute for a Medris admin to review before the deposit is settled.</p>
+
+    <h3>4. Damaged, wrong, or misrepresented equipment</h3>
+    <p>If what arrives doesn't match the listing, or is faulty on arrival, raise a dispute from the order page within 48 hours of handover. Admins will review evidence from both sides and can direct a full or partial refund from the vendor's proceeds.</p>
+
+    <h3>5. Vendor no-shows or non-delivery</h3>
+    <p>If a vendor fails to deliver/hand over confirmed equipment, the buyer is entitled to a full refund of any amount paid online through Medris.</p>
+
+    <h3>6. How refunds are paid</h3>
+    <p>Refunds for online payments are issued back through Paystack to your original payment method. For orders paid offline (cash/transfer directly to the vendor), any refund is arranged directly between buyer and vendor, with Medris admins available to mediate a dispute.</p>
+  </div>`;
+}
+
 sb.auth.onAuthStateChange((_event) => {
+  if (_event === "PASSWORD_RECOVERY") {
+    hideLogin();
+    byId("newPasswordInput").value = "";
+    byId("resetPasswordError").classList.add("hidden");
+    byId("resetPasswordModal").classList.remove("hidden");
+    return;
+  }
   refreshAuthStateOnce();
 });
+
+async function submitNewPassword() {
+  const password = byId("newPasswordInput").value;
+  const errorEl = byId("resetPasswordError");
+  errorEl.classList.add("hidden");
+  if (!password || password.length < 8) { errorEl.textContent = "Password must be at least 8 characters."; errorEl.classList.remove("hidden"); return; }
+  const btn = byId("resetPasswordSubmit");
+  btn.disabled = true;
+  try {
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw error;
+    byId("resetPasswordModal").classList.add("hidden");
+    showToast("Password updated. You're logged in.", "success");
+    await refreshAuthStateOnce();
+    history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    navigate("home", {}, false);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 // Phone back-button / back-gesture support: each navigate() push a history
 // entry, so the OS back action pops us to the previous in-app screen
@@ -2693,6 +3168,7 @@ sb.auth.onAuthStateChange((_event) => {
 // ---------- FLOATING AI CHAT (draggable) ----------
 let aiChatMessages = [];
 function toggleAiChat() {
+  if (!session) { showLogin(); return; }
   const panel = byId("aiChatPanel");
   panel.classList.toggle("hidden");
   if (!panel.classList.contains("hidden")) {
@@ -2724,7 +3200,7 @@ async function sendAiChatMessage() {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: aiChatMessages.filter((m) => m.role !== "typing") }),
+      body: JSON.stringify({ messages: aiChatMessages.filter((m) => m.role !== "typing"), accessToken: session?.access_token }),
     });
     const json = await res.json();
     byId("aiChatTyping")?.remove();
@@ -2777,6 +3253,7 @@ window.addEventListener("popstate", (e) => {
   initTheme();
   initAccent();
   initSound();
+  byId("footerYear").textContent = new Date().getFullYear();
   history.replaceState({ view: "home", params: {} }, "", location.pathname + location.search);
   await refreshAuthStateOnce();
 
