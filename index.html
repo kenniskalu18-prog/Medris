@@ -104,6 +104,17 @@
   .btn-warning { background: var(--warning); color: white; }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .container { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; flex: 1; width: 100%; }
+  .install-banner {
+    position: fixed; left: 1rem; right: 1rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); z-index: 120;
+    display: flex; align-items: center; gap: 0.8rem; max-width: 480px; margin: 0 auto;
+    background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border); border-radius: 1rem; padding: 0.9rem 1rem; box-shadow: var(--shadow-float);
+  }
+  @media (max-width: 720px) { .install-banner { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); } }
+  .install-banner img { width: 2.6rem; height: 2.6rem; border-radius: 0.7rem; flex-shrink: 0; }
+  .install-banner-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .install-banner-text strong { font-size: 0.9rem; }
+  .install-banner-text span { font-size: 0.78rem; color: var(--text-muted); }
   .site-footer { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: center; justify-content: center; padding: 1.4rem 1rem; margin-top: 1rem; border-top: 1px solid var(--border); }
   .site-footer a { color: var(--text-muted); font-size: 0.82rem; text-decoration: none; }
   .site-footer a:hover { color: var(--primary); text-decoration: underline; }
@@ -294,7 +305,7 @@
   @media (prefers-reduced-motion: reduce) { .hero-aurora { animation: none; } }
   .hero-content { position: relative; z-index: 1; max-width: 640px; }
   .hero-content h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 1.2rem; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .hero-quick-actions { display: flex; gap: 1.6rem; justify-content: center; margin: 0; }
+  .hero-quick-actions { display: flex; justify-content: space-between; width: 100%; max-width: 380px; margin: 0 auto; }
   .quick-action { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; background: none; border: none; cursor: pointer; font-family: inherit; color: var(--text); font-size: 0.76rem; font-weight: 500; padding: 0; }
   .quick-action-icon { width: 3.3rem; height: 3.3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-float); transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .quick-action.outline .quick-action-icon { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); }
@@ -428,6 +439,16 @@
 </footer>
 
 <nav class="bottom-nav" id="bottomNav"></nav>
+
+<div id="installBanner" class="install-banner hidden">
+  <img id="installBannerLogo" alt="" />
+  <div class="install-banner-text">
+    <strong>Install the Medris app</strong>
+    <span id="installBannerMsg">Add Medris to your home screen for faster access.</span>
+  </div>
+  <button class="btn btn-sm" id="installBannerActionBtn" onclick="runInstallPrompt()">Install</button>
+  <button class="icon-btn" onclick="dismissInstallBanner()" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>
+</div>
 
 <!-- Login / Signup Modal -->
 <div id="loginModal" class="modal hidden">
@@ -580,6 +601,48 @@ document.getElementById("brandLogoHeader").src = MEDRIS_LOGO;
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("faviconLink").href = MEDRIS_LOGO;
+document.getElementById("installBannerLogo").src = MEDRIS_LOGO;
+
+// ---------- "INSTALL AS APP" PROMPT ----------
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+function isIos() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function maybeShowInstallPrompt() {
+  if (isStandalone()) return;
+  if (localStorage.getItem("medris-install-dismissed")) return;
+  const banner = byId("installBanner");
+  if (!banner) return;
+  if (deferredInstallPrompt) {
+    byId("installBannerMsg").textContent = "Add Medris to your home screen for faster access, even offline.";
+    byId("installBannerActionBtn").classList.remove("hidden");
+    byId("installBannerActionBtn").textContent = "Install";
+  } else if (isIos()) {
+    byId("installBannerMsg").textContent = "Tap the Share icon, then \"Add to Home Screen\".";
+    byId("installBannerActionBtn").classList.add("hidden");
+  } else {
+    return; // not installable and no manual instructions to give
+  }
+  banner.classList.remove("hidden");
+}
+async function runInstallPrompt() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  dismissInstallBanner();
+}
+function dismissInstallBanner() {
+  byId("installBanner")?.classList.add("hidden");
+  localStorage.setItem("medris-install-dismissed", "1");
+}
 
 let session = null;   // supabase auth session
 let profile = null;   // row from public.users for the signed-in user
@@ -1333,12 +1396,14 @@ async function submitAuth() {
       await refreshAuthStateOnce();
       hideLogin();
       navigate(role === "vendor" ? "vendorApply" : "home");
+      setTimeout(maybeShowInstallPrompt, 800);
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
       await refreshAuthStateOnce();
       hideLogin();
       navigate("home");
+      setTimeout(maybeShowInstallPrompt, 800);
     }
   } catch (err) {
     errorEl.textContent = err.message;
@@ -1718,6 +1783,17 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
+// Fire-and-forget — a failed/slow email should never hold up the buyer or
+// vendor's own flow, so this is never awaited by its callers.
+function notifyOrderEmail(orderId, eventType) {
+  if (!session) return;
+  fetch("/api/order-notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId, eventType, accessToken: session.access_token }),
+  }).catch(() => {});
+}
+
 async function confirmRental(vendorId, productId) {
   if (!session) { showLogin(); return; }
   const start = byId("rentStart").value;
@@ -1737,6 +1813,7 @@ async function confirmRental(vendorId, productId) {
     p_delivery_address: "",
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  notifyOrderEmail(orderId, "placed");
   navigate("orderDetail", { orderId });
 }
 
@@ -1754,6 +1831,7 @@ async function buyNow(vendorId, productId) {
     p_delivery_address: "",
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  notifyOrderEmail(orderId, "placed");
   navigate("orderDetail", { orderId });
 }
 
@@ -2618,6 +2696,7 @@ const ORDER_STATUS_HELP = {
 async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
+  notifyOrderEmail(orderId, "status_changed");
   navigate("orderDetail", { orderId });
 }
 
@@ -3286,6 +3365,14 @@ window.addEventListener("popstate", (e) => {
     }
     await navigate("vendorEditProfile");
     return;
+  }
+
+  // Deep link from an order-notification email
+  if (urlParams.get("order")) {
+    const orderId = urlParams.get("order");
+    history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    if (session) { await navigate("orderDetail", { orderId }); return; }
+    showLogin();
   }
 
   navigate("home");
