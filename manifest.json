@@ -1,7 +1,7 @@
 {
-  "name": "Medris – Medical Equipment Marketplace",
-  "short_name": "Medris",
-  "description": "Rent or buy medical equipment from verified vendors across Lagos.",
+  "name": "Levromart – Lagos Marketplace",
+  "short_name": "Levromart",
+  "description": "Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

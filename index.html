@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Medris – Medical Equipment Marketplace</title>
-<meta name="description" content="Rent or buy medical equipment from verified vendors across Lagos.">
+<title>Levromart – Lagos Marketplace</title>
+<meta name="description" content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0e8f7f">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Medris">
+<meta name="apple-mobile-web-app-title" content="Levromart">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
@@ -173,6 +173,11 @@
   .data-table tbody tr:hover { background: color-mix(in srgb, var(--primary) 5%, transparent); }
   .category-group-header { display: flex; align-items: center; gap: 0.6rem; margin: 1.4rem 0 0.8rem; font-size: 1rem; font-weight: 600; color: var(--text-muted); }
   .category-group-header i { color: var(--primary); }
+  .pkg-items-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 0.7rem; }
+  .pkg-item-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+  .pkg-item-row:last-child { border-bottom: none; }
+  .pkg-item-row input[type="checkbox"] { width: auto; margin: 0; }
+  .pkg-item-row input[type="number"] { width: 60px; margin: 0; padding: 0.3rem; }
   .star-rating { display: flex; gap: 0.35rem; font-size: 1.7rem; margin: 0.6rem 0; }
   .star-rating i { color: var(--border); cursor: pointer; transition: color 0.15s, transform 0.1s; }
   .star-rating i:hover { transform: scale(1.15); }
@@ -184,10 +189,9 @@
   .ai-chat-fab {
     position: fixed; right: 1.2rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); width: 3.4rem; height: 3.4rem; border-radius: 50%;
     background: var(--primary-grad); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-    box-shadow: var(--shadow-float); cursor: grab; z-index: 150; touch-action: none; user-select: none;
+    box-shadow: var(--shadow-float); cursor: pointer; z-index: 150; user-select: none;
     animation: fabPulse 3s ease-in-out infinite;
   }
-  .ai-chat-fab:active { cursor: grabbing; }
   @media (max-width: 720px) { .ai-chat-fab { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); } }
   @keyframes fabPulse {
     0%, 100% { box-shadow: var(--shadow-float); }
@@ -343,6 +347,8 @@
   .cat-chip:hover { border-color: var(--primary); transform: translateY(-4px); }
   .cat-chip span { white-space: nowrap; }
   .cat-chip .cat-icon { font-size: 1.4rem; }
+  .sector-chip.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--card)); box-shadow: 0 0 0 1px var(--primary); }
+  .sector-chip.active .cat-icon { color: var(--primary); }
   .hscroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0.6rem 0.2rem 1rem; scrollbar-width: thin; scroll-snap-type: x proximity; scroll-behavior: smooth; }
   .hscroll > * { flex: 0 0 250px; scroll-snap-align: start; }
   .hscroll .card, .hscroll .vendor-card { box-shadow: var(--shadow-float); transition: transform 0.2s ease, box-shadow 0.2s ease; }
@@ -407,7 +413,7 @@
       <button class="icon-btn avatar-btn hidden" id="avatarBtn" onclick="toggleProfilePanel()" title="Profile"></button>
       <button class="icon-btn" id="loginBtn" onclick="showLogin()" title="Login / Register"><i class='fa-solid fa-user'></i></button>
     </div>
-    <h1 onclick="navigate('home')"><img id="brandLogoHeader" class="brand-logo" alt="" /> Medris</h1>
+    <h1 onclick="navigate('home')"><img id="brandLogoHeader" class="brand-logo" alt="" /> Levromart</h1>
   </div>
   <div class="header-right">
     <div class="icon-wrap hidden" id="notifWrap">
@@ -467,7 +473,7 @@
   <a href="#" onclick="navigate('terms');return false;">Terms of Service</a>
   <a href="#" onclick="navigate('privacy');return false;">Privacy Policy</a>
   <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation</a>
-  <span class="muted" style="font-size:0.78rem;">© <span id="footerYear"></span> Medris</span>
+  <span class="muted" style="font-size:0.78rem;">© <span id="footerYear"></span> Levromart</span>
 </footer>
 
 <nav class="bottom-nav" id="bottomNav"></nav>
@@ -475,8 +481,8 @@
 <div id="installBanner" class="install-banner hidden">
   <img id="installBannerLogo" alt="" />
   <div class="install-banner-text">
-    <strong>Install the Medris app</strong>
-    <span id="installBannerMsg">Add Medris to your home screen for faster access.</span>
+    <strong>Install the Levromart app</strong>
+    <span id="installBannerMsg">Add Levromart to your home screen for faster access.</span>
   </div>
   <button class="btn btn-sm" id="installBannerActionBtn" onclick="runInstallPrompt()">Install</button>
   <button class="icon-btn" onclick="dismissInstallBanner()" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>
@@ -485,8 +491,8 @@
 <!-- Login / Signup Modal -->
 <div id="loginModal" class="modal hidden">
   <div class="modal-content">
-    <img id="loginModalLogo" class="login-modal-logo" alt="Medris" />
-    <h3 id="authModalTitle"><i class='fa-solid fa-right-to-bracket'></i> Welcome to Medris</h3>
+    <img id="loginModalLogo" class="login-modal-logo" alt="Levromart" />
+    <h3 id="authModalTitle"><i class='fa-solid fa-right-to-bracket'></i> Welcome to Levromart</h3>
     <div id="authError" class="error-text hidden"></div>
 
     <div id="signupExtraFields" class="hidden">
@@ -510,7 +516,7 @@
       <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
     </div>
     <p id="forgotPasswordMsg" class="muted hidden" style="font-size:0.85rem;">We'll email you a link to set a new password.</p>
-    <p id="authAgreementMsg" class="muted hidden" style="font-size:0.78rem;">By creating an account you agree to Medris's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
+    <p id="authAgreementMsg" class="muted hidden" style="font-size:0.78rem;">By creating an account you agree to Levromart's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
 
     <div class="flex" style="justify-content: space-between; margin-top: 0.8rem;">
       <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
@@ -578,6 +584,26 @@
   </div>
 </div>
 
+<div id="packageModal" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h3 id="packageModalTitle">Add New Package</h3>
+    <div id="packageError" class="error-text hidden"></div>
+    <label>Package name</label>
+    <input type="text" id="pkgName" placeholder="e.g. Basic Outreach Kit" />
+    <label>Description (optional)</label>
+    <textarea id="pkgDesc" rows="2" placeholder="What's included, who it's for…"></textarea>
+    <label>Package price (₦)</label>
+    <input type="number" id="pkgPrice" step="0.01" placeholder="e.g. 5000" />
+    <label>Items in this package</label>
+    <div id="pkgItemsList" class="pkg-items-list"></div>
+    <p class="muted" style="font-size:0.8rem;">Only your products listed for sale can go in a package.</p>
+    <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
+      <button class="btn btn-sm" style="background:#6b7280;" onclick="closePackageModal()">Cancel</button>
+      <button class="btn" id="savePackageBtn" onclick="savePackage()">Save Package</button>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm dialog (replaces native confirm()) -->
 <div id="confirmModal" class="modal hidden">
   <div class="modal-content" style="max-width:380px;">
@@ -607,12 +633,12 @@
 <div id="toastStack" class="toast-stack"></div>
 
 <!-- Floating, draggable AI chat -->
-<div id="aiChatFab" class="ai-chat-fab" title="Chat with Medris Assistant"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
+<div id="aiChatFab" class="ai-chat-fab" title="Chat with Levromart Assistant"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
 <div id="aiChatPanel" class="ai-chat-panel hidden">
-  <div class="drawer-header"><h4><i class="fa-solid fa-robot"></i> Medris Assistant</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="drawer-header"><h4><i class="fa-solid fa-robot"></i> Levromart Assistant</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
   <div class="ai-chat-input-row">
-    <input type="text" id="aiChatInput" placeholder="Ask about equipment, renting, buying…" onkeydown="if(event.key==='Enter')sendAiChatMessage();" />
+    <input type="text" id="aiChatInput" placeholder="Ask about products, renting, buying…" onkeydown="if(event.key==='Enter')sendAiChatMessage();" />
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
@@ -637,9 +663,14 @@ document.getElementById("installBannerLogo").src = MEDRIS_LOGO;
 
 // ---------- "INSTALL AS APP" PROMPT ----------
 let deferredInstallPrompt = null;
+let awaitingInstallPromptForLogin = false;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
+  // Chrome can fire this well after page load (engagement heuristics), so if
+  // we already tried and failed to show the banner right after login, retry
+  // now that the browser has actually made the prompt available.
+  if (awaitingInstallPromptForLogin) maybeShowInstallPrompt();
 });
 function isStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -653,7 +684,7 @@ function maybeShowInstallPrompt() {
   const banner = byId("installBanner");
   if (!banner) return;
   if (deferredInstallPrompt) {
-    byId("installBannerMsg").textContent = "Add Medris to your home screen for faster access, even offline.";
+    byId("installBannerMsg").textContent = "Add Levromart to your home screen for faster access, even offline.";
     byId("installBannerActionBtn").classList.remove("hidden");
     byId("installBannerActionBtn").textContent = "Install";
   } else if (isIos()) {
@@ -802,10 +833,10 @@ function yearsSince(dateStr) {
   if (!dateStr) return null;
   const years = (Date.now() - new Date(dateStr).getTime()) / (365.25 * 24 * 3600 * 1000);
   if (years < 1) return "New this year";
-  return `${Math.floor(years)}+ year${Math.floor(years) === 1 ? "" : "s"} on Medris`;
+  return `${Math.floor(years)}+ year${Math.floor(years) === 1 ? "" : "s"} on Levromart`;
 }
 const CATEGORY_ICONS = [
-  // exact/near-exact matches for Medris's real category names, most specific first
+  // exact/near-exact matches for Levromart's real category names, most specific first
   [/blood pressure/i, "fa-gauge-high"],
   [/glucometer|glucose/i, "fa-droplet"],
   [/pulse oximeter|oximeter/i, "fa-wave-square"],
@@ -828,10 +859,31 @@ const CATEGORY_ICONS = [
   [/basic tools?/i, "fa-toolbox"],
   [/clinical equipment/i, "fa-house-medical"],
   [/premium/i, "fa-star"],
+  // other sectors
+  [/rice|grain|produce|grocer/i, "fa-carrot"],
+  [/snack/i, "fa-cookie-bite"],
+  [/drink|juice|beverage/i, "fa-mug-hot"],
+  [/meal|baked|bread/i, "fa-bread-slice"],
+  [/phone|smartphone/i, "fa-mobile-screen-button"],
+  [/charger|cable/i, "fa-plug"],
+  [/laptop|computer/i, "fa-laptop"],
+  [/television|\btv\b/i, "fa-tv"],
+  [/generator|power/i, "fa-bolt"],
+  [/sofa|chair|furniture/i, "fa-couch"],
+  [/cookware|kitchen/i, "fa-utensils"],
+  [/fridge|freezer/i, "fa-snowflake"],
+  [/air condition|\bfan\b/i, "fa-fan"],
+  [/wear|cloth/i, "fa-shirt"],
+  [/footwear|shoe/i, "fa-shoe-prints"],
+  [/skincare|makeup|beauty/i, "fa-spa"],
+  [/catering/i, "fa-utensils"],
+  [/photograph|video/i, "fa-camera"],
+  [/repair|maintenance/i, "fa-screwdriver-wrench"],
+  [/cleaning/i, "fa-broom"],
 ];
 function categoryIcon(name) {
   const hit = CATEGORY_ICONS.find(([re]) => re.test(name || ""));
-  return `<i class='fa-solid ${hit ? hit[1] : "fa-stethoscope"}'></i>`;
+  return `<i class='fa-solid ${hit ? hit[1] : "fa-tag"}'></i>`;
 }
 
 // ---------- THEME ----------
@@ -1282,11 +1334,12 @@ function updateAuthUI() {
     const links = [];
     if (vendor) {
       links.push({ label: "<i class='fa-solid fa-box'></i> My Shop", action: "navigate('vendorDashboard')" });
+      links.push({ label: "<i class='fa-solid fa-boxes-packing'></i> Packages", action: "navigate('vendorPackages')" });
       links.push({ label: "<i class='fa-solid fa-clipboard-list'></i> Buyer requests", action: "navigate('vendorRequests')" });
       links.push({ label: "<i class='fa-solid fa-pen'></i> Edit business profile", action: "navigate('vendorEditProfile')" });
     } else {
       links.push({ label: "<i class='fa-solid fa-clipboard-list'></i> My Orders", action: "navigate('buyerOrders')" });
-      links.push({ label: "<i class='fa-solid fa-hand'></i> Request equipment", action: "navigate('requestEquipment')" });
+      links.push({ label: "<i class='fa-solid fa-hand'></i> Request an item", action: "navigate('requestEquipment')" });
     }
     links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
     if (profile.role === "admin") {
@@ -1371,7 +1424,7 @@ function applyAuthMode() {
   const isForgot = authMode === "forgot";
   byId("authModalTitle").innerHTML = isForgot
     ? "<i class='fa-solid fa-key'></i> Reset your password"
-    : isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Medris account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Medris";
+    : isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Levromart account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Levromart";
   byId("signupExtraFields").classList.toggle("hidden", !isRegister);
   byId("loginPasswordWrap").classList.toggle("hidden", isForgot);
   byId("forgotPasswordMsg").classList.toggle("hidden", !isForgot);
@@ -1435,6 +1488,7 @@ async function submitAuth() {
       await refreshAuthStateOnce();
       hideLogin();
       navigate(role === "vendor" ? "vendorApply" : "home");
+      awaitingInstallPromptForLogin = true;
       setTimeout(maybeShowInstallPrompt, 800);
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
@@ -1442,6 +1496,7 @@ async function submitAuth() {
       await refreshAuthStateOnce();
       hideLogin();
       navigate("home");
+      awaitingInstallPromptForLogin = true;
       setTimeout(maybeShowInstallPrompt, 800);
     }
   } catch (err) {
@@ -1515,6 +1570,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorDashboard": app.innerHTML = await renderVendorDashboard(); break;
       case "vendorEditProfile": app.innerHTML = await renderVendorEditProfile(); break;
       case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
+      case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
       case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status); break;
       case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
       case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
@@ -1570,14 +1626,28 @@ function setupAutoScroll(container, { interval = 3200, pauseAfterInteraction = 8
 }
 
 // ---------- HOME (marketplace browse) ----------
+let currentSectorId = null;
+let sectors = [];
+
 async function renderHome() {
-  const { data: categories } = await sb.from("categories").select("*").order("name");
+  const [{ data: categories }, { data: sectorsData }] = await Promise.all([
+    sb.from("categories").select("*").order("name"),
+    sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
+  ]);
   window.__categories = categories || [];
+  if (!sectors.length) sectors = sectorsData || [];
+
+  const activeSector = sectors.find((s) => s.id === currentSectorId) || null;
+
+  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id)")
+    .eq("status", "active").eq("vendor.verification_status", "verified");
+  if (activeSector) vendorQuery = vendorQuery.eq("vendor.sector_id", activeSector.id);
+  let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating").eq("verification_status", "verified");
+  if (activeSector) topVendorsQuery = topVendorsQuery.eq("sector_id", activeSector.id);
 
   const [{ data: trending }, { data: topVendors }] = await Promise.all([
-    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, view_count, vendor:vendors!inner(id, business_name, verification_status)")
-      .eq("status", "active").eq("vendor.verification_status", "verified").order("view_count", { ascending: false }).limit(6),
-    sb.from("vendors").select("id, business_name, city, avg_rating").eq("verification_status", "verified").order("avg_rating", { ascending: false }).limit(6),
+    vendorQuery.order("view_count", { ascending: false }).limit(6),
+    topVendorsQuery.order("avg_rating", { ascending: false }).limit(6),
   ]);
 
   let html = `<div class="hero">
@@ -1585,11 +1655,11 @@ async function renderHome() {
     <div class="hero-content">
       <div class="hero-search flex">
         <i class="fa-solid fa-magnifying-glass hero-search-icon"></i>
-        <input type="text" id="heroSearch" placeholder="Search: ECG, oxygen concentrator, wheelchair, a vendor name…" oninput="syncHeroSearch()" onfocus="if(this.value.trim())fetchSearchSuggestions(this.value.trim())" onblur="setTimeout(hideSearchSuggestions,150)" autocomplete="off" />
+        <input type="text" id="heroSearch" placeholder="Search products, services, or a vendor name…" oninput="syncHeroSearch()" onfocus="if(this.value.trim())fetchSearchSuggestions(this.value.trim())" onblur="setTimeout(hideSearchSuggestions,150)" autocomplete="off" />
         <div id="heroSearchSuggest" class="search-suggest hidden"></div>
       </div>
       <div class="hero-quick-actions">
-        <button class="quick-action" onclick="scrollToBrowse('rent')"><span class="quick-action-icon"><i class='fa-solid fa-hospital'></i></span><span>Rent</span></button>
+        <button class="quick-action" onclick="scrollToBrowse('rent')"><span class="quick-action-icon"><i class='fa-solid fa-rotate'></i></span><span>Rent</span></button>
         <button class="quick-action" onclick="scrollToBrowse('sale')"><span class="quick-action-icon"><i class='fa-solid fa-cart-shopping'></i></span><span>Buy</span></button>
         <button class="quick-action outline" onclick="requireLoginThen(vendor ? 'vendorDashboard' : 'vendorApply')"><span class="quick-action-icon"><i class='fa-solid fa-tag'></i></span><span>Sell</span></button>
         <button class="quick-action outline" onclick="requireLoginThen('requestEquipment')"><span class="quick-action-icon"><i class='fa-solid fa-hand'></i></span><span>Request</span></button>
@@ -1597,27 +1667,39 @@ async function renderHome() {
     </div>
   </div>`;
 
-  const subCats = (categories || []).filter((c) => c.parent_category_id);
+  if (sectors.length) {
+    html += `<div class="cat-row sector-row">
+      <button class="cat-chip sector-chip ${!activeSector ? "active" : ""}" onclick="switchSector(null)"><span class="cat-icon"><i class="fa-solid fa-border-all"></i></span><span>All</span></button>
+      ${sectors.map((s) => `<button class="cat-chip sector-chip ${activeSector?.id === s.id ? "active" : ""}" onclick="switchSector('${s.id}')"><span class="cat-icon"><i class="fa-solid ${esc(s.icon)}"></i></span><span>${esc(s.name)}</span></button>`).join("")}
+    </div>`;
+  }
+
+  const subCats = (categories || []).filter((c) => c.parent_category_id && (!activeSector || c.sector_id === activeSector.id));
   if (subCats.length) {
     html += `<div class="cat-row">${subCats.map((c) => `<button class="cat-chip" onclick="filterByCategory('${c.id}')"><span class="cat-icon">${categoryIcon(c.name)}</span><span>${esc(c.name)}</span></button>`).join("")}</div>`;
   }
 
   if (trending && trending.length) {
-    html += `<h3 class="section-title"><i class='fa-solid fa-fire'></i> Trending equipment</h3><div class="hscroll">${trending.map(productCardHtml).join("")}</div>`;
+    html += `<h3 class="section-title"><i class='fa-solid fa-fire'></i> Trending now</h3><div class="hscroll">${trending.map(productCardHtml).join("")}</div>`;
   }
   if (topVendors && topVendors.length) {
     html += `<h3 class="section-title"><span><i class='fa-solid fa-medal'></i> Top-rated vendors</span><a class="section-title-link" onclick="navigate('vendors')">See all <i class="fa-solid fa-arrow-right"></i></a></h3><div class="hscroll">${topVendors.map(vendorCardHtml).join("")}</div>`;
   }
 
-  html += `<h3 class="section-title" id="browseSection"><i class='fa-solid fa-stethoscope'></i> Browse all equipment</h3>`;
+  html += `<h3 class="section-title" id="browseSection"><i class='fa-solid fa-shop'></i> Browse ${activeSector ? `all ${esc(activeSector.name)}` : "everything"}</h3>`;
   html += `<div class="flex" style="margin-bottom:1.2rem;">
-    <input type="text" id="searchInput" placeholder="Search equipment…" oninput="filterHomeProducts()" style="max-width:280px;" />
+    <input type="text" id="searchInput" placeholder="Search…" oninput="filterHomeProducts()" style="max-width:280px;" />
     <select id="filterListing" onchange="filterHomeProducts()"><option value="">All types</option><option value="rent">Rent</option><option value="sale">Buy</option></select>
     <select id="filterCategory" onchange="filterHomeProducts()"><option value="">All categories</option>${subCats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select>
   </div>`;
   html += `<div class="grid" id="productGrid"><p class="muted">Loading…</p></div>`;
   setTimeout(filterHomeProducts, 0);
   return html;
+}
+
+function switchSector(sectorId) {
+  currentSectorId = sectorId;
+  navigate("home", {}, false);
 }
 
 function scrollToBrowse(listingType) {
@@ -1683,7 +1765,7 @@ async function filterHomeProducts() {
 
   let query = sb
     .from("products")
-    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, vendor:vendors!inner(id, business_name, verification_status)")
+    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, vendor:vendors!inner(id, business_name, verification_status, sector_id)")
     .eq("status", "active")
     .eq("vendor.verification_status", "verified");
 
@@ -1691,6 +1773,7 @@ async function filterHomeProducts() {
   if (listing === "rent") query = query.in("listing_type", ["rent", "both"]);
   if (listing === "sale") query = query.in("listing_type", ["sale", "both"]);
   if (catId) query = query.eq("category_id", catId);
+  if (currentSectorId) query = query.eq("vendor.sector_id", currentSectorId);
 
   const { data: products, error } = await query.order("created_at", { ascending: false });
   if (error || !products || products.length === 0) {
@@ -1750,7 +1833,7 @@ async function toggleFavorite(evt, productId) {
 
 // ---------- WISHLIST ----------
 async function renderWishlist() {
-  if (!session) return '<div class="empty-state">Log in to save equipment to your wishlist.</div>';
+  if (!session) return '<div class="empty-state">Log in to save items to your wishlist.</div>';
   const { data: favs } = await sb.from("favorites")
     .select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, status, vendor:vendors(id, business_name, verification_status))")
     .eq("buyer_id", session.user.id).order("created_at", { ascending: false });
@@ -1767,7 +1850,7 @@ async function renderWishlist() {
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
     .from("products")
-    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at), category:categories(name)")
+    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee), category:categories(name)")
     .eq("id", productId)
     .eq("status", "active")
     .eq("vendor.verification_status", "verified")
@@ -1802,7 +1885,7 @@ async function renderProductDetail(productId) {
         ${yearsSince(product.vendor.created_at) ? `<span class="badge">${yearsSince(product.vendor.created_at)}</span>` : ""}
       </div>
       <div class="contact-actions">
-        ${product.vendor.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(product.vendor.whatsapp_number, "Hi, I'm interested in " + product.name + " on Medris.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp vendor</a>` : ""}
+        ${product.vendor.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(product.vendor.whatsapp_number, "Hi, I'm interested in " + product.name + " on Levromart.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp vendor</a>` : ""}
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
       </div>
       <p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>
@@ -1820,7 +1903,7 @@ async function renderProductDetail(productId) {
         <input type="date" id="rentEnd" min="${today}" />
         <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
       </div>
-      ${deliveryFieldsHtml("rent")}
+      ${deliveryFieldsHtml("rent", product.vendor.delivery_fee)}
       <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
       <p id="rentError" class="error-text hidden"></p>
     </div>`;
@@ -1830,7 +1913,7 @@ async function renderProductDetail(productId) {
       <div class="flex">
         <input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />
       </div>
-      ${deliveryFieldsHtml("buy")}
+      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee)}
       <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">Buy Now</button>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
@@ -1864,14 +1947,16 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
-function deliveryFieldsHtml(prefix) {
+function deliveryFieldsHtml(prefix, deliveryFee) {
+  const fee = Number(deliveryFee) || 0;
   return `<div class="flex" style="margin-top:0.6rem;">
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="hidden">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" />
+      ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
     </div>`;
 }
 function toggleDeliveryFields(prefix) {
@@ -1938,8 +2023,9 @@ async function buyNow(vendorId, productId) {
 // ---------- VENDORS DIRECTORY ----------
 function renderVendorsDirectory() {
   let html = `<h2><i class="fa-solid fa-store"></i> All vendors</h2>`;
-  html += `<div class="flex" style="margin-bottom:1.2rem;">
+  html += `<div class="flex" style="margin-bottom:1.2rem;flex-wrap:wrap;">
     <input type="text" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
+    <select id="vendorSectorFilter" onchange="filterVendorsDirectory()"><option value="">All sectors</option></select>
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
     <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
   </div>`;
@@ -1949,10 +2035,12 @@ function renderVendorsDirectory() {
 }
 
 async function loadVendorsDirectory() {
-  const [{ data: vendors }, { data: products }] = await Promise.all([
-    sb.from("vendors").select("id, business_name, city, avg_rating").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
+  const [{ data: vendors }, { data: products }, { data: sectorsData }] = await Promise.all([
+    sb.from("vendors").select("id, business_name, city, avg_rating, sector_id").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
     sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
+    sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
   ]);
+  if (!sectors.length) sectors = sectorsData || [];
 
   const catsByVendor = {};
   (products || []).forEach((p) => {
@@ -1963,6 +2051,10 @@ async function loadVendorsDirectory() {
 
   window.__allVendors = (vendors || []).map((v) => ({ ...v, categories: [...(catsByVendor[v.id] || [])] }));
 
+  const sectorSel = byId("vendorSectorFilter");
+  if (sectorSel) {
+    sectorSel.innerHTML = '<option value="">All sectors</option>' + sectors.map((s) => `<option value="${s.id}" ${currentSectorId === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("");
+  }
   const citySel = byId("vendorCityFilter");
   if (citySel) {
     const cities = [...new Set((vendors || []).map((v) => v.city).filter(Boolean))].sort();
@@ -1978,10 +2070,12 @@ async function loadVendorsDirectory() {
 
 function filterVendorsDirectory() {
   const search = (byId("vendorSearchInput")?.value || "").trim().toLowerCase();
+  const sectorId = byId("vendorSectorFilter")?.value || "";
   const city = byId("vendorCityFilter")?.value || "";
   const category = byId("vendorCategoryFilter")?.value || "";
   let list = window.__allVendors || [];
   if (search) list = list.filter((v) => (v.business_name || "").toLowerCase().includes(search));
+  if (sectorId) list = list.filter((v) => v.sector_id === sectorId);
   if (city) list = list.filter((v) => v.city === city);
   if (category) list = list.filter((v) => v.categories.includes(category));
   const grid = byId("vendorsGrid");
@@ -1991,12 +2085,13 @@ function filterVendorsDirectory() {
 
 // ---------- STOREFRONT (public vendor page) ----------
 async function renderStorefront(vendorId) {
-  const { data: v, error } = await sb.from("vendors").select("*").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
+  const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
-  const [{ data: products }, { data: stats }, { data: reviews }] = await Promise.all([
+  const [{ data: products }, { data: stats }, { data: reviews }, { data: packages }] = await Promise.all([
     sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
     sb.rpc("get_vendor_stats", { p_vendor_id: v.id }),
     sb.from("reviews").select("id, rating, comment, buyer_name, buyer_avatar_url, created_at").eq("vendor_id", v.id).order("created_at", { ascending: false }).limit(10),
+    sb.from("vendor_packages").select("*, items:package_items(quantity, product:products(name))").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
   ]);
   const st = (stats && stats[0]) || {};
   window.__storefrontProducts = products || [];
@@ -2010,6 +2105,7 @@ async function renderStorefront(vendorId) {
   </div>`;
   if (v.bio) html += `<p style="margin:0.6rem 0;">${esc(v.bio)}</p>`;
   html += `<div class="trust-badges">
+    ${v.sector?.name ? `<span class="badge"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</span>` : ""}
     ${v.cac_number ? `<span class="badge success"><i class='fa-solid fa-building-columns'></i> CAC verified</span>` : ""}
     ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0} review${st.review_count === 1 ? "" : "s"})</span>` : ""}
     ${st.completed_orders ? `<span class="badge">${st.completed_orders} completed order${st.completed_orders === 1 ? "" : "s"}</span>` : ""}
@@ -2017,18 +2113,23 @@ async function renderStorefront(vendorId) {
     ${v.opening_hours ? `<span class="badge"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</span>` : ""}
   </div>`;
   html += `<div class="contact-actions">
-    ${v.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(v.whatsapp_number, "Hi, I found your shop " + v.business_name + " on Medris.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp</a>` : ""}
+    ${v.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(v.whatsapp_number, "Hi, I found your shop " + v.business_name + " on Levromart.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp</a>` : ""}
     ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
   </div>`;
+  if (packages && packages.length > 0) {
+    html += `<h3 style="margin-top:1.2rem;"><i class="fa-solid fa-boxes-packing"></i> Special packages</h3>`;
+    html += `<div class="grid">${packages.map((pkg) => packageCardHtml(pkg, v.delivery_fee)).join("")}</div>`;
+  }
+
   html += `<div class="flex" style="justify-content:space-between;align-items:center;margin-top:1.2rem;flex-wrap:wrap;gap:0.5rem;">
-    <h3 style="margin:0;">Available equipment</h3>
+    <h3 style="margin:0;">What we offer</h3>
     ${(products && products.length > 0) ? `<div class="flex" style="gap:0.5rem;">
       <button class="btn btn-sm btn-outline active" id="storefrontViewGridBtn" onclick="switchStorefrontView('grid')" title="Grid view"><i class="fa-solid fa-grip"></i></button>
       <button class="btn btn-sm btn-outline" id="storefrontViewTableBtn" onclick="switchStorefrontView('table')" title="Table view"><i class="fa-solid fa-list"></i></button>
     </div>` : ""}
   </div>`;
   if (products && products.length > 0) {
-    html += `<input type="text" id="storefrontSearch" placeholder="Search this vendor's equipment…" oninput="filterStorefrontProducts()" style="margin-bottom:0.8rem;" />`;
+    html += `<input type="text" id="storefrontSearch" placeholder="Search this vendor's products…" oninput="filterStorefrontProducts()" style="margin-bottom:0.8rem;" />`;
   }
   html += `<div id="storefrontGrid" class="grid">${(products && products.length > 0) ? "<p class='muted'>Loading…</p>" : '<div class="empty-state">No products listed yet.</div>'}</div>`;
   html += `<div id="storefrontTable" class="hidden" style="overflow-x:auto;"></div>`;
@@ -2071,9 +2172,9 @@ function filterStorefrontProducts() {
   const all = window.__storefrontProducts || [];
   const list = q ? all.filter((p) => p.name.toLowerCase().includes(q) || (p.category?.name || "").toLowerCase().includes(q)) : all;
   const gridEl = byId("storefrontGrid");
-  if (gridEl) gridEl.innerHTML = list.length ? list.map(productCardHtml).join("") : '<div class="empty-state">No matching equipment.</div>';
+  if (gridEl) gridEl.innerHTML = list.length ? list.map(productCardHtml).join("") : '<div class="empty-state">No matching items.</div>';
   const tableEl = byId("storefrontTable");
-  if (tableEl) tableEl.innerHTML = list.length ? storefrontTableHtml(list) : '<div class="empty-state">No matching equipment.</div>';
+  if (tableEl) tableEl.innerHTML = list.length ? storefrontTableHtml(list) : '<div class="empty-state">No matching items.</div>';
 }
 
 function storefrontTableHtml(list) {
@@ -2093,18 +2194,55 @@ function storefrontTableHtml(list) {
   </table>`;
 }
 
+function packageCardHtml(pkg, vendorDeliveryFee) {
+  return `<div class="card">
+    <div class="flex" style="justify-content:space-between;"><strong>${esc(pkg.name)}</strong><span class="badge">${naira(pkg.price)}</span></div>
+    ${pkg.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(pkg.description)}</p>` : ""}
+    <p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-box-open"></i> Includes: ${(pkg.items || []).map((it) => `${it.quantity}× ${esc(it.product?.name || "")}`).join(", ")}</p>
+    <button class="btn btn-sm" onclick="togglePackageBuy('${pkg.id}')">Buy this package</button>
+    <div id="pkgBuyWrap-${pkg.id}" class="hidden" style="margin-top:0.6rem;">
+      ${deliveryFieldsHtml("pkg" + pkg.id, vendorDeliveryFee)}
+      <button class="btn btn-sm" style="margin-top:0.4rem;" onclick="buyPackage('${pkg.id}')">Confirm purchase</button>
+      <p id="pkgBuyError-${pkg.id}" class="error-text hidden"></p>
+    </div>
+  </div>`;
+}
+function togglePackageBuy(packageId) {
+  byId(`pkgBuyWrap-${packageId}`)?.classList.toggle("hidden");
+}
+async function buyPackage(packageId) {
+  if (!session) { showLogin(); return; }
+  const prefix = "pkg" + packageId;
+  const errorEl = byId(`pkgBuyError-${packageId}`);
+  errorEl.classList.add("hidden");
+  const delivery = readDeliveryFields(prefix, errorEl);
+  if (!delivery) return;
+
+  const { data: orderId, error } = await sb.rpc("create_package_order", {
+    p_package_id: packageId,
+    p_delivery_method: delivery.method,
+    p_delivery_address: delivery.address,
+    p_delivery_phone: delivery.phone,
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
 // ---------- REQUEST EQUIPMENT (buyers post needs, vendors compete) ----------
 async function renderRequestEquipment() {
-  if (!session) return '<div class="empty-state">Please log in to request equipment.</div>';
-  const { data: myRequests } = await sb.from("equipment_requests")
-    .select("*, offers:request_offers(id, vendor_id, message, price, status, created_at, vendor:vendors(business_name, avg_rating, phone, whatsapp_number))")
-    .eq("buyer_id", session.user.id).order("created_at", { ascending: false });
+  if (!session) return '<div class="empty-state">Please log in to request an item.</div>';
+  const [{ data: myRequests }] = await Promise.all([
+    sb.from("equipment_requests").select("*, offers:request_offers(id, vendor_id, message, price, status, created_at, vendor:vendors(business_name, avg_rating, phone, whatsapp_number, delivery_fee))")
+      .eq("buyer_id", session.user.id).order("created_at", { ascending: false }),
+    (async () => { if (!sectors.length) { const { data } = await sb.from("sectors").select("*").order("sort_order"); sectors = data || []; } })(),
+    (async () => { if (!window.__categories?.length) { const { data } = await sb.from("categories").select("*").order("name"); window.__categories = data || []; } })(),
+  ]);
 
-  let html = `<h2><i class='fa-solid fa-hand'></i> Request equipment</h2>
+  let html = `<h2><i class='fa-solid fa-hand'></i> Request an item</h2>
     <p class="muted">Can't find what you need? Post it — nearby vendors will send you offers.</p>
     <div class="card" style="max-width:520px;">
       <div id="reqError" class="error-text hidden"></div>
-      <label>What do you need? *</label><input id="reqTitle" placeholder="e.g. Oxygen concentrator" />
+      <label>What do you need? *</label><input id="reqTitle" placeholder="e.g. Oxygen concentrator, jollof rice for 20…" />
       <label>I want to</label>
       <div class="flex">
         <label class="theme-option" style="flex:1;padding:0.7rem;border:1px solid var(--border);border-radius:0.5rem;margin:0.3rem 0;"><input type="radio" name="reqType" value="rent" checked onchange="updateRequestFormFields()" style="width:auto;margin:0 0.5rem 0 0;" />Rent</label>
@@ -2112,7 +2250,10 @@ async function renderRequestEquipment() {
       </div>
       <label>More details</label><textarea id="reqDesc" rows="2" placeholder="Duration, specs, delivery preferences…"></textarea>
       <div class="flex">
+        <div style="flex:1;"><label>Sector</label><select id="reqSector" onchange="updateRequestCategoryOptions()"><option value="">Any</option>${sectors.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
         <div style="flex:1;"><label>Category</label><select id="reqCategory"><option value="">Any</option>${(window.__categories || []).filter((c) => c.parent_category_id).map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+      </div>
+      <div class="flex">
         <div style="flex:1;"><label>City</label><input id="reqCity" value="Lagos" /></div>
       </div>
       <div class="flex" id="reqDatesWrap">
@@ -2131,16 +2272,22 @@ async function renderRequestEquipment() {
       ${r.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(r.description)}</p>` : ""}
       <p class="muted" style="font-size:0.8rem;">${[r.city, r.request_type !== "buy" && r.needed_from ? r.needed_from + " → " + (r.needed_to || "") : ""].filter(Boolean).map(esc).join(" · ")}</p>
       ${offers.length ? `<div style="margin-top:0.6rem;"><strong style="font-size:0.85rem;">${offers.length} offer${offers.length === 1 ? "" : "s"}:</strong>
-        ${offers.map((o) => `<div class="flex" style="justify-content:space-between;border-top:1px solid var(--border);padding:0.5rem 0;">
-          <div><strong>${esc(o.vendor?.business_name || "")}</strong>${o.vendor?.avg_rating != null ? ` · ★${Number(o.vendor.avg_rating).toFixed(1)}` : ""}<p class="muted" style="margin:0;">${esc(o.message || "")}</p></div>
-          <div class="flex">
-            ${o.price != null ? `<strong>${naira(o.price)}</strong>` : ""}
-            <span class="badge ${o.status === "accepted" ? "success" : o.status === "declined" ? "danger" : ""}">${esc(o.status)}</span>
-            ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-outline" onclick="declineOffer('${o.id}')">Decline</button>` : ""}
-            ${o.status === "accepted" && o.vendor?.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(o.vendor.whatsapp_number, "Hi, about my equipment request: " + r.title)}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
-            ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}"><i class='fa-solid fa-phone'></i></a>` : ""}
+        ${offers.map((o) => {
+          const delivery = Number(o.vendor?.delivery_fee) || 0;
+          return `<div style="border-top:1px solid var(--border);padding:0.5rem 0;">
+          <div class="flex" style="justify-content:space-between;">
+            <div><strong>${esc(o.vendor?.business_name || "")}</strong>${o.vendor?.avg_rating != null ? ` · ★${Number(o.vendor.avg_rating).toFixed(1)}` : ""}<p class="muted" style="margin:0;">${esc(o.message || "")}</p></div>
+            <div class="flex">
+              ${o.price != null ? `<strong>${naira(o.price)}</strong>` : ""}
+              <span class="badge ${o.status === "accepted" ? "success" : o.status === "declined" ? "danger" : ""}">${esc(o.status)}</span>
+              ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-outline" onclick="declineOffer('${o.id}')">Decline</button>` : ""}
+              ${o.status === "accepted" && o.vendor?.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(o.vendor.whatsapp_number, "Hi, about my equipment request: " + r.title)}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
+              ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}"><i class='fa-solid fa-phone'></i></a>` : ""}
+            </div>
           </div>
-        </div>`).join("")}
+          ${o.price != null ? `<p class="muted" style="font-size:0.78rem;margin:0.3rem 0 0;">Item: ${naira(o.price)}${delivery > 0 ? ` + ${naira(delivery)} delivery fee if you need it delivered` : " · free pickup or delivery"}</p>` : ""}
+        </div>`;
+        }).join("")}
       </div>` : `<p class="muted" style="margin-top:0.5rem;">No offers yet.</p>`}
     </div>`;
   });
@@ -2150,6 +2297,14 @@ async function renderRequestEquipment() {
 function updateRequestFormFields() {
   const requestType = document.querySelector('input[name="reqType"]:checked')?.value || "rent";
   byId("reqDatesWrap").classList.toggle("hidden", requestType === "buy");
+}
+
+function updateRequestCategoryOptions() {
+  const sectorId = byId("reqSector")?.value || "";
+  const catSel = byId("reqCategory");
+  if (!catSel) return;
+  const opts = (window.__categories || []).filter((c) => c.parent_category_id && (!sectorId || c.sector_id === sectorId));
+  catSel.innerHTML = '<option value="">Any</option>' + opts.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
 }
 
 async function submitEquipmentRequest() {
@@ -2189,14 +2344,18 @@ async function declineOffer(offerId) {
 // ---------- VENDOR: BROWSE + OFFER ON BUYER REQUESTS ----------
 async function renderVendorRequests() {
   if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  const { data: requests } = await sb.from("equipment_requests")
-    .select("*, offers:request_offers(id, vendor_id, status)")
-    .eq("status", "open").order("created_at", { ascending: false });
+  const [{ data: requests }, { data: myProducts }] = await Promise.all([
+    sb.from("equipment_requests").select("*, offers:request_offers(id, vendor_id, status)").eq("status", "open").order("created_at", { ascending: false }),
+    sb.from("products").select("id, name, category_id, sale_price, rental_rate, rental_rate_unit").eq("vendor_id", vendor.id).eq("status", "active"),
+  ]);
+  window.__myProductsForOffers = myProducts || [];
 
-  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests</h2><p class="muted">Send an offer to win the order.</p>`;
+  const deliveryFee = Number(vendor.delivery_fee) || 0;
+  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests</h2><p class="muted">Only requests matching what you sell reach you. Quote a price to win the order — pick one of your own listed products to price it instantly, or quote a custom price.</p>`;
   if (!requests || requests.length === 0) html += `<p class="muted">No open requests right now.</p>`;
   (requests || []).forEach((r) => {
     const mine = (r.offers || []).find((o) => o.vendor_id === vendor.id);
+    const matches = (myProducts || []).filter((p) => !r.category_id || p.category_id === r.category_id);
     html += `<div class="card">
       <div class="flex" style="justify-content:space-between;">
         <div class="flex">
@@ -2209,14 +2368,31 @@ async function renderVendorRequests() {
       <p class="muted" style="font-size:0.8rem;">${[r.city, r.request_type !== "buy" && r.needed_from ? r.needed_from + " → " + (r.needed_to || "") : ""].filter(Boolean).map(esc).join(" · ")}</p>
       ${mine
         ? `<p class="muted" style="margin-top:0.5rem;">You offered — status: <strong>${esc(mine.status)}</strong></p>`
-        : `<div class="flex" style="margin-top:0.5rem;">
-             <input type="number" id="offerPrice-${r.id}" placeholder="Price (₦)" style="width:140px;" />
-             <input type="text" id="offerMsg-${r.id}" placeholder="Message (e.g. delivery today)" style="flex:1;" />
-             <button class="btn btn-sm" onclick="sendOffer('${r.id}')">Send offer</button>
+        : `<div style="margin-top:0.5rem;">
+             ${matches.length ? `<select id="offerProduct-${r.id}" onchange="applyOfferProductPrice('${r.id}','${r.request_type}')" style="margin-bottom:0.4rem;">
+               <option value="">Quote a custom price…</option>
+               ${matches.map((p) => `<option value="${p.id}">Use my "${esc(p.name)}" — ${p.sale_price != null ? naira(p.sale_price) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</option>`).join("")}
+             </select>` : ""}
+             <div class="flex">
+               <input type="number" id="offerPrice-${r.id}" placeholder="Price (₦)" style="width:140px;" />
+               <input type="text" id="offerMsg-${r.id}" placeholder="Message (e.g. delivery today)" style="flex:1;" />
+               <button class="btn btn-sm" onclick="sendOffer('${r.id}')">Send offer</button>
+             </div>
+             ${deliveryFee > 0 ? `<p class="muted" style="font-size:0.78rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> Your ${naira(deliveryFee)} delivery fee is shown to the buyer automatically alongside this quote if they need delivery.</p>` : ""}
            </div>`}
     </div>`;
   });
   return html;
+}
+
+function applyOfferProductPrice(requestId, requestType) {
+  const productId = byId(`offerProduct-${requestId}`).value;
+  const priceEl = byId(`offerPrice-${requestId}`);
+  if (!productId) return;
+  const product = (window.__myProductsForOffers || []).find((p) => p.id === productId);
+  if (!product) return;
+  const price = requestType === "buy" ? product.sale_price : product.rental_rate;
+  if (price != null) priceEl.value = price;
 }
 
 async function sendOffer(requestId) {
@@ -2238,10 +2414,14 @@ async function renderVendorApply() {
   const { data: existing } = await sb.from("vendors").select("id").eq("user_id", session.user.id).maybeSingle();
   if (existing) { navigate("vendorDashboard"); return '<p class="muted">Redirecting…</p>'; }
 
+  if (!sectors.length) { const { data } = await sb.from("sectors").select("*").order("sort_order"); sectors = data || []; }
+
   return `<div class="card" style="max-width:480px;margin:0 auto;">
     <h2>Apply as a vendor</h2>
     <p class="muted">Tell us about your business. An admin will review this manually.</p>
     <div id="vendorApplyError" class="error-text hidden"></div>
+    <label>Which sector is your business in? *</label>
+    <select id="vaSector">${sectors.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>
     <label>Business name *</label><input id="vaBusinessName" />
     <label>Address (leave blank if you're an online-only business)</label><input id="vaAddress" />
     <label>City</label><input id="vaCity" value="Lagos" />
@@ -2279,6 +2459,7 @@ async function submitVendorApply() {
 
     const { error } = await sb.from("vendors").insert({
       user_id: session.user.id,
+      sector_id: byId("vaSector").value,
       business_name,
       address: address || null,
       city: byId("vaCity").value.trim() || null,
@@ -2327,6 +2508,7 @@ async function renderVendorDashboard() {
   html += statusBanner;
   html += `<div class="dash-actions">
     <button class="quick-action" onclick="navigate('vendorProducts')"><span class="quick-action-icon"><i class='fa-solid fa-box'></i></span><span>Products</span></button>
+    <button class="quick-action" onclick="navigate('vendorPackages')"><span class="quick-action-icon"><i class='fa-solid fa-boxes-packing'></i></span><span>Packages</span></button>
     <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
     <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
     <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
@@ -2361,7 +2543,7 @@ async function renderVendorEditProfile() {
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
     <h3 style="margin:0;"><i class="fa-solid fa-hand-holding-dollar"></i> Commission owed: ${naira(commissionOwed)}</h3>
-    <p class="muted" style="margin-top:0.4rem;">This is Medris's ${Number(v.commission_pct ?? 5)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
+    <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 5)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
     <div id="commissionError" class="error-text hidden"></div>
     <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
   </div>` : ""}
@@ -2379,6 +2561,8 @@ async function renderVendorEditProfile() {
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
     <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
     <label>Opening hours</label><input id="veHours" placeholder="e.g. Mon–Sat, 9am–6pm" value="${esc(v.opening_hours || "")}" />
+    <label>Delivery fee (₦) — charged when a buyer chooses delivery instead of pickup. Leave as 0 for free delivery.</label>
+    <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
     <label>About your business</label><textarea id="veBio" rows="3">${esc(v.bio || "")}</textarea>
     <div class="flex" style="margin-top:0.8rem;">
       <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
@@ -2388,12 +2572,12 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details</h2>
-    <p class="muted">Set your bank account once — Medris then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 5)}% platform commission), no manual transfers needed.</p>
+    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 5)}% platform commission), no manual transfers needed.</p>
     <div id="bankError" class="error-text hidden"></div>
     ${v.paystack_subaccount_code
       ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} — ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
        <button class="btn btn-sm btn-outline" onclick="byId('bankFormWrap').classList.toggle('hidden')">Change bank account</button>`
-      : `<div class="banner banner-warning" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Not set up yet.</strong> Until you add your bank, order payments go to Medris and you'll be paid out manually.</div>`}
+      : `<div class="banner banner-warning" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Not set up yet.</strong> Until you add your bank, order payments go to Levromart and you'll be paid out manually.</div>`}
     <div id="bankFormWrap" class="${v.paystack_subaccount_code ? "hidden" : ""}" style="margin-top:0.8rem;">
       <label>Bank</label>
       <select id="veBankCode">${NIGERIAN_BANKS.map((b) => `<option value="${b.code}">${esc(b.name)}</option>`).join("")}</select>
@@ -2462,6 +2646,7 @@ async function submitVendorEditProfile() {
     phone,
     whatsapp_number: byId("veWhatsapp").value.trim() || null,
     opening_hours: byId("veHours").value.trim() || null,
+    delivery_fee: Math.max(0, Number(byId("veDeliveryFee").value) || 0),
     bio: byId("veBio").value.trim() || null,
   }).eq("id", vendor.id);
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
@@ -2514,6 +2699,8 @@ async function renderVendorProducts() {
 
   if (!products || products.length === 0) { html += `<div class="empty-state">No products yet.</div>`; return html; }
 
+  html += `<input type="text" id="vendorProductSearch" placeholder="Search your products…" oninput="filterVendorProducts()" style="margin:0.8rem 0;max-width:340px;" />`;
+
   if (vendorProductsView === "table") {
     const totalRevenue = Object.values(revenueByProduct).reduce((s, n) => s + n, 0);
     const totalUnits = products.reduce((s, p) => s + p.quantity_total, 0);
@@ -2526,7 +2713,7 @@ async function renderVendorProducts() {
       <th>Product</th><th>Category</th><th>Price</th><th>Qty avail / total</th><th>Views</th><th>Saved</th><th>Revenue</th><th>Status</th>
     </tr></thead><tbody>`;
     products.forEach((p, i) => {
-      html += `<tr onclick="openEditProductModal('${p.id}')" style="cursor:pointer;">
+      html += `<tr onclick="openEditProductModal('${p.id}')" style="cursor:pointer;" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc((p.category?.name || "").toLowerCase())}">
         <td>${esc(p.name)}</td>
         <td>${esc(p.category?.name || "Uncategorized")}</td>
         <td>${p.sale_price != null ? naira(p.sale_price) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
@@ -2548,12 +2735,13 @@ async function renderVendorProducts() {
     groups.get(key).push(p);
   });
   [...groups.keys()].sort().forEach((catName) => {
+    html += `<div data-vp-group>`;
     html += `<div class="category-group-header"><i class="fa-solid ${catName === "Uncategorized" ? "fa-box-open" : "fa-tag"}"></i> ${esc(catName)}</div>`;
     html += `<div class="grid">`;
     groups.get(catName).forEach((p) => {
       const img = p.photos?.[0];
       const favCount = favCounts[products.indexOf(p)]?.data ?? 0;
-      html += `<div class="card">
+      html += `<div class="card" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc(catName.toLowerCase())}">
         <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
         <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
         <p class="muted">${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available · ${p.status}</p>
@@ -2566,9 +2754,21 @@ async function renderVendorProducts() {
         </div>
       </div>`;
     });
-    html += `</div>`;
+    html += `</div></div>`;
   });
   return html;
+}
+
+function filterVendorProducts() {
+  const q = (byId("vendorProductSearch")?.value || "").trim().toLowerCase();
+  document.querySelectorAll("[data-vp-name]").forEach((el) => {
+    const matches = !q || el.dataset.vpName.includes(q) || (el.dataset.vpCat || "").includes(q);
+    el.classList.toggle("hidden", !matches);
+  });
+  document.querySelectorAll("[data-vp-group]").forEach((group) => {
+    const anyVisible = [...group.querySelectorAll("[data-vp-name]")].some((el) => !el.classList.contains("hidden"));
+    group.classList.toggle("hidden", !anyVisible);
+  });
 }
 
 async function openAddProductModal() {
@@ -2581,7 +2781,7 @@ async function openEditProductModal(productId) {
 }
 
 async function showProductModal() {
-  const { data: categories } = await sb.from("categories").select("*").order("name");
+  const { data: categories } = await sb.from("categories").select("*").eq("sector_id", vendor.sector_id).order("name");
   const select = byId("prodCategory");
   select.innerHTML = '<option value="">Uncategorized</option>';
   (categories || []).filter((c) => !c.parent_category_id).forEach((parent) => {
@@ -2674,12 +2874,13 @@ async function saveProduct() {
     if (category_id === "__other__") {
       const customName = byId("prodCategoryOther").value.trim();
       if (!customName) throw new Error("Type a name for the new category, or pick one from the list.");
-      const OTHER_PARENT_ID = "44444444-4444-4444-4444-444444444444";
-      const { data: existingCat } = await sb.from("categories").select("id").eq("parent_category_id", OTHER_PARENT_ID).ilike("name", customName).maybeSingle();
+      const { data: otherParent } = await sb.from("categories").select("id").eq("sector_id", vendor.sector_id).is("parent_category_id", null).ilike("name", "Other").maybeSingle();
+      const otherParentId = otherParent?.id;
+      const { data: existingCat } = await sb.from("categories").select("id").eq("parent_category_id", otherParentId).ilike("name", customName).maybeSingle();
       if (existingCat) {
         category_id = existingCat.id;
       } else {
-        const { data: newCat, error: catErr } = await sb.from("categories").insert({ name: customName, parent_category_id: OTHER_PARENT_ID }).select("id").single();
+        const { data: newCat, error: catErr } = await sb.from("categories").insert({ name: customName, parent_category_id: otherParentId, sector_id: vendor.sector_id }).select("id").single();
         if (catErr) throw new Error(`Couldn't create that category: ${catErr.message}`);
         category_id = newCat.id;
       }
@@ -2740,6 +2941,142 @@ async function removeProduct(id) {
   if (await showConfirmDialog("Remove this listing? It will no longer be visible to buyers.", { title: "Remove listing", okLabel: "Remove", danger: true })) setProductStatus(id, "removed");
 }
 
+// ---------- VENDOR PACKAGES (bundle deals, e.g. an "Outreach Kit") ----------
+let editingPackageId = null;
+
+async function renderVendorPackages() {
+  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).maybeSingle();
+  if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
+  vendor = v;
+
+  const { data: packages } = await sb.from("vendor_packages")
+    .select("*, items:package_items(quantity, product:products(name))")
+    .eq("vendor_id", v.id).order("created_at", { ascending: false });
+
+  let html = `<div class="flex" style="justify-content:space-between;">
+    <div><h2>Packages</h2><p class="muted" style="margin:0;">Bundle a few products into one fixed-price deal, like an outreach kit.</p></div>
+    <button class="btn" onclick="openAddPackageModal()">+ Add package</button>
+  </div>`;
+  if (v.verification_status !== "verified") html += `<p class="muted">Packages won't appear publicly until your vendor account is verified.</p>`;
+
+  if (!packages || packages.length === 0) { html += `<div class="empty-state">No packages yet. Bundle products you already sell into one fixed-price deal to stand out.</div>`; return html; }
+
+  html += `<div class="grid">${packages.map((pkg) => `<div class="card">
+    <div class="flex" style="justify-content:space-between;"><strong>${esc(pkg.name)}</strong><span class="badge ${pkg.status === "active" ? "success" : "warning"}">${esc(pkg.status)}</span></div>
+    ${pkg.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(pkg.description)}</p>` : ""}
+    <p class="muted" style="font-size:0.85rem;">${(pkg.items || []).map((it) => `${it.quantity}× ${esc(it.product?.name || "")}`).join(", ") || "No items yet"}</p>
+    <p style="margin:0.4rem 0;"><strong>${naira(pkg.price)}</strong></p>
+    <div class="flex">
+      <button class="btn btn-sm" onclick="openEditPackageModal('${pkg.id}')"><i class='fa-solid fa-pen'></i> Edit</button>
+      ${pkg.status === "active" ? `<button class="btn btn-sm" style="background:#6b7280;" onclick="setPackageStatus('${pkg.id}','paused')">Pause</button>` : `<button class="btn btn-sm" onclick="setPackageStatus('${pkg.id}','active')">Activate</button>`}
+      <button class="btn btn-sm btn-danger" onclick="deletePackage('${pkg.id}')"><i class='fa-solid fa-trash'></i> Delete</button>
+    </div>
+  </div>`).join("")}</div>`;
+  return html;
+}
+
+async function openAddPackageModal() {
+  editingPackageId = null;
+  await showPackageModal();
+}
+async function openEditPackageModal(packageId) {
+  editingPackageId = packageId;
+  await showPackageModal();
+}
+
+async function showPackageModal() {
+  byId("packageError").classList.add("hidden");
+  const { data: myProducts } = await sb.from("products").select("id, name, sale_price")
+    .eq("vendor_id", vendor.id).eq("status", "active").not("sale_price", "is", null).order("name");
+
+  let selectedQty = {};
+  if (editingPackageId) {
+    const { data: pkg } = await sb.from("vendor_packages").select("*, items:package_items(product_id, quantity)").eq("id", editingPackageId).single();
+    byId("packageModalTitle").textContent = "Edit Package";
+    byId("pkgName").value = pkg.name;
+    byId("pkgDesc").value = pkg.description || "";
+    byId("pkgPrice").value = pkg.price;
+    (pkg.items || []).forEach((it) => { selectedQty[it.product_id] = it.quantity; });
+  } else {
+    byId("packageModalTitle").textContent = "Add New Package";
+    byId("pkgName").value = "";
+    byId("pkgDesc").value = "";
+    byId("pkgPrice").value = "";
+  }
+
+  byId("pkgItemsList").innerHTML = (myProducts && myProducts.length)
+    ? myProducts.map((p) => `<div class="pkg-item-row">
+        <input type="checkbox" class="pkg-item-check" id="pkgCheck-${p.id}" ${selectedQty[p.id] ? "checked" : ""} onchange="togglePkgItemQty('${p.id}')" />
+        <span style="flex:1;">${esc(p.name)} <span class="muted">(${naira(p.sale_price)})</span></span>
+        <input type="number" id="pkgQty-${p.id}" value="${selectedQty[p.id] || 1}" min="1" class="${selectedQty[p.id] ? "" : "hidden"}" />
+      </div>`).join("")
+    : `<p class="muted" style="margin:0;">You don't have any sellable products yet — add one first from My Products.</p>`;
+
+  byId("packageModal").classList.remove("hidden");
+}
+
+function togglePkgItemQty(productId) {
+  const checked = byId(`pkgCheck-${productId}`).checked;
+  byId(`pkgQty-${productId}`)?.classList.toggle("hidden", !checked);
+}
+
+function closePackageModal() { byId("packageModal").classList.add("hidden"); }
+
+async function savePackage() {
+  const errorEl = byId("packageError");
+  errorEl.classList.add("hidden");
+  const btn = byId("savePackageBtn");
+  btn.disabled = true;
+
+  try {
+    const name = byId("pkgName").value.trim();
+    const price = byId("pkgPrice").value ? Number(byId("pkgPrice").value) : null;
+    if (!name) throw new Error("Package name is required.");
+    if (!price || price <= 0) throw new Error("Enter a package price.");
+
+    const items = [...document.querySelectorAll(".pkg-item-check:checked")].map((cb) => {
+      const productId = cb.id.replace("pkgCheck-", "");
+      return { product_id: productId, quantity: parseInt(byId(`pkgQty-${productId}`).value) || 1 };
+    });
+    if (items.length === 0) throw new Error("Pick at least one product for this package.");
+
+    const payload = { vendor_id: vendor.id, name, description: byId("pkgDesc").value.trim() || null, price };
+    let packageId = editingPackageId;
+    if (packageId) {
+      const { error } = await sb.from("vendor_packages").update(payload).eq("id", packageId);
+      if (error) throw error;
+      await sb.from("package_items").delete().eq("package_id", packageId);
+    } else {
+      const { data, error } = await sb.from("vendor_packages").insert(payload).select("id").single();
+      if (error) throw error;
+      packageId = data.id;
+    }
+    const { error: itemsError } = await sb.from("package_items").insert(items.map((it) => ({ ...it, package_id: packageId })));
+    if (itemsError) throw itemsError;
+
+    closePackageModal();
+    navigate("vendorPackages");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function setPackageStatus(id, status) {
+  const { error } = await sb.from("vendor_packages").update({ status }).eq("id", id).eq("vendor_id", vendor.id);
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("vendorPackages");
+}
+async function deletePackage(id) {
+  if (!(await showConfirmDialog("Delete this package permanently? This can't be undone.", { title: "Delete package", okLabel: "Delete", danger: true }))) return;
+  const { error } = await sb.from("vendor_packages").delete().eq("id", id).eq("vendor_id", vendor.id);
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("vendorPackages");
+}
+
 // ---------- VENDOR / BUYER ORDERS ----------
 const ORDER_TABS = ["all", "pending", "confirmed", "handed_over", "returned", "completed", "cancelled", "disputed"];
 
@@ -2785,7 +3122,7 @@ async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
     .from("orders")
-    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, user_id), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at)")
+    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, user_id), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
     .eq("id", orderId)
     .maybeSingle();
   if (error || !order) return '<div class="empty-state">Order not found.</div>';
@@ -2802,6 +3139,7 @@ async function renderOrderDetail(orderId) {
 
   let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge">${order.status.replace("_", " ")}</span></div>
   <p class="muted">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}</p>
+  ${order.package?.name ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-boxes-packing"></i> Package: ${esc(order.package.name)}</p>` : ""}
   ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> ${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}`;
 
   html += order.items.map((item) => `<div class="card">
@@ -2810,6 +3148,8 @@ async function renderOrderDetail(orderId) {
   </div>`).join("");
 
   html += `<div class="grid" style="grid-template-columns:repeat(2,1fr);">
+    ${order.delivery_fee > 0 ? `<div><p class="muted">Equipment cost</p><strong>${naira(order.total_amount - order.delivery_fee)}</strong></div>
+    <div><p class="muted">Delivery fee</p><strong>${naira(order.delivery_fee)}</strong></div>` : ""}
     <div><p class="muted">Total</p><strong>${naira(order.total_amount)}</strong></div>
     ${order.deposit_amount > 0 ? `<div><p class="muted">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
     <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
@@ -2846,7 +3186,7 @@ async function renderOrderDetail(orderId) {
       <div id="reviewError" class="error-text hidden"></div>
       ${starRatingWidgetHtml(5)}
       <input type="hidden" id="reviewRating" value="5" />
-      <textarea id="reviewComment" rows="2" placeholder="How was the equipment and vendor?"></textarea>
+      <textarea id="reviewComment" rows="2" placeholder="How was the order and vendor?"></textarea>
       <button class="btn btn-sm" onclick="submitReview('${order.id}','${order.vendor.id}')">Submit review</button>
     </div>`;
   }
@@ -3153,7 +3493,7 @@ async function renderAdminUsers() {
         <button class="btn btn-sm" onclick="promoteUserToAdmin()">Make admin</button>
       </div>
       <p id="promoteMsg" class="muted" style="margin-top:0.5rem;"></p>
-      <p class="muted" style="font-size:0.85rem;">The user must already have a Medris account. Only promote people you trust — admins can approve vendors, resolve disputes, and manage other admins.</p>
+      <p class="muted" style="font-size:0.85rem;">The user must already have a Levromart account. Only promote people you trust — admins can approve vendors, resolve disputes, and manage other admins.</p>
     </div>
     <h3 style="margin-top:1.2rem;">Current admins</h3>`;
   html += (admins || []).map((a) => `<div class="card flex" style="justify-content:space-between;"><span>${esc(a.name || "")} — ${esc(a.email)}</span>${a.id !== session.user.id ? `<button class="btn btn-sm btn-outline" onclick="demoteAdmin('${esc(a.email)}')">Remove admin</button>` : `<span class="muted">(you)</span>`}</div>`).join("");
@@ -3233,7 +3573,7 @@ async function renderAdminFinance() {
   ]);
   __adminFinanceData = { vendors: vendors || [], txns: txns || [] };
 
-  let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Vendors &amp; Transactions</h2><p class="muted">Monitor payouts and every payment moving through Medris.</p>`;
+  let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Vendors &amp; Transactions</h2><p class="muted">Monitor payouts and every payment moving through Levromart.</p>`;
   html += adminNavHtml("adminFinance");
 
   html += `<h3 style="margin-top:1.2rem;">Vendors</h3>`;
@@ -3373,7 +3713,7 @@ function exportFinancePdf() {
   const commission = paid.reduce((s, t) => s + Number(t.platform_cut), 0);
   const volume = paid.reduce((s, t) => s + Number(t.amount), 0);
   const w = window.open("", "_blank");
-  w.document.write(`<!doctype html><html><head><title>Medris — Transactions (${rangeLabel(adminFinanceRange)})</title>
+  w.document.write(`<!doctype html><html><head><title>Levromart — Transactions (${rangeLabel(adminFinanceRange)})</title>
     <style>
       body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0d201c;padding:2rem;}
       h1{color:#0e8f7f;margin-bottom:0.2rem;} .muted{color:#5c7269;margin-top:0;}
@@ -3383,7 +3723,7 @@ function exportFinancePdf() {
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
     </style></head><body>
-    <h1>Medris — Transactions</h1>
+    <h1>Levromart — Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
       <div class="stat"><b>${paid.length}</b>Paid transactions</div>
@@ -3449,36 +3789,36 @@ function renderTerms() {
   return `<div class="legal-page">
     <h2>Terms of Service</h2>
     <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-    <p>Medris is an online marketplace that connects buyers of medical equipment with independent vendors across Lagos, for both rental and outright purchase. By creating an account or using Medris, you agree to these terms.</p>
+    <p>Levromart is an online marketplace that connects buyers with independent vendors across Lagos — including healthcare equipment, food, electronics, and other goods and services — for both rental and outright purchase. By creating an account or using Levromart, you agree to these terms.</p>
 
-    <h3>1. What Medris is (and isn't)</h3>
-    <p>Medris provides the platform, payment processing, and vendor verification. We are not the seller or renter of record — every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their equipment and its description.</p>
+    <h3>1. What Levromart is (and isn't)</h3>
+    <p>Levromart provides the platform, payment processing, and vendor verification. We are not the seller or renter of record — every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their goods, services, and descriptions.</p>
 
     <h3>2. Accounts</h3>
     <p>You must provide accurate information when registering. You're responsible for keeping your password secure and for all activity under your account. Vendor accounts additionally require identity/business verification before their storefront goes live.</p>
 
     <h3>3. Orders, rentals &amp; payments</h3>
     <ul>
-      <li>Payments are processed through Paystack. Medris never stores your card details.</li>
+      <li>Payments are processed through Paystack. Levromart never stores your card details.</li>
       <li>Rentals may require a refundable deposit, held and returned per the vendor's stated terms once equipment is returned in its original condition.</li>
-      <li>Vendors set their own prices; Medris deducts a commission on completed transactions, disclosed to vendors in their dashboard.</li>
-      <li>Some vendors accept offline payment (cash/transfer) on handover — Medris still tracks commission owed on these orders.</li>
+      <li>Vendors set their own prices; Levromart deducts a commission on completed transactions, disclosed to vendors in their dashboard.</li>
+      <li>Some vendors accept offline payment (cash/transfer) on handover — Levromart still tracks commission owed on these orders.</li>
     </ul>
 
     <h3>4. Cancellations &amp; disputes</h3>
-    <p>See our <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation Policy</a> for cancellation windows. If something goes wrong with an order, either party can raise a dispute from the order page; Medris admins review and resolve disputes in good faith, but are not a court of law.</p>
+    <p>See our <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation Policy</a> for cancellation windows. If something goes wrong with an order, either party can raise a dispute from the order page; Levromart admins review and resolve disputes in good faith, but are not a court of law.</p>
 
     <h3>5. Prohibited use</h3>
-    <p>No listing or use of counterfeit, unsafe, expired, or unlicensed medical equipment. No harassment of other users. No attempting to circumvent Medris payments to avoid commission — this undermines the buyer protections (verified vendors, dispute resolution, payment records) that come with paying through the platform.</p>
+    <p>No listing or sale of counterfeit, unsafe, expired, stolen, or unlicensed goods — including medical equipment that requires regulatory approval, food that doesn't meet basic safety standards, or any item Nigerian law restricts the sale of. No harassment of other users. No attempting to circumvent Levromart payments to avoid commission — this undermines the buyer protections (verified vendors, dispute resolution, payment records) that come with paying through the platform.</p>
 
     <h3>6. Account suspension</h3>
-    <p>Medris may pause or suspend a vendor's storefront or a user's account for violations of these terms, fraud, or repeated disputes, with notice where practical.</p>
+    <p>Levromart may pause or suspend a vendor's storefront or a user's account for violations of these terms, fraud, or repeated disputes, with notice where practical.</p>
 
     <h3>7. Liability</h3>
-    <p>Medris facilitates transactions between independent parties and is not liable for the performance, safety, or fitness of any equipment listed by a vendor. Always inspect rented/purchased equipment and consult a licensed healthcare provider for clinical use questions.</p>
+    <p>Levromart facilitates transactions between independent parties and is not liable for the performance, safety, or fitness of any item listed by a vendor. Always inspect goods before accepting them, and consult a licensed healthcare provider for clinical use questions about medical equipment.</p>
 
     <h3>8. Contact</h3>
-    <p>Questions about these terms can be raised through your account, or with a Medris admin via a support request.</p>
+    <p>Questions about these terms can be raised through your account, or with a Levromart admin via a support request.</p>
   </div>`;
 }
 
@@ -3486,7 +3826,7 @@ function renderPrivacy() {
   return `<div class="legal-page">
     <h2>Privacy Policy</h2>
     <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-    <p>This explains what personal data Medris collects, why, and how it's protected.</p>
+    <p>This explains what personal data Levromart collects, why, and how it's protected.</p>
 
     <h3>1. What we collect</h3>
     <ul>
@@ -3508,13 +3848,13 @@ function renderPrivacy() {
     </ul>
 
     <h3>4. Your choices</h3>
-    <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Medris admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
+    <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Levromart admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
 
     <h3>5. Security</h3>
     <p>Passwords are never stored in plain text (handled by Supabase Auth). Access to vendor verification documents and payment records is restricted to the account owner and admins.</p>
 
     <h3>6. Contact</h3>
-    <p>Privacy questions can be raised through your account, or with a Medris admin via a support request.</p>
+    <p>Privacy questions can be raised through your account, or with a Levromart admin via a support request.</p>
   </div>`;
 }
 
@@ -3530,16 +3870,16 @@ function renderRefundPolicy() {
     <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable — only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
 
     <h3>3. Refundable deposits</h3>
-    <p>Rental deposits are held to cover damage or non-return. Once you mark equipment as returned and the vendor confirms its condition, the deposit is released back to you. If there's a disagreement about the equipment's condition, either side can raise a dispute for a Medris admin to review before the deposit is settled.</p>
+    <p>Rental deposits are held to cover damage or non-return. Once you mark equipment as returned and the vendor confirms its condition, the deposit is released back to you. If there's a disagreement about the equipment's condition, either side can raise a dispute for a Levromart admin to review before the deposit is settled.</p>
 
     <h3>4. Damaged, wrong, or misrepresented equipment</h3>
     <p>If what arrives doesn't match the listing, or is faulty on arrival, raise a dispute from the order page within 48 hours of handover. Admins will review evidence from both sides and can direct a full or partial refund from the vendor's proceeds.</p>
 
     <h3>5. Vendor no-shows or non-delivery</h3>
-    <p>If a vendor fails to deliver/hand over confirmed equipment, the buyer is entitled to a full refund of any amount paid online through Medris.</p>
+    <p>If a vendor fails to deliver/hand over confirmed equipment, the buyer is entitled to a full refund of any amount paid online through Levromart.</p>
 
     <h3>6. How refunds are paid</h3>
-    <p>Refunds for online payments are issued back through Paystack to your original payment method. For orders paid offline (cash/transfer directly to the vendor), any refund is arranged directly between buyer and vendor, with Medris admins available to mediate a dispute.</p>
+    <p>Refunds for online payments are issued back through Paystack to your original payment method. For orders paid offline (cash/transfer directly to the vendor), any refund is arranged directly between buyer and vendor, with Levromart admins available to mediate a dispute.</p>
   </div>`;
 }
 
@@ -3589,7 +3929,7 @@ function toggleAiChat() {
   if (!panel.classList.contains("hidden")) {
     playSound("open");
     if (aiChatMessages.length === 0) {
-      appendAiChatMessage("assistant", "Hi! I'm the Medris Assistant. Ask me what equipment you need, how renting, buying or requesting works, or anything else about the marketplace.");
+      appendAiChatMessage("assistant", "Hi! I'm the Levromart Assistant. Ask me what you're looking for — healthcare equipment, food, electronics, and more — how renting, buying or requesting works, or anything else about the marketplace.");
     }
     byId("aiChatInput").focus();
   }
@@ -3634,35 +3974,13 @@ async function sendAiChatMessage() {
   }
 }
 
-// Draggable floating action button — repositions with pointer drag; a tap
-// (no real movement) opens the chat instead of dragging it.
-(function setupAiChatFabDrag() {
+// Pinned floating action button — fixed bottom-right, tap to open. (Previously
+// draggable, but the drag could get triggered by swipes elsewhere on the page
+// — like scrolling a horizontally-scrollable table — and leave the bubble
+// stranded on top of other content. Fixed position removes that entirely.)
+(function setupAiChatFab() {
   const fab = byId("aiChatFab");
-  let dragging = false, moved = false, startX = 0, startY = 0, startRight = 0, startBottom = 0;
-  fab.addEventListener("pointerdown", (e) => {
-    dragging = true; moved = false;
-    fab.setPointerCapture(e.pointerId);
-    const rect = fab.getBoundingClientRect();
-    startX = e.clientX; startY = e.clientY;
-    startRight = window.innerWidth - rect.right;
-    startBottom = window.innerHeight - rect.bottom;
-  });
-  fab.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX, dy = e.clientY - startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-    if (!moved) return;
-    let right = startRight - dx, bottom = startBottom - dy;
-    right = Math.max(4, Math.min(window.innerWidth - fab.offsetWidth - 4, right));
-    bottom = Math.max(4, Math.min(window.innerHeight - fab.offsetHeight - 4, bottom));
-    fab.style.right = `${right}px`;
-    fab.style.bottom = `${bottom}px`;
-  });
-  fab.addEventListener("pointerup", (e) => { dragging = false; fab.releasePointerCapture(e.pointerId); });
-  fab.addEventListener("click", (e) => {
-    if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; }
-    toggleAiChat();
-  });
+  fab.addEventListener("click", () => toggleAiChat());
 })();
 
 window.addEventListener("popstate", (e) => {
