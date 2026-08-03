@@ -1,4 +1,4 @@
-const CACHE = "medris-v1";
+const CACHE = "levromart-v2";
 const APP_SHELL = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

@@ -3176,6 +3176,13 @@ async function renderBuyerOrders() {
   return html;
 }
 
+function orderStatusBadgeClass(status) {
+  if (status === "cancelled" || status === "disputed") return "danger";
+  if (status === "completed") return "success";
+  if (status === "handed_over" || status === "returned") return "warning";
+  return "";
+}
+
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
   return orders.map((o) => `
@@ -3184,7 +3191,7 @@ function orderListHtml(orders, isBuyerView) {
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
       </div>
-      <span class="badge">${o.status}</span>
+      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status}</span>
     </div>`).join("");
 }
 
@@ -3208,7 +3215,7 @@ async function renderOrderDetail(orderId) {
   const canRecordPayment = isVendor && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
   const canPayOnline = isBuyer && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
 
-  let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge">${order.status.replace("_", " ")}</span></div>
+  let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge ${orderStatusBadgeClass(order.status)}">${order.status.replace("_", " ")}</span></div>
   <p class="muted">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}</p>
   ${order.package?.name ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-boxes-packing"></i> Package: ${esc(order.package.name)}</p>` : ""}
   ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> ${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}`;
