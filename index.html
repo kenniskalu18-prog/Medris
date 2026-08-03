@@ -188,12 +188,13 @@
 
   /* ---- floating draggable AI chat ---- */
   .ai-chat-fab {
-    position: fixed; right: 1.2rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); width: 3.4rem; height: 3.4rem; border-radius: 50%;
+    position: fixed !important; right: 1.2rem !important; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    left: auto !important; top: auto !important; width: 3.4rem; height: 3.4rem; border-radius: 50%;
     background: var(--primary-grad); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
     box-shadow: var(--shadow-float); cursor: pointer; z-index: 150; user-select: none;
     animation: fabPulse 3s ease-in-out infinite;
   }
-  @media (max-width: 720px) { .ai-chat-fab { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); } }
+  @media (max-width: 720px) { .ai-chat-fab { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)) !important; } }
   @keyframes fabPulse {
     0%, 100% { box-shadow: var(--shadow-float); }
     50% { box-shadow: var(--shadow-float), 0 0 0 9px color-mix(in srgb, var(--primary) 16%, transparent); }
@@ -492,6 +493,18 @@
   </div>
 </div>
 
+<div id="notifPromptModal" class="modal hidden">
+  <div class="modal-content install-modal-content">
+    <div class="install-modal-badge"><i class="fa-solid fa-bell" style="font-size:1.7rem;color:#fff;"></i></div>
+    <h3>Turn on notifications</h3>
+    <p class="muted">Get notified instantly on this device for new orders, offers, and updates — on top of email.</p>
+    <div class="install-modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="dismissNotifPrompt()">Not now</button>
+      <button class="btn" onclick="enablePushNotifications()"><i class="fa-solid fa-bell"></i> Turn on</button>
+    </div>
+  </div>
+</div>
+
 <!-- Login / Signup Modal -->
 <div id="loginModal" class="modal hidden">
   <div class="modal-content">
@@ -708,6 +721,59 @@ async function runInstallPrompt() {
 function dismissInstallPrompt() {
   byId("installPromptModal")?.classList.add("hidden");
   localStorage.setItem("medris-install-dismissed", "1");
+  setTimeout(maybeShowNotifPrompt, 400);
+}
+
+// ---------- PUSH NOTIFICATIONS (on top of email, not instead of) ----------
+// Public VAPID key — safe to expose client-side, same reasoning as the
+// Supabase anon key above. The matching private key lives only in Vercel
+// (VAPID_PRIVATE_KEY), used by api/notify-push.js to actually send.
+const VAPID_PUBLIC_KEY = "BJ7h-JVsXaOpYXY5st5L7esSDOPjhRROincFPTT013a1ZY3U62WIKPAoFEDzBgFB8g3H2DBNX1iRw8GzdPWR88k";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+function pushSupported() {
+  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+}
+function maybeShowNotifPrompt() {
+  if (!session) return;
+  if (!pushSupported()) return;
+  if (Notification.permission !== "default") return; // already granted or denied — nothing to ask
+  if (localStorage.getItem("medris-notif-dismissed")) return;
+  const installModal = byId("installPromptModal");
+  if (installModal && !installModal.classList.contains("hidden")) return; // don't stack two popups
+  byId("notifPromptModal")?.classList.remove("hidden");
+}
+function dismissNotifPrompt() {
+  byId("notifPromptModal")?.classList.add("hidden");
+  localStorage.setItem("medris-notif-dismissed", "1");
+}
+async function enablePushNotifications() {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") { dismissNotifPrompt(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const raw = sub.toJSON();
+    await sb.from("push_subscriptions").upsert(
+      { user_id: session.user.id, endpoint: raw.endpoint, p256dh: raw.keys.p256dh, auth_key: raw.keys.auth },
+      { onConflict: "endpoint" }
+    );
+    showToast("Notifications turned on.", "success");
+  } catch (err) {
+    showToast("Couldn't turn on notifications on this device.", "error");
+  }
+  dismissNotifPrompt();
 }
 
 let session = null;   // supabase auth session
@@ -1493,6 +1559,7 @@ async function submitAuth() {
       navigate(role === "vendor" ? "vendorApply" : "home");
       awaitingInstallPromptForLogin = true;
       setTimeout(maybeShowInstallPrompt, 800);
+      setTimeout(maybeShowNotifPrompt, 1600);
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -1501,6 +1568,7 @@ async function submitAuth() {
       navigate("home");
       awaitingInstallPromptForLogin = true;
       setTimeout(maybeShowInstallPrompt, 800);
+      setTimeout(maybeShowNotifPrompt, 1600);
     }
   } catch (err) {
     errorEl.textContent = err.message;
@@ -4054,6 +4122,10 @@ window.addEventListener("popstate", (e) => {
   // Chrome a moment to fire beforeinstallprompt first.
   awaitingInstallPromptForLogin = true;
   setTimeout(maybeShowInstallPrompt, 2500);
+  // Returning, already-logged-in visitors who dismissed the install prompt
+  // in an earlier session won't see it again, so give the notification
+  // prompt its own independent chance to show too.
+  setTimeout(maybeShowNotifPrompt, 3200);
 })();
 
 if ("serviceWorker" in navigator) {
