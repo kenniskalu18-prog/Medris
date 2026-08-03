@@ -609,6 +609,7 @@
     <div class="flex">
       <div style="flex:1;" id="prodSalePriceWrap"><label id="prodSalePriceLabel">Sale price (₦)</label><input type="number" id="prodSalePrice" step="0.01" /></div>
       <div style="flex:1;" id="prodRentalRateWrap"><label>Rental rate (₦)</label><input type="number" id="prodRentalRate" step="0.01" /></div>
+      <div style="flex:1;" id="prodServiceUnitWrap"><label>Price is</label><select id="prodServiceUnit" onchange="updateProductFormFields()"><option value="flat">One-time (flat)</option><option value="hour">Per hour</option><option value="day">Per day</option><option value="week">Per week</option></select></div>
     </div>
     <div id="prodRateUnitWrap"><label>Per</label><select id="prodRateUnit"><option value="day">Day</option><option value="week">Week</option></select></div>
     <div id="prodDepositWrap"><label>Refundable deposit (₦, optional)</label><input type="number" id="prodDeposit" step="0.01" /></div>
@@ -869,6 +870,7 @@ let favoriteIds = new Set();
 
 // ---------- UTILS ----------
 function naira(n) { return "₦" + Number(n ?? 0).toLocaleString(); }
+function servicePriceSuffix(p) { return p.is_service && p.service_price_unit && p.service_price_unit !== "flat" ? "/" + p.service_price_unit : ""; }
 function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
 function byId(id) { return document.getElementById(id); }
 
@@ -1461,8 +1463,8 @@ async function refreshAuthState() {
   if (session) {
     const { data: p } = await sb.from("users").select("*").eq("id", session.user.id).single();
     profile = p;
-    const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).maybeSingle();
-    vendor = v;
+    const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
+    vendor = profile?.role === "admin" ? null : v;
     const { data: favs } = await sb.from("favorites").select("product_id").eq("buyer_id", session.user.id);
     favoriteIds = new Set((favs || []).map((f) => f.product_id));
   }
@@ -1483,16 +1485,16 @@ function updateAuthUI() {
     avatarBtn.innerHTML = profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" alt="" />` : esc(initials(profile.name, profile.email));
 
     const links = [];
-    if (vendor) {
+    if (vendor && profile.role !== "admin") {
       links.push({ label: "<i class='fa-solid fa-box'></i> My Shop", action: "navigate('vendorDashboard')" });
       links.push({ label: "<i class='fa-solid fa-boxes-packing'></i> Packages", action: "navigate('vendorPackages')" });
       links.push({ label: "<i class='fa-solid fa-clipboard-list'></i> Buyer requests", action: "navigate('vendorRequests')" });
       links.push({ label: "<i class='fa-solid fa-pen'></i> Edit business profile", action: "navigate('vendorEditProfile')" });
-    } else {
+    } else if (profile.role !== "admin") {
       links.push({ label: "<i class='fa-solid fa-clipboard-list'></i> My Orders", action: "navigate('buyerOrders')" });
       links.push({ label: "<i class='fa-solid fa-hand'></i> Request an item", action: "navigate('requestEquipment')" });
     }
-    links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
+    if (profile.role !== "admin") links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
     if (profile.role === "admin") {
       links.push({ label: "<i class='fa-solid fa-shield-halved'></i> Admin panel", action: "navigate('adminPanel')" });
       links.push({ label: "<i class='fa-solid fa-users-gear'></i> Manage admins", action: "navigate('adminUsers')" });
@@ -1545,7 +1547,10 @@ function renderBottomNav() {
   if (!nav) return;
   const items = [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
   items.push({ icon: "<i class='fa-solid fa-store'></i>", label: "Vendors", action: "navigate('vendors')", view: "vendors" });
-  if (session) {
+  if (session && profile?.role === "admin") {
+    items.push({ icon: "<i class='fa-solid fa-shield-halved'></i>", label: "Admin", action: "navigate('adminPanel')", view: "adminPanel" });
+    items.push({ icon: "<i class='fa-solid fa-sack-dollar'></i>", label: "Finance", action: "navigate('adminFinance')", view: "adminFinance" });
+  } else if (session) {
     items.push({ icon: "<i class='fa-solid fa-heart'></i>", label: "Wishlist", action: "navigate('wishlist')", view: "wishlist" });
     if (vendor) {
       items.push({ icon: "<i class='fa-solid fa-clipboard-list'></i>", label: "Requests", action: "navigate('vendorRequests')", view: "vendorRequests" });
@@ -1589,6 +1594,16 @@ function applyAuthMode() {
   byId("authToggleLink").textContent = isForgot ? "Back to login" : isRegister ? "Already have an account? Login" : "Need an account? Register";
   byId("authToggleLink").onclick = (e) => { e.preventDefault(); isForgot ? setAuthMode("login") : toggleAuthMode(); };
   byId("authError").classList.add("hidden");
+}
+
+// Only one active login per account: right after a successful sign-in,
+// revoke every other device/browser's session for this user (their end
+// only actually logs out once it next tries to refresh its token — see
+// the onAuthStateChange listener below for the "signed out elsewhere"
+// message that fires when that happens).
+let manualLogout = false;
+async function enforceSingleSession() {
+  try { await sb.auth.signOut({ scope: "others" }); } catch (e) {}
 }
 
 async function submitAuth() {
@@ -1640,6 +1655,7 @@ async function submitAuth() {
         showToast("Check your email for a confirmation link, then log in.", "success");
         return;
       }
+      await enforceSingleSession();
       await refreshAuthStateOnce();
       hideLogin();
       navigate(role === "vendor" ? "vendorApply" : "home");
@@ -1649,6 +1665,7 @@ async function submitAuth() {
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      await enforceSingleSession();
       await refreshAuthStateOnce();
       hideLogin();
       navigate("home");
@@ -1665,6 +1682,7 @@ async function submitAuth() {
 }
 
 async function logout() {
+  manualLogout = true;
   await sb.auth.signOut();
   await refreshAuthStateOnce();
   navigate("home");
@@ -1796,7 +1814,7 @@ async function renderHome() {
 
   const activeSector = sectors.find((s) => s.id === currentSectorId) || null;
 
-  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
+  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
     .eq("status", "active").eq("vendor.verification_status", "verified");
   if (activeSector) vendorQuery = vendorQuery.eq("vendor.sector_id", activeSector.id);
   let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, logo_url").eq("verification_status", "verified");
@@ -1818,7 +1836,7 @@ async function renderHome() {
       <div class="hero-quick-actions">
         <button class="quick-action" onclick="scrollToBrowse('rent')"><span class="quick-action-icon"><i class='fa-solid fa-rotate'></i></span><span>Rent</span></button>
         <button class="quick-action" onclick="scrollToBrowse('sale')"><span class="quick-action-icon"><i class='fa-solid fa-cart-shopping'></i></span><span>Buy</span></button>
-        <button class="quick-action outline" onclick="requireLoginThen(vendor ? 'vendorDashboard' : 'vendorApply')"><span class="quick-action-icon"><i class='fa-solid fa-tag'></i></span><span>Sell</span></button>
+        ${profile?.role !== "admin" ? `<button class="quick-action outline" onclick="requireLoginThen(vendor ? 'vendorDashboard' : 'vendorApply')"><span class="quick-action-icon"><i class='fa-solid fa-tag'></i></span><span>Sell</span></button>` : ""}
         <button class="quick-action outline" onclick="requireLoginThen('requestEquipment')"><span class="quick-action-icon"><i class='fa-solid fa-hand'></i></span><span>Request</span></button>
       </div>
     </div>
@@ -1922,7 +1940,7 @@ async function filterHomeProducts() {
 
   let query = sb
     .from("products")
-    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
+    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
     .eq("status", "active")
     .eq("vendor.verification_status", "verified");
 
@@ -1956,7 +1974,7 @@ function productCardHtml(p) {
         </span>
       </div>
       <div style="margin:0.5rem 0;">
-        ${p.sale_price != null ? `<span><strong>${p.is_service ? "Price" : "Buy"}:</strong> ${naira(p.sale_price)}</span> ` : ""}
+        ${p.sale_price != null ? `<span><strong>${p.is_service ? "Price" : "Buy"}:</strong> ${naira(p.sale_price)}${servicePriceSuffix(p)}</span> ` : ""}
         ${p.rental_rate != null ? `<span><strong>Rent:</strong> ${naira(p.rental_rate)}/${p.rental_rate_unit}</span>` : ""}
       </div>
       ${p.is_service ? "" : `<p class="muted">Available: ${p.quantity_available} · ${esc((p.condition || "").replace("-", " "))}</p>`}
@@ -1998,7 +2016,7 @@ async function toggleFavorite(evt, productId) {
 async function renderWishlist() {
   if (!session) return '<div class="empty-state">Log in to save items to your wishlist.</div>';
   const { data: favs } = await sb.from("favorites")
-    .select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, status, vendor:vendors(id, business_name, verification_status, logo_url))")
+    .select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, status, vendor:vendors(id, business_name, verification_status, logo_url))")
     .eq("buyer_id", session.user.id).order("created_at", { ascending: false });
 
   const products = (favs || []).map((f) => f.product).filter((p) => p && p.status === "active" && p.vendor?.verification_status === "verified");
@@ -2053,13 +2071,15 @@ async function renderProductDetail(productId) {
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
       </div>
       ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
-      ${product.sale_price != null ? `<p><strong>${product.is_service ? "Price" : "Buy price"}:</strong> ${naira(product.sale_price)}</p>` : ""}
+      ${product.sale_price != null ? `<p><strong>${product.is_service ? "Price" : "Buy price"}:</strong> ${naira(product.sale_price)}${servicePriceSuffix(product)}</p>` : ""}
       ${product.rental_rate != null ? `<p><strong>Rent:</strong> ${naira(product.rental_rate)} per ${product.rental_rate_unit}</p>` : ""}
       ${product.deposit_amount ? `<p><strong>Refundable deposit:</strong> ${naira(product.deposit_amount)}</p>` : ""}
     </div>
   </div>`;
 
-  if (canRent) {
+  if (profile?.role === "admin") {
+    html += `<div class="card"><p class="muted"><i class="fa-solid fa-circle-info"></i> Admin accounts can't make purchases on Levromart.</p></div>`;
+  } else if (canRent) {
     const today = new Date().toISOString().slice(0, 10);
     html += `<div class="card"><h3><i class='fa-solid fa-calendar-days'></i> Rent this item</h3>
       <div class="flex">
@@ -2072,12 +2092,16 @@ async function renderProductDetail(productId) {
       <p id="rentError" class="error-text hidden"></p>
     </div>`;
   }
-  if (canBuy) {
+  if (profile?.role !== "admin" && canBuy) {
     const buyLabel = product.is_service ? "Book Now" : "Buy Now";
+    const isTimedService = product.is_service && product.service_price_unit && product.service_price_unit !== "flat";
     html += `<div class="card"><h3><i class='fa-solid ${product.is_service ? "fa-calendar-check" : "fa-cart-shopping"}'></i> ${buyLabel}</h3>
       <div class="flex">
-        <input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />
+        ${isTimedService
+          ? `<div><label style="margin:0;">Number of ${product.service_price_unit}s</label><input type="number" id="buyQty" value="1" min="1" oninput="updateServiceTotalPreview(${product.sale_price},'${product.service_price_unit}')" style="width:140px;" /></div>`
+          : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />`}
       </div>
+      ${isTimedService ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee)}
       <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
       <p id="buyError" class="error-text hidden"></p>
@@ -2086,7 +2110,7 @@ async function renderProductDetail(productId) {
   const relatedNames = RELATED_EQUIPMENT[product.category?.name] || [];
   if (relatedNames.length) {
     const { data: related } = await sb.from("products")
-      .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, category:categories!inner(name), vendor:vendors!inner(id, business_name, verification_status, logo_url)")
+      .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, category:categories!inner(name), vendor:vendors!inner(id, business_name, verification_status, logo_url)")
       .neq("id", product.id).eq("status", "active").eq("vendor.verification_status", "verified")
       .in("category.name", relatedNames).limit(6);
     if (related && related.length) {
@@ -2163,6 +2187,12 @@ async function confirmRental(vendorId, productId) {
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   navigate("orderDetail", { orderId });
+}
+
+function updateServiceTotalPreview(rate, unit) {
+  const qty = parseInt(byId("buyQty").value) || 0;
+  const el = byId("serviceTotalPreview");
+  if (el) el.textContent = `Total: ${naira(rate * qty)} (${qty} ${unit}${qty === 1 ? "" : "s"} × ${naira(rate)}/${unit})`;
 }
 
 async function buyNow(vendorId, productId) {
@@ -2253,7 +2283,7 @@ async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
   const [{ data: products }, { data: stats }, { data: reviews }, { data: packages }] = await Promise.all([
-    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
+    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
     sb.rpc("get_vendor_stats", { p_vendor_id: v.id }),
     sb.from("reviews").select("id, rating, comment, buyer_name, buyer_avatar_url, created_at").eq("vendor_id", v.id).order("created_at", { ascending: false }).limit(10),
     sb.from("vendor_packages").select("*, items:package_items(quantity, product:products(name))").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
@@ -2353,7 +2383,7 @@ function storefrontTableHtml(list) {
     <tbody>${list.map((p) => `<tr style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.name)}</td>
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.category?.name || "—")}</td>
-      <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${p.is_service ? `${naira(p.sale_price)}` : [p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${p.is_service ? `${naira(p.sale_price)}${servicePriceSuffix(p)}` : [p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.is_service ? "—" : p.quantity_available}</td>
     </tr>`).join("")}</tbody>
   </table>`;
@@ -2364,12 +2394,14 @@ function packageCardHtml(pkg, vendorDeliveryFee) {
     <div class="flex" style="justify-content:space-between;"><strong>${esc(pkg.name)}</strong><span class="badge">${naira(pkg.price)}</span></div>
     ${pkg.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(pkg.description)}</p>` : ""}
     <p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-box-open"></i> Includes: ${(pkg.items || []).map((it) => `${it.quantity}× ${esc(it.product?.name || "")}`).join(", ")}</p>
-    <button class="btn btn-sm" onclick="togglePackageBuy('${pkg.id}')">Buy this package</button>
+    ${profile?.role === "admin"
+      ? `<p class="muted"><i class="fa-solid fa-circle-info"></i> Admin accounts can't make purchases on Levromart.</p>`
+      : `<button class="btn btn-sm" onclick="togglePackageBuy('${pkg.id}')">Buy this package</button>
     <div id="pkgBuyWrap-${pkg.id}" class="hidden" style="margin-top:0.6rem;">
       ${deliveryFieldsHtml("pkg" + pkg.id, vendorDeliveryFee)}
       <button class="btn btn-sm" style="margin-top:0.4rem;" onclick="buyPackage('${pkg.id}')">Confirm purchase</button>
       <p id="pkgBuyError-${pkg.id}" class="error-text hidden"></p>
-    </div>
+    </div>`}
   </div>`;
 }
 function togglePackageBuy(packageId) {
@@ -2508,7 +2540,7 @@ async function declineOffer(offerId) {
 
 // ---------- VENDOR: BROWSE + OFFER ON BUYER REQUESTS ----------
 async function renderVendorRequests() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
   const [{ data: requests }, { data: myProducts }] = await Promise.all([
     sb.from("equipment_requests").select("*, offers:request_offers(id, vendor_id, status)").eq("status", "open").order("created_at", { ascending: false }),
     sb.from("products").select("id, name, category_id, sale_price, rental_rate, rental_rate_unit").eq("vendor_id", vendor.id).eq("status", "active"),
@@ -2575,8 +2607,10 @@ async function sendOffer(requestId) {
 
 // ---------- VENDOR APPLICATION ----------
 async function renderVendorApply() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">This page is for vendor accounts only.</div>';
-  const { data: existing } = await sb.from("vendors").select("id").eq("user_id", session.user.id).maybeSingle();
+  if (!session) return '<div class="empty-state">This page is for vendor accounts only.</div>';
+  if (profile?.role === "admin") return '<div class="empty-state">Admin accounts can\'t own a vendor store on Levromart.</div>';
+  if (profile?.role !== "vendor" && !vendor) return '<div class="empty-state">This page is for vendor accounts only.</div>';
+  const { data: existing } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (existing) { navigate("vendorDashboard"); return '<p class="muted">Redirecting…</p>'; }
 
   if (!sectors.length) { const { data } = await sb.from("sectors").select("*").order("sort_order"); sectors = data || []; }
@@ -2646,8 +2680,8 @@ async function submitVendorApply() {
 
 // ---------- VENDOR DASHBOARD ----------
 async function renderVendorDashboard() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).maybeSingle();
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
 
@@ -2708,8 +2742,8 @@ async function toggleVendorActive(currentlyActive) {
 
 // ---------- VENDOR: EDIT PROFILE ----------
 async function renderVendorEditProfile() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).maybeSingle();
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
   const { data: owed } = await sb.rpc("get_vendor_commission_owed", { p_vendor_id: v.id });
@@ -2849,8 +2883,8 @@ let vendorProductsView = "grid"; // 'grid' | 'table'
 function toggleVendorProductsView(v) { vendorProductsView = v; navigate("vendorProducts"); }
 
 async function renderVendorProducts() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).maybeSingle();
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
 
@@ -2891,7 +2925,7 @@ async function renderVendorProducts() {
       html += `<tr onclick="openEditProductModal('${p.id}')" style="cursor:pointer;" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc((p.category?.name || "").toLowerCase())}">
         <td>${esc(p.name)}</td>
         <td>${esc(p.category?.name || "Uncategorized")}</td>
-        <td>${p.sale_price != null ? naira(p.sale_price) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
+        <td>${p.sale_price != null ? naira(p.sale_price) + servicePriceSuffix(p) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
         <td>${p.quantity_available} / ${p.quantity_total}</td>
         <td>${p.view_count || 0}</td>
         <td>${favCounts[i]?.data ?? 0}</td>
@@ -2993,6 +3027,7 @@ async function showProductModal() {
     byId("prodDeposit").value = p.deposit_amount ?? "";
     byId("prodQtyTotal").value = p.quantity_total;
     byId("prodIsService").checked = !!p.is_service;
+    byId("prodServiceUnit").value = p.service_price_unit || "flat";
     window.__existingPhotos = p.photos || [];
     renderExistingPhotos();
   } else {
@@ -3001,6 +3036,7 @@ async function showProductModal() {
     byId("prodQtyTotal").value = 1;
     byId("prodListingType").value = "rent";
     byId("prodIsService").checked = false;
+    byId("prodServiceUnit").value = "flat";
   }
   updateProductFormFields();
   byId("productModal").classList.remove("hidden");
@@ -3026,15 +3062,18 @@ function updateProductFormFields() {
   byId("prodConditionWrap").classList.toggle("hidden", isService);
   byId("prodListingTypeWrap").classList.toggle("hidden", isService);
   byId("prodQtyWrap").classList.toggle("hidden", isService);
-  byId("prodSalePriceLabel").textContent = isService ? "Price (₦)" : "Sale price (₦)";
+  byId("prodServiceUnitWrap").classList.toggle("hidden", !isService);
 
   if (isService) {
+    const unit = byId("prodServiceUnit").value;
+    byId("prodSalePriceLabel").textContent = unit === "flat" ? "Price (₦)" : `Rate (₦ per ${unit})`;
     byId("prodSalePriceWrap").classList.remove("hidden");
     byId("prodRentalRateWrap").classList.add("hidden");
     byId("prodRateUnitWrap").classList.add("hidden");
     byId("prodDepositWrap").classList.add("hidden");
     return;
   }
+  byId("prodSalePriceLabel").textContent = "Sale price (₦)";
   const type = byId("prodListingType").value;
   byId("prodSalePriceWrap").classList.toggle("hidden", type === "rent");
   byId("prodRentalRateWrap").classList.toggle("hidden", type === "sale");
@@ -3061,6 +3100,7 @@ async function saveProduct() {
     const sale_price = byId("prodSalePrice").value ? Number(byId("prodSalePrice").value) : null;
     const rental_rate = is_service ? null : (byId("prodRentalRate").value ? Number(byId("prodRentalRate").value) : null);
     const rental_rate_unit = byId("prodRateUnit").value;
+    const service_price_unit = is_service ? (byId("prodServiceUnit").value || "flat") : null;
     if (!name) throw new Error("Product name is required.");
     if (!is_service && listing_type !== "rent" && !sale_price) throw new Error("Sale price is required for a sale listing.");
     if (is_service && !sale_price) throw new Error("Enter a price for this service.");
@@ -3089,6 +3129,7 @@ async function saveProduct() {
       condition: byId("prodCondition").value,
       listing_type,
       is_service,
+      service_price_unit,
       sale_price: listing_type === "rent" ? null : sale_price,
       rental_rate: listing_type === "sale" ? null : rental_rate,
       rental_rate_unit: listing_type === "sale" ? null : rental_rate_unit,
@@ -3142,8 +3183,8 @@ async function removeProduct(id) {
 let editingPackageId = null;
 
 async function renderVendorPackages() {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).maybeSingle();
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("id, verification_status").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
 
@@ -3282,8 +3323,8 @@ async function deletePackage(id) {
 const ORDER_TABS = ["all", "pending", "confirmed", "handed_over", "returned", "completed", "cancelled", "disputed"];
 
 async function renderVendorOrders(status) {
-  if (!session || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
-  if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).maybeSingle(); vendor = v; }
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle(); vendor = v; }
   if (!vendor) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   status = ORDER_TABS.includes(status) ? status : "all";
 
@@ -3577,6 +3618,7 @@ async function renderAdminPanel(status) {
   status = ["all", "pending", "verified", "rejected"].includes(status) ? status : "pending";
   let q = sb.from("vendors")
     .select("id, business_name, address, city, phone, whatsapp_number, cac_number, bio, verification_docs, verification_status, created_at, applicant:users(name, email)")
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (status !== "all") q = q.eq("verification_status", status);
   const { data: vendors } = await q;
@@ -3606,6 +3648,7 @@ async function renderAdminPanel(status) {
       <div class="flex" style="margin-top:0.5rem;">
         ${v.verification_status !== "verified" ? `<button class="btn btn-sm" onclick="setVendorStatus('${v.id}','verified','${status}','${esc(v.business_name)}')">Approve</button>` : ""}
         ${v.verification_status !== "rejected" ? `<button class="btn btn-sm btn-danger" onclick="setVendorStatus('${v.id}','rejected','${status}','${esc(v.business_name)}')">Reject</button>` : ""}
+        ${profile?.email === SUPER_ADMIN_EMAIL ? `<button class="btn btn-sm btn-danger" style="background:#7f1d1d;" onclick="adminDeleteVendor('${v.id}','${esc(v.business_name)}','${status}')"><i class="fa-solid fa-trash"></i> Delete vendor</button>` : ""}
       </div>
     </div>`;
   });
@@ -3617,6 +3660,13 @@ async function viewVendorDoc(path) {
   if (error) { showToast(error.message, "error"); return; }
   window.open(data.signedUrl, "_blank");
 }
+
+// Deleting a vendor is restricted to this one super-admin account, even
+// though other admins can be promoted later. The client-side check here is
+// just so the button doesn't render for anyone else — the real enforcement
+// is server-side, in admin_delete_vendor(), which checks the caller's email
+// itself and can't be bypassed from the browser.
+const SUPER_ADMIN_EMAIL = "kenniskalu18@gmail.com";
 
 // Client-side password prompt for the two "hurts a vendor" admin actions
 // (reject, pause). This is a fat-finger guard, not real security — anyone
@@ -3665,10 +3715,28 @@ async function logAdminAction(action, targetType, targetId, targetLabel) {
 }
 
 async function setVendorStatus(id, status, filterStatus, businessName) {
+  if (status === "verified" && !(await showConfirmDialog(
+    `Approve "${businessName}" as a vendor? Their storefront and listings go live to buyers immediately.`,
+    { title: "Approve vendor", okLabel: "Approve" }
+  ))) return;
   if (status === "rejected" && !(await promptAdminPassword("reject this vendor"))) return;
   const { error } = await sb.from("vendors").update({ verification_status: status }).eq("id", id);
   if (error) { showToast(error.message, "error"); return; }
   logAdminAction(status === "verified" ? "approve_vendor" : "reject_vendor", "vendor", id, businessName);
+  navigate("adminPanel", { status: filterStatus });
+}
+
+async function adminDeleteVendor(vendorId, businessName, filterStatus) {
+  if (profile?.email !== SUPER_ADMIN_EMAIL) return;
+  if (!(await showConfirmDialog(
+    `Permanently delete "${businessName}"? Their storefront and all listings are pulled immediately, they're demoted back to an ordinary buyer account, and this stops showing on your dashboard. Past orders and reviews stay on record for buyers.`,
+    { title: "Delete vendor", okLabel: "Delete vendor", danger: true }
+  ))) return;
+  if (!(await promptAdminPassword(`permanently delete "${businessName}"`))) return;
+  const { error } = await sb.rpc("admin_delete_vendor", { p_vendor_id: vendorId });
+  if (error) { showToast(error.message, "error"); return; }
+  logAdminAction("delete_vendor", "vendor", vendorId, businessName);
+  showToast("Vendor deleted and demoted to a buyer.", "success");
   navigate("adminPanel", { status: filterStatus });
 }
 
@@ -4100,6 +4168,10 @@ sb.auth.onAuthStateChange((_event) => {
     byId("resetPasswordModal").classList.remove("hidden");
     return;
   }
+  if (_event === "SIGNED_OUT" && session && !manualLogout) {
+    showToast("You've been signed out because your account was used on another device.", "error");
+  }
+  manualLogout = false;
   refreshAuthStateOnce();
 });
 
