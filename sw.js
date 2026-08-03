@@ -1,4 +1,4 @@
-const CACHE = "levromart-v2";
+const CACHE = "levromart-v3";
 const APP_SHELL = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -41,7 +41,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "",
     icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    badge: "/icon-badge.png",
     data: { url: data.url || "/" },
   };
   event.waitUntil(self.registration.showNotification(title, options));
