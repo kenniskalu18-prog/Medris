@@ -1,7 +1,7 @@
 // POST { accessToken, bankCode, accountNumber } -> { account_name, subaccount_code }
 // Sets up (or replaces) the calling vendor's Paystack subaccount so future
 // order payments split automatically: their cut settles straight to their
-// bank, the platform's commission_pct stays with the main Medris account.
+// bank, the platform's commission_pct stays with the main Levromart account.
 const { readBody, env } = require("./_util");
 
 module.exports = async function handler(req, res) {

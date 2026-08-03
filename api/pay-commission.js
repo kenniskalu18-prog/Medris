@@ -2,7 +2,7 @@
 // Lets a vendor settle commission owed on their offline (cash/transfer)
 // sales in one tap. Unlike initiate-payment.js, this transaction has no
 // subaccount split — the whole amount is the platform's commission, so
-// it all goes to the main Medris Paystack account.
+// it all goes to the main Levromart Paystack account.
 const { env } = require("./_util");
 
 module.exports = async function handler(req, res) {
