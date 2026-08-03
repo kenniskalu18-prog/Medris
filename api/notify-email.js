@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
     if (!RESEND_API_KEY) { res.status(200).json({ sent: false, reason: "RESEND_API_KEY not configured" }); return; }
 
-    const origin = "https://medriss.vercel.app";
+    const origin = "https://levromart.vercel.app";
     const link = `${origin}/?nview=${encodeURIComponent(n.target_view || "home")}&nparams=${encodeURIComponent(JSON.stringify(n.target_params || {}))}`;
 
     const result = await sendNotificationEmail(RESEND_API_KEY, { to: u.email, name: u.name, title: n.title, body: n.body, link });

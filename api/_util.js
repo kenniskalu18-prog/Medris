@@ -47,7 +47,7 @@ async function settleReference(reference) {
   }
 }
 
-const MEDRIS_LOGO_URL = "https://medriss.vercel.app/icon-512.png";
+const MEDRIS_LOGO_URL = "https://levromart.vercel.app/icon-512.png";
 const BRAND_TEAL = "#0e8f7f";
 const BRAND_TEAL_DARK = "#075c52";
 
