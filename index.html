@@ -713,6 +713,7 @@ function maybeShowInstallPrompt() {
     return; // not installable and no manual instructions to give
   }
   modal.classList.remove("hidden");
+  trackModalOpened("installPromptModal");
 }
 async function runInstallPrompt() {
   if (!deferredInstallPrompt) return;
@@ -724,6 +725,7 @@ async function runInstallPrompt() {
 function dismissInstallPrompt() {
   byId("installPromptModal")?.classList.add("hidden");
   localStorage.setItem("medris-install-dismissed", "1");
+  if (dismissibleModalId === "installPromptModal") dismissibleModalId = null;
   setTimeout(maybeShowNotifPrompt, 400);
 }
 
@@ -750,10 +752,12 @@ function maybeShowNotifPrompt() {
   const installModal = byId("installPromptModal");
   if (installModal && !installModal.classList.contains("hidden")) return; // don't stack two popups
   byId("notifPromptModal")?.classList.remove("hidden");
+  trackModalOpened("notifPromptModal");
 }
 function dismissNotifPrompt() {
   byId("notifPromptModal")?.classList.add("hidden");
   localStorage.setItem("medris-notif-dismissed", "1");
+  if (dismissibleModalId === "notifPromptModal") dismissibleModalId = null;
 }
 async function enablePushNotifications() {
   try {
@@ -1487,8 +1491,12 @@ function requireLoginThen(view) {
   navigate(view);
 }
 
-function showLogin() { authMode = "login"; applyAuthMode(); byId("loginModal").classList.remove("hidden"); }
-function hideLogin() { byId("loginModal").classList.add("hidden"); byId("authError").classList.add("hidden"); }
+function showLogin() { authMode = "login"; applyAuthMode(); byId("loginModal").classList.remove("hidden"); trackModalOpened("loginModal"); }
+function hideLogin() {
+  byId("loginModal").classList.add("hidden");
+  byId("authError").classList.add("hidden");
+  if (dismissibleModalId === "loginModal") dismissibleModalId = null;
+}
 function toggleAuthMode() { authMode = authMode === "login" ? "register" : "login"; applyAuthMode(); }
 function setAuthMode(mode) { authMode = mode; applyAuthMode(); }
 function applyAuthMode() {
@@ -2911,6 +2919,7 @@ async function showProductModal() {
   }
   updateProductFormFields();
   byId("productModal").classList.remove("hidden");
+  trackModalOpened("productModal");
 }
 
 function renderExistingPhotos() {
@@ -2948,7 +2957,10 @@ function updateProductFormFields() {
   byId("prodDepositWrap").classList.toggle("hidden", type === "sale");
 }
 
-function closeProductModal() { byId("productModal").classList.add("hidden"); }
+function closeProductModal() {
+  byId("productModal").classList.add("hidden");
+  if (dismissibleModalId === "productModal") dismissibleModalId = null;
+}
 
 async function saveProduct() {
   const errorEl = byId("productError");
@@ -3114,6 +3126,7 @@ async function showPackageModal() {
     : `<p class="muted" style="margin:0;">You don't have any sellable products yet — add one first from My Products.</p>`;
 
   byId("packageModal").classList.remove("hidden");
+  trackModalOpened("packageModal");
 }
 
 function togglePkgItemQty(productId) {
@@ -3121,7 +3134,10 @@ function togglePkgItemQty(productId) {
   byId(`pkgQty-${productId}`)?.classList.toggle("hidden", !checked);
 }
 
-function closePackageModal() { byId("packageModal").classList.add("hidden"); }
+function closePackageModal() {
+  byId("packageModal").classList.add("hidden");
+  if (dismissibleModalId === "packageModal") dismissibleModalId = null;
+}
 
 async function savePackage() {
   const errorEl = byId("packageError");
@@ -4090,7 +4106,35 @@ async function sendAiChatMessage() {
   fab.addEventListener("click", () => toggleAiChat());
 })();
 
+// ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
+// A handful of plain, non-destructive popups should close like a native
+// sheet: tap outside, or press the phone's back button, same as tapping
+// Cancel. Deliberately NOT applied to confirmModal/adminPasswordModal/
+// deleteAccountModal/resetPasswordModal — those need an explicit choice,
+// not an accidental dismiss.
+let dismissibleModalId = null;
+const DISMISSIBLE_MODAL_CLOSERS = {
+  productModal: closeProductModal,
+  packageModal: closePackageModal,
+  loginModal: hideLogin,
+  installPromptModal: dismissInstallPrompt,
+  notifPromptModal: dismissNotifPrompt,
+};
+function trackModalOpened(id) {
+  dismissibleModalId = id;
+  history.pushState({ dismissibleModal: id }, "", location.href);
+}
+document.addEventListener("click", (e) => {
+  if (!dismissibleModalId || e.target.id !== dismissibleModalId) return;
+  DISMISSIBLE_MODAL_CLOSERS[dismissibleModalId]?.();
+  history.back();
+});
+
 window.addEventListener("popstate", (e) => {
+  if (dismissibleModalId) {
+    DISMISSIBLE_MODAL_CLOSERS[dismissibleModalId]?.();
+    return;
+  }
   if (e.state && e.state.view) navigate(e.state.view, e.state.params || {}, false);
   else navigate("home", {}, false);
 });
