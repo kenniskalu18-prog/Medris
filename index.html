@@ -567,30 +567,33 @@
     <h3 id="productModalTitle">Add New Product</h3>
     <div id="productError" class="error-text hidden"></div>
     <label>Product name</label>
-    <input type="text" id="prodName" placeholder="e.g. BP Monitor" />
+    <input type="text" id="prodName" placeholder="e.g. BP Monitor, or Hair Braiding" />
+    <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;"><input type="checkbox" id="prodIsService" onchange="updateProductFormFields()" style="width:auto;margin:0;" /> This is a service, not a physical product (e.g. hairdressing, baking, repairs)</label>
     <label>Description</label>
     <textarea id="prodDesc" placeholder="Description" rows="2"></textarea>
     <label>Category</label>
     <select id="prodCategory" onchange="toggleProdCategoryOther()"><option value="">Uncategorized</option></select>
     <input type="text" id="prodCategoryOther" class="hidden" placeholder="Name your category (e.g. Wound Care)" />
     <div class="flex">
-      <div style="flex:1;">
+      <div style="flex:1;" id="prodConditionWrap">
         <label>Condition</label>
         <select id="prodCondition"><option value="new">New</option><option value="used-good" selected>Used - good</option><option value="used-fair">Used - fair</option></select>
       </div>
-      <div style="flex:1;">
+      <div style="flex:1;" id="prodListingTypeWrap">
         <label>Listing type</label>
         <select id="prodListingType" onchange="updateProductFormFields()"><option value="rent">Rent only</option><option value="sale">Sale only</option><option value="both">Rent &amp; Sale</option></select>
       </div>
     </div>
     <div class="flex">
-      <div style="flex:1;" id="prodSalePriceWrap"><label>Sale price (₦)</label><input type="number" id="prodSalePrice" step="0.01" /></div>
+      <div style="flex:1;" id="prodSalePriceWrap"><label id="prodSalePriceLabel">Sale price (₦)</label><input type="number" id="prodSalePrice" step="0.01" /></div>
       <div style="flex:1;" id="prodRentalRateWrap"><label>Rental rate (₦)</label><input type="number" id="prodRentalRate" step="0.01" /></div>
     </div>
     <div id="prodRateUnitWrap"><label>Per</label><select id="prodRateUnit"><option value="day">Day</option><option value="week">Week</option></select></div>
     <div id="prodDepositWrap"><label>Refundable deposit (₦, optional)</label><input type="number" id="prodDeposit" step="0.01" /></div>
-    <label>Quantity available</label>
-    <input type="number" id="prodQtyTotal" value="1" min="1" />
+    <div id="prodQtyWrap">
+      <label>Quantity available</label>
+      <input type="number" id="prodQtyTotal" value="1" min="1" />
+    </div>
     <div id="prodExistingPhotos" class="flex" style="margin:0.4rem 0;"></div>
     <label>Add photos</label>
     <input type="file" id="prodPhotoFiles" accept="image/*" multiple />
@@ -1710,10 +1713,10 @@ async function renderHome() {
 
   const activeSector = sectors.find((s) => s.id === currentSectorId) || null;
 
-  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id)")
+  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
     .eq("status", "active").eq("vendor.verification_status", "verified");
   if (activeSector) vendorQuery = vendorQuery.eq("vendor.sector_id", activeSector.id);
-  let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating").eq("verification_status", "verified");
+  let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, logo_url").eq("verification_status", "verified");
   if (activeSector) topVendorsQuery = topVendorsQuery.eq("sector_id", activeSector.id);
 
   const [{ data: trending }, { data: topVendors }] = await Promise.all([
@@ -1836,7 +1839,7 @@ async function filterHomeProducts() {
 
   let query = sb
     .from("products")
-    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, vendor:vendors!inner(id, business_name, verification_status, sector_id)")
+    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
     .eq("status", "active")
     .eq("vendor.verification_status", "verified");
 
@@ -1863,20 +1866,26 @@ function productCardHtml(p) {
       <div class="product-img">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
       <h4 style="margin:0.6rem 0 0.2rem;">${esc(p.name)}</h4>
       <div class="flex" style="justify-content:space-between;">
-        <span class="badge">${p.listing_type}</span>
-        <span style="font-size:0.85rem;color:var(--primary);" onclick="event.stopPropagation();navigate('storefront',{vendorId:'${p.vendor?.id}'})">${esc(p.vendor?.business_name || "")}</span>
+        <span class="badge">${p.is_service ? "service" : p.listing_type}</span>
+        <span class="flex" style="gap:0.3rem;font-size:0.85rem;color:var(--primary);" onclick="event.stopPropagation();navigate('storefront',{vendorId:'${p.vendor?.id}'})">
+          ${p.vendor?.logo_url ? `<img src="${esc(p.vendor.logo_url)}" alt="" style="width:1.1rem;height:1.1rem;border-radius:50%;object-fit:cover;flex-shrink:0;" />` : ""}
+          ${esc(p.vendor?.business_name || "")}
+        </span>
       </div>
       <div style="margin:0.5rem 0;">
-        ${p.sale_price != null ? `<span><strong>Buy:</strong> ${naira(p.sale_price)}</span> ` : ""}
+        ${p.sale_price != null ? `<span><strong>${p.is_service ? "Price" : "Buy"}:</strong> ${naira(p.sale_price)}</span> ` : ""}
         ${p.rental_rate != null ? `<span><strong>Rent:</strong> ${naira(p.rental_rate)}/${p.rental_rate_unit}</span>` : ""}
       </div>
-      <p class="muted">Available: ${p.quantity_available} · ${esc((p.condition || "").replace("-", " "))}</p>
+      ${p.is_service ? "" : `<p class="muted">Available: ${p.quantity_available} · ${esc((p.condition || "").replace("-", " "))}</p>`}
     </div>
   </div>`;
 }
 
 function vendorCardHtml(v) {
   return `<div class="vendor-card" onclick="navigate('storefront',{vendorId:'${v.id}'})">
+    ${v.logo_url
+      ? `<img src="${esc(v.logo_url)}" alt="" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;margin-bottom:0.4rem;" />`
+      : `<div class="avatar-circle" style="width:2.6rem;height:2.6rem;margin-bottom:0.4rem;">${esc((v.business_name || "?")[0].toUpperCase())}</div>`}
     <strong>${esc(v.business_name)}</strong>
     <p class="muted" style="margin:0.3rem 0;">${esc(v.city || "")}</p>
     ${v.categories && v.categories.length ? `<p class="muted" style="margin:0 0 0.4rem;font-size:0.78rem;"><i class="fa-solid fa-tags"></i> ${v.categories.map(esc).join(", ")}</p>` : ""}
@@ -1906,7 +1915,7 @@ async function toggleFavorite(evt, productId) {
 async function renderWishlist() {
   if (!session) return '<div class="empty-state">Log in to save items to your wishlist.</div>';
   const { data: favs } = await sb.from("favorites")
-    .select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, status, vendor:vendors(id, business_name, verification_status))")
+    .select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, status, vendor:vendors(id, business_name, verification_status, logo_url))")
     .eq("buyer_id", session.user.id).order("created_at", { ascending: false });
 
   const products = (favs || []).map((f) => f.product).filter((p) => p && p.status === "active" && p.vendor?.verification_status === "verified");
@@ -1945,8 +1954,9 @@ async function renderProductDetail(productId) {
     <div>${photosHtml}</div>
     <div>
       <h2>${esc(product.name)}</h2>
+      ${product.is_service ? `<span class="badge">Service</span>` : ""}
       <p>${esc(product.description || "No description")}</p>
-      <p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>
+      ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a></p>
       <div class="trust-badges">
         <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified vendor</span>
@@ -1959,8 +1969,8 @@ async function renderProductDetail(productId) {
         ${product.vendor.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(product.vendor.whatsapp_number, "Hi, I'm interested in " + product.name + " on Levromart.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp vendor</a>` : ""}
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
       </div>
-      <p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>
-      ${product.sale_price != null ? `<p><strong>Buy price:</strong> ${naira(product.sale_price)}</p>` : ""}
+      ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
+      ${product.sale_price != null ? `<p><strong>${product.is_service ? "Price" : "Buy price"}:</strong> ${naira(product.sale_price)}</p>` : ""}
       ${product.rental_rate != null ? `<p><strong>Rent:</strong> ${naira(product.rental_rate)} per ${product.rental_rate_unit}</p>` : ""}
       ${product.deposit_amount ? `<p><strong>Refundable deposit:</strong> ${naira(product.deposit_amount)}</p>` : ""}
     </div>
@@ -1980,19 +1990,20 @@ async function renderProductDetail(productId) {
     </div>`;
   }
   if (canBuy) {
-    html += `<div class="card"><h3><i class='fa-solid fa-cart-shopping'></i> Buy Now</h3>
+    const buyLabel = product.is_service ? "Book Now" : "Buy Now";
+    html += `<div class="card"><h3><i class='fa-solid ${product.is_service ? "fa-calendar-check" : "fa-cart-shopping"}'></i> ${buyLabel}</h3>
       <div class="flex">
         <input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />
       </div>
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee)}
-      <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">Buy Now</button>
+      <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
   }
   const relatedNames = RELATED_EQUIPMENT[product.category?.name] || [];
   if (relatedNames.length) {
     const { data: related } = await sb.from("products")
-      .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, category:categories!inner(name), vendor:vendors!inner(id, business_name, verification_status)")
+      .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, category:categories!inner(name), vendor:vendors!inner(id, business_name, verification_status, logo_url)")
       .neq("id", product.id).eq("status", "active").eq("vendor.verification_status", "verified")
       .in("category.name", relatedNames).limit(6);
     if (related && related.length) {
@@ -2107,7 +2118,7 @@ function renderVendorsDirectory() {
 
 async function loadVendorsDirectory() {
   const [{ data: vendors }, { data: products }, { data: sectorsData }] = await Promise.all([
-    sb.from("vendors").select("id, business_name, city, avg_rating, sector_id").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
+    sb.from("vendors").select("id, business_name, city, avg_rating, sector_id, logo_url").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
     sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
     sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
   ]);
@@ -2159,7 +2170,7 @@ async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
   const [{ data: products }, { data: stats }, { data: reviews }, { data: packages }] = await Promise.all([
-    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
+    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
     sb.rpc("get_vendor_stats", { p_vendor_id: v.id }),
     sb.from("reviews").select("id, rating, comment, buyer_name, buyer_avatar_url, created_at").eq("vendor_id", v.id).order("created_at", { ascending: false }).limit(10),
     sb.from("vendor_packages").select("*, items:package_items(quantity, product:products(name))").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
@@ -2259,8 +2270,8 @@ function storefrontTableHtml(list) {
     <tbody>${list.map((p) => `<tr style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.name)}</td>
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.category?.name || "—")}</td>
-      <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${[p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
-      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.quantity_available}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${p.is_service ? `${naira(p.sale_price)}` : [p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.is_service ? "—" : p.quantity_available}</td>
     </tr>`).join("")}</tbody>
   </table>`;
 }
@@ -2888,6 +2899,7 @@ async function showProductModal() {
     byId("prodRateUnit").value = p.rental_rate_unit || "day";
     byId("prodDeposit").value = p.deposit_amount ?? "";
     byId("prodQtyTotal").value = p.quantity_total;
+    byId("prodIsService").checked = !!p.is_service;
     window.__existingPhotos = p.photos || [];
     renderExistingPhotos();
   } else {
@@ -2895,6 +2907,7 @@ async function showProductModal() {
     ["prodName", "prodDesc", "prodSalePrice", "prodRentalRate", "prodDeposit"].forEach((id) => (byId(id).value = ""));
     byId("prodQtyTotal").value = 1;
     byId("prodListingType").value = "rent";
+    byId("prodIsService").checked = false;
   }
   updateProductFormFields();
   byId("productModal").classList.remove("hidden");
@@ -2915,6 +2928,19 @@ function toggleProdCategoryOther() {
 }
 
 function updateProductFormFields() {
+  const isService = byId("prodIsService").checked;
+  byId("prodConditionWrap").classList.toggle("hidden", isService);
+  byId("prodListingTypeWrap").classList.toggle("hidden", isService);
+  byId("prodQtyWrap").classList.toggle("hidden", isService);
+  byId("prodSalePriceLabel").textContent = isService ? "Price (₦)" : "Sale price (₦)";
+
+  if (isService) {
+    byId("prodSalePriceWrap").classList.remove("hidden");
+    byId("prodRentalRateWrap").classList.add("hidden");
+    byId("prodRateUnitWrap").classList.add("hidden");
+    byId("prodDepositWrap").classList.add("hidden");
+    return;
+  }
   const type = byId("prodListingType").value;
   byId("prodSalePriceWrap").classList.toggle("hidden", type === "rent");
   byId("prodRentalRateWrap").classList.toggle("hidden", type === "sale");
@@ -2931,14 +2957,16 @@ async function saveProduct() {
   btn.disabled = true;
 
   try {
-    const listing_type = byId("prodListingType").value;
+    const is_service = byId("prodIsService").checked;
+    const listing_type = is_service ? "sale" : byId("prodListingType").value;
     const name = byId("prodName").value.trim();
-    const quantity_total = parseInt(byId("prodQtyTotal").value) || 1;
+    const quantity_total = is_service ? 999 : parseInt(byId("prodQtyTotal").value) || 1;
     const sale_price = byId("prodSalePrice").value ? Number(byId("prodSalePrice").value) : null;
-    const rental_rate = byId("prodRentalRate").value ? Number(byId("prodRentalRate").value) : null;
+    const rental_rate = is_service ? null : (byId("prodRentalRate").value ? Number(byId("prodRentalRate").value) : null);
     const rental_rate_unit = byId("prodRateUnit").value;
     if (!name) throw new Error("Product name is required.");
-    if (listing_type !== "rent" && !sale_price) throw new Error("Sale price is required for a sale listing.");
+    if (!is_service && listing_type !== "rent" && !sale_price) throw new Error("Sale price is required for a sale listing.");
+    if (is_service && !sale_price) throw new Error("Enter a price for this service.");
     if (listing_type !== "sale" && !rental_rate) throw new Error("Rental rate is required for a rental listing.");
 
     let category_id = byId("prodCategory").value || null;
@@ -2963,10 +2991,11 @@ async function saveProduct() {
       category_id,
       condition: byId("prodCondition").value,
       listing_type,
+      is_service,
       sale_price: listing_type === "rent" ? null : sale_price,
       rental_rate: listing_type === "sale" ? null : rental_rate,
       rental_rate_unit: listing_type === "sale" ? null : rental_rate_unit,
-      deposit_amount: byId("prodDeposit").value ? Number(byId("prodDeposit").value) : null,
+      deposit_amount: is_service ? null : (byId("prodDeposit").value ? Number(byId("prodDeposit").value) : null),
       quantity_total,
     };
 
