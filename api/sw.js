@@ -1,4 +1,4 @@
-const CACHE = "medris-v1";
+const CACHE = "levromart-v2";
 const APP_SHELL = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -29,5 +29,32 @@ self.addEventListener("fetch", (event) => {
         return res;
       })
       .catch(() => caches.match(req).then((cached) => cached || caches.match("/index.html")))
+  );
+});
+
+// Web Push — the actual notification display, triggered by api/notify-push.js
+// sending an encrypted push message to this subscription.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  const title = data.title || "Levromart";
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: data.url || "/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((all) => {
+      const existing = all.find((c) => "focus" in c);
+      if (existing) { existing.navigate(url); return existing.focus(); }
+      return clients.openWindow(url);
+    })
   );
 });
