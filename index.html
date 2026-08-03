@@ -90,6 +90,9 @@
     50% { filter: drop-shadow(0 0 15px color-mix(in srgb, var(--primary-light) 80%, transparent)); transform: scale(1.07); }
   }
   @media (prefers-reduced-motion: reduce) { .brand-logo { animation: none; } }
+  .spinner { width: 2.4rem; height: 2.4rem; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
   .login-modal-logo { width: 4.5rem; height: auto; display: block; margin: 0 auto 0.6rem; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 45%, transparent)); }
   .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; }
   .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
@@ -382,6 +385,21 @@
   .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
   .btn-whatsapp:hover { filter: brightness(1.08); }
+  .conv-list-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .conv-list-item:hover { background: var(--card); }
+  .conv-list-item .avatar-circle { flex-shrink: 0; }
+  .conv-list-item .conv-meta { flex: 1; min-width: 0; }
+  .conv-list-item .conv-preview { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv-unread-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+  .chat-thread { display: flex; flex-direction: column; height: 65vh; max-height: 600px; border: 1px solid var(--border); border-radius: 0.9rem; overflow: hidden; background: var(--card); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
+  .chat-bubble.mine { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.25rem; }
+  .chat-bubble.theirs { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); border-bottom-left-radius: 0.25rem; }
+  .chat-bubble .chat-time { display: block; font-size: 0.68rem; opacity: 0.75; margin-top: 0.2rem; }
+  .chat-input-row { display: flex; gap: 0.5rem; padding: 0.7rem; border-top: 1px solid var(--border); }
+  .chat-input-row input { margin: 0; flex: 1; }
+  .chat-input-row .btn { flex-shrink: 0; }
 
   /* ---- mobile bottom nav (thumb-reach) ---- */
   .bottom-nav { display: none; }
@@ -580,6 +598,22 @@
     <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
       <button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
     </div>
+  </div>
+</div>
+
+<!-- Admin login OTP -->
+<div id="otpModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-envelope-open-text"></i> Check your email</h3>
+    <p class="muted" style="font-size:0.88rem;">We sent a 6-digit code to your email to confirm it's really you. Enter it below to finish logging in.</p>
+    <div id="otpError" class="error-text hidden"></div>
+    <label>Login code</label>
+    <input type="text" id="otpInput" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" />
+    <div class="flex" style="justify-content:space-between;margin-top:0.8rem;">
+      <button class="btn" id="otpSubmitBtn" onclick="submitLoginOtp()">Confirm</button>
+      <button class="btn btn-sm" style="background:#6b7280;" onclick="cancelLoginOtp()">Cancel</button>
+    </div>
+    <p style="font-size:0.8rem;margin-top:0.7rem;"><a href="#" onclick="resendLoginOtp();return false;">Resend code</a></p>
   </div>
 </div>
 
@@ -940,6 +974,14 @@ function showToast(message, type = "info") {
     setTimeout(() => el.remove(), 300);
   }, 4200);
 }
+// Shown the instant we're back from Paystack, before verify-payment even
+// starts — otherwise there's a gap of a few seconds where the page just
+// looks stuck instead of clearly "still working on it."
+function showVerifyingPaymentScreen() {
+  const app = byId("app");
+  if (app) app.innerHTML = `<div class="empty-state"><div class="spinner" style="margin:0 auto 1rem;"></div><p>Confirming your payment…</p><p class="muted" style="font-size:0.85rem;">This only takes a moment. Please don't close this page.</p></div>`;
+}
+
 function showConfirmDialog(message, opts = {}) {
   return new Promise((resolve) => {
     const modal = byId("confirmModal");
@@ -1494,7 +1536,10 @@ function updateAuthUI() {
       links.push({ label: "<i class='fa-solid fa-clipboard-list'></i> My Orders", action: "navigate('buyerOrders')" });
       links.push({ label: "<i class='fa-solid fa-hand'></i> Request an item", action: "navigate('requestEquipment')" });
     }
-    if (profile.role !== "admin") links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
+    if (profile.role !== "admin") {
+      links.push({ label: "<i class='fa-solid fa-comment-dots'></i> Messages", action: "navigate('messages')" });
+      links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
+    }
     if (profile.role === "admin") {
       links.push({ label: "<i class='fa-solid fa-shield-halved'></i> Admin panel", action: "navigate('adminPanel')" });
       links.push({ label: "<i class='fa-solid fa-users-gear'></i> Manage admins", action: "navigate('adminUsers')" });
@@ -1551,7 +1596,7 @@ function renderBottomNav() {
     items.push({ icon: "<i class='fa-solid fa-shield-halved'></i>", label: "Admin", action: "navigate('adminPanel')", view: "adminPanel" });
     items.push({ icon: "<i class='fa-solid fa-sack-dollar'></i>", label: "Finance", action: "navigate('adminFinance')", view: "adminFinance" });
   } else if (session) {
-    items.push({ icon: "<i class='fa-solid fa-heart'></i>", label: "Wishlist", action: "navigate('wishlist')", view: "wishlist" });
+    items.push({ icon: "<i class='fa-solid fa-comment-dots'></i>", label: "Messages", action: "navigate('messages')", view: "messages" });
     if (vendor) {
       items.push({ icon: "<i class='fa-solid fa-clipboard-list'></i>", label: "Requests", action: "navigate('vendorRequests')", view: "vendorRequests" });
       items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')", view: "vendorDashboard" });
@@ -1656,22 +1701,30 @@ async function submitAuth() {
         return;
       }
       await enforceSingleSession();
-      await refreshAuthStateOnce();
-      hideLogin();
-      navigate(role === "vendor" ? "vendorApply" : "home");
-      awaitingInstallPromptForLogin = true;
-      setTimeout(maybeShowInstallPrompt, 800);
-      setTimeout(maybeShowNotifPrompt, 1600);
+      await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
       await enforceSingleSession();
-      await refreshAuthStateOnce();
-      hideLogin();
-      navigate("home");
-      awaitingInstallPromptForLogin = true;
-      setTimeout(maybeShowInstallPrompt, 800);
-      setTimeout(maybeShowNotifPrompt, 1600);
+
+      const { data: freshData } = await sb.auth.getSession();
+      const accessToken = freshData.session?.access_token;
+      const otpRes = await fetch("/api/send-login-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
+      });
+      const otpJson = await otpRes.json().catch(() => ({}));
+      if (otpJson.otpRequired) {
+        pendingOtpAccessToken = accessToken;
+        hideLogin();
+        byId("otpInput").value = "";
+        byId("otpError").classList.add("hidden");
+        byId("otpModal").classList.remove("hidden");
+        setTimeout(() => byId("otpInput")?.focus(), 50);
+        return;
+      }
+
+      await finishLoginSuccess("home");
     }
   } catch (err) {
     errorEl.textContent = err.message;
@@ -1679,6 +1732,63 @@ async function submitAuth() {
   } finally {
     btn.disabled = false;
   }
+}
+
+async function finishLoginSuccess(view) {
+  await refreshAuthStateOnce();
+  hideLogin();
+  navigate(view);
+  awaitingInstallPromptForLogin = true;
+  setTimeout(maybeShowInstallPrompt, 800);
+  setTimeout(maybeShowNotifPrompt, 1600);
+}
+
+// Admin-only email OTP, required after the password on every fresh login
+// (not on ordinary page reloads). See api/send-login-otp.js /
+// verify-login-otp.js — this account has real power (approve/delete
+// vendors, finance access), so it gets the extra step; buyer/vendor
+// accounts don't have anything worth adding that friction for.
+let pendingOtpAccessToken = null;
+
+async function submitLoginOtp() {
+  const code = byId("otpInput").value.trim();
+  const errorEl = byId("otpError");
+  errorEl.classList.add("hidden");
+  if (!code) { errorEl.textContent = "Enter the 6-digit code."; errorEl.classList.remove("hidden"); return; }
+  const btn = byId("otpSubmitBtn");
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/verify-login-otp", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: pendingOtpAccessToken, code }),
+    });
+    const json = await res.json();
+    if (!json.ok) { errorEl.textContent = json.error || "That code didn't work."; errorEl.classList.remove("hidden"); return; }
+    byId("otpModal").classList.add("hidden");
+    pendingOtpAccessToken = null;
+    await finishLoginSuccess("adminPanel");
+  } catch (err) {
+    errorEl.textContent = "Couldn't verify that code. Try again.";
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function cancelLoginOtp() {
+  byId("otpModal").classList.add("hidden");
+  pendingOtpAccessToken = null;
+  manualLogout = true;
+  await sb.auth.signOut();
+}
+
+async function resendLoginOtp() {
+  if (!pendingOtpAccessToken) return;
+  await fetch("/api/send-login-otp", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accessToken: pendingOtpAccessToken }),
+  });
+  showToast("New code sent.", "success");
 }
 
 async function logout() {
@@ -1731,6 +1841,7 @@ let currentView = "home";
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
   app.innerHTML = '<p class="muted">Loading…</p>';
+  if (view !== "messages" && activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
   updateAuthUI();
   renderBottomNav();
@@ -1755,6 +1866,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "adminFinance": app.innerHTML = await renderAdminFinance(); break;
       case "adminLog": app.innerHTML = await renderAdminLog(); break;
       case "wishlist": app.innerHTML = await renderWishlist(); break;
+      case "messages": app.innerHTML = await renderMessages(params.conversationId); break;
       case "requestEquipment": app.innerHTML = await renderRequestEquipment(); break;
       case "vendorRequests": app.innerHTML = await renderVendorRequests(); break;
       case "terms": app.innerHTML = renderTerms(); break;
@@ -2027,6 +2139,136 @@ async function renderWishlist() {
   return html;
 }
 
+// ---------- IN-APP MESSAGING ----------
+// One continuous text thread per (buyer, vendor) pair — replaces direct
+// WhatsApp contact so conversations stay evidence-grade for disputes
+// (messages can't be edited or deleted, enforced server-side, not just in
+// this UI). Buyers open a thread from a product/storefront page; vendors
+// see all their threads from a "Messages" nav entry.
+let activeMsgChannel = null;
+let activeConversationId = null;
+
+async function startConversationWithVendor(vendorId) {
+  if (!session) { showLogin(); return; }
+  const { data: conversationId, error } = await sb.rpc("get_or_create_conversation", { p_vendor_id: vendorId });
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("messages", { conversationId });
+}
+
+async function renderMessages(conversationId) {
+  if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
+  if (activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
+  activeConversationId = conversationId || null;
+
+  if (!conversationId) {
+    const isVendor = !!vendor;
+    const { data: convs } = await sb.from("conversations")
+      .select("id, buyer_id, vendor:vendors(id, business_name, logo_url), buyer:users!conversations_buyer_id_fkey(id, name, avatar_url)")
+      .or(isVendor ? `vendor_id.eq.${vendor.id}` : `buyer_id.eq.${session.user.id}`)
+      .order("created_at", { ascending: false });
+
+    if (!convs || convs.length === 0) {
+      return `<h2><i class="fa-solid fa-comments"></i> Messages</h2><div class="empty-state">No conversations yet. ${isVendor ? "Buyers who message you will show up here." : "Message a vendor from their storefront or a product page."}</div>`;
+    }
+
+    const previews = await Promise.all(convs.map(async (c) => {
+      const [{ data: lastMsg }, { count: unread }] = await Promise.all([
+        sb.from("messages").select("body, created_at, sender_id").eq("conversation_id", c.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        sb.from("messages").select("id", { count: "exact", head: true }).eq("conversation_id", c.id).is("read_at", null).neq("sender_id", session.user.id),
+      ]);
+      return { ...c, lastMsg, unread: unread || 0 };
+    }));
+
+    let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2><div class="card" style="padding:0;overflow:hidden;">`;
+    html += previews.map((c) => {
+      const other = isVendor ? c.buyer : c.vendor;
+      const name = isVendor ? (other?.name || "Buyer") : (other?.business_name || "Vendor");
+      const avatar = isVendor ? other?.avatar_url : other?.logo_url;
+      return `<div class="conv-list-item" onclick="navigate('messages',{conversationId:'${c.id}'})">
+        ${avatar ? `<img src="${esc(avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
+        <div class="conv-meta">
+          <strong>${esc(name)}</strong>
+          <div class="conv-preview">${c.lastMsg ? esc(c.lastMsg.body) : "No messages yet"}</div>
+        </div>
+        ${c.unread > 0 ? `<span class="conv-unread-dot" title="${c.unread} unread"></span>` : ""}
+      </div>`;
+    }).join("");
+    html += `</div>`;
+    return html;
+  }
+
+  const { data: conv } = await sb.from("conversations")
+    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id), buyer:users!conversations_buyer_id_fkey(id, name, avatar_url)")
+    .eq("id", conversationId).maybeSingle();
+  if (!conv) return '<div class="empty-state">Conversation not found.</div>';
+
+  const isVendorSide = conv.vendor?.user_id === session.user.id;
+  const other = isVendorSide ? conv.buyer : conv.vendor;
+  const otherName = isVendorSide ? (other?.name || "Buyer") : (other?.business_name || "Vendor");
+  const otherAvatar = isVendorSide ? other?.avatar_url : other?.logo_url;
+
+  const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
+
+  sb.from("messages").update({ read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId).is("read_at", null).neq("sender_id", session.user.id)
+    .then(() => {});
+
+  let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('messages')"><i class="fa-solid fa-arrow-left"></i> All conversations</button>`;
+  html += `<div class="flex" style="margin-bottom:0.6rem;">
+    ${otherAvatar ? `<img src="${esc(otherAvatar)}" class="avatar-circle" style="width:2.4rem;height:2.4rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(otherName)}</div>`}
+    <strong>${esc(otherName)}</strong>
+  </div>`;
+  html += `<div class="chat-thread">
+    <div class="chat-messages" id="chatMessages">${(messages || []).map(chatBubbleHtml).join("")}</div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Type a message…" maxlength="2000" onkeydown="if(event.key==='Enter'){sendChatMessage('${conversationId}');}" />
+      <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+  <p class="muted" style="font-size:0.78rem;margin-top:0.5rem;"><i class="fa-solid fa-shield-halved"></i> Messages here can't be edited or deleted once sent.</p>`;
+
+  setTimeout(() => scrollChatToBottom(), 0);
+  subscribeToConversation(conversationId);
+  return html;
+}
+
+function chatBubbleHtml(m) {
+  const mine = m.sender_id === session.user.id;
+  const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `<div class="chat-bubble ${mine ? "mine" : "theirs"}">${esc(m.body)}<span class="chat-time">${time}</span></div>`;
+}
+
+function scrollChatToBottom() {
+  const el = byId("chatMessages");
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function subscribeToConversation(conversationId) {
+  activeMsgChannel = sb.channel(`conv-${conversationId}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+      if (activeConversationId !== conversationId) return;
+      const el = byId("chatMessages");
+      if (!el) return;
+      if (payload.new.sender_id !== session.user.id) {
+        el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
+        scrollChatToBottom();
+        sb.from("messages").update({ read_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => {});
+      }
+    })
+    .subscribe();
+}
+
+async function sendChatMessage(conversationId) {
+  const input = byId("chatInput");
+  const body = input.value.trim();
+  if (!body) return;
+  input.value = "";
+  const { data, error } = await sb.from("messages").insert({ conversation_id: conversationId, sender_id: session.user.id, body }).select("*").single();
+  if (error) { showToast(error.message, "error"); return; }
+  byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
+  scrollChatToBottom();
+}
+
 // ---------- PRODUCT DETAIL ----------
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
@@ -2067,7 +2309,7 @@ async function renderProductDetail(productId) {
         ${yearsSince(product.vendor.created_at) ? `<span class="badge">${yearsSince(product.vendor.created_at)}</span>` : ""}
       </div>
       <div class="contact-actions">
-        ${product.vendor.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(product.vendor.whatsapp_number, "Hi, I'm interested in " + product.name + " on Levromart.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp vendor</a>` : ""}
+        ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
       </div>
       ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
@@ -2308,7 +2550,7 @@ async function renderStorefront(vendorId) {
     ${v.opening_hours ? `<span class="badge"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</span>` : ""}
   </div>`;
   html += `<div class="contact-actions">
-    ${v.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(v.whatsapp_number, "Hi, I found your shop " + v.business_name + " on Levromart.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp</a>` : ""}
+    ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-solid fa-comment-dots'></i> Message</button>` : ""}
     ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
   </div>`;
   if (packages && packages.length > 0) {
@@ -2478,7 +2720,7 @@ async function renderRequestEquipment() {
               ${o.price != null ? `<strong>${naira(o.price)}</strong>` : ""}
               <span class="badge ${o.status === "accepted" ? "success" : o.status === "declined" ? "danger" : ""}">${esc(o.status)}</span>
               ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-outline" onclick="declineOffer('${o.id}')">Decline</button>` : ""}
-              ${o.status === "accepted" && o.vendor?.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(o.vendor.whatsapp_number, "Hi, about my equipment request: " + r.title)}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
+              ${o.status === "accepted" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${o.vendor_id}')" title="Message vendor"><i class='fa-solid fa-comment-dots'></i></button>` : ""}
               ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}"><i class='fa-solid fa-phone'></i></a>` : ""}
             </div>
           </div>
@@ -4311,6 +4553,7 @@ window.addEventListener("popstate", (e) => {
     const reference = urlParams.get("reference");
     const orderId = urlParams.get("orderId");
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    showVerifyingPaymentScreen();
     try {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
@@ -4325,6 +4568,7 @@ window.addEventListener("popstate", (e) => {
   if (urlParams.get("commissionPaid") === "1" && urlParams.get("reference")) {
     const reference = urlParams.get("reference");
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    showVerifyingPaymentScreen();
     try {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
