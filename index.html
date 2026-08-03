@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Levromart – Lagos Marketplace</title>
+<title>Levromart</title>
 <meta name="description" content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
@@ -105,17 +105,18 @@
   .btn-warning { background: var(--warning); color: white; }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .container { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; flex: 1; width: 100%; overflow-x: hidden; }
-  .install-banner {
-    position: fixed; left: 1rem; right: 1rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); z-index: 120;
-    display: flex; align-items: center; gap: 0.8rem; max-width: 480px; margin: 0 auto;
-    background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--glass-border); border-radius: 1rem; padding: 0.9rem 1rem; box-shadow: var(--shadow-float);
+  .install-modal-content { text-align: center; max-width: 340px; }
+  .install-modal-badge {
+    width: 4.6rem; height: 4.6rem; border-radius: 1.2rem; margin: 0 auto 1rem; overflow: hidden;
+    background: var(--primary-grad); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 45%, transparent);
   }
-  @media (max-width: 720px) { .install-banner { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); } }
-  .install-banner img { width: 2.6rem; height: 2.6rem; border-radius: 0.7rem; flex-shrink: 0; }
-  .install-banner-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .install-banner-text strong { font-size: 0.9rem; }
-  .install-banner-text span { font-size: 0.78rem; color: var(--text-muted); }
+  .install-modal-badge img { width: 2.7rem; height: 2.7rem; object-fit: contain; }
+  .install-modal-content h3 { margin: 0 0 0.4rem; font-size: 1.15rem; }
+  .install-modal-content p.muted { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.4; }
+  .install-modal-ios { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+  .install-modal-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.4rem; }
+  .install-modal-actions .btn { flex: 1; justify-content: center; }
   .site-footer { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: center; justify-content: center; padding: 1.4rem 1rem; margin-top: 1rem; border-top: 1px solid var(--border); }
   .site-footer a { color: var(--text-muted); font-size: 0.82rem; text-decoration: none; }
   .site-footer a:hover { color: var(--primary); text-decoration: underline; }
@@ -478,14 +479,17 @@
 
 <nav class="bottom-nav" id="bottomNav"></nav>
 
-<div id="installBanner" class="install-banner hidden">
-  <img id="installBannerLogo" alt="" />
-  <div class="install-banner-text">
-    <strong>Install the Levromart app</strong>
-    <span id="installBannerMsg">Add Levromart to your home screen for faster access.</span>
+<div id="installPromptModal" class="modal hidden">
+  <div class="modal-content install-modal-content">
+    <div class="install-modal-badge"><img id="installModalLogo" alt="" /></div>
+    <h3>Get the Levromart app</h3>
+    <p class="muted">Install it on your home screen for a faster, full-screen experience — even offline.</p>
+    <p id="installModalIosMsg" class="muted install-modal-ios hidden"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap the Share icon, then "Add to Home Screen".</p>
+    <div class="install-modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="dismissInstallPrompt()">Not now</button>
+      <button class="btn" id="installModalActionBtn" onclick="runInstallPrompt()"><i class="fa-solid fa-arrow-down-to-line"></i> Install</button>
+    </div>
   </div>
-  <button class="btn btn-sm" id="installBannerActionBtn" onclick="runInstallPrompt()">Install</button>
-  <button class="icon-btn" onclick="dismissInstallBanner()" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>
 </div>
 
 <!-- Login / Signup Modal -->
@@ -659,7 +663,7 @@ document.getElementById("brandLogoHeader").src = MEDRIS_LOGO;
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("faviconLink").href = MEDRIS_LOGO;
-document.getElementById("installBannerLogo").src = MEDRIS_LOGO;
+document.getElementById("installModalLogo").src = MEDRIS_LOGO;
 
 // ---------- "INSTALL AS APP" PROMPT ----------
 let deferredInstallPrompt = null;
@@ -681,29 +685,28 @@ function isIos() {
 function maybeShowInstallPrompt() {
   if (isStandalone()) return;
   if (localStorage.getItem("medris-install-dismissed")) return;
-  const banner = byId("installBanner");
-  if (!banner) return;
+  const modal = byId("installPromptModal");
+  if (!modal || !modal.classList.contains("hidden")) return;
   if (deferredInstallPrompt) {
-    byId("installBannerMsg").textContent = "Add Levromart to your home screen for faster access, even offline.";
-    byId("installBannerActionBtn").classList.remove("hidden");
-    byId("installBannerActionBtn").textContent = "Install";
+    byId("installModalActionBtn").classList.remove("hidden");
+    byId("installModalIosMsg").classList.add("hidden");
   } else if (isIos()) {
-    byId("installBannerMsg").textContent = "Tap the Share icon, then \"Add to Home Screen\".";
-    byId("installBannerActionBtn").classList.add("hidden");
+    byId("installModalActionBtn").classList.add("hidden");
+    byId("installModalIosMsg").classList.remove("hidden");
   } else {
     return; // not installable and no manual instructions to give
   }
-  banner.classList.remove("hidden");
+  modal.classList.remove("hidden");
 }
 async function runInstallPrompt() {
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
-  dismissInstallBanner();
+  dismissInstallPrompt();
 }
-function dismissInstallBanner() {
-  byId("installBanner")?.classList.add("hidden");
+function dismissInstallPrompt() {
+  byId("installPromptModal")?.classList.add("hidden");
   localStorage.setItem("medris-install-dismissed", "1");
 }
 
@@ -4046,6 +4049,11 @@ window.addEventListener("popstate", (e) => {
   }
 
   navigate("home");
+
+  // Offer the installable app to every visitor, not just after login — give
+  // Chrome a moment to fire beforeinstallprompt first.
+  awaitingInstallPromptForLogin = true;
+  setTimeout(maybeShowInstallPrompt, 2500);
 })();
 
 if ("serviceWorker" in navigator) {
