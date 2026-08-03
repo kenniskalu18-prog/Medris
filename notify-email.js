@@ -31,8 +31,8 @@ module.exports = async function handler(req, res) {
     const origin = "https://medriss.vercel.app";
     const link = `${origin}/?nview=${encodeURIComponent(n.target_view || "home")}&nparams=${encodeURIComponent(JSON.stringify(n.target_params || {}))}`;
 
-    const ok = await sendNotificationEmail(RESEND_API_KEY, { to: u.email, name: u.name, title: n.title, body: n.body, link });
-    res.status(200).json({ sent: ok });
+    const result = await sendNotificationEmail(RESEND_API_KEY, { to: u.email, name: u.name, title: n.title, body: n.body, link });
+    res.status(200).json({ sent: result.ok, status: result.status, error: result.error });
   } catch (err) {
     res.status(500).json({ error: err.message || "Server error" });
   }
