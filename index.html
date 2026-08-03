@@ -98,6 +98,7 @@
   .btn:active { transform: scale(0.97); }
   .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
   .btn-outline:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); filter: none; }
+  .btn-outline.active { background: var(--primary); color: #fff; }
   .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.85rem; }
   .btn-danger { background: var(--danger); }
   .btn-danger:hover { filter: brightness(1.1); }
@@ -1339,6 +1340,7 @@ function renderBottomNav() {
   const nav = byId("bottomNav");
   if (!nav) return;
   const items = [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
+  items.push({ icon: "<i class='fa-solid fa-store'></i>", label: "Vendors", action: "navigate('vendors')", view: "vendors" });
   if (session) {
     items.push({ icon: "<i class='fa-solid fa-heart'></i>", label: "Wishlist", action: "navigate('wishlist')", view: "wishlist" });
     if (vendor) {
@@ -1723,6 +1725,7 @@ function vendorCardHtml(v) {
   return `<div class="vendor-card" onclick="navigate('storefront',{vendorId:'${v.id}'})">
     <strong>${esc(v.business_name)}</strong>
     <p class="muted" style="margin:0.3rem 0;">${esc(v.city || "")}</p>
+    ${v.categories && v.categories.length ? `<p class="muted" style="margin:0 0 0.4rem;font-size:0.78rem;"><i class="fa-solid fa-tags"></i> ${v.categories.map(esc).join(", ")}</p>` : ""}
     <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
     ${v.avg_rating != null ? `<span class="badge" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}</span>` : ""}
   </div>`;
@@ -1938,6 +1941,7 @@ function renderVendorsDirectory() {
   html += `<div class="flex" style="margin-bottom:1.2rem;">
     <input type="text" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
+    <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   setTimeout(loadVendorsDirectory, 0);
@@ -1945,13 +1949,29 @@ function renderVendorsDirectory() {
 }
 
 async function loadVendorsDirectory() {
-  const { data: vendors } = await sb.from("vendors").select("id, business_name, city, avg_rating")
-    .eq("verification_status", "verified").eq("is_active", true).order("business_name");
-  window.__allVendors = vendors || [];
+  const [{ data: vendors }, { data: products }] = await Promise.all([
+    sb.from("vendors").select("id, business_name, city, avg_rating").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
+    sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
+  ]);
+
+  const catsByVendor = {};
+  (products || []).forEach((p) => {
+    const name = p.category?.name;
+    if (!name) return;
+    (catsByVendor[p.vendor_id] ||= new Set()).add(name);
+  });
+
+  window.__allVendors = (vendors || []).map((v) => ({ ...v, categories: [...(catsByVendor[v.id] || [])] }));
+
   const citySel = byId("vendorCityFilter");
   if (citySel) {
     const cities = [...new Set((vendors || []).map((v) => v.city).filter(Boolean))].sort();
     citySel.innerHTML = '<option value="">All cities</option>' + cities.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  }
+  const catSel = byId("vendorCategoryFilter");
+  if (catSel) {
+    const allCats = [...new Set(Object.values(catsByVendor).flatMap((s) => [...s]))].sort();
+    catSel.innerHTML = '<option value="">Known for: anything</option>' + allCats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
   }
   filterVendorsDirectory();
 }
@@ -1959,9 +1979,11 @@ async function loadVendorsDirectory() {
 function filterVendorsDirectory() {
   const search = (byId("vendorSearchInput")?.value || "").trim().toLowerCase();
   const city = byId("vendorCityFilter")?.value || "";
+  const category = byId("vendorCategoryFilter")?.value || "";
   let list = window.__allVendors || [];
   if (search) list = list.filter((v) => (v.business_name || "").toLowerCase().includes(search));
   if (city) list = list.filter((v) => v.city === city);
+  if (category) list = list.filter((v) => v.categories.includes(category));
   const grid = byId("vendorsGrid");
   if (!grid) return;
   grid.innerHTML = list.length ? list.map(vendorCardHtml).join("") : '<div class="empty-state">No vendors match that search.</div>';
@@ -1972,11 +1994,12 @@ async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
   const [{ data: products }, { data: stats }, { data: reviews }] = await Promise.all([
-    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
+    sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
     sb.rpc("get_vendor_stats", { p_vendor_id: v.id }),
     sb.from("reviews").select("id, rating, comment, buyer_name, buyer_avatar_url, created_at").eq("vendor_id", v.id).order("created_at", { ascending: false }).limit(10),
   ]);
   const st = (stats && stats[0]) || {};
+  window.__storefrontProducts = products || [];
 
   let html = `<div class="flex" style="justify-content:space-between;">
     <div class="flex">
@@ -1997,8 +2020,20 @@ async function renderStorefront(vendorId) {
     ${v.whatsapp_number ? `<a class="btn btn-sm btn-whatsapp" href="${waLink(v.whatsapp_number, "Hi, I found your shop " + v.business_name + " on Medris.")}" target="_blank" rel="noopener"><i class='fa-brands fa-whatsapp'></i> WhatsApp</a>` : ""}
     ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
   </div>`;
-  html += `<h3 style="margin-top:1.2rem;">Available equipment</h3>`;
-  html += `<div class="grid">${(products && products.length > 0) ? products.map(productCardHtml).join("") : '<div class="empty-state">No products listed yet.</div>'}</div>`;
+  html += `<div class="flex" style="justify-content:space-between;align-items:center;margin-top:1.2rem;flex-wrap:wrap;gap:0.5rem;">
+    <h3 style="margin:0;">Available equipment</h3>
+    ${(products && products.length > 0) ? `<div class="flex" style="gap:0.5rem;">
+      <button class="btn btn-sm btn-outline active" id="storefrontViewGridBtn" onclick="switchStorefrontView('grid')" title="Grid view"><i class="fa-solid fa-grip"></i></button>
+      <button class="btn btn-sm btn-outline" id="storefrontViewTableBtn" onclick="switchStorefrontView('table')" title="Table view"><i class="fa-solid fa-list"></i></button>
+    </div>` : ""}
+  </div>`;
+  if (products && products.length > 0) {
+    html += `<input type="text" id="storefrontSearch" placeholder="Search this vendor's equipment…" oninput="filterStorefrontProducts()" style="margin-bottom:0.8rem;" />`;
+  }
+  html += `<div id="storefrontGrid" class="grid">${(products && products.length > 0) ? "<p class='muted'>Loading…</p>" : '<div class="empty-state">No products listed yet.</div>'}</div>`;
+  html += `<div id="storefrontTable" class="hidden" style="overflow-x:auto;"></div>`;
+  storefrontViewMode = "grid";
+  if (products && products.length > 0) setTimeout(filterStorefrontProducts, 0);
 
   html += `<h3 style="margin-top:1.5rem;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3>`;
   if (reviews && reviews.length > 0) {
@@ -2019,6 +2054,43 @@ async function renderStorefront(vendorId) {
 
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Back to Marketplace</button>`;
   return html;
+}
+
+let storefrontViewMode = "grid";
+function switchStorefrontView(mode) {
+  storefrontViewMode = mode;
+  byId("storefrontViewGridBtn")?.classList.toggle("active", mode === "grid");
+  byId("storefrontViewTableBtn")?.classList.toggle("active", mode === "table");
+  byId("storefrontGrid")?.classList.toggle("hidden", mode !== "grid");
+  byId("storefrontTable")?.classList.toggle("hidden", mode !== "table");
+  filterStorefrontProducts();
+}
+
+function filterStorefrontProducts() {
+  const q = (byId("storefrontSearch")?.value || "").trim().toLowerCase();
+  const all = window.__storefrontProducts || [];
+  const list = q ? all.filter((p) => p.name.toLowerCase().includes(q) || (p.category?.name || "").toLowerCase().includes(q)) : all;
+  const gridEl = byId("storefrontGrid");
+  if (gridEl) gridEl.innerHTML = list.length ? list.map(productCardHtml).join("") : '<div class="empty-state">No matching equipment.</div>';
+  const tableEl = byId("storefrontTable");
+  if (tableEl) tableEl.innerHTML = list.length ? storefrontTableHtml(list) : '<div class="empty-state">No matching equipment.</div>';
+}
+
+function storefrontTableHtml(list) {
+  return `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr>
+      <th style="text-align:left;padding:0.5rem;border-bottom:1px solid var(--border);">Equipment</th>
+      <th style="text-align:left;padding:0.5rem;border-bottom:1px solid var(--border);">Category</th>
+      <th style="text-align:left;padding:0.5rem;border-bottom:1px solid var(--border);">Price</th>
+      <th style="text-align:left;padding:0.5rem;border-bottom:1px solid var(--border);">Available</th>
+    </tr></thead>
+    <tbody>${list.map((p) => `<tr style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.name)}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.category?.name || "—")}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${[p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.quantity_available}</td>
+    </tr>`).join("")}</tbody>
+  </table>`;
 }
 
 // ---------- REQUEST EQUIPMENT (buyers post needs, vendors compete) ----------
@@ -3320,7 +3392,7 @@ function exportFinancePdf() {
     </div>
     <table><thead><tr><th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th></tr></thead>
     <tbody>${filtered.map((t) => `<tr><td>${new Date(t.created_at).toLocaleString()}</td><td>${esc(t.buyer_name || "")}</td><td>${esc(t.vendor_name || "")}</td><td>${esc((t.payment_type || "").replace("_", " "))}</td><td>${naira(t.amount)}</td><td>${esc(t.method)}</td><td>${esc(t.status)}</td><td>${naira(t.platform_cut)}</td></tr>`).join("")}</tbody></table>
-    <script>window.onload = () => window.print();</script>
+    <script>window.onload = () => window.print();<\/script>
     </body></html>`);
   w.document.close();
 }
