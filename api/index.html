@@ -269,6 +269,14 @@
   .notif-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.2rem; }
   .notif-tab { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 0.6rem; padding: 0.4rem 0.3rem; font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
   .notif-tab.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+  .range-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
+  .range-tab { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+  .range-tab.active { background: var(--primary-grad); border-color: transparent; color: #fff; font-weight: 600; }
+  .revenue-chart-wrap { max-width: 700px; }
+  .revenue-chart { display: flex; align-items: flex-end; gap: 0.4rem; height: 140px; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; padding: 1rem 0.8rem 0.4rem; }
+  .revenue-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.3rem; min-width: 4px; }
+  .revenue-bar { width: 100%; max-width: 22px; height: 0%; border-radius: 4px 4px 0 0; background: var(--primary-grad); transition: height 0.7s cubic-bezier(.2,.8,.3,1); }
+  .revenue-bar-label { font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; transform: rotate(0deg); }
   .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .accent-swatch { width: 2rem; height: 2rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s; flex-shrink: 0; }
   .accent-swatch:hover { transform: scale(1.1); }
@@ -429,8 +437,28 @@
     </div>
   </div>
   <div class="theme-option" id="soundToggleOption" onclick="toggleSound()" style="margin-top:0.4rem;"></div>
+  <div class="accordion-section hidden" id="accountDangerSection">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark'></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <div class="accordion-body">
+      <p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently deletes your profile and signs you out everywhere. Blocked if you have orders still in progress or commission owed.</p>
+      <button class="btn btn-sm btn-danger" onclick="startDeleteAccount()">Delete my account</button>
+    </div>
+  </div>
 </div>
 <div class="side-drawer left" id="profilePanel"></div>
+
+<div id="deleteAccountModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete your account?</h3>
+    <p class="muted" style="margin:0.6rem 0;">This can't be undone. Confirm your password to continue.</p>
+    <input type="password" id="deleteAccountPassword" placeholder="Your password" autocomplete="off" />
+    <p id="deleteAccountError" class="error-text hidden"></p>
+    <div class="flex" style="justify-content:flex-end;">
+      <button class="btn btn-sm" style="background:#6b7280;" onclick="byId('deleteAccountModal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-sm btn-danger" id="deleteAccountConfirmBtn" onclick="confirmDeleteAccount()">Delete permanently</button>
+    </div>
+  </div>
+</div>
 
 <div class="container" id="app"><p class="muted">Loading…</p></div>
 
@@ -1281,10 +1309,12 @@ function updateAuthUI() {
       <div class="divider"></div>
       <a class="notif-item" style="color:var(--danger);" onclick="closeAllPanels();logout();"><i class='fa-solid fa-right-from-bracket'></i> Logout</a>
     `;
+    byId("accountDangerSection")?.classList.remove("hidden");
   } else {
     avatarBtn.classList.add("hidden");
     loginBtn.classList.remove("hidden");
     panel.innerHTML = "";
+    byId("accountDangerSection")?.classList.add("hidden");
   }
 }
 
@@ -1424,6 +1454,44 @@ async function logout() {
   await sb.auth.signOut();
   await refreshAuthStateOnce();
   navigate("home");
+}
+
+function startDeleteAccount() {
+  closeAllPanels();
+  byId("deleteAccountPassword").value = "";
+  byId("deleteAccountError").classList.add("hidden");
+  byId("deleteAccountModal").classList.remove("hidden");
+}
+async function confirmDeleteAccount() {
+  const password = byId("deleteAccountPassword").value;
+  const errorEl = byId("deleteAccountError");
+  errorEl.classList.add("hidden");
+  if (!password) { errorEl.textContent = "Enter your password to confirm."; errorEl.classList.remove("hidden"); return; }
+  const btn = byId("deleteAccountConfirmBtn");
+  btn.disabled = true;
+  try {
+    const { error: pwError } = await sb.auth.signInWithPassword({ email: profile.email, password });
+    if (pwError) throw new Error("Incorrect password.");
+
+    const res = await fetch("/api/delete-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Could not delete account.");
+
+    byId("deleteAccountModal").classList.add("hidden");
+    await sb.auth.signOut();
+    await refreshAuthStateOnce();
+    navigate("home");
+    showToast("Your account has been deleted.", "success");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------- NAVIGATION ----------
@@ -1749,6 +1817,7 @@ async function renderProductDetail(productId) {
         <input type="date" id="rentEnd" min="${today}" />
         <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
       </div>
+      ${deliveryFieldsHtml("rent")}
       <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
       <p id="rentError" class="error-text hidden"></p>
     </div>`;
@@ -1757,8 +1826,9 @@ async function renderProductDetail(productId) {
     html += `<div class="card"><h3><i class='fa-solid fa-cart-shopping'></i> Buy Now</h3>
       <div class="flex">
         <input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />
-        <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">Buy Now</button>
       </div>
+      ${deliveryFieldsHtml("buy")}
+      <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">Buy Now</button>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
   }
@@ -1791,6 +1861,32 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
+function deliveryFieldsHtml(prefix) {
+  return `<div class="flex" style="margin-top:0.6rem;">
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery</label>
+    </div>
+    <div id="${prefix}DeliveryFields" class="hidden">
+      <input type="text" id="${prefix}Address" placeholder="Delivery address" />
+      <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" />
+    </div>`;
+}
+function toggleDeliveryFields(prefix) {
+  const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value;
+  byId(`${prefix}DeliveryFields`)?.classList.toggle("hidden", method !== "delivery");
+}
+function readDeliveryFields(prefix, errorEl) {
+  const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value || "pickup";
+  const address = byId(`${prefix}Address`)?.value.trim() || "";
+  const phone = byId(`${prefix}Phone`)?.value.trim() || "";
+  if (method === "delivery" && (!address || !phone)) {
+    errorEl.textContent = "Enter a delivery address and phone number, or switch to pickup.";
+    errorEl.classList.remove("hidden");
+    return null;
+  }
+  return { method, address, phone };
+}
+
 async function confirmRental(vendorId, productId) {
   if (!session) { showLogin(); return; }
   const start = byId("rentStart").value;
@@ -1799,6 +1895,8 @@ async function confirmRental(vendorId, productId) {
   const errorEl = byId("rentError");
   errorEl.classList.add("hidden");
   if (!start || !end) { errorEl.textContent = "Select both dates."; errorEl.classList.remove("hidden"); return; }
+  const delivery = readDeliveryFields("rent", errorEl);
+  if (!delivery) return;
 
   const { data: orderId, error } = await sb.rpc("create_rental_order", {
     p_vendor_id: vendorId,
@@ -1806,8 +1904,9 @@ async function confirmRental(vendorId, productId) {
     p_quantity: qty,
     p_start_date: start,
     p_end_date: end,
-    p_delivery_method: "pickup",
-    p_delivery_address: "",
+    p_delivery_method: delivery.method,
+    p_delivery_address: delivery.address,
+    p_delivery_phone: delivery.phone,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   navigate("orderDetail", { orderId });
@@ -1818,13 +1917,16 @@ async function buyNow(vendorId, productId) {
   const qty = parseInt(byId("buyQty").value) || 1;
   const errorEl = byId("buyError");
   errorEl.classList.add("hidden");
+  const delivery = readDeliveryFields("buy", errorEl);
+  if (!delivery) return;
 
   const { data: orderId, error } = await sb.rpc("create_sale_order", {
     p_vendor_id: vendorId,
     p_product_id: productId,
     p_quantity: qty,
-    p_delivery_method: "pickup",
-    p_delivery_address: "",
+    p_delivery_method: delivery.method,
+    p_delivery_address: delivery.address,
+    p_delivery_phone: delivery.phone,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   navigate("orderDetail", { orderId });
@@ -2638,7 +2740,7 @@ async function renderOrderDetail(orderId) {
   html += `<div class="grid" style="grid-template-columns:repeat(2,1fr);">
     <div><p class="muted">Total</p><strong>${naira(order.total_amount)}</strong></div>
     ${order.deposit_amount > 0 ? `<div><p class="muted">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
-    <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong></div>
+    <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
   </div>`;
 
   if (order.payments.length > 0) {
@@ -3035,12 +3137,29 @@ async function renderAdminLog() {
   return html;
 }
 
+let adminFinanceRange = "all";
+let __adminFinanceData = { vendors: [], txns: [] };
+
+function rangeStartDate(range) {
+  const now = new Date();
+  if (range === "today") return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (range === "week") { const d = new Date(now); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); d.setHours(0, 0, 0, 0); return d; }
+  if (range === "month") return new Date(now.getFullYear(), now.getMonth(), 1);
+  return null;
+}
+function filterTxnsByRange(txns, range) {
+  const start = rangeStartDate(range);
+  if (!start) return txns || [];
+  return (txns || []).filter((t) => new Date(t.created_at) >= start);
+}
+
 async function renderAdminFinance() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
   const [{ data: vendors }, { data: txns }] = await Promise.all([
     sb.rpc("admin_list_vendor_payouts"),
     sb.rpc("admin_list_transactions"),
   ]);
+  __adminFinanceData = { vendors: vendors || [], txns: txns || [] };
 
   let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Vendors &amp; Transactions</h2><p class="muted">Monitor payouts and every payment moving through Medris.</p>`;
   html += adminNavHtml("adminFinance");
@@ -3068,20 +3187,54 @@ async function renderAdminFinance() {
   html += `</tbody></table></div>`;
   if (!vendors || vendors.length === 0) html += `<p class="muted">No vendors yet.</p>`;
 
-  const totalCommission = (txns || []).filter((t) => t.status === "paid").reduce((s, t) => s + Number(t.platform_cut), 0);
   const totalOwed = (vendors || []).reduce((s, v) => s + Number(v.commission_owed || 0), 0);
-  html += `<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:700px;margin:1rem 0;">
-    <div class="stat"><div class="n">${(txns || []).filter((t) => t.status === "paid").length}</div><div class="muted">Paid transactions</div></div>
-    <div class="stat"><div class="n">${naira(totalCommission)}</div><div class="muted">Commission earned (online)</div></div>
-    <div class="stat"><div class="n">${naira(totalOwed)}</div><div class="muted">Commission owed (offline)</div></div>
-  </div>`;
 
-  html += `<h3 style="margin-top:1.2rem;">Transactions</h3>`;
-  html += `<div class="table-wrap"><table class="data-table"><thead><tr>
-    <th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th>
-  </tr></thead><tbody>`;
-  (txns || []).forEach((t) => {
-    html += `<tr>
+  html += `<h3 style="margin-top:1.6rem;">Revenue</h3>`;
+  html += `<div class="range-tabs" id="financeRangeTabs">
+    ${[["today", "Today"], ["week", "This week"], ["month", "This month"], ["all", "All time"]].map(([key, label]) =>
+      `<button class="range-tab ${adminFinanceRange === key ? "active" : ""}" onclick="switchAdminFinanceRange('${key}', this)">${label}</button>`).join("")}
+  </div>`;
+  html += `<div id="financeStatsArea"></div>`;
+  html += `<div class="flex" style="margin:0.8rem 0;">
+    <button class="btn btn-sm btn-outline" onclick="exportFinanceCsv()"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
+    <button class="btn btn-sm btn-outline" onclick="exportFinancePdf()"><i class="fa-solid fa-file-pdf"></i> Download / Print PDF</button>
+  </div>`;
+  html += `<div id="financeTableArea"></div>`;
+  html += `<p class="muted" style="margin-top:0.6rem;">Commission owed on offline (cash/transfer) sales, all vendors, all time: <strong>${naira(totalOwed)}</strong></p>`;
+
+  setTimeout(() => renderAdminFinanceRange(), 0);
+  return html;
+}
+
+function switchAdminFinanceRange(range, btn) {
+  adminFinanceRange = range;
+  document.querySelectorAll("#financeRangeTabs .range-tab").forEach((el) => el.classList.remove("active"));
+  btn?.classList.add("active");
+  renderAdminFinanceRange();
+}
+
+function renderAdminFinanceRange() {
+  const { txns } = __adminFinanceData;
+  const filtered = filterTxnsByRange(txns, adminFinanceRange);
+  const paid = filtered.filter((t) => t.status === "paid");
+  const commission = paid.reduce((s, t) => s + Number(t.platform_cut), 0);
+  const volume = paid.reduce((s, t) => s + Number(t.amount), 0);
+
+  const statsArea = byId("financeStatsArea");
+  if (statsArea) {
+    statsArea.innerHTML = `<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:700px;margin:0.8rem 0;">
+      <div class="stat"><div class="n">${paid.length}</div><div class="muted">Paid transactions</div></div>
+      <div class="stat"><div class="n">${naira(volume)}</div><div class="muted">Gross volume</div></div>
+      <div class="stat"><div class="n">${naira(commission)}</div><div class="muted">Commission earned</div></div>
+    </div>`;
+    statsArea.appendChild(buildRevenueChart(paid, adminFinanceRange));
+  }
+
+  const tableArea = byId("financeTableArea");
+  if (tableArea) {
+    tableArea.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>
+      <th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th>
+    </tr></thead><tbody>${filtered.map((t) => `<tr>
       <td>${new Date(t.created_at).toLocaleDateString()}</td>
       <td>${esc(t.buyer_name || "")}</td>
       <td>${esc(t.vendor_name || "")}</td>
@@ -3090,11 +3243,86 @@ async function renderAdminFinance() {
       <td style="text-transform:capitalize;">${esc(t.method)}</td>
       <td><span class="badge ${t.status === "paid" ? "success" : t.status === "refunded" ? "danger" : "warning"}">${esc(t.status)}</span></td>
       <td>${naira(t.platform_cut)}</td>
-    </tr>`;
+    </tr>`).join("")}</tbody></table></div>${filtered.length === 0 ? '<p class="muted">No transactions in this range.</p>' : ""}`;
+  }
+}
+
+function buildRevenueChart(paidTxns, range) {
+  const wrap = document.createElement("div");
+  wrap.className = "revenue-chart-wrap";
+  const days = range === "today" ? 1 : range === "week" ? 7 : range === "month" ? 30 : 14;
+  const buckets = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    buckets.push({ date: d, total: 0 });
+  }
+  paidTxns.forEach((t) => {
+    const td = new Date(t.created_at); td.setHours(0, 0, 0, 0);
+    const bucket = buckets.find((b) => b.date.getTime() === td.getTime());
+    if (bucket) bucket.total += Number(t.platform_cut);
   });
-  html += `</tbody></table></div>`;
-  if (!txns || txns.length === 0) html += `<p class="muted">No transactions yet.</p>`;
-  return html;
+  const max = Math.max(1, ...buckets.map((b) => b.total));
+  wrap.innerHTML = `<p class="muted" style="font-size:0.8rem;margin:1.2rem 0 0.4rem;">Commission earned per day</p>
+    <div class="revenue-chart">
+      ${buckets.map((b) => `<div class="revenue-bar-col" title="${b.date.toLocaleDateString()}: ${naira(b.total)}">
+        <div class="revenue-bar" data-h="${Math.round((b.total / max) * 100)}"></div>
+        ${days <= 14 ? `<span class="revenue-bar-label">${b.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>` : ""}
+      </div>`).join("")}
+    </div>`;
+  requestAnimationFrame(() => {
+    wrap.querySelectorAll(".revenue-bar").forEach((el) => { el.style.height = `${el.dataset.h}%`; });
+  });
+  return wrap;
+}
+
+function rangeLabel(range) {
+  return { today: "today", week: "this-week", month: "this-month", all: "all-time" }[range] || range;
+}
+
+function exportFinanceCsv() {
+  const filtered = filterTxnsByRange(__adminFinanceData.txns, adminFinanceRange);
+  const header = ["Date", "Buyer", "Vendor", "Type", "Amount", "Method", "Status", "Platform cut"];
+  const rows = filtered.map((t) => [
+    new Date(t.created_at).toLocaleString(), t.buyer_name || "", t.vendor_name || "",
+    (t.payment_type || "").replace("_", " "), t.amount, t.method, t.status, t.platform_cut,
+  ]);
+  const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `medris-transactions-${rangeLabel(adminFinanceRange)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportFinancePdf() {
+  const filtered = filterTxnsByRange(__adminFinanceData.txns, adminFinanceRange);
+  const paid = filtered.filter((t) => t.status === "paid");
+  const commission = paid.reduce((s, t) => s + Number(t.platform_cut), 0);
+  const volume = paid.reduce((s, t) => s + Number(t.amount), 0);
+  const w = window.open("", "_blank");
+  w.document.write(`<!doctype html><html><head><title>Medris — Transactions (${rangeLabel(adminFinanceRange)})</title>
+    <style>
+      body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0d201c;padding:2rem;}
+      h1{color:#0e8f7f;margin-bottom:0.2rem;} .muted{color:#5c7269;margin-top:0;}
+      table{width:100%;border-collapse:collapse;margin-top:1.2rem;font-size:0.85rem;}
+      th,td{padding:0.5rem 0.6rem;text-align:left;border-bottom:1px solid #e2e8f0;}
+      th{background:#f3f8f7;} .stats{display:flex;gap:1.5rem;margin:1.2rem 0;}
+      .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
+      .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
+    </style></head><body>
+    <h1>Medris — Transactions</h1>
+    <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
+    <div class="stats">
+      <div class="stat"><b>${paid.length}</b>Paid transactions</div>
+      <div class="stat"><b>${naira(volume)}</b>Gross volume</div>
+      <div class="stat"><b>${naira(commission)}</b>Commission earned</div>
+    </div>
+    <table><thead><tr><th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th></tr></thead>
+    <tbody>${filtered.map((t) => `<tr><td>${new Date(t.created_at).toLocaleString()}</td><td>${esc(t.buyer_name || "")}</td><td>${esc(t.vendor_name || "")}</td><td>${esc((t.payment_type || "").replace("_", " "))}</td><td>${naira(t.amount)}</td><td>${esc(t.method)}</td><td>${esc(t.status)}</td><td>${naira(t.platform_cut)}</td></tr>`).join("")}</tbody></table>
+    <script>window.onload = () => window.print();</script>
+    </body></html>`);
+  w.document.close();
 }
 
 async function renderAdminDisputes() {
