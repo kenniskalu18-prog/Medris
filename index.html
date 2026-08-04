@@ -2234,6 +2234,32 @@ async function startConversationWithVendor(vendorId) {
   navigate("messages", { conversationId });
 }
 
+let msgListFilter = "all"; // 'all' | 'unread'
+
+function convRowHtml(c) {
+  const name = c.other_name || "User";
+  return `<div class="conv-list-item" onclick="navigate('messages',{conversationId:'${c.conversation_id}'})">
+    ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
+    <div class="conv-meta">
+      <strong>${esc(name)}</strong>
+      <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
+    </div>
+    ${c.unread_count > 0 ? `<span class="conv-unread-dot" title="${c.unread_count} unread"></span>` : ""}
+    <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+  </div>`;
+}
+
+function setMsgListFilter(f) {
+  msgListFilter = f;
+  navigate("messages", {}, false);
+}
+
+async function togglePinConversation(conversationId) {
+  const { error } = await sb.rpc("toggle_conversation_pin", { p_conversation_id: conversationId });
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("messages", {}, false);
+}
+
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
   if (activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
@@ -2241,50 +2267,37 @@ async function renderMessages(conversationId) {
 
   if (!conversationId) {
     const isVendor = !!vendor;
-    const { data: convs } = await sb.from("conversations")
-      .select("id, buyer_id, vendor:vendors(id, business_name, logo_url), buyer:users!conversations_buyer_id_fkey(id, name, avatar_url)")
-      .or(isVendor ? `vendor_id.eq.${vendor.id}` : `buyer_id.eq.${session.user.id}`)
-      .order("created_at", { ascending: false });
+    const { data: convs, error } = await sb.rpc("list_my_conversations");
+    if (error) return `<div class="empty-state">Couldn't load messages: ${esc(error.message)}</div>`;
 
     if (!convs || convs.length === 0) {
       return `<h2><i class="fa-solid fa-comments"></i> Messages</h2><div class="empty-state">No conversations yet. ${isVendor ? "Buyers who message you will show up here." : "Message a vendor from their storefront or a product page."}</div>`;
     }
 
-    const previews = await Promise.all(convs.map(async (c) => {
-      const [{ data: lastMsg }, { count: unread }] = await Promise.all([
-        sb.from("messages").select("body, created_at, sender_id").eq("conversation_id", c.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        sb.from("messages").select("id", { count: "exact", head: true }).eq("conversation_id", c.id).is("read_at", null).neq("sender_id", session.user.id),
-      ]);
-      return { ...c, lastMsg, unread: unread || 0 };
-    }));
+    window.__conversations = convs;
+    const shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
 
-    let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2><div class="card" style="padding:0;overflow:hidden;">`;
-    html += previews.map((c) => {
-      const other = isVendor ? c.buyer : c.vendor;
-      const name = isVendor ? (other?.name || "Buyer") : (other?.business_name || "Vendor");
-      const avatar = isVendor ? other?.avatar_url : other?.logo_url;
-      return `<div class="conv-list-item" onclick="navigate('messages',{conversationId:'${c.id}'})">
-        ${avatar ? `<img src="${esc(avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
-        <div class="conv-meta">
-          <strong>${esc(name)}</strong>
-          <div class="conv-preview">${c.lastMsg ? esc(c.lastMsg.body) : "No messages yet"}</div>
-        </div>
-        ${c.unread > 0 ? `<span class="conv-unread-dot" title="${c.unread} unread"></span>` : ""}
-      </div>`;
-    }).join("");
+    let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2>`;
+    html += `<div class="tabs">
+      <a class="${msgListFilter === "all" ? "active" : ""}" onclick="setMsgListFilter('all')">all</a>
+      <a class="${msgListFilter === "unread" ? "active" : ""}" onclick="setMsgListFilter('unread')">unread</a>
+    </div>`;
+    html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap">`;
+    html += shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
     html += `</div>`;
     return html;
   }
 
+  const { data: other, error: otherErr } = await sb.rpc("get_conversation_other_party", { p_conversation_id: conversationId });
   const { data: conv } = await sb.from("conversations")
-    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id), buyer:users!conversations_buyer_id_fkey(id, name, avatar_url)")
+    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id)")
     .eq("id", conversationId).maybeSingle();
-  if (!conv) return '<div class="empty-state">Conversation not found.</div>';
+  if (!conv || otherErr) return '<div class="empty-state">Conversation not found.</div>';
 
   const isVendorSide = conv.vendor?.user_id === session.user.id;
-  const other = isVendorSide ? conv.buyer : conv.vendor;
-  const otherName = isVendorSide ? (other?.name || "Buyer") : (other?.business_name || "Vendor");
-  const otherAvatar = isVendorSide ? other?.avatar_url : other?.logo_url;
+  const op = (other && other[0]) || {};
+  const otherName = op.name || (isVendorSide ? "Buyer" : conv.vendor?.business_name || "Vendor");
+  const otherAvatar = op.avatar_url || (isVendorSide ? null : conv.vendor?.logo_url);
 
   const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
 
