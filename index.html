@@ -2234,6 +2234,17 @@ async function startConversationWithVendor(vendorId) {
   navigate("messages", { conversationId });
 }
 
+// Admin-only: jump to the (read-only) chat thread between the two parties
+// on a disputed order, as evidence. Doesn't create a conversation if none
+// exists yet — an admin viewing a dispute shouldn't be the one starting a
+// buyer-vendor thread.
+async function openDisputeChat(buyerId, vendorId) {
+  const { data: conversationId, error } = await sb.rpc("admin_find_conversation", { p_buyer_id: buyerId, p_vendor_id: vendorId });
+  if (error) { showToast(error.message, "error"); return; }
+  if (!conversationId) { showToast("No messages between this buyer and vendor.", "info"); return; }
+  navigate("messages", { conversationId });
+}
+
 let msgListFilter = "all"; // 'all' | 'unread'
 
 function convRowHtml(c) {
@@ -2285,6 +2296,26 @@ async function renderMessages(conversationId) {
     html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap">`;
     html += shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
     html += `</div>`;
+    return html;
+  }
+
+  // Admin viewing as a third party (e.g. from a dispute) — read-only, both
+  // participants labeled by name rather than left/right "me" bubbles,
+  // since neither side is "you" here.
+  if (profile?.role === "admin") {
+    const { data: pInfo, error: pErr } = await sb.rpc("admin_get_conversation_participants", { p_conversation_id: conversationId });
+    if (pErr || !pInfo || !pInfo[0]) return '<div class="empty-state">Conversation not found.</div>';
+    const p = pInfo[0];
+    const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
+    let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('adminDisputes')"><i class="fa-solid fa-arrow-left"></i> Back to disputes</button>`;
+    html += `<h3><i class="fa-solid fa-comments"></i> ${esc(p.buyer_name || "Buyer")} &harr; ${esc(p.vendor_name || "Vendor")}</h3>
+      <p class="muted" style="font-size:0.85rem;">Viewing as admin — read only.</p>`;
+    html += `<div class="chat-thread"><div class="chat-messages">${(messages || []).map((m) => {
+      const isBuyer = m.sender_id === p.buyer_id;
+      const senderName = isBuyer ? (p.buyer_name || "Buyer") : (p.vendor_name || "Vendor");
+      const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      return `<div class="chat-bubble ${isBuyer ? "theirs" : "mine"}"><strong style="display:block;font-size:0.72rem;opacity:0.8;">${esc(senderName)}</strong>${esc(m.body)}<span class="chat-time">${time}</span></div>`;
+    }).join("")}</div></div>`;
     return html;
   }
 
@@ -4359,7 +4390,7 @@ function exportFinancePdf() {
 
 async function renderAdminDisputes() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
-  const { data: disputes } = await sb.from("disputes").select("*, order:orders(id, order_type, vendor:vendors(business_name))").eq("status", "open").order("created_at", { ascending: true });
+  const { data: disputes } = await sb.from("disputes").select("*, order:orders(id, order_type, buyer_id, vendor_id, vendor:vendors(business_name))").eq("status", "open").order("created_at", { ascending: true });
 
   let html = `<h2>Open disputes</h2>`;
   html += adminNavHtml("adminDisputes");
@@ -4372,6 +4403,7 @@ async function renderAdminDisputes() {
       </div>
       <p style="margin:0.5rem 0;"><strong>Reason:</strong> ${esc(d.reason)}</p>
       ${d.vendor_response ? `<p style="margin:0.5rem 0;"><strong>Vendor says:</strong> ${esc(d.vendor_response)}</p>` : `<p class="muted" style="margin:0.5rem 0;">Vendor hasn't responded yet.</p>`}
+      ${d.order?.buyer_id && d.order?.vendor_id ? `<button class="btn btn-sm btn-outline" onclick="openDisputeChat('${d.order.buyer_id}','${d.order.vendor_id}')"><i class="fa-solid fa-comment-dots"></i> View chat between buyer &amp; vendor</button>` : ""}
       <div class="flex">
         <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
         <select id="newstatus-${d.id}"><option value="">Leave order as-is</option><option value="completed">Set order: completed</option><option value="cancelled">Set order: cancelled</option></select>
