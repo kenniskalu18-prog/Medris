@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/auto-release-payouts",
+      "path": "/api/daily-cron",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/charge-monthly-vendors",
-      "schedule": "0 4 * * *"
     }
   ]
 }

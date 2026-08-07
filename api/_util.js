@@ -141,7 +141,7 @@ async function releaseOrderPayout(orderId) {
   if (!order.vendor?.bank_code || !order.vendor?.account_number) {
     throw new Error("Vendor has no payout bank account on file yet.");
   }
-  const commissionPct = Number(order.vendor.commission_pct ?? 5);
+  const commissionPct = Number(order.vendor.commission_pct ?? 3);
   const payoutAmount = feeAmount * (1 - commissionPct / 100) + depositAmount;
   const recipientCode = await getOrCreateTransferRecipient(order.vendor);
 
