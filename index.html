@@ -169,12 +169,23 @@
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
   select {
     appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;
-    padding-right: 2.5rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 0.9rem center; background-size: 1.05rem;
+    padding-right: 2.9rem;
+    border-radius: 0.85rem;
+    background-color: color-mix(in srgb, var(--primary) 3%, var(--input-bg));
+    background-image:
+      radial-gradient(circle, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 72%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat;
+    background-position: right 0.55rem center, right 0.9rem center;
+    background-size: 1.9rem 1.9rem, 1.05rem;
   }
-  select:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
-  select:focus { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+  select:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 10%, transparent); }
+  select:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 14px color-mix(in srgb, var(--primary) 14%, transparent);
+    background-image:
+      radial-gradient(circle, color-mix(in srgb, var(--primary) 24%, transparent) 0%, transparent 72%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  }
   optgroup { font-weight: 700; font-style: normal; color: var(--text-muted); }
   option { color: var(--text); background: var(--input-bg); }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
@@ -193,6 +204,25 @@
   .stat { background: var(--card); border: 1px solid var(--border); border-radius: 0.8rem; padding: 1rem; text-align: center; }
   .stat .n { font-size: 1.5rem; font-weight: 700; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 0.4rem; }
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.5rem 0; }
+  .photo-grid:empty { display: none; }
+  .photo-thumb { position: relative; width: 5rem; height: 5rem; border-radius: 0.9rem; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border: 1px solid var(--border); transition: transform 0.15s ease; }
+  .photo-thumb:hover { transform: translateY(-2px); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .photo-remove { position: absolute; top: 0.25rem; right: 0.25rem; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: rgba(20,20,20,0.6); backdrop-filter: blur(4px); color: #fff; border: none; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s ease, transform 0.15s ease; }
+  .photo-thumb .photo-remove:hover { background: var(--danger); transform: scale(1.1); }
+  .photo-thumb .photo-pending-badge { position: absolute; bottom: 0.25rem; left: 0.25rem; font-size: 0.62rem; background: color-mix(in srgb, var(--primary) 85%, black 10%); color: #fff; padding: 0.08rem 0.4rem; border-radius: 999px; letter-spacing: 0.02em; }
+  .photo-dropzone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
+    border: 1.5px dashed var(--border); border-radius: 1rem; padding: 1.4rem 1rem;
+    text-align: center; cursor: pointer; margin: 0.4rem 0 0.6rem;
+    background: color-mix(in srgb, var(--primary) 4%, var(--input-bg));
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .photo-dropzone i { font-size: 1.5rem; color: var(--primary); margin-bottom: 0.15rem; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 35%, transparent)); }
+  .photo-dropzone strong { font-size: 0.92rem; }
+  .photo-dropzone .muted { font-size: 0.78rem; }
+  .photo-dropzone:hover, .photo-dropzone.drag-over { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--input-bg)); }
   .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
   .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
   .data-table th, .data-table td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); }
@@ -243,9 +273,9 @@
 
   /* ---- header icon buttons ---- */
   .icon-wrap { position: relative; display: inline-flex; }
-  .icon-btn { position: relative; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: none; background: none; color: var(--primary); font-size: 1.1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.15s; }
+  .icon-btn { position: relative; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: none; background: none; color: var(--primary); font-size: 1.1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.15s, filter 0.15s; filter: drop-shadow(0 0 0 transparent); }
   .icon-btn:hover, .icon-btn:active { background: color-mix(in srgb, var(--primary) 12%, transparent); }
-  .icon-btn:hover { background: color-mix(in srgb, var(--primary) 22%, transparent); }
+  .icon-btn:hover { background: color-mix(in srgb, var(--primary) 22%, transparent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 45%, transparent)); }
   .notif-dot { position: absolute; top: -2px; right: -2px; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 700; min-width: 1.1rem; height: 1.1rem; border-radius: 1rem; display: flex; align-items: center; justify-content: center; padding: 0 0.25rem; box-shadow: 0 0 0 2px var(--primary); }
 
   /* ---- slide-in drawers (settings / notifications / profile) ---- */
@@ -265,13 +295,22 @@
   .drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
   .drawer-header h4 { font-size: 1.05rem; }
   .drawer-subhead { font-size: 0.78rem; margin: 1.1rem 0 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .accordion-section { border-bottom: 1px solid var(--border); }
-  .accordion-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: none; padding: 0.8rem 0.3rem; font-size: 0.9rem; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
+  .accordion-section { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; margin-bottom: 0.7rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: border-color 0.2s ease; }
+  .accordion-section.open { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+  .accordion-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: none; padding: 0.75rem 0.9rem; font-size: 0.9rem; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
   .accordion-trigger:hover { color: var(--primary); }
+  .accordion-trigger span { display: flex; align-items: center; gap: 0.65rem; }
+  .accordion-trigger span i {
+    width: 2.15rem; height: 2.15rem; flex-shrink: 0; border-radius: 0.7rem; display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary); font-size: 0.98rem;
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 30%, transparent));
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+  .accordion-trigger:hover span i { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--primary) 55%, transparent)); transform: scale(1.05); }
   .accordion-chevron { transition: transform 0.25s ease; color: var(--text-muted); font-size: 0.78rem; }
-  .accordion-section.open .accordion-chevron { transform: rotate(180deg); }
-  .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; padding: 0 0.2rem; }
-  .accordion-section.open .accordion-body { max-height: 320px; padding-bottom: 0.7rem; }
+  .accordion-section.open .accordion-chevron { transform: rotate(180deg); color: var(--primary); }
+  .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; padding: 0 0.9rem; }
+  .accordion-section.open .accordion-body { max-height: 320px; padding: 0 0.9rem 0.9rem; }
   .drawer-close-btn { background: none; border: none; font-size: 1rem; color: var(--text-muted); cursor: pointer; width: 2rem; height: 2rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
   .drawer-close-btn:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
   .theme-option { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; border-radius: 0.7rem; cursor: pointer; font-size: 0.9rem; }
@@ -279,6 +318,8 @@
   .theme-option:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
   .theme-option.active { background: color-mix(in srgb, var(--primary) 16%, transparent); font-weight: 600; }
   .theme-option.active i { color: var(--primary); }
+  .settings-row-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; margin-bottom: 0.7rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 0.15rem; }
+  .settings-row-card .theme-option { margin: 0; }
   .notif-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.6rem 0.5rem; border-radius: 0.7rem; font-size: 0.88rem; color: var(--text); text-decoration: none; cursor: pointer; }
   .notif-item i { width: 2.1rem; height: 2.1rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; text-align: center; background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); border-radius: 0.65rem; font-size: 0.92rem; margin-top: 0.1rem; }
   .notif-item[style*="danger"] i { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
@@ -312,9 +353,9 @@
   .revenue-bar { width: 100%; max-width: 22px; height: 0%; border-radius: 4px 4px 0 0; background: var(--primary-grad); transition: height 0.7s cubic-bezier(.2,.8,.3,1); }
   .revenue-bar-label { font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; transform: rotate(0deg); }
   .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-  .accent-swatch { width: 2rem; height: 2rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s; flex-shrink: 0; }
-  .accent-swatch:hover { transform: scale(1.1); }
-  .accent-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--card); }
+  .accent-swatch { width: 2.1rem; height: 2.1rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s ease, box-shadow 0.2s ease; flex-shrink: 0; }
+  .accent-swatch:hover { transform: scale(1.12); box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 35%, transparent); }
+  .accent-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--card), 0 0 12px color-mix(in srgb, var(--primary) 55%, transparent); }
   .accent-swatch.active::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
 
   @keyframes auroraFlow {
@@ -430,11 +471,22 @@
     .bottom-nav.nav-hidden { transform: translateY(100%); }
     .bottom-nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; color: var(--text-muted); font-size: 0.62rem; font-family: inherit; cursor: pointer; padding: 0.2rem 0.4rem; flex: 1; }
     .bottom-nav-item i, .bottom-nav-item .bn-icon { font-size: 1.2rem; }
+    .bn-icon { position: relative; display: inline-flex; }
+    .bn-badge { position: absolute; top: -0.4rem; right: -0.55rem; background: var(--danger); color: #fff; font-size: 0.58rem; font-weight: 700; line-height: 1; padding: 0.18rem 0.32rem; border-radius: 999px; min-width: 1rem; text-align: center; box-shadow: 0 0 0 2px var(--bg); }
     .bottom-nav-item.active { color: var(--primary); }
     .bottom-nav-item.active .bn-icon { background: color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 0.6rem; padding: 0.15rem 0.6rem; margin: -0.15rem -0.6rem; }
     .bottom-nav-item.active span:last-child { font-weight: 600; }
-    .bottom-nav-add { position: absolute; left: 50%; top: -1.15rem; transform: translateX(-50%); width: 3.2rem; height: 3.2rem; border-radius: 50%; background: var(--primary-grad); color: #fff; border: 4px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; box-shadow: var(--shadow-float); cursor: pointer; transition: transform 0.15s ease; }
-    .bottom-nav-add:active { transform: translateX(-50%) scale(0.92); }
+    /* Split into a left group / center button / right group grid instead of
+       a single flex row — that's what actually guarantees the "+" sits at
+       true horizontal center no matter how many icons land on each side
+       (an odd icon count can't split evenly around a single flex item). */
+    .bottom-nav.has-add { display: grid; grid-template-columns: 1fr auto 1fr; }
+    .bn-group { display: flex; align-items: center; justify-content: space-around; min-width: 0; }
+    .has-add .bottom-nav-item { font-size: 0.56rem; padding: 0.2rem 0.15rem; min-width: 0; }
+    .has-add .bottom-nav-item i, .has-add .bottom-nav-item .bn-icon { font-size: 1.05rem; }
+    .has-add .bottom-nav-item span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .bottom-nav-add { position: relative; top: -1.15rem; width: 3.2rem; height: 3.2rem; border-radius: 50%; background: var(--primary-grad); color: #fff; border: 4px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; box-shadow: var(--shadow-float); cursor: pointer; transition: transform 0.15s ease; flex-shrink: 0; }
+    .bottom-nav-add:active { transform: scale(0.92); }
   }
 
   @media (max-width: 600px) { header h1 { font-size: 1.15rem; } header h1 .brand-logo-stack { height: 1.6rem; width: 6.3rem; } .hero-content h1 { font-size: 1.5rem; } }
@@ -501,9 +553,9 @@
       <div id="settingsNotifRow" class="flex" style="justify-content:space-between;"></div>
     </div>
   </div>
-  <div class="theme-option" id="soundToggleOption" onclick="toggleSound()" style="margin-top:0.4rem;"></div>
+  <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
   <div class="accordion-section hidden" id="accountDangerSection">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark'></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark' style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);filter:drop-shadow(0 0 5px color-mix(in srgb, var(--danger) 30%, transparent));"></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
       <p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently deletes your profile and signs you out everywhere. Blocked if you have orders still in progress or commission owed.</p>
       <button class="btn btn-sm btn-danger" onclick="startDeleteAccount()">Delete my account</button>
@@ -681,9 +733,15 @@
       <label>Quantity available</label>
       <input type="number" id="prodQtyTotal" value="1" min="1" />
     </div>
-    <div id="prodExistingPhotos" class="flex" style="margin:0.4rem 0;"></div>
-    <label>Add photos</label>
-    <input type="file" id="prodPhotoFiles" accept="image/*" multiple />
+    <label>Photos</label>
+    <div class="photo-grid" id="prodExistingPhotos"></div>
+    <label class="photo-dropzone" id="photoDropzone" for="prodPhotoFiles">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <strong>Add photos</strong>
+      <span class="muted">Tap to choose, or drag images here</span>
+    </label>
+    <input type="file" id="prodPhotoFiles" accept="image/*" multiple class="hidden" onchange="previewNewProductPhotos()" />
+    <div class="photo-grid" id="prodNewPhotoPreviews"></div>
     <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
       <button class="btn btn-sm" style="background:#6b7280;" onclick="closeProductModal()">Cancel</button>
       <button class="btn" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
@@ -936,6 +994,7 @@ let vendor = null;    // row from public.vendors for the signed-in user, if any
 let editingProductId = null;
 let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
+let vendorPendingOrderCount = 0;
 let notifTarget = null; // { view, params }
 let favoriteIds = new Set();
 
@@ -1291,7 +1350,18 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPa
   const OS_EDGE_EXCLUDE = 20, THRESHOLD = 70;
   let startX = null, startY = null, active = false;
   function isExempt(el) {
-    return !!el.closest(".hscroll, .cat-row, .table-wrap, input, textarea, select, button, a, .side-drawer, .modal, .bottom-nav");
+    if (el.closest(".hscroll, .cat-row, .table-wrap, input, textarea, select, button, a, .side-drawer, .modal, .bottom-nav")) return true;
+    // Belt-and-suspenders: any horizontally-scrollable container, no matter
+    // its class name, is exempt too — catches spots like the storefront
+    // comparison table that don't use .table-wrap, so a table swipe never
+    // triggers a side panel again.
+    let node = el;
+    while (node && node !== document.body) {
+      const style = getComputedStyle(node);
+      if ((style.overflowX === "auto" || style.overflowX === "scroll") && node.scrollWidth > node.clientWidth) return true;
+      node = node.parentElement;
+    }
+    return false;
   }
   document.addEventListener("touchstart", (e) => {
     if (document.querySelector(".side-drawer.open")) { active = false; return; }
@@ -1345,6 +1415,14 @@ async function refreshNotifications() {
     if (notifCount > 0) { dot.textContent = notifCount > 9 ? "9+" : notifCount; dot.classList.remove("hidden"); }
     else dot.classList.add("hidden");
   }
+
+  if (vendor) {
+    const { count } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("vendor_id", vendor.id).eq("status", "pending");
+    vendorPendingOrderCount = count || 0;
+  } else {
+    vendorPendingOrderCount = 0;
+  }
+  renderBottomNav();
 
   if (byId("notifPanel")) await renderNotifPanel();
 }
@@ -1669,7 +1747,10 @@ async function uploadAvatar(event) {
 function renderBottomNav() {
   const nav = byId("bottomNav");
   if (!nav) return;
-  const items = [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
+  // Vendors run their business from here, not browse as a shopper, so
+  // "Home" (the buyer storefront) isn't a tab they need taking up space.
+  const isVendorUser = session && profile?.role !== "admin" && !!vendor;
+  const items = isVendorUser ? [] : [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
   items.push({ icon: "<i class='fa-solid fa-store'></i>", label: "Vendors", action: "navigate('vendors')", view: "vendors" });
   if (session && profile?.role === "admin") {
     items.push({ icon: "<i class='fa-solid fa-shield-halved'></i>", label: "Admin", action: "navigate('adminPanel')", view: "adminPanel" });
@@ -1677,7 +1758,7 @@ function renderBottomNav() {
   } else if (session) {
     items.push({ icon: "<i class='fa-solid fa-comment-dots'></i>", label: "Messages", action: "navigate('messages')", view: "messages" });
     if (vendor) {
-      items.push({ icon: "<i class='fa-solid fa-clipboard-list'></i>", label: "Requests", action: "navigate('vendorRequests')", view: "vendorRequests" });
+      items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('vendorOrders',{status:'all'})", view: "vendorOrders", badge: vendorPendingOrderCount });
       items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')", view: "vendorDashboard" });
     } else {
       items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')", view: "requestEquipment" });
@@ -1687,8 +1768,20 @@ function renderBottomNav() {
     items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')", view: "requestEquipment" });
     items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()", view: null });
   }
-  const addBtn = vendor ? `<button class="bottom-nav-add" onclick="openAddProductModal()" title="Add product"><i class="fa-solid fa-plus"></i></button>` : "";
-  nav.innerHTML = addBtn + items.map((it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}</span><span>${it.label}</span></button>`).join("");
+  const itemHtml = (it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}${it.badge ? `<span class="bn-badge">${it.badge > 9 ? "9+" : it.badge}</span>` : ""}</span><span>${it.label}</span></button>`;
+  if (vendor) {
+    // Split evenly into two groups either side of the "+" — a dedicated
+    // center grid column, not a flex item — so it's always dead-center
+    // regardless of whether the counts on each side match.
+    const mid = Math.ceil(items.length / 2);
+    nav.classList.add("has-add");
+    nav.innerHTML = `<div class="bn-group">${items.slice(0, mid).map(itemHtml).join("")}</div>
+      <button class="bottom-nav-add" onclick="openAddProductModal()" title="Add product"><i class="fa-solid fa-plus"></i></button>
+      <div class="bn-group">${items.slice(mid).map(itemHtml).join("")}</div>`;
+  } else {
+    nav.classList.remove("has-add");
+    nav.innerHTML = items.map(itemHtml).join("");
+  }
 }
 function requireLoginThen(view) {
   if (!session) { showLogin(); return; }
@@ -1788,11 +1881,18 @@ async function submitAuth() {
 
       const { data: freshData } = await sb.auth.getSession();
       const accessToken = freshData.session?.access_token;
-      const otpRes = await fetch("/api/send-login-otp", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken }),
-      });
-      const otpJson = await otpRes.json().catch(() => ({}));
+      // Sign-in itself already succeeded above — a network hiccup on this
+      // secondary OTP-check call shouldn't surface as a login failure when
+      // the user is, in fact, logged in. Fail open (skip OTP) rather than
+      // block on a transient error here.
+      let otpJson = {};
+      try {
+        const otpRes = await fetch("/api/send-login-otp", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken }),
+        });
+        otpJson = await otpRes.json();
+      } catch (otpErr) {}
       if (otpJson.otpRequired) {
         pendingOtpAccessToken = accessToken;
         hideLogin();
@@ -1936,7 +2036,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorEditProfile": app.innerHTML = await renderVendorEditProfile(); break;
       case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
       case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
-      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status); break;
+      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type); break;
       case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
       case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
       case "adminPanel": app.innerHTML = await renderAdminPanel(params.status); break;
@@ -3074,7 +3174,7 @@ async function renderVendorDashboard() {
   if (commissionOwed > 0) {
     html += `<div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
       <h3 style="margin:0;"><i class="fa-solid fa-hand-holding-dollar"></i> Commission owed: ${naira(commissionOwed)}</h3>
-      <p class="muted" style="margin-top:0.4rem;">Levromart's ${Number(v.commission_pct ?? 5)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
+      <p class="muted" style="margin-top:0.4rem;">Levromart's ${Number(v.commission_pct ?? 3)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
       <div id="commissionError" class="error-text hidden"></div>
       <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
     </div>`;
@@ -3113,11 +3213,13 @@ async function renderVendorEditProfile() {
   vendor = v;
   const { data: owed } = await sb.rpc("get_vendor_commission_owed", { p_vendor_id: v.id });
   const commissionOwed = Number(owed || 0);
+  const { data: billingPreview } = await sb.rpc("compute_monthly_billing_amount", { p_vendor_id: v.id });
+  const bp = (billingPreview && billingPreview[0]) || { listing_count: 0, amount: 0 };
 
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
     <h3 style="margin:0;"><i class="fa-solid fa-hand-holding-dollar"></i> Commission owed: ${naira(commissionOwed)}</h3>
-    <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 5)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
+    <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 3)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
     <div id="commissionError" class="error-text hidden"></div>
     <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
   </div>` : ""}
@@ -3146,7 +3248,7 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details</h2>
-    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 5)}% platform commission), no manual transfers needed.</p>
+    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed.</p>
     <div id="bankError" class="error-text hidden"></div>
     ${v.paystack_subaccount_code
       ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} — ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
@@ -3159,6 +3261,22 @@ async function renderVendorEditProfile() {
       <input id="veAccountNumber" inputmode="numeric" maxlength="10" placeholder="10-digit account number" value="${esc(v.account_number || "")}" />
       <button class="btn btn-sm" style="margin-top:0.6rem;" id="saveBankBtn" onclick="saveVendorBankDetails()">Save payout details</button>
     </div>
+  </div>
+
+  <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
+    <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart</h2>
+    <p class="muted">Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card — better if your sales are hard to track (e.g. you take payment off-platform a lot).</p>
+    <div id="billingError" class="error-text hidden"></div>
+    <div class="flex" style="gap:1.2rem;margin:0.6rem 0;">
+      <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="commission" ${v.billing_model !== "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Commission-based</label>
+      <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="monthly" ${v.billing_model === "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Monthly per listing</label>
+    </div>
+    ${v.billing_model === "monthly" ? `
+      ${v.monthly_billing_status === "active" ? `<div class="banner banner-success"><strong><i class="fa-solid fa-circle-check"></i> Monthly billing active.</strong> ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(bp.amount)}/month · next charge ${v.next_monthly_charge_at ? new Date(v.next_monthly_charge_at).toLocaleDateString() : "—"}</div>`
+      : v.monthly_billing_status === "past_due" ? `<div class="banner banner-danger"><strong><i class="fa-solid fa-triangle-exclamation"></i> Payment failed — storefront paused.</strong> Set up billing again to reactivate.</div>`
+      : `<div class="banner banner-warning"><strong><i class="fa-solid fa-circle-info"></i> Card not set up yet.</strong> Currently: ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(Math.max(bp.amount, 1500))} due today to activate.</div>`}
+      <button class="btn btn-sm" id="setupBillingBtn" onclick="setupMonthlyBilling()">${v.monthly_billing_status === "active" ? "Update card" : "Set up monthly billing"}</button>
+    ` : ""}
   </div>`;
 }
 
@@ -3374,6 +3492,8 @@ async function showProductModal() {
 
   byId("productError").classList.add("hidden");
   byId("prodExistingPhotos").innerHTML = "";
+  byId("prodNewPhotoPreviews").innerHTML = "";
+  byId("prodPhotoFiles").value = "";
   byId("prodCategoryOther").value = "";
   byId("prodCategoryOther").classList.add("hidden");
   window.__existingPhotos = [];
@@ -3410,13 +3530,46 @@ async function showProductModal() {
 
 function renderExistingPhotos() {
   byId("prodExistingPhotos").innerHTML = (window.__existingPhotos || [])
-    .map((url) => `<div style="position:relative;"><img src="${esc(url)}" class="thumb" /><button type="button" onclick="removeExistingPhoto('${esc(url)}')" style="position:absolute;top:-6px;right:-6px;border-radius:999px;background:var(--danger);color:white;border:none;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;">×</button></div>`)
+    .map((url) => `<div class="photo-thumb"><img src="${esc(url)}" alt="" /><button type="button" class="photo-remove" onclick="removeExistingPhoto('${esc(url)}')" title="Remove"><i class="fa-solid fa-xmark"></i></button></div>`)
     .join("");
 }
 function removeExistingPhoto(url) {
   window.__existingPhotos = (window.__existingPhotos || []).filter((u) => u !== url);
   renderExistingPhotos();
 }
+
+// Live thumbnails for photos just picked but not yet uploaded — so "Add
+// photos" actually shows what you chose instead of staying blank until
+// after Save.
+function previewNewProductPhotos() {
+  const files = [...(byId("prodPhotoFiles").files || [])];
+  const wrap = byId("prodNewPhotoPreviews");
+  wrap.innerHTML = files.map((f) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="photo-thumb"><img src="${url}" alt="" /><span class="photo-pending-badge">new</span></div>`;
+  }).join("");
+}
+(function setupPhotoDropzone() {
+  document.addEventListener("dragover", (e) => {
+    const zone = e.target.closest && e.target.closest("#photoDropzone");
+    if (zone) { e.preventDefault(); zone.classList.add("drag-over"); }
+  });
+  document.addEventListener("dragleave", (e) => {
+    const zone = e.target.closest && e.target.closest("#photoDropzone");
+    if (zone) zone.classList.remove("drag-over");
+  });
+  document.addEventListener("drop", (e) => {
+    const zone = e.target.closest && e.target.closest("#photoDropzone");
+    if (!zone) return;
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    const input = byId("prodPhotoFiles");
+    if (input && e.dataTransfer?.files?.length) {
+      input.files = e.dataTransfer.files;
+      previewNewProductPhotos();
+    }
+  });
+})();
 
 function toggleProdCategoryOther() {
   byId("prodCategoryOther").classList.toggle("hidden", byId("prodCategory").value !== "__other__");
@@ -3686,28 +3839,47 @@ async function deletePackage(id) {
 
 // ---------- VENDOR / BUYER ORDERS ----------
 const ORDER_TABS = ["all", "pending", "confirmed", "handed_over", "returned", "completed", "cancelled", "disputed"];
+const ORDER_TYPE_TABS = [
+  { value: "all", label: "All" },
+  { value: "sale", label: "Sales" },
+  { value: "rental", label: "Rentals" },
+  { value: "service", label: "Services" },
+];
 
-async function renderVendorOrders(status) {
+// A service booking is stored as order_type "sale" (it goes through the
+// same checkout as a sale) — the only way to tell it apart is whether the
+// product behind it is flagged is_service, so that's what this checks.
+function orderCategory(order) {
+  if (order.order_type === "rental") return "rental";
+  if ((order.items || []).some((i) => i.product?.is_service)) return "service";
+  return "sale";
+}
+
+async function renderVendorOrders(status, type) {
   if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
   if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle(); vendor = v; }
   if (!vendor) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   status = ORDER_TABS.includes(status) ? status : "all";
+  type = ORDER_TYPE_TABS.some((t) => t.value === type) ? type : "all";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, buyer:users(name)").eq("vendor_id", vendor.id);
+  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(product:products(is_service))").eq("vendor_id", vendor.id);
   if (status !== "all") query = query.eq("status", status);
-  const { data: orders } = await query.order("created_at", { ascending: false });
+  const { data: allOrders } = await query.order("created_at", { ascending: false });
+  const orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
 
-  let html = `<h2>Orders</h2><div class="tabs">${ORDER_TABS.map((t) => `<a class="${t === status ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${t}'})">${t}</a>`).join("")}</div>`;
-  html += orderListHtml(orders, false);
+  let html = `<h2>Orders</h2>
+  <div class="tabs">${ORDER_TABS.map((t) => `<a class="${t === status ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${t}',type:'${type}'})">${t}</a>`).join("")}</div>
+  <div class="tabs">${ORDER_TYPE_TABS.map((t) => `<a class="${t.value === type ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${status}',type:'${t.value}'})">${t.label}</a>`).join("")}</div>`;
+  html += orderListHtml(sortOrdersForList(orders), false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
   return html;
 }
 
 async function renderBuyerOrders() {
   if (!session) return '<div class="empty-state">Please log in.</div>';
-  const { data: orders } = await sb.from("orders").select("id, order_type, status, total_amount, vendor:vendors(business_name)").eq("buyer_id", session.user.id).order("created_at", { ascending: false });
+  const { data: orders } = await sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name)").eq("buyer_id", session.user.id).order("created_at", { ascending: false });
   let html = `<h2><i class='fa-solid fa-clipboard-list'></i> My Orders</h2>`;
-  html += orderListHtml(orders, true);
+  html += orderListHtml(sortOrdersForList(orders), true);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Continue shopping</button>`;
   return html;
 }
@@ -3719,6 +3891,22 @@ function orderStatusBadgeClass(status) {
   return "";
 }
 
+// Pending orders need action, so they float to the top regardless of when
+// they came in; cancelled orders are done and don't need eyes on them, so
+// they sink to the bottom. Everything else stays newest-first in between.
+function sortOrdersForList(orders) {
+  const rank = (o) => (o.status === "pending" ? 0 : o.status === "cancelled" ? 2 : 1);
+  return [...(orders || [])].sort((a, b) => {
+    const ra = rank(a), rb = rank(b);
+    if (ra !== rb) return ra - rb;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+}
+
+function orderDateTimeStr(iso) {
+  return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
   return orders.map((o) => `
@@ -3726,6 +3914,7 @@ function orderListHtml(orders, isBuyerView) {
       <div>
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
+        ${o.created_at ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-solid fa-calendar-days"></i> ${orderDateTimeStr(o.created_at)}</p>` : ""}
       </div>
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status}</span>
     </div>`).join("");
@@ -3753,8 +3942,10 @@ async function renderOrderDetail(orderId) {
 
   let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge ${orderStatusBadgeClass(order.status)}">${order.status.replace("_", " ")}</span></div>
   <p class="muted">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}</p>
+  ${order.created_at ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
   ${order.package?.name ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-boxes-packing"></i> Package: ${esc(order.package.name)}</p>` : ""}
-  ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> ${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}`;
+  ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> ${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}
+  ${order.payout_status && order.payout_status !== "not_applicable" ? `<p class="muted" style="font-size:0.85rem;margin-top:0.2rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status)}</p>` : ""}`;
 
   html += order.items.map((item) => `<div class="card">
     <strong>${esc(item.product?.name || "")}</strong>
@@ -3768,6 +3959,17 @@ async function renderOrderDetail(orderId) {
     ${order.deposit_amount > 0 ? `<div><p class="muted">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
     <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
   </div>`;
+
+  if (isVendor) {
+    const { data: contact } = await sb.rpc("get_order_buyer_contact", { p_order_id: orderId });
+    const c = (contact && contact[0]) || {};
+    if (c.phone || c.name) {
+      html += `<div class="card"><h3><i class="fa-solid fa-address-card"></i> Buyer contact</h3>
+        <p>${esc(c.name || "Buyer")}</p>
+        ${c.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(c.phone)}"><i class="fa-solid fa-phone"></i> ${esc(c.phone)}</a>` : `<span class="muted" style="font-size:0.85rem;">No phone on file</span>`}
+      </div>`;
+    }
+  }
 
   if (order.delivery_method === "pickup" && isBuyer) {
     const addr = [order.vendor?.address, order.vendor?.city].filter(Boolean).map(esc).join(", ");
@@ -3850,27 +4052,61 @@ function orderActionButtonsHtml(order, isBuyer, isVendor) {
     if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
     if (order.status === "confirmed") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
     if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
-    if (order.status === "handed_over" && order.order_type === "sale") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','completed')">Mark completed</button>`);
-    if (order.status === "returned") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','completed')">Mark completed</button>`);
   }
   if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
   if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
+  // Only the buyer confirms completion — that's what releases an escrowed
+  // payment to the vendor, so it can't be something the vendor self-marks.
+  if (isBuyer && order.status === "handed_over" && order.order_type === "sale") buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
+  if (isBuyer && order.status === "returned" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
   return buttons.join("");
 }
 
 const ORDER_STATUS_HELP = {
   pending: "Waiting for the vendor to confirm your order.",
   confirmed: "The vendor has accepted — next they'll hand over the equipment.",
-  handed_over: "The equipment has physically been handed to the buyer (picked up or delivered). For rentals, either side can mark it \"returned\" once it's back with the vendor.",
-  returned: "The rented equipment is back with the vendor — the order is wrapped up once they mark it completed.",
+  handed_over: "The equipment has physically been handed to the buyer (picked up or delivered). For rentals, either side can mark it \"returned\" once it's back with the vendor. For sales, the buyer confirms receipt to complete the order and release payment.",
+  returned: "The rented equipment is back with the vendor — the buyer confirms to complete the order and release payment.",
   completed: "This order is finished.",
   cancelled: "This order was cancelled.",
   disputed: "An issue was reported on this order — an admin is reviewing it.",
 };
 
+const PAYOUT_STATUS_HELP = {
+  held: (date) => `Payment is being held by Levromart until you confirm receipt — it'll release automatically on ${date} even if you forget.`,
+  released: () => `Payment has been released to the vendor.`,
+  refunded: () => `This payment was refunded back to the buyer.`,
+};
+
 async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+// The buyer's "I've received this" / "Confirm & complete" action — unlike
+// every other status change, this one also has to actually move money, so
+// it goes through a serverless endpoint instead of a plain RPC call.
+async function confirmReceiveOrder(orderId) {
+  if (!(await showConfirmDialog(
+    "Confirm you've received this order? If payment is being held, it'll be released to the vendor right away.",
+    { title: "Confirm receipt", okLabel: "Confirm" }
+  ))) return;
+  showToast("Confirming…", "info");
+  try {
+    const res = await fetch("/api/release-payout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Could not complete this order.");
+    if (json.transferred) showToast("Order completed — payment released to the vendor.", "success");
+    else if (json.payoutError) showToast("Order completed. There was a hiccup releasing payment — our team will sort it out.", "info");
+    else showToast("Order completed.", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
   navigate("orderDetail", { orderId });
 }
 
@@ -3887,6 +4123,33 @@ async function payCommission() {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not start payment.");
+    window.location.href = json.authorization_url;
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+    btn.disabled = false;
+  }
+}
+
+async function submitVendorBillingModel(billingModel) {
+  const { error } = await sb.rpc("set_vendor_billing_model", { p_billing_model: billingModel });
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("vendorEditProfile");
+}
+
+async function setupMonthlyBilling() {
+  const errorEl = byId("billingError");
+  const btn = byId("setupBillingBtn");
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/setup-monthly-billing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Could not start billing setup.");
     window.location.href = json.authorization_url;
   } catch (err) {
     errorEl.textContent = err.message;
@@ -4390,7 +4653,7 @@ function exportFinancePdf() {
 
 async function renderAdminDisputes() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
-  const { data: disputes } = await sb.from("disputes").select("*, order:orders(id, order_type, buyer_id, vendor_id, vendor:vendors(business_name))").eq("status", "open").order("created_at", { ascending: true });
+  const { data: disputes } = await sb.from("disputes").select("*, order:orders(id, order_type, buyer_id, vendor_id, payout_status, vendor:vendors(business_name))").eq("status", "open").order("created_at", { ascending: true });
 
   let html = `<h2>Open disputes</h2>`;
   html += adminNavHtml("adminDisputes");
@@ -4404,10 +4667,12 @@ async function renderAdminDisputes() {
       <p style="margin:0.5rem 0;"><strong>Reason:</strong> ${esc(d.reason)}</p>
       ${d.vendor_response ? `<p style="margin:0.5rem 0;"><strong>Vendor says:</strong> ${esc(d.vendor_response)}</p>` : `<p class="muted" style="margin:0.5rem 0;">Vendor hasn't responded yet.</p>`}
       ${d.order?.buyer_id && d.order?.vendor_id ? `<button class="btn btn-sm btn-outline" onclick="openDisputeChat('${d.order.buyer_id}','${d.order.vendor_id}')"><i class="fa-solid fa-comment-dots"></i> View chat between buyer &amp; vendor</button>` : ""}
+      ${d.order?.payout_status === "held" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-shield-halved"></i> Payment on this order is still held by Levromart — the vendor hasn't been paid.</p>
+      <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
       <div class="flex">
         <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
         <select id="newstatus-${d.id}"><option value="">Leave order as-is</option><option value="completed">Set order: completed</option><option value="cancelled">Set order: cancelled</option></select>
-        <button class="btn btn-sm" onclick="resolveDispute('${d.id}')">Mark resolved</button>
+        <button class="btn btn-sm" onclick="resolveDispute('${d.id}','${d.order?.id}','${d.order?.payout_status}')">Mark resolved</button>
       </div>
     </div>`;
   });
@@ -4415,12 +4680,53 @@ async function renderAdminDisputes() {
   return html;
 }
 
-async function resolveDispute(id) {
+async function resolveDispute(id, orderId, payoutStatus) {
   const notes = byId(`notes-${id}`).value.trim() || "Resolved.";
   const newStatus = byId(`newstatus-${id}`).value || undefined;
+
+  if (newStatus === "cancelled" && payoutStatus === "held") {
+    showToast('This order still has payment held — use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
+    return;
+  }
+
+  // A held payment can't just have its status flipped to "completed" —
+  // that has to actually move the money too, so it goes through the same
+  // release endpoint the buyer's own "I've received this" button uses.
+  if (newStatus === "completed" && payoutStatus === "held") {
+    const res = await fetch("/api/release-payout", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast(json.error || "Could not release payment.", "error"); return; }
+    const { error } = await sb.rpc("resolve_dispute", { p_dispute_id: id, p_admin_notes: notes });
+    if (error) { showToast(error.message, "error"); return; }
+    navigate("adminDisputes");
+    return;
+  }
+
   const { error } = await sb.rpc("resolve_dispute", { p_dispute_id: id, p_admin_notes: notes, p_new_order_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
   navigate("adminDisputes");
+}
+
+async function adminRefundOrder(orderId) {
+  if (!(await showConfirmDialog(
+    "Refund the buyer in full? This sends the held payment back to their card/account and cancels the order. The vendor was never paid, so there's nothing to claw back from them.",
+    { title: "Refund buyer", okLabel: "Refund", danger: true }
+  ))) return;
+  try {
+    const res = await fetch("/api/refund-payout", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Could not refund this order.");
+    showToast("Buyer refunded.", "success");
+    navigate("adminDisputes");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 }
 
 // ---------- INIT ----------
@@ -4707,6 +5013,22 @@ window.addEventListener("popstate", (e) => {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
       if (json.status === "success") showToast("Commission settled — thank you!", "success");
+      else showToast("We couldn't confirm that payment yet. It may still be processing.", "info");
+    } catch (e) {
+      showToast("Couldn't reach the payment verification service.", "error");
+    }
+    await navigate("vendorEditProfile");
+    return;
+  }
+
+  if (urlParams.get("billingSetup") === "1" && urlParams.get("reference")) {
+    const reference = urlParams.get("reference");
+    history.replaceState({ view: "home", params: {} }, "", location.pathname);
+    showVerifyingPaymentScreen();
+    try {
+      const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
+      const json = await res.json();
+      if (json.status === "success") showToast("Monthly billing set up — your card is saved.", "success");
       else showToast("We couldn't confirm that payment yet. It may still be processing.", "info");
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
