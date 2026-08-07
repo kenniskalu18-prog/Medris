@@ -13,12 +13,15 @@ function env(name) {
   return v;
 }
 
-// A successful Paystack charge can be either a buyer's order payment
-// (reference starts "medris_") or a vendor settling owed commission on
-// their offline sales (reference starts "commission_"). Both the webhook
-// and the browser-return verify endpoint need this same routing, so it
-// lives here once.
-async function settleReference(reference) {
+// A successful Paystack charge can be a buyer's order payment (reference
+// starts "medris_"), a vendor settling owed commission on their offline
+// sales ("commission_"), or a vendor setting up monthly billing
+// ("billing_"). Both the webhook and the browser-return verify endpoint
+// need this same routing, so it lives here once. `txData` is the Paystack
+// transaction object (event.data on the webhook, verifyJson.data on the
+// browser-return path) -- only the billing_ path actually needs it, to
+// pull the card's authorization_code for future recurring charges.
+async function settleReference(reference, txData) {
   const SUPABASE_URL = env("SUPABASE_URL");
   const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
   const headers = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
@@ -39,12 +42,178 @@ async function settleReference(reference) {
       method: "PATCH", headers,
       body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }),
     });
+  } else if (reference.startsWith("billing_")) {
+    const getRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/vendor_monthly_charges?provider_reference=eq.${encodeURIComponent(reference)}&select=id,vendor_id,status`,
+      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+    );
+    const [charge] = await getRes.json();
+    if (!charge || charge.status === "paid") return;
+
+    const authCode = txData?.authorization?.authorization_code;
+    const customerCode = txData?.customer?.customer_code;
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    await fetch(`${SUPABASE_URL}/rest/v1/vendors?id=eq.${charge.vendor_id}`, {
+      method: "PATCH", headers,
+      body: JSON.stringify({
+        paystack_authorization_code: authCode,
+        paystack_customer_code: customerCode,
+        monthly_billing_status: "active",
+        next_monthly_charge_at: nextMonth.toISOString(),
+      }),
+    });
+    await fetch(`${SUPABASE_URL}/rest/v1/vendor_monthly_charges?id=eq.${charge.id}`, {
+      method: "PATCH", headers,
+      body: JSON.stringify({ status: "paid" }),
+    });
   } else {
     await fetch(`${SUPABASE_URL}/rest/v1/payments?provider_reference=eq.${encodeURIComponent(reference)}`, {
       method: "PATCH", headers,
       body: JSON.stringify({ status: "paid" }),
     });
   }
+}
+
+// ---------- ESCROW PAYOUTS ----------
+// Paystack "transfer recipient" for a vendor's bank account -- separate
+// concept from the old subaccount split, created lazily on first payout
+// and cached on the vendor row so it's only ever created once.
+async function getOrCreateTransferRecipient(vendor) {
+  if (vendor.transfer_recipient_code) return vendor.transfer_recipient_code;
+
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+  const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
+
+  const res = await fetch("https://api.paystack.co/transferrecipient", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "nuban",
+      name: vendor.account_name,
+      account_number: vendor.account_number,
+      bank_code: vendor.bank_code,
+      currency: "NGN",
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.status) throw new Error(json.message || "Could not register the vendor's bank account for payout.");
+  const recipientCode = json.data.recipient_code;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/vendors?id=eq.${vendor.id}`, {
+    method: "PATCH",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ transfer_recipient_code: recipientCode }),
+  });
+  return recipientCode;
+}
+
+// Actually moves held escrow money to the vendor's bank account and marks
+// the order released. Called both when a buyer confirms receipt
+// (release-payout.js) and by the daily auto-release cron
+// (auto-release-payouts.js) -- identical money-moving logic, only who/what
+// triggered it differs. Commission is simply left out of the transfer
+// amount (kept in the platform's Paystack balance) -- the deposit, if any,
+// passes through to the vendor in full, uncommissioned.
+async function releaseOrderPayout(orderId) {
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+  const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
+  const svcAuth = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+  const svcHeaders = { ...svcAuth, "Content-Type": "application/json", Prefer: "return=minimal" };
+
+  const orderRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,payout_status,vendor:vendors(id,commission_pct,bank_code,account_number,account_name,transfer_recipient_code)`,
+    { headers: svcAuth }
+  );
+  const [order] = await orderRes.json();
+  if (!order) throw new Error("order not found");
+  if (order.payout_status !== "held") return { transferred: false, reason: `payout_status is ${order.payout_status}, nothing to release` };
+
+  const paymentsRes = await fetch(`${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&status=eq.paid&select=payment_type,amount`, { headers: svcAuth });
+  const payments = await paymentsRes.json();
+  const feeAmount = (payments || []).filter((p) => p.payment_type === "sale_price" || p.payment_type === "rental_fee").reduce((s, p) => s + Number(p.amount), 0);
+  const depositAmount = (payments || []).filter((p) => p.payment_type === "deposit").reduce((s, p) => s + Number(p.amount), 0);
+  if (feeAmount <= 0) return { transferred: false, reason: "no paid fee found for this order" };
+
+  if (!order.vendor?.bank_code || !order.vendor?.account_number) {
+    throw new Error("Vendor has no payout bank account on file yet.");
+  }
+  const commissionPct = Number(order.vendor.commission_pct ?? 5);
+  const payoutAmount = feeAmount * (1 - commissionPct / 100) + depositAmount;
+  const recipientCode = await getOrCreateTransferRecipient(order.vendor);
+
+  const transferRes = await fetch("https://api.paystack.co/transfer", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: "balance",
+      amount: Math.round(payoutAmount * 100),
+      recipient: recipientCode,
+      reason: "Levromart order payout",
+      reference: `payout_${orderId}_${Date.now()}`,
+    }),
+  });
+  const transferJson = await transferRes.json();
+  if (!transferRes.ok || !transferJson.status) {
+    // Newer Paystack business accounts sometimes require a one-time OTP
+    // approval on transfers as a fraud check -- if that's what's happening,
+    // Paystack's message will say so, and it needs disabling from their
+    // dashboard/support before payouts can be fully automatic.
+    throw new Error(transferJson.message || "Paystack transfer failed");
+  }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: "PATCH", headers: svcHeaders,
+    body: JSON.stringify({
+      payout_status: "released",
+      payout_released_at: new Date().toISOString(),
+      payout_transfer_code: transferJson.data?.transfer_code || transferJson.data?.reference || null,
+      status: "completed",
+    }),
+  });
+
+  return { transferred: true, amount: payoutAmount };
+}
+
+// Admin-only path for a dispute where the vendor genuinely never delivered
+// -- refunds the buyer's original charge in full via Paystack, straight
+// from the platform's balance, since the vendor was never paid to begin
+// with (that's the whole point of holding it).
+async function refundOrderPayout(orderId) {
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+  const PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY");
+  const svcAuth = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+  const svcHeaders = { ...svcAuth, "Content-Type": "application/json", Prefer: "return=minimal" };
+
+  const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,payout_status`, { headers: svcAuth });
+  const [order] = await orderRes.json();
+  if (!order) throw new Error("order not found");
+  if (order.payout_status !== "held") throw new Error(`Can't refund — payout status is "${order.payout_status}", not held.`);
+
+  const paymentsRes = await fetch(`${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&status=eq.paid&select=provider_reference&limit=1`, { headers: svcAuth });
+  const [payment] = await paymentsRes.json();
+  if (!payment) throw new Error("No paid payment found for this order.");
+
+  const refundRes = await fetch("https://api.paystack.co/refund", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ transaction: payment.provider_reference }),
+  });
+  const refundJson = await refundRes.json();
+  if (!refundRes.ok || !refundJson.status) {
+    throw new Error(refundJson.message || "Paystack refund failed");
+  }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: "PATCH", headers: svcHeaders,
+    body: JSON.stringify({ payout_status: "refunded", status: "cancelled" }),
+  });
+
+  return { refunded: true };
 }
 
 const MEDRIS_LOGO_URL = "https://levromart.vercel.app/icon-512.png";
@@ -126,4 +295,4 @@ function esc(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-module.exports = { readBody, env, settleReference, sendNotificationEmail };
+module.exports = { readBody, env, settleReference, sendNotificationEmail, releaseOrderPayout, refundOrderPayout };
