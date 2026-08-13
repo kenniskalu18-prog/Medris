@@ -251,7 +251,7 @@
     box-shadow: var(--shadow-float); cursor: pointer; z-index: 150; user-select: none;
     animation: fabPulse 3s ease-in-out infinite;
   }
-  @media (max-width: 720px) { .ai-chat-fab { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)) !important; } }
+  @media (max-width: 720px) { .ai-chat-fab { bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)) !important; } }
   @keyframes fabPulse {
     0%, 100% { box-shadow: var(--shadow-float); }
     50% { box-shadow: var(--shadow-float), 0 0 0 9px color-mix(in srgb, var(--primary) 16%, transparent); }
@@ -465,12 +465,16 @@
   /* ---- mobile bottom nav (thumb-reach) ---- */
   .bottom-nav { display: none; }
   @media (max-width: 720px) {
-    body { padding-bottom: 4.2rem; }
+    body { padding-bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)); }
     .bottom-nav {
-      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; align-items: center; justify-content: space-around;
-      background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border-top: 1px solid var(--glass-border); padding: 0.5rem 0.3rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
-      box-shadow: 0 -4px 16px rgba(0,0,0,0.1); transition: transform 0.25s ease;
+      /* A floating, inset "pill" — margin on all sides plus rounded
+         corners — rather than a flat bar glued to the screen edges, so it
+         reads as a translucent glass bubble sitting above the content
+         (the look on modern iOS apps) instead of a plain toolbar. */
+      display: flex; position: fixed; left: 0.7rem; right: 0.7rem; bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px)); z-index: 80; align-items: center; justify-content: space-around;
+      background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border); border-radius: 1.7rem; padding: 0.55rem 0.4rem;
+      box-shadow: 0 10px 34px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.08); transition: transform 0.25s ease;
     }
     .bottom-nav.nav-hidden { transform: translateY(100%); }
     .bottom-nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; color: var(--text-muted); font-size: 0.62rem; font-family: inherit; cursor: pointer; padding: 0.2rem 0.4rem; flex: 1; }
@@ -497,7 +501,7 @@
 
   /* ---- toasts (replace native alert) ---- */
   .toast-stack { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 0.6rem; align-items: center; width: min(420px, 92vw); pointer-events: none; }
-  @media (max-width: 720px) { .toast-stack { bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); } }
+  @media (max-width: 720px) { .toast-stack { bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)); } }
   .toast { display: flex; align-items: center; gap: 0.6rem; background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid var(--glass-border); color: var(--text); padding: 0.8rem 1.1rem; border-radius: 0.8rem; box-shadow: 0 12px 30px rgba(0,0,0,0.25); font-size: 0.88rem; opacity: 0; transform: translateY(16px); transition: opacity 0.25s ease, transform 0.25s ease; width: 100%; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast-success i { color: var(--success); }
@@ -2451,7 +2455,7 @@ async function renderMessages(conversationId) {
 
   sb.from("messages").update({ read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId).is("read_at", null).neq("sender_id", session.user.id)
-    .then(() => {});
+    .then(() => refreshNotifications());
 
   let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('messages')"><i class="fa-solid fa-arrow-left"></i> All conversations</button>`;
   html += `<div class="flex" style="margin-bottom:0.6rem;">
@@ -2492,7 +2496,7 @@ function subscribeToConversation(conversationId) {
       if (payload.new.sender_id !== session.user.id) {
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
-        sb.from("messages").update({ read_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => {});
+        sb.from("messages").update({ read_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
     })
     .subscribe();
