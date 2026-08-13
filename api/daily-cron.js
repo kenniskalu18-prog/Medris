@@ -35,11 +35,28 @@ async function runAutoReleasePayouts() {
   const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
   const svcAuth = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
 
-  const dueRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/orders?payout_status=eq.held&auto_release_at=lte.${new Date().toISOString()}&status=not.in.(disputed,cancelled,completed)&select=id`,
-    { headers: svcAuth }
-  );
-  const due = await dueRes.json();
+  // Two different reasons an order can be "held" and need this cron:
+  // (1) genuine auto-release — the buyer never tapped "I've received this",
+  //     so once the 5-day window passes we release it for them.
+  // (2) a stuck retry — the buyer DID confirm (status is already
+  //     "completed") but the Paystack transfer itself failed at that
+  //     moment (e.g. an OTP requirement on the account), so payout_status
+  //     never left "held". That doesn't need to wait on auto_release_at at
+  //     all — it should be retried on every run until it goes through.
+  const [autoReleaseDueRes, stuckRetryRes] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/orders?payout_status=eq.held&auto_release_at=lte.${new Date().toISOString()}&status=not.in.(disputed,cancelled,completed)&select=id`,
+      { headers: svcAuth }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/orders?payout_status=eq.held&status=eq.completed&select=id`,
+      { headers: svcAuth }
+    ),
+  ]);
+  const autoReleaseDue = await autoReleaseDueRes.json();
+  const stuckRetry = await stuckRetryRes.json();
+  const seen = new Set();
+  const due = [...(autoReleaseDue || []), ...(stuckRetry || [])].filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)));
 
   const results = [];
   for (const o of due || []) {
