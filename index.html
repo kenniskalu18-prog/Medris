@@ -78,7 +78,7 @@
     transition: background-color 0.25s ease, color 0.25s ease;
   }
   header {
-    background: var(--bg); color: var(--text); padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
+    background: var(--bg); color: var(--text); padding: calc(0.8rem + env(safe-area-inset-top, 0px)) 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
     position: sticky; top: 0; z-index: 50;
     transition: background-color 0.25s ease;
   }
