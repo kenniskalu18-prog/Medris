@@ -1887,9 +1887,9 @@ async function submitAuth() {
       // block on a transient error here.
       let otpJson = {};
       try {
-        const otpRes = await fetch("/api/send-login-otp", {
+        const otpRes = await fetch("/api/auth-otp", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken }),
+          body: JSON.stringify({ action: "send", accessToken }),
         });
         otpJson = await otpRes.json();
       } catch (otpErr) {}
@@ -1937,9 +1937,9 @@ async function submitLoginOtp() {
   const btn = byId("otpSubmitBtn");
   btn.disabled = true;
   try {
-    const res = await fetch("/api/verify-login-otp", {
+    const res = await fetch("/api/auth-otp", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: pendingOtpAccessToken, code }),
+      body: JSON.stringify({ action: "verify", accessToken: pendingOtpAccessToken, code }),
     });
     const json = await res.json();
     if (!json.ok) { errorEl.textContent = json.error || "That code didn't work."; errorEl.classList.remove("hidden"); return; }
@@ -1963,9 +1963,9 @@ async function cancelLoginOtp() {
 
 async function resendLoginOtp() {
   if (!pendingOtpAccessToken) return;
-  await fetch("/api/send-login-otp", {
+  await fetch("/api/auth-otp", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken: pendingOtpAccessToken }),
+    body: JSON.stringify({ action: "send", accessToken: pendingOtpAccessToken }),
   });
   showToast("New code sent.", "success");
 }
@@ -3305,10 +3305,10 @@ async function saveVendorBankDetails() {
   const btn = byId("saveBankBtn");
   btn.disabled = true;
   try {
-    const res = await fetch("/api/create-subaccount", {
+    const res = await fetch("/api/vendor-payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: session.access_token, bankCode, accountNumber }),
+      body: JSON.stringify({ action: "create-subaccount", accessToken: session.access_token, bankCode, accountNumber }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not save payout details.");
@@ -4094,10 +4094,10 @@ async function confirmReceiveOrder(orderId) {
   ))) return;
   showToast("Confirming…", "info");
   try {
-    const res = await fetch("/api/release-payout", {
+    const res = await fetch("/api/order-payout-action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+      body: JSON.stringify({ action: "release", orderId, accessToken: session.access_token }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not complete this order.");
@@ -4116,10 +4116,10 @@ async function payCommission() {
   errorEl.classList.add("hidden");
   btn.disabled = true;
   try {
-    const res = await fetch("/api/pay-commission", {
+    const res = await fetch("/api/vendor-payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: session.access_token }),
+      body: JSON.stringify({ action: "pay-commission", accessToken: session.access_token }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not start payment.");
@@ -4143,10 +4143,10 @@ async function setupMonthlyBilling() {
   errorEl.classList.add("hidden");
   btn.disabled = true;
   try {
-    const res = await fetch("/api/setup-monthly-billing", {
+    const res = await fetch("/api/vendor-payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: session.access_token }),
+      body: JSON.stringify({ action: "setup-monthly-billing", accessToken: session.access_token }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not start billing setup.");
@@ -4693,9 +4693,9 @@ async function resolveDispute(id, orderId, payoutStatus) {
   // that has to actually move the money too, so it goes through the same
   // release endpoint the buyer's own "I've received this" button uses.
   if (newStatus === "completed" && payoutStatus === "held") {
-    const res = await fetch("/api/release-payout", {
+    const res = await fetch("/api/order-payout-action", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+      body: JSON.stringify({ action: "release", orderId, accessToken: session.access_token }),
     });
     const json = await res.json();
     if (!res.ok) { showToast(json.error || "Could not release payment.", "error"); return; }
@@ -4716,9 +4716,9 @@ async function adminRefundOrder(orderId) {
     { title: "Refund buyer", okLabel: "Refund", danger: true }
   ))) return;
   try {
-    const res = await fetch("/api/refund-payout", {
+    const res = await fetch("/api/order-payout-action", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, accessToken: session.access_token }),
+      body: JSON.stringify({ action: "refund", orderId, accessToken: session.access_token }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not refund this order.");
