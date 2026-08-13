@@ -113,7 +113,7 @@
     .splash-layer, .splash-circle, .splash-left, .splash-right { animation: none !important; opacity: 1; transform: none; }
   }
   .login-modal-logo { width: 4.5rem; height: auto; display: block; margin: 0 auto 0.6rem; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 45%, transparent)); }
-  .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; }
+  .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: brightness(0) invert(1); }
   .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
   .header-right { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
   .btn { padding: 0.5rem 1.2rem; border: none; border-radius: 0.6rem; background: var(--primary-grad); color: white; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: filter 0.15s, transform 0.1s; }
@@ -479,7 +479,7 @@
       background: var(--glass-bg); backdrop-filter: blur(28px) saturate(200%); -webkit-backdrop-filter: blur(28px) saturate(200%);
       border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.55rem 0.4rem;
       box-shadow: 0 12px 38px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.25);
-      transition: transform 0.25s ease; overflow: hidden;
+      transition: transform 0.25s ease;
     }
     .bottom-nav.nav-hidden { transform: translateY(140%); }
     .bottom-nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; color: var(--text-muted); font-size: 0.62rem; font-family: inherit; cursor: pointer; padding: 0.2rem 0.4rem; flex: 1; transition: transform 0.15s ease; }
