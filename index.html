@@ -396,6 +396,10 @@
   .quick-action:hover .quick-action-icon { transform: translateY(-4px) scale(1.05); }
   .dash-actions { display: flex; gap: 1.3rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0 1.4rem; }
   .dash-actions .quick-action-icon { width: 2.9rem; height: 2.9rem; font-size: 1.1rem; }
+  /* Forces a deterministic 4-then-3 layout instead of flex-wrap's
+     screen-width-dependent break (which is what put 5 on the first row
+     and 2 on the second on wider phones). */
+  .dash-actions.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; gap: 1.3rem 0.6rem; }
   .verified-tick { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); font-size: 0.85rem; cursor: pointer; flex-shrink: 0; }
   .hero-search { position: relative; background: var(--glass-bg); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.2rem; box-shadow: var(--shadow-float); max-width: 460px; margin: 0 auto 1.4rem; }
   .hero-search-icon { position: absolute; left: 1.1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
@@ -995,6 +999,7 @@ let editingProductId = null;
 let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
 let vendorPendingOrderCount = 0;
+let unreadMessageCount = 0;
 let notifTarget = null; // { view, params }
 let favoriteIds = new Set();
 
@@ -1422,6 +1427,10 @@ async function refreshNotifications() {
   } else {
     vendorPendingOrderCount = 0;
   }
+
+  const { data: convs } = await sb.rpc("list_my_conversations");
+  unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
+
   renderBottomNav();
 
   if (byId("notifPanel")) await renderNotifPanel();
@@ -1751,20 +1760,28 @@ function renderBottomNav() {
   // "Home" (the buyer storefront) isn't a tab they need taking up space.
   const isVendorUser = session && profile?.role !== "admin" && !!vendor;
   const items = isVendorUser ? [] : [{ icon: "<i class='fa-solid fa-house'></i>", label: "Home", action: "navigate('home')", view: "home" }];
-  items.push({ icon: "<i class='fa-solid fa-store'></i>", label: "Vendors", action: "navigate('vendors')", view: "vendors" });
+  const vendorsTab = { icon: "<i class='fa-solid fa-store'></i>", label: "Vendors", action: "navigate('vendors')", view: "vendors" };
+  const messagesTab = { icon: "<i class='fa-solid fa-comment-dots'></i>", label: "Messages", action: "navigate('messages')", view: "messages", badge: unreadMessageCount };
   if (session && profile?.role === "admin") {
+    items.push(vendorsTab);
     items.push({ icon: "<i class='fa-solid fa-shield-halved'></i>", label: "Admin", action: "navigate('adminPanel')", view: "adminPanel" });
     items.push({ icon: "<i class='fa-solid fa-sack-dollar'></i>", label: "Finance", action: "navigate('adminFinance')", view: "adminFinance" });
   } else if (session) {
-    items.push({ icon: "<i class='fa-solid fa-comment-dots'></i>", label: "Messages", action: "navigate('messages')", view: "messages" });
     if (vendor) {
+      items.push(vendorsTab);
+      items.push(messagesTab);
       items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('vendorOrders',{status:'all'})", view: "vendorOrders", badge: vendorPendingOrderCount });
       items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')", view: "vendorDashboard" });
     } else {
+      // Vendors (not Messages) sits at the visual center for buyers — see
+      // the split logic below; this ordering is what puts it there.
+      items.push(messagesTab);
+      items.push(vendorsTab);
       items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')", view: "requestEquipment" });
       items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders" });
     }
   } else {
+    items.push(vendorsTab);
     items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')", view: "requestEquipment" });
     items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()", view: null });
   }
@@ -3159,7 +3176,7 @@ async function renderVendorDashboard() {
     : "";
 
   const [{ data: orders }, { data: products }, { data: owed }] = await Promise.all([
-    sb.from("orders").select("status, total_amount").eq("vendor_id", v.id),
+    sb.from("orders").select("status, total_amount, created_at").eq("vendor_id", v.id),
     sb.from("products").select("id, view_count").eq("vendor_id", v.id),
     sb.rpc("get_vendor_commission_owed", { p_vendor_id: v.id }),
   ]);
@@ -3180,7 +3197,7 @@ async function renderVendorDashboard() {
     </div>`;
   }
   html += statusBanner;
-  html += `<div class="dash-actions">
+  html += `<div class="dash-actions grid-4">
     <button class="quick-action" onclick="navigate('vendorProducts')"><span class="quick-action-icon"><i class='fa-solid fa-box'></i></span><span>Products</span></button>
     <button class="quick-action" onclick="navigate('vendorPackages')"><span class="quick-action-icon"><i class='fa-solid fa-boxes-packing'></i></span><span>Packages</span></button>
     <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
@@ -3196,6 +3213,14 @@ async function renderVendorDashboard() {
     <div class="stat"><div class="n">${totalViews}</div><div class="muted">Product views</div></div>
     <div class="stat"><div class="n">${totalFavorites}</div><div class="muted">Wishlist saves</div></div>
   </div>`;
+  html += `<div id="vendorRevenueChartArea" style="max-width:700px;"></div>`;
+
+  const recentCompleted = (orders || []).filter((o) => o.status === "completed");
+  setTimeout(() => {
+    const area = byId("vendorRevenueChartArea");
+    if (area) area.appendChild(buildRevenueChart(recentCompleted, "all", { field: "total_amount", label: "Revenue per day (last 14 days) — see at a glance if business is picking up or slowing down" }));
+  }, 0);
+
   return html;
 }
 
@@ -3940,24 +3965,33 @@ async function renderOrderDetail(orderId) {
   const canRecordPayment = isVendor && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
   const canPayOnline = isBuyer && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
 
-  let html = `<div class="flex" style="justify-content:space-between;"><h2 style="text-transform:capitalize;">${order.order_type} order</h2><span class="badge ${orderStatusBadgeClass(order.status)}">${order.status.replace("_", " ")}</span></div>
-  <p class="muted">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}</p>
-  ${order.created_at ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
-  ${order.package?.name ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-boxes-packing"></i> Package: ${esc(order.package.name)}</p>` : ""}
-  ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.3rem;"><i class="fa-solid fa-circle-info"></i> ${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}
-  ${order.payout_status && order.payout_status !== "not_applicable" ? `<p class="muted" style="font-size:0.85rem;margin-top:0.2rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status)}</p>` : ""}`;
+  let html = `<div class="card">
+    <div class="flex" style="justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2 style="margin:0;text-transform:capitalize;">${order.order_type} order</h2>
+        <p class="muted" style="margin:0.15rem 0 0;">${isVendor ? "Buyer order" : esc(order.vendor?.business_name || "")}${order.package?.name ? " · " + esc(order.package.name) : ""}</p>
+      </div>
+      <span class="badge ${orderStatusBadgeClass(order.status)}" style="text-transform:capitalize;flex-shrink:0;">${order.status.replace("_", " ")}</span>
+    </div>
+    ${order.created_at ? `<p class="muted" style="font-size:0.8rem;margin-top:0.7rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
+    ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}
+    ${order.payout_status && order.payout_status !== "not_applicable" ? `<div class="banner ${order.payout_status === "held" ? "banner-warning" : order.payout_status === "released" ? "banner-success" : "banner-muted"}" style="margin-top:0.6rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status)}</div>` : ""}
+  </div>`;
 
-  html += order.items.map((item) => `<div class="card">
-    <strong>${esc(item.product?.name || "")}</strong>
-    <p class="muted">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
-  </div>`).join("");
-
-  html += `<div class="grid" style="grid-template-columns:repeat(2,1fr);">
-    ${order.delivery_fee > 0 ? `<div><p class="muted">Equipment cost</p><strong>${naira(order.total_amount - order.delivery_fee)}</strong></div>
-    <div><p class="muted">Delivery fee</p><strong>${naira(order.delivery_fee)}</strong></div>` : ""}
-    <div><p class="muted">Total</p><strong>${naira(order.total_amount)}</strong></div>
-    ${order.deposit_amount > 0 ? `<div><p class="muted">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
-    <div><p class="muted">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
+  html += `<div class="card">
+    <h3 style="margin-top:0;">Items</h3>
+    ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
+      <strong>${esc(item.product?.name || "")}</strong>
+      <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
+    </div>`).join("")}
+    <div class="divider"></div>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
+      ${order.delivery_fee > 0 ? `<div><p class="muted" style="margin:0;">Equipment cost</p><strong>${naira(order.total_amount - order.delivery_fee)}</strong></div>
+      <div><p class="muted" style="margin:0;">Delivery fee</p><strong>${naira(order.delivery_fee)}</strong></div>` : ""}
+      <div><p class="muted" style="margin:0;">Total</p><strong>${naira(order.total_amount)}</strong></div>
+      ${order.deposit_amount > 0 ? `<div><p class="muted" style="margin:0;">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
+      <div><p class="muted" style="margin:0;">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
+    </div>
   </div>`;
 
   if (isVendor) {
@@ -3981,7 +4015,9 @@ async function renderOrderDetail(orderId) {
   }
 
   if (order.payments.length > 0) {
-    html += `<h3 style="margin-top:1rem;">Payments</h3>` + order.payments.map((p) => `<div class="flex" style="justify-content:space-between;font-size:0.9rem;"><span style="text-transform:capitalize;">${p.payment_type.replace("_", " ")}</span><span>${naira(p.amount)} · ${p.status}</span></div>`).join("");
+    html += `<div class="card"><h3 style="margin-top:0;">Payments</h3>
+      ${order.payments.map((p, i) => `<div class="flex" style="justify-content:space-between;font-size:0.9rem;${i > 0 ? "border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem;" : ""}"><span style="text-transform:capitalize;">${p.payment_type.replace("_", " ")}</span><span>${naira(p.amount)} · <span class="badge ${p.status === "paid" ? "success" : ""}">${p.status}</span></span></div>`).join("")}
+    </div>`;
   }
 
   if (canPayOnline) {
@@ -4481,14 +4517,33 @@ function filterTxnsByRange(txns, range) {
 
 async function renderAdminFinance() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
-  const [{ data: vendors }, { data: txns }] = await Promise.all([
+  const [{ data: vendors }, { data: txns }, { data: heldOrders }] = await Promise.all([
     sb.rpc("admin_list_vendor_payouts"),
     sb.rpc("admin_list_transactions"),
+    sb.from("orders").select("id, status, total_amount, created_at, vendor:vendors(business_name)").eq("payout_status", "held").order("created_at", { ascending: false }),
   ]);
   __adminFinanceData = { vendors: vendors || [], txns: txns || [] };
 
   let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Vendors &amp; Transactions</h2><p class="muted">Monitor payouts and every payment moving through Levromart.</p>`;
   html += adminNavHtml("adminFinance");
+
+  // "held" orders that are still "completed" got confirmed by the buyer
+  // but the actual bank transfer to the vendor failed (most often Paystack
+  // requiring a one-time OTP approval on a newly-live account) — those
+  // need a human to retry them, since the buyer-side button is gone once
+  // an order is completed. Everything else here is just mid-flight and
+  // will resolve itself once the buyer confirms or the 5-day window passes.
+  const stuckPayouts = (heldOrders || []).filter((o) => o.status === "completed");
+  if (stuckPayouts.length > 0) {
+    html += `<div class="banner banner-danger" style="max-width:700px;">
+      <h3 style="margin:0;"><i class="fa-solid fa-triangle-exclamation"></i> ${stuckPayouts.length} payout${stuckPayouts.length === 1 ? "" : "s"} stuck</h3>
+      <p class="muted" style="margin-top:0.3rem;">These orders were confirmed received, but the transfer to the vendor's bank account failed and needs a retry. If it keeps failing, check Paystack Dashboard → Transfers for the reason (often an OTP approval needed on new live accounts).</p>
+      ${stuckPayouts.map((o) => `<div class="flex" style="justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem;">
+        <span>${esc(o.vendor?.business_name || "")} · ${naira(o.total_amount)} · ${orderDateTimeStr(o.created_at)}</span>
+        <button class="btn btn-sm" onclick="adminRetryPayout('${o.id}', this)">Retry payout</button>
+      </div>`).join("")}
+    </div>`;
+  }
 
   html += `<h3 style="margin-top:1.2rem;">Vendors</h3>`;
   html += `<div class="table-wrap"><table class="data-table"><thead><tr>
@@ -4532,6 +4587,25 @@ async function renderAdminFinance() {
   return html;
 }
 
+async function adminRetryPayout(orderId, btn) {
+  btn.disabled = true;
+  btn.textContent = "Retrying…";
+  try {
+    const res = await fetch("/api/order-payout-action", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "release", orderId, accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Retry failed.");
+    if (json.transferred) { showToast("Payout sent successfully.", "success"); navigate("adminFinance"); }
+    else { showToast(json.payoutError || "Still failing — check Paystack Dashboard → Transfers for why.", "error"); btn.disabled = false; btn.textContent = "Retry payout"; }
+  } catch (err) {
+    showToast(err.message, "error");
+    btn.disabled = false;
+    btn.textContent = "Retry payout";
+  }
+}
+
 function switchAdminFinanceRange(range, btn) {
   adminFinanceRange = range;
   document.querySelectorAll("#financeRangeTabs .range-tab").forEach((el) => el.classList.remove("active"));
@@ -4573,7 +4647,9 @@ function renderAdminFinanceRange() {
   }
 }
 
-function buildRevenueChart(paidTxns, range) {
+function buildRevenueChart(paidTxns, range, opts) {
+  const field = opts?.field || "platform_cut";
+  const label = opts?.label || "Commission earned per day";
   const wrap = document.createElement("div");
   wrap.className = "revenue-chart-wrap";
   const days = range === "today" ? 1 : range === "week" ? 7 : range === "month" ? 30 : 14;
@@ -4585,10 +4661,10 @@ function buildRevenueChart(paidTxns, range) {
   paidTxns.forEach((t) => {
     const td = new Date(t.created_at); td.setHours(0, 0, 0, 0);
     const bucket = buckets.find((b) => b.date.getTime() === td.getTime());
-    if (bucket) bucket.total += Number(t.platform_cut);
+    if (bucket) bucket.total += Number(t[field]);
   });
   const max = Math.max(1, ...buckets.map((b) => b.total));
-  wrap.innerHTML = `<p class="muted" style="font-size:0.8rem;margin:1.2rem 0 0.4rem;">Commission earned per day</p>
+  wrap.innerHTML = `<p class="muted" style="font-size:0.8rem;margin:1.2rem 0 0.4rem;">${esc(label)}</p>
     <div class="revenue-chart">
       ${buckets.map((b) => `<div class="revenue-bar-col" title="${b.date.toLocaleDateString()}: ${naira(b.total)}">
         <div class="revenue-bar" data-h="${Math.round((b.total / max) * 100)}"></div>
