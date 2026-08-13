@@ -197,6 +197,11 @@
   .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
   .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1.1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
   .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
+  /* Stacked (image full-width on top) below ~640px so the photo isn't
+     squeezed into a half-width column on phones — that's what was making
+     product images look tiny; side-by-side only once there's room for it. */
+  .product-detail-grid { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
+  @media (min-width: 640px) { .product-detail-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
   .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
   .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
   .error-text { color: var(--danger); font-size: 0.85rem; margin: 0.3rem 0; }
@@ -352,10 +357,14 @@
   .range-tab { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
   .range-tab.active { background: var(--primary-grad); border-color: transparent; color: #fff; font-weight: 600; }
   .revenue-chart-wrap { max-width: 700px; }
-  .revenue-chart { display: flex; align-items: flex-end; gap: 0.4rem; height: 140px; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; padding: 1rem 0.8rem 0.4rem; }
-  .revenue-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.3rem; min-width: 4px; }
-  .revenue-bar { width: 100%; max-width: 22px; height: 0%; border-radius: 4px 4px 0 0; background: var(--primary-grad); transition: height 0.7s cubic-bezier(.2,.8,.3,1); }
-  .revenue-bar-label { font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; transform: rotate(0deg); }
+  .modern-chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.1rem 1rem 0.8rem; }
+  .modern-chart-total { font-size: 1.4rem; font-weight: 700; }
+  .modern-chart-svg { width: 100%; height: 150px; margin: 0.7rem 0 0.3rem; overflow: visible; }
+  .modern-chart-line { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent)); }
+  .chart-dot { fill: var(--card); stroke: var(--primary); stroke-width: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--primary) 60%, transparent)); cursor: pointer; }
+  .chart-dot:hover, .chart-dot.active { fill: var(--primary); r: 2.4; }
+  .modern-chart-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-muted); }
+  .modern-chart-tooltip { font-size: 0.78rem; text-align: center; margin-top: 0.3rem; min-height: 1.1rem; color: var(--primary); font-weight: 600; }
   .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .accent-swatch { width: 2.1rem; height: 2.1rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s ease, box-shadow 0.2s ease; flex-shrink: 0; }
   .accent-swatch:hover { transform: scale(1.12); box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 35%, transparent); }
@@ -1513,7 +1522,13 @@ function setupNotifItemGestures(panel) {
     const onMove = (clientX, clientY, evt) => {
       const mdx = clientX - startX, mdy = clientY - startY;
       if (Math.abs(mdx) > 10 || Math.abs(mdy) > 10) clearTimeout(longPressTimer);
-      if (notifSelectMode || Math.abs(mdy) > 40) return;
+      // In select mode there's no swipe-to-archive, but any un-prevented
+      // finger jitter here can get hijacked by the browser as the start of
+      // a scroll, which cancels the touch sequence — touchend then never
+      // fires, so the tap-to-select silently does nothing. Suppressing it
+      // unconditionally here is what makes a plain tap reliably register.
+      if (notifSelectMode) { evt.preventDefault(); return; }
+      if (Math.abs(mdy) > 40) return;
       if (Math.abs(mdx) > 6) { evt.preventDefault(); evt.stopPropagation(); }
       dragging = true;
       dx = Math.max(-110, Math.min(110, mdx));
@@ -1783,11 +1798,12 @@ function renderBottomNav() {
       items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('vendorOrders',{status:'all'})", view: "vendorOrders", badge: vendorPendingOrderCount });
       items.push({ icon: "<i class='fa-solid fa-box'></i>", label: "My Shop", action: "navigate('vendorDashboard')", view: "vendorDashboard" });
     } else {
-      // Vendors (not Messages) sits at the visual center for buyers — see
-      // the split logic below; this ordering is what puts it there.
-      items.push(messagesTab);
+      // Home sits at the visual center for buyers: Vendors, Request, Home, Messages, Orders.
+      const homeTab = items.shift(); // pull "Home" out of its default leading slot from the prefix above
       items.push(vendorsTab);
       items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')", view: "requestEquipment" });
+      items.push(homeTab);
+      items.push(messagesTab);
       items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders" });
     }
   } else {
@@ -2135,7 +2151,7 @@ async function renderHome() {
   let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
     .eq("status", "active").eq("vendor.verification_status", "verified");
   if (activeSector) vendorQuery = vendorQuery.eq("vendor.sector_id", activeSector.id);
-  let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, logo_url").eq("verification_status", "verified");
+  let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, review_count, logo_url").eq("verification_status", "verified");
   if (activeSector) topVendorsQuery = topVendorsQuery.eq("sector_id", activeSector.id);
 
   const [{ data: trending }, { data: topVendors }] = await Promise.all([
@@ -2309,7 +2325,7 @@ function vendorCardHtml(v) {
     <p class="muted" style="margin:0.3rem 0;">${esc(v.city || "")}</p>
     ${v.categories && v.categories.length ? `<p class="muted" style="margin:0 0 0.4rem;font-size:0.78rem;"><i class="fa-solid fa-tags"></i> ${v.categories.map(esc).join(", ")}</p>` : ""}
     <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
-    ${v.avg_rating != null ? `<span class="badge" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}</span>` : ""}
+    ${v.avg_rating != null ? `<span class="badge" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}${v.review_count != null ? ` (${v.review_count})` : ""}</span>` : ""}
   </div>`;
 }
 
@@ -2538,11 +2554,13 @@ async function renderProductDetail(productId) {
   const canRent = product.listing_type === "rent" || product.listing_type === "both";
   const canBuy = product.listing_type === "sale" || product.listing_type === "both";
   const photosHtml = (product.photos && product.photos.length > 0)
-    ? `<div class="grid" style="grid-template-columns:repeat(2,1fr);">${product.photos.map((u) => `<img src="${esc(u)}" style="width:100%;border-radius:0.5rem;object-fit:cover;aspect-ratio:1;">`).join("")}</div>`
+    ? product.photos.length === 1
+      ? `<img src="${esc(product.photos[0])}" style="width:100%;border-radius:0.7rem;object-fit:cover;aspect-ratio:1;">`
+      : `<div class="grid" style="grid-template-columns:repeat(2,1fr);">${product.photos.map((u) => `<img src="${esc(u)}" style="width:100%;border-radius:0.5rem;object-fit:cover;aspect-ratio:1;">`).join("")}</div>`
     : `<div class="product-img" style="height:220px;"><i class='fa-solid fa-camera'></i> No image</div>`;
   const isFav = favoriteIds.has(product.id);
 
-  let html = `<div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;position:relative;">
+  let html = `<div class="card product-detail-grid" style="position:relative;">
     <button class="fav-btn ${isFav ? "active" : ""}" style="top:1rem;right:1rem;" onclick="toggleFavorite(event,'${product.id}')" title="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
     <div>${photosHtml}</div>
     <div>
@@ -2723,7 +2741,7 @@ function renderVendorsDirectory() {
 
 async function loadVendorsDirectory() {
   const [{ data: vendors }, { data: products }, { data: sectorsData }] = await Promise.all([
-    sb.from("vendors").select("id, business_name, city, avg_rating, sector_id, logo_url").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
+    sb.from("vendors").select("id, business_name, city, avg_rating, review_count, sector_id, logo_url").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
     sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
     sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
   ]);
@@ -3212,6 +3230,8 @@ async function renderVendorDashboard() {
     <button class="quick-action" onclick="navigate('vendorPackages')"><span class="quick-action-icon"><i class='fa-solid fa-boxes-packing'></i></span><span>Packages</span></button>
     <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
     <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
+  </div>`;
+  html += `<div class="dash-actions">
     <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
     ${v.verification_status === "verified" ? `
     <button class="quick-action outline" onclick="navigate('storefront',{vendorId:'${v.id}'})"><span class="quick-action-icon"><i class='fa-solid fa-store'></i></span><span>Storefront</span></button>
@@ -3902,9 +3922,18 @@ async function renderVendorOrders(status, type) {
   const { data: allOrders } = await query.order("created_at", { ascending: false });
   const orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
 
+  // Two rows of tab pills (8 statuses + 4 types) wrapped into an unreadable
+  // jumble on narrow screens — two compact dropdowns say the same thing in
+  // a fraction of the space.
   let html = `<h2>Orders</h2>
-  <div class="tabs">${ORDER_TABS.map((t) => `<a class="${t === status ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${t}',type:'${type}'})">${t}</a>`).join("")}</div>
-  <div class="tabs">${ORDER_TYPE_TABS.map((t) => `<a class="${t.value === type ? "active" : ""}" onclick="navigate('vendorOrders',{status:'${status}',type:'${t.value}'})">${t.label}</a>`).join("")}</div>`;
+  <div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
+    <select onchange="navigate('vendorOrders',{status:this.value,type:'${type}'})" style="flex:1;min-width:150px;">
+      ${ORDER_TABS.map((t) => `<option value="${t}" ${t === status ? "selected" : ""}>${t === "all" ? "All statuses" : esc(t.replace("_", " ").replace(/^./, (c) => c.toUpperCase()))}</option>`).join("")}
+    </select>
+    <select onchange="navigate('vendorOrders',{status:'${status}',type:this.value})" style="flex:1;min-width:150px;">
+      ${ORDER_TYPE_TABS.map((t) => `<option value="${t.value}" ${t.value === type ? "selected" : ""}>${t.value === "all" ? "All types" : esc(t.label)}</option>`).join("")}
+    </select>
+  </div>`;
   html += orderListHtml(sortOrdersForList(orders), false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
   return html;
@@ -3929,8 +3958,16 @@ function orderStatusBadgeClass(status) {
 // Pending orders need action, so they float to the top regardless of when
 // they came in; cancelled orders are done and don't need eyes on them, so
 // they sink to the bottom. Everything else stays newest-first in between.
+// Pending/disputed need eyes on them first, then anything still in
+// progress (confirmed/handed over/returned), then finished orders, with
+// cancelled sinking to the very bottom since there's nothing left to do.
 function sortOrdersForList(orders) {
-  const rank = (o) => (o.status === "pending" ? 0 : o.status === "cancelled" ? 2 : 1);
+  const rank = (o) => {
+    if (o.status === "pending" || o.status === "disputed") return 0;
+    if (o.status === "cancelled") return 3;
+    if (o.status === "completed") return 2;
+    return 1; // confirmed, handed_over, returned
+  };
   return [...(orders || [])].sort((a, b) => {
     const ra = rank(a), rb = rank(b);
     if (ra !== rb) return ra - rb;
@@ -4657,6 +4694,8 @@ function renderAdminFinanceRange() {
   }
 }
 
+// A smooth glowing line/area chart (SVG) instead of plain bars — dots on
+// each point double as tap/hover targets showing that day's exact figure.
 function buildRevenueChart(paidTxns, range, opts) {
   const field = opts?.field || "platform_cut";
   const label = opts?.label || "Commission earned per day";
@@ -4673,16 +4712,55 @@ function buildRevenueChart(paidTxns, range, opts) {
     const bucket = buckets.find((b) => b.date.getTime() === td.getTime());
     if (bucket) bucket.total += Number(t[field]);
   });
+
+  const total = buckets.reduce((s, b) => s + b.total, 0);
   const max = Math.max(1, ...buckets.map((b) => b.total));
-  wrap.innerHTML = `<p class="muted" style="font-size:0.8rem;margin:1.2rem 0 0.4rem;">${esc(label)}</p>
-    <div class="revenue-chart">
-      ${buckets.map((b) => `<div class="revenue-bar-col" title="${b.date.toLocaleDateString()}: ${naira(b.total)}">
-        <div class="revenue-bar" data-h="${Math.round((b.total / max) * 100)}"></div>
-        ${days <= 14 ? `<span class="revenue-bar-label">${b.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>` : ""}
-      </div>`).join("")}
-    </div>`;
-  requestAnimationFrame(() => {
-    wrap.querySelectorAll(".revenue-bar").forEach((el) => { el.style.height = `${el.dataset.h}%`; });
+  const mid = Math.ceil(buckets.length / 2);
+  const firstHalf = buckets.slice(0, mid).reduce((s, b) => s + b.total, 0);
+  const secondHalf = buckets.slice(mid).reduce((s, b) => s + b.total, 0);
+  const trendUp = secondHalf >= firstHalf;
+
+  const W = 100, H = 40, padY = 3;
+  const n = buckets.length;
+  const points = buckets.map((b, i) => ({
+    x: n === 1 ? W / 2 : (i / (n - 1)) * W,
+    y: H - padY - (b.total / max) * (H - padY * 2),
+    b,
+  }));
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(2)},${H} L${points[0].x.toFixed(2)},${H} Z`;
+  const gradId = `chartFill${Math.random().toString(36).slice(2, 8)}`;
+  const dotsSvg = points.map((p, i) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.6" class="chart-dot" data-i="${i}"></circle>`).join("");
+
+  wrap.innerHTML = `<div class="modern-chart-card">
+    <div class="flex" style="justify-content:space-between;align-items:flex-start;">
+      <p class="muted" style="margin:0;font-size:0.8rem;max-width:65%;"><i class="fa-solid fa-chart-line"></i> ${esc(label)}</p>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="modern-chart-total">${naira(total)}</div>
+        <div class="muted" style="font-size:0.7rem;">${trendUp ? "trending up" : "trending down"} <i class="fa-solid fa-arrow-trend-${trendUp ? "up" : "down"}"></i></div>
+      </div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" class="modern-chart-svg" preserveAspectRatio="none">
+      <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none"></path>
+      <path d="${linePath}" fill="none" stroke="var(--primary)" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" class="modern-chart-line"></path>
+      ${dotsSvg}
+    </svg>
+    <div class="modern-chart-tooltip" id="chartTooltip-${gradId}">Tap a point for that day's figure</div>
+    ${days <= 14 ? `<div class="modern-chart-labels">${buckets.map((b) => `<span>${b.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>`).join("")}</div>` : `<div class="modern-chart-labels"><span>${buckets[0].date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span><span>${buckets[buckets.length - 1].date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div>`}
+  </div>`;
+
+  const tooltip = wrap.querySelector(`#chartTooltip-${gradId}`);
+  wrap.querySelectorAll(".chart-dot").forEach((dot) => {
+    dot.addEventListener("click", () => {
+      wrap.querySelectorAll(".chart-dot").forEach((d) => d.classList.remove("active"));
+      dot.classList.add("active");
+      const p = points[Number(dot.dataset.i)];
+      tooltip.textContent = `${p.b.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${naira(p.b.total)}`;
+    });
   });
   return wrap;
 }
@@ -4987,6 +5065,15 @@ document.addEventListener("click", (e) => {
   if (!panel || panel.classList.contains("hidden")) return;
   if (e.target.closest("#aiChatPanel, #aiChatFab")) return;
   panel.classList.add("hidden");
+});
+// Tapping the empty space around an open conversation (not the chat thread,
+// input, or header — those all have their own click handlers already)
+// closes it back to the conversation list, instead of only the explicit
+// "All conversations" button.
+document.addEventListener("click", (e) => {
+  if (currentView !== "messages" || !activeConversationId) return;
+  if (e.target.id !== "app") return;
+  navigate("messages");
 });
 function appendAiChatMessage(role, content) {
   if (role !== "typing") aiChatMessages.push({ role, content });
