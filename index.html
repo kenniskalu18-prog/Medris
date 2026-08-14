@@ -644,7 +644,7 @@
   <div class="accordion-section hidden" id="voiceSettingsSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-waveform-lines'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
-      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
+      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;" id="voiceSettingsHint"></p>
       <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
       <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
     </div>
@@ -1968,6 +1968,7 @@ async function refreshAuthState() {
   renderBottomNav();
   await refreshNotifications();
   subscribeNotifications();
+  loadAiVoices();
 }
 
 function updateAuthUI() {
@@ -5559,27 +5560,80 @@ function appendAiChatMessage(role, content, autoSpeak) {
   wrap.appendChild(el);
   wrap.scrollTop = wrap.scrollHeight;
 }
-function speakAiChatMessage(text, btn) {
-  if (!("speechSynthesis" in window)) return;
-  const wasSpeakingThis = btn?.classList.contains("speaking");
-  speechSynthesis.cancel();
+// ---------- LEVI VOICE ----------
+// Two tiers: ElevenLabs cloud voices (genuinely human-sounding, needs
+// ELEVENLABS_API_KEY configured server-side and a logged-in session) when
+// available, falling back automatically to the device/browser's own
+// built-in voices otherwise — missing key, logged out, network hiccup, or
+// the daily character budget used up. Levi never goes silent, it just
+// sounds more robotic in that fallback case.
+let ttsMode = "browser"; // flips to "elevenlabs" once confirmed available
+let elevenLabsVoices = [];
+let aiVoices = []; // browser speechSynthesis voices
+let currentAiAudio = null;
+let currentAiFetchController = null;
+
+function stopAiSpeaking() {
+  if (currentAiFetchController) { currentAiFetchController.abort(); currentAiFetchController = null; }
+  if (currentAiAudio) { currentAiAudio.pause(); currentAiAudio = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
   document.querySelectorAll(".ai-chat-msg-speak.speaking").forEach((b) => b.classList.remove("speaking"));
-  if (wasSpeakingThis) return; // clicking an already-speaking button stops it
+}
+async function speakAiChatMessage(text, btn) {
+  const wasSpeakingThis = btn?.classList.contains("speaking");
+  stopAiSpeaking();
+  if (wasSpeakingThis) return; // clicking/tapping an already-speaking control stops it
+
+  if (ttsMode === "elevenlabs") {
+    btn?.classList.add("speaking");
+    const controller = new AbortController();
+    currentAiFetchController = controller;
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "speak", text, voiceId: getSelectedElevenLabsVoiceId(), accessToken: session?.access_token }),
+        signal: controller.signal,
+      });
+      currentAiFetchController = null;
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Voice service error");
+      const audio = new Audio(URL.createObjectURL(await res.blob()));
+      currentAiAudio = audio;
+      audio.onended = audio.onerror = () => { btn?.classList.remove("speaking"); if (currentAiAudio === audio) currentAiAudio = null; };
+      await audio.play();
+    } catch (e) {
+      currentAiFetchController = null;
+      if (e.name === "AbortError") return; // stopped on purpose, not a failure
+      btn?.classList.remove("speaking");
+      speakWithBrowserVoice(text, btn); // this one reply still gets read, just via the lower-quality fallback
+    }
+    return;
+  }
+  speakWithBrowserVoice(text, btn);
+}
+function speakWithBrowserVoice(text, btn) {
+  if (!("speechSynthesis" in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1.02;
-  const voice = getSelectedAiVoice();
+  const voice = getSelectedBrowserVoice();
   if (voice) utter.voice = voice;
   btn?.classList.add("speaking");
   utter.onend = utter.onerror = () => btn?.classList.remove("speaking");
   speechSynthesis.speak(utter);
 }
 
-// Voices come from whatever's actually installed on the device/browser —
-// there's no way to make the built-in engine sound more human than that,
-// but picking a good default (network/"enhanced" voices tend to sound
-// noticeably less robotic than the compact on-device ones) and letting the
-// person pick their own gets closer than just taking the browser's default.
-let aiVoices = [];
+function pickDefaultElevenLabsVoice(voices) {
+  if (!voices.length) return null;
+  return voices.find((v) => /female/i.test(v.gender || "")) || voices[0];
+}
+function getSelectedElevenLabsVoiceId() {
+  const saved = localStorage.getItem("levi-el-voice-id");
+  if (saved && elevenLabsVoices.some((v) => v.voice_id === saved)) return saved;
+  return pickDefaultElevenLabsVoice(elevenLabsVoices)?.voice_id || null;
+}
+// Picking a good default browser voice (network/"enhanced" voices tend to
+// sound noticeably less robotic than the compact on-device ones) — only
+// used when ElevenLabs isn't available.
 function pickDefaultAiVoice(voices) {
   if (!voices.length) return null;
   const scored = voices.map((v) => {
@@ -5592,29 +5646,64 @@ function pickDefaultAiVoice(voices) {
   scored.sort((a, b) => b.score - a.score);
   return scored[0].v;
 }
-function getSelectedAiVoice() {
+function getSelectedBrowserVoice() {
   const uri = localStorage.getItem("levi-voice");
   return aiVoices.find((v) => v.voiceURI === uri) || pickDefaultAiVoice(aiVoices);
 }
-function loadAiVoices() {
+async function loadAiVoices() {
+  if (session?.access_token) {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "voices", accessToken: session.access_token }),
+      });
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.voices) && json.voices.length) {
+        elevenLabsVoices = json.voices;
+        ttsMode = "elevenlabs";
+        populateVoiceSelect();
+        return;
+      }
+    } catch (e) { /* ElevenLabs not reachable/configured — fall back below */ }
+  }
+  ttsMode = "browser";
+  loadBrowserVoices();
+}
+function loadBrowserVoices() {
   if (!("speechSynthesis" in window)) return;
   aiVoices = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("en"));
   if (!aiVoices.length) return;
-  byId("voiceSettingsSection")?.classList.remove("hidden");
   const saved = localStorage.getItem("levi-voice");
   if (!saved || !aiVoices.some((v) => v.voiceURI === saved)) {
     const def = pickDefaultAiVoice(aiVoices);
     if (def) localStorage.setItem("levi-voice", def.voiceURI);
   }
-  const activeURI = localStorage.getItem("levi-voice");
-  const sel = byId("voiceSelect");
-  if (sel) sel.innerHTML = aiVoices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  populateVoiceSelect();
 }
-function setAiVoice(uri) { localStorage.setItem("levi-voice", uri); previewAiVoice(); }
+function populateVoiceSelect() {
+  byId("voiceSettingsSection")?.classList.remove("hidden");
+  const hint = byId("voiceSettingsHint");
+  const sel = byId("voiceSelect");
+  if (!sel) return;
+  if (ttsMode === "elevenlabs") {
+    if (hint) hint.textContent = "Real, human-sounding voices — pick whichever fits Levi best.";
+    const activeId = getSelectedElevenLabsVoiceId();
+    if (activeId) localStorage.setItem("levi-el-voice-id", activeId);
+    sel.innerHTML = elevenLabsVoices.map((v) => `<option value="${esc(v.voice_id)}" ${v.voice_id === activeId ? "selected" : ""}>${esc(v.name)}${v.gender ? ` — ${esc(v.gender)}` : ""}</option>`).join("");
+  } else {
+    if (hint) hint.textContent = "Picked from the voices already on this device — quality depends on what your phone/browser offers.";
+    const activeURI = localStorage.getItem("levi-voice");
+    sel.innerHTML = aiVoices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  }
+}
+function setAiVoice(id) {
+  localStorage.setItem(ttsMode === "elevenlabs" ? "levi-el-voice-id" : "levi-voice", id);
+  previewAiVoice();
+}
 function previewAiVoice() { speakAiChatMessage("Hi, I'm Levi. This is what I sound like.", null); }
 if ("speechSynthesis" in window) {
-  loadAiVoices();
-  speechSynthesis.onvoiceschanged = loadAiVoices;
+  speechSynthesis.onvoiceschanged = () => { if (ttsMode !== "elevenlabs") loadBrowserVoices(); };
 }
 
 // Tap-to-talk: fills the input from speech rather than auto-sending, so a
@@ -5637,10 +5726,7 @@ function toggleAiChatMic() {
   const btn = byId("aiChatMicBtn");
   // Tapping the mic always means "let me talk" — if Levi's mid-reply,
   // barge in and stop it immediately rather than talking over each other.
-  if ("speechSynthesis" in window && speechSynthesis.speaking) {
-    speechSynthesis.cancel();
-    document.querySelectorAll(".ai-chat-msg-speak.speaking").forEach((b) => b.classList.remove("speaking"));
-  }
+  if (currentAiAudio || (("speechSynthesis" in window) && speechSynthesis.speaking)) stopAiSpeaking();
   if (aiChatListening) { aiChatRecognizer?.stop(); return; }
   aiChatRecognizer = new AiSpeechRecognition();
   aiChatRecognizer.lang = "en-NG";
