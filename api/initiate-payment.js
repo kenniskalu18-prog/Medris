@@ -26,12 +26,24 @@ module.exports = async function handler(req, res) {
     const { reference, amount } = intent;
 
     const orderRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=buyer:users(email)`,
+      `${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=buyer:users(email),vendor:vendors(paystack_subaccount_code)`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
     const [orderRow] = await orderRes.json();
     const email = orderRow?.buyer?.email;
     if (!email) { res.status(400).json({ error: "Could not resolve buyer email." }); return; }
+
+    // Split payment: if the vendor has payouts set up, Paystack sends their
+    // cut straight to their bank account at settlement (next business day),
+    // automatically, at the subaccount's stored percentage_charge — no
+    // manual release step, no Transfers API call, so this works fine on a
+    // Starter Business account. (Was full escrow — held on the platform's
+    // balance until the buyer confirmed receipt — until the Starter/
+    // Registered Business distinction made that impractical for now; can
+    // switch back once the account is upgraded.) Vendors without payouts
+    // set up yet still fall back to the full amount landing on the
+    // platform's balance, same as before, needing a manual payout.
+    const subaccountCode = orderRow?.vendor?.paystack_subaccount_code || null;
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
     const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -42,10 +54,7 @@ module.exports = async function handler(req, res) {
         amount: Math.round(Number(amount) * 100), // kobo
         reference,
         callback_url: `${origin}/?paid=1&reference=${encodeURIComponent(reference)}&orderId=${encodeURIComponent(orderId)}`,
-        // No subaccount split — the full amount goes to the platform's own
-        // Paystack balance and is held there. The vendor's share only moves
-        // once the buyer confirms receipt (or the order auto-releases /
-        // gets refunded), via release-payout.js / auto-release-payouts.js.
+        ...(subaccountCode ? { subaccount: subaccountCode } : {}),
       }),
     });
     const initJson = await initRes.json();

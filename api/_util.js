@@ -179,9 +179,14 @@ async function releaseOrderPayout(orderId) {
 }
 
 // Admin-only path for a dispute where the vendor genuinely never delivered
-// -- refunds the buyer's original charge in full via Paystack, straight
-// from the platform's balance, since the vendor was never paid to begin
-// with (that's the whole point of holding it).
+// -- refunds the buyer's original charge in full via Paystack. For a
+// "held" order (escrow, vendor has no subaccount) the vendor was never
+// paid, so this comes straight out of money still sitting on the
+// platform's balance -- clean. For a "released" order (split payment,
+// vendor's cut already settled automatically) Paystack still lets the
+// refund go through, but it comes out of the platform's OWN balance since
+// a split can't be pulled back from the vendor's side -- the caller is
+// expected to have warned about that (see adminRefundOrder in the client).
 async function refundOrderPayout(orderId) {
   const SUPABASE_URL = env("SUPABASE_URL");
   const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
@@ -192,7 +197,7 @@ async function refundOrderPayout(orderId) {
   const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,payout_status`, { headers: svcAuth });
   const [order] = await orderRes.json();
   if (!order) throw new Error("order not found");
-  if (order.payout_status !== "held") throw new Error(`Can't refund — payout status is "${order.payout_status}", not held.`);
+  if (!["held", "released"].includes(order.payout_status)) throw new Error(`Can't refund — payout status is "${order.payout_status}".`);
 
   const paymentsRes = await fetch(`${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&status=eq.paid&select=provider_reference&limit=1`, { headers: svcAuth });
   const [payment] = await paymentsRes.json();
