@@ -5610,7 +5610,7 @@ function loadAiVoices() {
   const sel = byId("voiceSelect");
   if (sel) sel.innerHTML = aiVoices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("");
 }
-function setAiVoice(uri) { localStorage.setItem("levi-voice", uri); }
+function setAiVoice(uri) { localStorage.setItem("levi-voice", uri); previewAiVoice(); }
 function previewAiVoice() { speakAiChatMessage("Hi, I'm Levi. This is what I sound like.", null); }
 if ("speechSynthesis" in window) {
   loadAiVoices();
@@ -5635,15 +5635,22 @@ function initAiChatMic() {
 function toggleAiChatMic() {
   if (!AiSpeechRecognition) return;
   const btn = byId("aiChatMicBtn");
+  // Tapping the mic always means "let me talk" — if Levi's mid-reply,
+  // barge in and stop it immediately rather than talking over each other.
+  if ("speechSynthesis" in window && speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+    document.querySelectorAll(".ai-chat-msg-speak.speaking").forEach((b) => b.classList.remove("speaking"));
+  }
   if (aiChatListening) { aiChatRecognizer?.stop(); return; }
   aiChatRecognizer = new AiSpeechRecognition();
   aiChatRecognizer.lang = "en-NG";
-  aiChatRecognizer.interimResults = false;
+  aiChatRecognizer.interimResults = true; // show words as they're heard, not just after you stop talking
   aiChatRecognizer.maxAlternatives = 1;
-  aiChatRecognizer.onstart = () => { aiChatListening = true; btn.classList.add("listening"); };
+  aiChatRecognizer.onstart = () => { aiChatListening = true; btn.classList.add("listening"); byId("aiChatInput").focus(); };
   aiChatRecognizer.onresult = (e) => {
-    const transcript = e.results?.[0]?.[0]?.transcript || "";
-    if (transcript) { byId("aiChatInput").value = transcript; byId("aiChatInput").focus(); aiChatLastInputVoice = true; }
+    let transcript = "";
+    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    if (transcript) { byId("aiChatInput").value = transcript; aiChatLastInputVoice = true; }
   };
   aiChatRecognizer.onerror = (e) => {
     if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that — try again.", "error");
