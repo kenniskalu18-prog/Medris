@@ -114,6 +114,11 @@
     .splash-layer, .splash-circle, .splash-left, .splash-right { animation: none !important; opacity: 1; transform: none; }
   }
   .login-modal-logo { width: 4.5rem; height: auto; display: block; margin: 0 auto 0.6rem; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 45%, transparent)); }
+  /* Plain <a> tags had no site-wide style at all, so they fell back to the
+     browser's default blue-underline — jarring against the rest of the
+     app's palette. This is the one place that default gets overridden. */
+  a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  a:hover { text-decoration: underline; }
   .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: brightness(0) invert(1); }
   .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
   .header-right { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
@@ -170,9 +175,10 @@
   .banner-danger { background: color-mix(in srgb, var(--danger) 16%, var(--card)); border-color: color-mix(in srgb, var(--danger) 35%, var(--card)); }
   .banner-muted { background: var(--card); border-color: var(--border); }
   label { display: block; font-size: 0.85rem; font-weight: 500; margin-top: 0.6rem; }
-  input, select, textarea { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 0.7rem; margin: 0.3rem 0 0.5rem; font-size: 1rem; font-family: inherit; background: var(--input-bg); color: var(--text); transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+  input, select, textarea, .ms-btn { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 0.7rem; margin: 0.3rem 0 0.5rem; font-size: 1rem; font-family: inherit; background: var(--input-bg); color: var(--text); transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
-  select {
+  .ms-btn { text-align: left; }
+  select, .ms-btn {
     appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;
     padding-right: 2.9rem;
     border-radius: 0.85rem;
@@ -184,15 +190,24 @@
     background-position: right 0.55rem center, right 0.9rem center;
     background-size: 1.9rem 1.9rem, 1.05rem;
   }
-  select:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 10%, transparent); }
+  select:hover, .ms-btn:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 10%, transparent); }
   select:focus {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 14px color-mix(in srgb, var(--primary) 14%, transparent);
     background-image:
       radial-gradient(circle, color-mix(in srgb, var(--primary) 24%, transparent) 0%, transparent 72%),
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   }
+  .ms-btn.open { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 14px color-mix(in srgb, var(--primary) 14%, transparent); }
   optgroup { font-weight: 700; font-style: normal; color: var(--text-muted); }
   option { color: var(--text); background: var(--input-bg); }
+  /* Custom dropdown popup — replaces the native OS picker (radio-circle
+     list, plain OS chrome) with something that actually looks like the
+     rest of the app, glass panel included. */
+  .ms-wrap { position: relative; }
+  .ms-list { position: absolute; top: calc(100% + 0.35rem); left: 0; right: 0; z-index: 90; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.9rem; box-shadow: var(--shadow-float); max-height: 280px; overflow-y: auto; padding: 0.4rem; }
+  .ms-item { padding: 0.65rem 0.85rem; border-radius: 0.6rem; font-size: 0.88rem; cursor: pointer; }
+  .ms-item:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+  .ms-item.selected { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); font-weight: 600; }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
@@ -683,6 +698,10 @@
       <label>Password</label>
       <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
     </div>
+    <div id="confirmPasswordWrap" class="hidden">
+      <label>Confirm password</label>
+      <input type="password" id="loginPasswordConfirm" placeholder="Retype your password" />
+    </div>
     <p id="forgotPasswordMsg" class="muted hidden" style="font-size:0.85rem;">We'll email you a link to set a new password.</p>
     <p id="authAgreementMsg" class="muted hidden" style="font-size:0.78rem;">By creating an account you agree to Levromart's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
 
@@ -1032,6 +1051,67 @@ let favoriteIds = new Set();
 function naira(n) { return "₦" + Number(n ?? 0).toLocaleString(); }
 function servicePriceSuffix(p) { return p.is_service && p.service_price_unit && p.service_price_unit !== "flat" ? "/" + p.service_price_unit : ""; }
 function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+
+// Swaps a plain <select>'s open state for a styled popup matching the rest
+// of the app, instead of the bare OS picker (the native list of radio
+// circles you get on Android/iOS) — the closed-state look was already
+// fine, this only replaces what happens when you tap it. The original
+// <select> stays in the DOM (invisible) so existing value/onchange code
+// keeps working untouched.
+function enhanceSelect(sel) {
+  if (!sel || sel.dataset.msEnhanced) return;
+  sel.dataset.msEnhanced = "1";
+  const wrap = document.createElement("div");
+  wrap.className = "ms-wrap";
+  const inlineStyle = sel.getAttribute("style");
+  if (inlineStyle) wrap.setAttribute("style", inlineStyle);
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  sel.style.cssText = "position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;left:0;top:0;margin:0;padding:0;";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ms-btn";
+  const list = document.createElement("div");
+  list.className = "ms-list hidden";
+  wrap.appendChild(btn);
+  wrap.appendChild(list);
+
+  function renderList() {
+    list.innerHTML = "";
+    [...sel.options].forEach((opt, i) => {
+      const item = document.createElement("div");
+      item.className = "ms-item" + (i === sel.selectedIndex ? " selected" : "");
+      item.textContent = opt.text;
+      item.addEventListener("click", () => {
+        sel.selectedIndex = i;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      list.appendChild(item);
+    });
+  }
+  function sync() {
+    btn.textContent = sel.options[sel.selectedIndex]?.text || "";
+    renderList();
+  }
+  sync();
+  sel.addEventListener("change", sync);
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = list.classList.contains("hidden");
+    document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
+    document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
+    if (willOpen) { list.classList.remove("hidden"); btn.classList.add("open"); }
+  });
+}
+function enhanceSelectsIn(root) {
+  (root || document).querySelectorAll("select").forEach(enhanceSelect);
+}
+document.addEventListener("click", () => {
+  document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
+  document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
+});
 function byId(id) { return document.getElementById(id); }
 
 // ---------- SOUND EFFECTS ----------
@@ -1415,6 +1495,36 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPa
     }
   }, { passive: true });
   document.addEventListener("touchend", () => { active = false; startX = null; startY = null; });
+})();
+
+// Swipe left/right anywhere on the bottom nav pill to move to the next/
+// previous tab, instead of only tapping each icon individually. Delegated
+// on document (not the nav element itself) since renderBottomNav() replaces
+// that element's innerHTML on every navigation.
+(function setupBottomNavSwipe() {
+  const THRESHOLD = 40;
+  let startX = null, startY = null, tracking = false;
+  document.addEventListener("touchstart", (e) => {
+    const nav = e.target.closest(".bottom-nav");
+    if (!nav || e.target.closest(".bottom-nav-add")) { tracking = false; return; }
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!tracking) return;
+    if (Math.abs(e.touches[0].clientY - startY) > 35) tracking = false;
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (!tracking || startX === null) { tracking = false; return; }
+    const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
+    tracking = false;
+    if (Math.abs(dx) < THRESHOLD) return;
+    const tabs = window.__bottomNavItems || [];
+    const idx = tabs.findIndex((it) => it.view === currentView);
+    if (idx === -1) return;
+    const nextIdx = dx < 0 ? Math.min(idx + 1, tabs.length - 1) : Math.max(idx - 1, 0);
+    if (nextIdx === idx) return;
+    new Function(tabs[nextIdx].action)();
+  });
 })();
 
 // ---------- NOTIFICATIONS (real, persisted, realtime) ----------
@@ -1863,6 +1973,10 @@ function renderBottomNav() {
     items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')", view: "requestEquipment" });
     items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()", view: null });
   }
+  // Kept for the swipe-to-switch-tabs gesture (see setupBottomNavSwipe) —
+  // it needs the same ordered, navigable item list the buttons were drawn
+  // from, action strings included.
+  window.__bottomNavItems = items.filter((it) => !it.isAdd && it.view && it.action);
   const itemHtml = (it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}${it.badge ? `<span class="bn-badge">${it.badge > 9 ? "9+" : it.badge}</span>` : ""}</span><span>${it.label}</span></button>`;
   if (vendor) {
     // Split evenly into two groups either side of the "+" — a dedicated
@@ -1899,6 +2013,7 @@ function applyAuthMode() {
     : isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Levromart account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Levromart";
   byId("signupExtraFields").classList.toggle("hidden", !isRegister);
   byId("loginPasswordWrap").classList.toggle("hidden", isForgot);
+  byId("confirmPasswordWrap").classList.toggle("hidden", !isRegister);
   byId("forgotPasswordMsg").classList.toggle("hidden", !isForgot);
   byId("authAgreementMsg").classList.toggle("hidden", !isRegister);
   byId("forgotPasswordLinkWrap").classList.toggle("hidden", isRegister || isForgot);
@@ -1955,6 +2070,7 @@ async function submitAuth() {
       const phone = byId("loginPhone").value.trim();
       if (!name) throw new Error("Full name is required.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+      if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
 
       const { data, error } = await sb.auth.signUp({
         email, password,
@@ -2376,6 +2492,16 @@ function productCardHtml(p) {
   </div>`;
 }
 
+// Color-codes the rating itself (not just a flat badge) so a strong vendor
+// literally reads as "green" and a weak one as "red" at a glance, scanning
+// down a list of cards — matches the 1-5 star scale users already know.
+function ratingBadgeClass(rating) {
+  const r = Number(rating);
+  if (r >= 4.5) return "success";
+  if (r >= 3.5) return "";
+  if (r >= 2.5) return "warning";
+  return "danger";
+}
 function vendorCardHtml(v) {
   return `<div class="vendor-card" onclick="navigate('storefront',{vendorId:'${v.id}'})">
     ${v.logo_url
@@ -2385,7 +2511,7 @@ function vendorCardHtml(v) {
     <p class="muted" style="margin:0.3rem 0;">${esc(v.city || "")}</p>
     ${v.categories && v.categories.length ? `<p class="muted" style="margin:0 0 0.4rem;font-size:0.78rem;"><i class="fa-solid fa-tags"></i> ${v.categories.map(esc).join(", ")}</p>` : ""}
     <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
-    ${v.avg_rating != null ? `<span class="badge" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}${v.review_count != null ? ` (${v.review_count})` : ""}</span>` : ""}
+    ${v.avg_rating != null ? `<span class="badge ${ratingBadgeClass(v.avg_rating)}" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}${v.review_count != null ? ` (${v.review_count})` : ""}</span>` : ""}
   </div>`;
 }
 
@@ -2849,6 +2975,7 @@ async function loadVendorsDirectory() {
     catSel.innerHTML = '<option value="">Known for: anything</option>' + allCats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
   }
   filterVendorsDirectory();
+  enhanceSelectsIn(byId("app"));
 }
 
 function filterVendorsDirectory() {
@@ -4034,6 +4161,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   </div>`;
   html += orderListHtml(sortOrdersForList(orders), false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
+  setTimeout(() => enhanceSelectsIn(byId("app")), 0);
   return html;
 }
 
