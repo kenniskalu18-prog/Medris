@@ -1,24 +1,15 @@
-// Three actions, one file — kept together because Vercel's Hobby plan caps
-// deployments at 12 serverless functions (see the other api/ files for the
-// same pattern, e.g. vendor-payments.js).
+// POST { messages: [{role, content}, ...], accessToken } -> { reply }
+// Proxies to the Gemini API so the API key never touches the browser —
+// same reasoning as the Paystack secret key. Needs GEMINI_API_KEY set in
+// Vercel's environment variables (get a free key at aistudio.google.com).
 //
-// action: (default/omitted) { messages, accessToken } -> { reply }
-//   Proxies to the Gemini API so the API key never touches the browser —
-//   same reasoning as the Paystack secret key. Needs GEMINI_API_KEY set in
-//   Vercel's environment variables (get a free key at aistudio.google.com).
-//   Requires a logged-in user and enforces a per-user daily message cap
-//   (increment_chat_usage, in Postgres) so this can't be used by an
-//   anonymous script to burn through the Gemini quota.
+// Requires a logged-in user and enforces a per-user daily message cap
+// (increment_chat_usage, in Postgres) so this endpoint can't be used by
+// an anonymous script to burn through the Gemini quota.
 //
-// action: "voices" -> { voices: [{voice_id, name, gender, accent}] }
-//   Lists the ElevenLabs voices available on this account.
-//
-// action: "speak" { text, voiceId, accessToken } -> audio/mpeg bytes
-//   Converts text to speech via ElevenLabs. Needs ELEVENLABS_API_KEY set in
-//   Vercel's environment variables (get one at elevenlabs.io — there's a
-//   free tier, then paid plans). Gated behind login and a per-user daily
-//   character budget (increment_tts_usage) since, unlike the free
-//   Gemini/browser-voice paths, every character here is real ongoing cost.
+// Voice replies (speaking Levi's text aloud) run entirely client-side on
+// the browser's own built-in speechSynthesis — no server involvement, no
+// per-character cost. There's no cloud voice service wired in here.
 const { readBody, env } = require("./_util");
 
 // Google retires Gemini model IDs on a rolling ~4-5 month cadence (2.0
@@ -30,9 +21,6 @@ const { readBody, env } = require("./_util");
 const MODEL = "gemini-3.6-flash";
 const FALLBACK_MODEL = "gemini-3.5-flash-lite";
 const DAILY_MESSAGE_LIMIT = 40;
-// ~5-6 spoken replies a day per person at typical reply length — generous
-// for normal use, bounded against a runaway loop or bot racking up cost.
-const DAILY_TTS_CHAR_LIMIT = 4000;
 
 // The views Levi is allowed to send someone to, and the params each one
 // needs. Kept to buyer/vendor-safe destinations only — nothing admin-only,
@@ -146,160 +134,81 @@ async function buildVendorContext(SUPABASE_URL, svcServiceHeaders, userId) {
   return `\n\nYOUR STORE DATA (private — this is ${v.business_name}'s own numbers, not visible to anyone else):\n- Verification: ${v.verification_status}, storefront currently ${v.is_active ? "active" : "paused"}\n- Rating: ${Number(v.avg_rating || 0).toFixed(1)} out of 5, from ${v.review_count || 0} review(s)\n- Listings: ${activeListings} active out of ${products.length} total\n- Orders: ${orders.length} total — ${pending} pending/awaiting action, ${completed.length} completed\n- Revenue from completed orders: ₦${revenue.toLocaleString("en-NG")}\n- Product page views (all-time): ${totalViews}\n- Wishlist saves across your listings: ${totalFavorites}`;
 }
 
-// Resolves a logged-in Supabase user from an access token — shared by all
-// three actions below, since voices/speak need to know who's asking just
-// as much as the chat completion does (rate limiting, vendor context).
-async function requireUser(SUPABASE_URL, SUPABASE_ANON_KEY, accessToken) {
-  if (!accessToken) return null;
-  const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
-  });
-  const me = await meRes.json();
-  return meRes.ok && me?.id ? me : null;
-}
-
-async function handleChat(body, res) {
-  const { messages, accessToken } = body;
-  if (!Array.isArray(messages) || messages.length === 0) { res.status(400).json({ error: "messages array required" }); return; }
-  if (!accessToken) { res.status(401).json({ error: "Please log in to use the assistant." }); return; }
-
-  const SUPABASE_URL = env("SUPABASE_URL");
-  const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
-
-  const me = await requireUser(SUPABASE_URL, SUPABASE_ANON_KEY, accessToken);
-  if (!me) { res.status(401).json({ error: "Your session expired — please log in again." }); return; }
-
-  const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_chat_usage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ p_user_id: me.id, p_limit: DAILY_MESSAGE_LIMIT }),
-  });
-  const withinLimit = await rpcRes.json();
-  if (!rpcRes.ok) { res.status(500).json({ error: "Could not check chat usage." }); return; }
-  if (withinLimit !== true) { res.status(429).json({ error: `You've hit today's chat limit (${DAILY_MESSAGE_LIMIT} messages). Try again tomorrow.` }); return; }
-
-  const GEMINI_API_KEY = env("GEMINI_API_KEY");
-  const contents = messages.slice(-20).map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: String(m.content || "").slice(0, 4000) }],
-  }));
-
-  const svcAuth = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
-  const latestMessage = [...messages].reverse().find((m) => m.role !== "assistant")?.content || "";
-  let marketplaceContext = "";
-  try {
-    marketplaceContext = await buildMarketplaceContext(SUPABASE_URL, svcAuth, latestMessage);
-  } catch (e) {
-    marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
-  }
-
-  let vendorContext = "";
-  try {
-    const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-    const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
-    vendorContext = await buildVendorContext(SUPABASE_URL, svcService, me.id);
-  } catch (e) {
-    vendorContext = "";
-  }
-
-  const callGemini = (model) => fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: "POST",
-      headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${vendorContext}` }] },
-        contents,
-        generationConfig: { maxOutputTokens: 400 },
-      }),
-    }
-  );
-
-  let apiRes = await callGemini(MODEL);
-  let apiJson = await apiRes.json();
-  // "-latest" can point at a freshly-released model still under heavy
-  // load from everyone else on that same alias — one retry against a
-  // pinned, stable model covers that instead of surfacing the error.
-  if (!apiRes.ok && MODEL !== FALLBACK_MODEL) {
-    apiRes = await callGemini(FALLBACK_MODEL);
-    apiJson = await apiRes.json();
-  }
-  if (!apiRes.ok) { res.status(400).json({ error: apiJson.error?.message || "AI service error" }); return; }
-
-  const reply = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't come up with a reply just now.";
-  res.status(200).json({ reply });
-}
-
-// Lists the ElevenLabs voices available on this account so the client can
-// offer a real picker instead of guessing IDs. Cheap, read-only call —
-// ElevenLabs doesn't charge per character for this, just for actual speech.
-async function handleVoices(body, res) {
-  const ELEVENLABS_API_KEY = env("ELEVENLABS_API_KEY");
-  const vRes = await fetch("https://api.elevenlabs.io/v1/voices", {
-    headers: { "xi-api-key": ELEVENLABS_API_KEY },
-  });
-  const vJson = await vRes.json();
-  if (!vRes.ok) { res.status(400).json({ error: vJson.detail?.message || "Could not load voices." }); return; }
-  const voices = (vJson.voices || []).map((v) => ({
-    voice_id: v.voice_id,
-    name: v.name,
-    gender: v.labels?.gender || null,
-    accent: v.labels?.accent || null,
-  }));
-  res.status(200).json({ voices });
-}
-
-// Converts text to speech via ElevenLabs and streams the audio back —
-// gated behind login and a per-user daily character budget (separate from
-// the chat message cap: previewing voices or re-hearing replies costs
-// characters without sending a new chat message, so it needs its own
-// limit) since every character here is real, ongoing money, unlike the
-// free Gemini/browser-voice paths.
-async function handleSpeak(body, res) {
-  const { text, voiceId, accessToken } = body;
-  if (!text || !voiceId) { res.status(400).json({ error: "text and voiceId are required" }); return; }
-  if (!accessToken) { res.status(401).json({ error: "Please log in." }); return; }
-
-  const SUPABASE_URL = env("SUPABASE_URL");
-  const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
-  const me = await requireUser(SUPABASE_URL, SUPABASE_ANON_KEY, accessToken);
-  if (!me) { res.status(401).json({ error: "Your session expired — please log in again." }); return; }
-
-  const clipped = String(text).slice(0, 800);
-
-  const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_tts_usage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ p_user_id: me.id, p_chars: clipped.length, p_daily_char_limit: DAILY_TTS_CHAR_LIMIT }),
-  });
-  const withinLimit = await rpcRes.json();
-  if (!rpcRes.ok) { res.status(500).json({ error: "Could not check voice usage." }); return; }
-  if (withinLimit !== true) { res.status(429).json({ error: "Today's voice budget is used up — text replies still work fine." }); return; }
-
-  const ELEVENLABS_API_KEY = env("ELEVENLABS_API_KEY");
-  const ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
-    method: "POST",
-    headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json", Accept: "audio/mpeg" },
-    body: JSON.stringify({ text: clipped, model_id: "eleven_turbo_v2_5" }),
-  });
-  if (!ttsRes.ok) {
-    let message = "Voice service error";
-    try { message = (await ttsRes.json()).detail?.message || message; } catch (e) { /* non-JSON error body */ }
-    res.status(400).json({ error: message });
-    return;
-  }
-  const audioBuffer = Buffer.from(await ttsRes.arrayBuffer());
-  res.setHeader("Content-Type", "audio/mpeg");
-  res.status(200).send(audioBuffer);
-}
-
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   try {
-    const body = JSON.parse(await readBody(req));
-    if (body.action === "voices") return handleVoices(body, res);
-    if (body.action === "speak") return handleSpeak(body, res);
-    return handleChat(body, res);
+    const { messages, accessToken } = JSON.parse(await readBody(req));
+    if (!Array.isArray(messages) || messages.length === 0) { res.status(400).json({ error: "messages array required" }); return; }
+    if (!accessToken) { res.status(401).json({ error: "Please log in to use the assistant." }); return; }
+
+    const SUPABASE_URL = env("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
+
+    const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+    });
+    const me = await meRes.json();
+    if (!meRes.ok || !me?.id) { res.status(401).json({ error: "Your session expired — please log in again." }); return; }
+
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_chat_usage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ p_user_id: me.id, p_limit: DAILY_MESSAGE_LIMIT }),
+    });
+    const withinLimit = await rpcRes.json();
+    if (!rpcRes.ok) { res.status(500).json({ error: "Could not check chat usage." }); return; }
+    if (withinLimit !== true) { res.status(429).json({ error: `You've hit today's chat limit (${DAILY_MESSAGE_LIMIT} messages). Try again tomorrow.` }); return; }
+
+    const GEMINI_API_KEY = env("GEMINI_API_KEY");
+    const contents = messages.slice(-20).map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: String(m.content || "").slice(0, 4000) }],
+    }));
+
+    const svcAuth = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+    const latestMessage = [...messages].reverse().find((m) => m.role !== "assistant")?.content || "";
+    let marketplaceContext = "";
+    try {
+      marketplaceContext = await buildMarketplaceContext(SUPABASE_URL, svcAuth, latestMessage);
+    } catch (e) {
+      marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
+    }
+
+    let vendorContext = "";
+    try {
+      const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+      const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+      vendorContext = await buildVendorContext(SUPABASE_URL, svcService, me.id);
+    } catch (e) {
+      vendorContext = "";
+    }
+
+    const callGemini = (model) => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${vendorContext}` }] },
+          contents,
+          generationConfig: { maxOutputTokens: 400 },
+        }),
+      }
+    );
+
+    let apiRes = await callGemini(MODEL);
+    let apiJson = await apiRes.json();
+    // "-latest" can point at a freshly-released model still under heavy
+    // load from everyone else on that same alias — one retry against a
+    // pinned, stable model covers that instead of surfacing the error.
+    if (!apiRes.ok && MODEL !== FALLBACK_MODEL) {
+      apiRes = await callGemini(FALLBACK_MODEL);
+      apiJson = await apiRes.json();
+    }
+    if (!apiRes.ok) { res.status(400).json({ error: apiJson.error?.message || "AI service error" }); return; }
+
+    const reply = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't come up with a reply just now.";
+    res.status(200).json({ reply });
   } catch (err) {
     res.status(500).json({ error: err.message || "Server error" });
   }
