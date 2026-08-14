@@ -2182,6 +2182,7 @@ async function resendLoginOtp() {
 }
 
 async function logout() {
+  if (!(await showConfirmDialog("Log out of Levromart?", { title: "Log out", okLabel: "Log out" }))) return;
   manualLogout = true;
   await sb.auth.signOut();
   await refreshAuthStateOnce();
