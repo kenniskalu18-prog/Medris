@@ -1584,6 +1584,7 @@ async function renderNotifPanel() {
   let q = sb.from("notifications").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(30);
   q = notifViewMode === "trash" ? q.not("deleted_at", "is", null) : q.is("deleted_at", null).eq("archived", notifViewMode === "archived");
   const { data: items } = await q;
+  window.__notifPanelIds = (items || []).map((n) => n.id);
 
   const modeLabel = { inbox: "Notifications", archived: "Archived", trash: "Recently deleted" }[notifViewMode];
   const tabs = `<div class="notif-tabs">
@@ -1597,6 +1598,7 @@ async function renderNotifPanel() {
         <button class="icon-btn" onclick="exitNotifSelectMode()" title="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
         <strong>${notifSelectedIds.size} selected</strong>
         <div class="flex" style="gap:0.5rem;margin:0;">
+          <button class="notif-action-btn" title="${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "Deselect all" : "Select all"}" onclick="toggleSelectAllNotifs()"><i class="fa-solid ${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "fa-square-minus" : "fa-square-check"}"></i></button>
           ${notifViewMode === "trash"
             ? `<button class="notif-action-btn" title="Restore" onclick="batchRestoreSelected()"><i class="fa-solid fa-trash-arrow-up"></i></button>
                <button class="notif-action-btn danger" title="Delete forever" onclick="batchPurgeSelected()"><i class="fa-solid fa-trash-can"></i></button>`
@@ -1661,6 +1663,13 @@ function setupNotifItemGestures(panel) {
     };
     const onEnd = (evt) => {
       evt.stopPropagation();
+      // Mobile browsers fire a synthetic mousedown/mouseup/click shortly
+      // after a real touch sequence unless touchend's default is
+      // prevented — without this, a tap while in select mode was toggling
+      // the item on (from touchend) and then immediately back off (from
+      // the synthetic mouseup that followed), which looked exactly like
+      // "tapping does nothing."
+      if (evt.cancelable) evt.preventDefault();
       clearTimeout(longPressTimer);
       if (dragging) {
         item.style.transition = "transform 0.2s ease";
@@ -1706,6 +1715,13 @@ function enterNotifSelectMode(id) {
 function toggleNotifSelect(id) {
   if (notifSelectedIds.has(id)) notifSelectedIds.delete(id); else notifSelectedIds.add(id);
   if (notifSelectedIds.size === 0) { notifSelectMode = false; }
+  renderNotifPanel();
+}
+function toggleSelectAllNotifs() {
+  const allIds = window.__notifPanelIds || [];
+  if (notifSelectedIds.size === allIds.length) notifSelectedIds.clear();
+  else notifSelectedIds = new Set(allIds);
+  if (notifSelectedIds.size === 0) notifSelectMode = false;
   renderNotifPanel();
 }
 function exitNotifSelectMode(rerender = true) {
@@ -1937,6 +1953,7 @@ async function submitEditProfile() {
   Object.assign(profile, { name, phone: byId("epPhone").value.trim() || null, city: byId("epCity").value.trim() || null, address: byId("epAddress").value.trim() || null });
   updateAuthUI();
   showToast("Details updated.", "success");
+  navigate(vendor ? "vendorDashboard" : "home");
 }
 
 // ---------- BOTTOM NAV (mobile) ----------
@@ -4237,8 +4254,11 @@ async function renderOrderDetail(orderId) {
   const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
   const feePaid = order.payments.some((p) => p.payment_type === feeType && p.status === "paid");
   const depositPaid = order.deposit_amount === 0 || order.payments.some((p) => p.payment_type === "deposit" && p.status === "paid");
-  const canRecordPayment = isVendor && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
-  const canPayOnline = isBuyer && !(feePaid && depositPaid) && ["pending", "confirmed"].includes(order.status);
+  // Payment only opens up once the vendor has confirmed — paying at
+  // "pending" meant a decline afterward left the buyer waiting on a
+  // refund for something that should never have been charged at all.
+  const canRecordPayment = isVendor && !(feePaid && depositPaid) && order.status === "confirmed";
+  const canPayOnline = isBuyer && !(feePaid && depositPaid) && order.status === "confirmed";
 
   let html = `<div class="card">
     <div class="flex" style="justify-content:space-between;align-items:flex-start;">
