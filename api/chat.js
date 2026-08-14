@@ -10,7 +10,11 @@
 // an anonymous script to burn through the Gemini quota.
 const { readBody, env } = require("./_util");
 
+// "-latest" aliases can route to a newly-released model that's still
+// getting hammered by everyone else pointed at the same alias — a pinned,
+// GA model is the fallback for exactly that "high demand" case.
 const MODEL = "gemini-flash-latest";
+const FALLBACK_MODEL = "gemini-2.0-flash";
 const DAILY_MESSAGE_LIMIT = 40;
 const SYSTEM_PROMPT =
   "You are Levromart Assistant, a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.";
@@ -103,8 +107,8 @@ module.exports = async function handler(req, res) {
       marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
     }
 
-    const apiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+    const callGemini = (model) => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
         headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
@@ -115,7 +119,16 @@ module.exports = async function handler(req, res) {
         }),
       }
     );
-    const apiJson = await apiRes.json();
+
+    let apiRes = await callGemini(MODEL);
+    let apiJson = await apiRes.json();
+    // "-latest" can point at a freshly-released model still under heavy
+    // load from everyone else on that same alias — one retry against a
+    // pinned, stable model covers that instead of surfacing the error.
+    if (!apiRes.ok && MODEL !== FALLBACK_MODEL) {
+      apiRes = await callGemini(FALLBACK_MODEL);
+      apiJson = await apiRes.json();
+    }
     if (!apiRes.ok) { res.status(400).json({ error: apiJson.error?.message || "AI service error" }); return; }
 
     const reply = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't come up with a reply just now.";
