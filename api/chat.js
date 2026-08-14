@@ -10,11 +10,14 @@
 // an anonymous script to burn through the Gemini quota.
 const { readBody, env } = require("./_util");
 
-// "-latest" aliases can route to a newly-released model that's still
-// getting hammered by everyone else pointed at the same alias — a pinned,
-// GA model is the fallback for exactly that "high demand" case.
-const MODEL = "gemini-flash-latest";
-const FALLBACK_MODEL = "gemini-2.0-flash";
+// Google retires Gemini model IDs on a rolling ~4-5 month cadence (2.0
+// Flash was fully shut down June 1 2026; 2.5 Flash is next, Oct 16 2026) —
+// pinned, current-GA model IDs instead of a "-latest" alias, since "-latest"
+// has twice now routed to something either overloaded or already retired.
+// If Levi starts erroring again, check ai.google.dev/gemini-api/docs/models
+// for the current GA lineup and update these two constants.
+const MODEL = "gemini-3.6-flash";
+const FALLBACK_MODEL = "gemini-3.5-flash-lite";
 const DAILY_MESSAGE_LIMIT = 40;
 
 // The views Levi is allowed to send someone to, and the params each one
