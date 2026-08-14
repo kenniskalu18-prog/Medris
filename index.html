@@ -917,7 +917,7 @@
   <div id="aiChatMessages" class="ai-chat-messages"></div>
   <div class="ai-chat-input-row">
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
-    <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendAiChatMessage();}"></textarea>
+    <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
@@ -2875,7 +2875,7 @@ async function renderMessages(conversationId) {
     <div class="chat-messages" id="chatMessages">${(messages || []).map(chatBubbleHtml).join("")}</div>
     <div class="chat-input-row">
       ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
-      <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
+      <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
       <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   </div>
@@ -2934,6 +2934,13 @@ function subscribeToConversation(conversationId) {
     .subscribe();
 }
 
+// On a touch device there's no easy Shift+Enter, so Enter has to just be a
+// normal newline — the Send button is the only way to send. Desktop keeps
+// Enter-to-send (Shift+Enter for a newline) since a keyboard makes that
+// combo trivial and it's the expected chat-app convention there.
+function isCoarsePointer() {
+  return !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+}
 // Auto-grows a chat textarea downward as text wraps, instead of the box
 // staying single-line and scrolling the text sideways. Capped so a very
 // long message scrolls internally rather than pushing the send button
@@ -5434,7 +5441,9 @@ async function renderAdminDisputes() {
       ${d.vendor_response ? `<p style="margin:0.5rem 0;"><strong>Vendor says:</strong> ${esc(d.vendor_response)}</p>` : `<p class="muted" style="margin:0.5rem 0;">Vendor hasn't responded yet.</p>`}
       ${d.order?.buyer_id && d.order?.vendor_id ? `<button class="btn btn-sm btn-outline" onclick="openDisputeChat('${d.order.buyer_id}','${d.order.vendor_id}')"><i class="fa-solid fa-comment-dots"></i> View chat between buyer &amp; vendor</button>` : ""}
       ${d.order?.payout_status === "held" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-shield-halved"></i> Payment on this order is still held by Levromart — the vendor hasn't been paid.</p>
-      <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
+      <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}','held')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
+      ${d.order?.payout_status === "released" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-triangle-exclamation"></i> The vendor's share of this order has already been paid out (split payment) — a refund here comes out of Levromart's own balance.</p>
+      <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}','released')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
       <div class="flex">
         <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
         <select id="newstatus-${d.id}"><option value="">Leave order as-is</option><option value="completed">Set order: completed</option><option value="cancelled">Set order: cancelled</option></select>
@@ -5450,8 +5459,8 @@ async function resolveDispute(id, orderId, payoutStatus) {
   const notes = byId(`notes-${id}`).value.trim() || "Resolved.";
   const newStatus = byId(`newstatus-${id}`).value || undefined;
 
-  if (newStatus === "cancelled" && payoutStatus === "held") {
-    showToast('This order still has payment held — use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
+  if (newStatus === "cancelled" && (payoutStatus === "held" || payoutStatus === "released")) {
+    showToast('This order was paid online — use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
     return;
   }
 
@@ -5476,11 +5485,11 @@ async function resolveDispute(id, orderId, payoutStatus) {
   navigate("adminDisputes");
 }
 
-async function adminRefundOrder(orderId) {
-  if (!(await showConfirmDialog(
-    "Refund the buyer in full? This sends the held payment back to their card/account and cancels the order. The vendor was never paid, so there's nothing to claw back from them.",
-    { title: "Refund buyer", okLabel: "Refund", danger: true }
-  ))) return;
+async function adminRefundOrder(orderId, payoutStatus) {
+  const msg = payoutStatus === "released"
+    ? "Refund the buyer in full? The vendor's share has already been paid out (split payment), so this comes out of Levromart's own balance — you'll need to recover the vendor's cut from them separately, outside Paystack. This still cancels the order."
+    : "Refund the buyer in full? This sends the held payment back to their card/account and cancels the order. The vendor was never paid, so there's nothing to claw back from them.";
+  if (!(await showConfirmDialog(msg, { title: "Refund buyer", okLabel: "Refund", danger: true }))) return;
   try {
     const res = await fetch("/api/order-payout-action", {
       method: "POST", headers: { "Content-Type": "application/json" },
