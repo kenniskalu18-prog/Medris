@@ -16,8 +16,26 @@ const { readBody, env } = require("./_util");
 const MODEL = "gemini-flash-latest";
 const FALLBACK_MODEL = "gemini-2.0-flash";
 const DAILY_MESSAGE_LIMIT = 40;
+
+// The views Levi is allowed to send someone to, and the params each one
+// needs. Kept to buyer/vendor-safe destinations only — nothing admin-only,
+// nothing that needs an id Levi wasn't actually given.
+const NAV_PROMPT =
+  "You can take the person somewhere in the app by ending your reply with ONE navigation tag, on its own, in this exact format: [[NAV:view|param=value|param2=value2]] (omit the |param=value part entirely for views that take no params). Only use these views, exactly as spelled, and only with ids that appear in the data given to you above — never invent an id:\n" +
+  "- home (no params) — the marketplace homepage\n" +
+  "- vendors (no params) — the full vendor directory\n" +
+  "- storefront|vendorId=<id> — a specific vendor's shop page\n" +
+  "- productDetail|productId=<id> — a specific product/listing page\n" +
+  "- wishlist (no params) — the buyer's saved items\n" +
+  "- requestEquipment (no params) — post a request for something not found\n" +
+  "- buyerOrders (no params) — the buyer's own order history\n" +
+  "- settings (no params) — opens the settings panel (theme, accent color, notifications)\n" +
+  "Vendor-only, use ONLY if the YOUR STORE DATA block is present (i.e. you know this person is a vendor): vendorDashboard, vendorProducts, vendorOrders|status=all, vendorEditProfile, vendorRequests (none take other params).\n" +
+  "Only include a tag when it genuinely helps (someone asks to be taken somewhere, asks 'where do I do X', or you're recommending one specific real vendor/product) — most replies need no tag at all. Never mention the tag itself or its syntax to the person; it's invisible UI plumbing, not something to explain.";
+
 const SYSTEM_PROMPT =
-  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.";
+  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
+  NAV_PROMPT;
 
 // Pulls a small, relevant slice of real marketplace data to ground the
 // model's answers in — without this it can only speak in generalities
@@ -36,12 +54,12 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
 
   const [topVendorsRes, productsRes] = await Promise.all([
     fetch(
-      `${SUPABASE_URL}/rest/v1/vendors?verification_status=eq.verified&is_active=eq.true&select=business_name,city,avg_rating,review_count,sector:sectors(name)&order=avg_rating.desc&limit=15`,
+      `${SUPABASE_URL}/rest/v1/vendors?verification_status=eq.verified&is_active=eq.true&select=id,business_name,city,avg_rating,review_count,sector:sectors(name)&order=avg_rating.desc&limit=15`,
       { headers: svcHeaders }
     ),
     words.length
       ? fetch(
-          `${SUPABASE_URL}/rest/v1/products?status=eq.active&or=(${words.map((w) => `name.ilike.*${encodeURIComponent(w)}*`).join(",")})&select=name,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,vendor:vendors!inner(business_name,avg_rating,city,verification_status,is_active)&vendor.verification_status=eq.verified&vendor.is_active=eq.true&limit=15`,
+          `${SUPABASE_URL}/rest/v1/products?status=eq.active&or=(${words.map((w) => `name.ilike.*${encodeURIComponent(w)}*`).join(",")})&select=id,name,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,vendor:vendors!inner(id,business_name,avg_rating,city,verification_status,is_active)&vendor.verification_status=eq.verified&vendor.is_active=eq.true&limit=15`,
           { headers: svcHeaders }
         )
       : Promise.resolve(null),
@@ -50,8 +68,11 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
   const topVendors = topVendorsRes.ok ? await topVendorsRes.json() : [];
   const products = productsRes && productsRes.ok ? await productsRes.json() : [];
 
+  // Vendor/product ids are included specifically so Levi can point someone
+  // straight at a real listing with a [[NAV:...]] directive (see NAV_PROMPT)
+  // instead of just describing it in words.
   const vendorLines = (topVendors || []).map(
-    (v) => `- ${v.business_name} (${v.sector?.name || "general"}, ${v.city || "Lagos"}) — ★${Number(v.avg_rating || 0).toFixed(1)} (${v.review_count || 0} reviews)`
+    (v) => `- ${v.business_name} (id: ${v.id}) — ${v.sector?.name || "general"}, ${v.city || "Lagos"} — ★${Number(v.avg_rating || 0).toFixed(1)} (${v.review_count || 0} reviews)`
   );
   const productLines = (products || []).map((p) => {
     const price = p.is_service
@@ -61,7 +82,7 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
         : p.rental_rate != null
           ? `₦${p.rental_rate}/${p.rental_rate_unit} to rent`
           : "price on request";
-    return `- ${p.name} — ${price} — sold by ${p.vendor?.business_name || "a vendor"} (★${Number(p.vendor?.avg_rating || 0).toFixed(1)})`;
+    return `- ${p.name} (product id: ${p.id}) — ${price} — sold by ${p.vendor?.business_name || "a vendor"} (vendor id: ${p.vendor?.id || "unknown"}, ★${Number(p.vendor?.avg_rating || 0).toFixed(1)})`;
   });
 
   return `LIVE MARKETPLACE DATA (as of right now):\nTop-rated verified vendors:\n${vendorLines.join("\n") || "(none yet)"}\n\nProducts/services matching this question:\n${productLines.join("\n") || "(no direct keyword matches — only use the vendor list above, and say so if nothing fits)"}`;
