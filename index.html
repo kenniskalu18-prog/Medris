@@ -647,6 +647,12 @@
     </div>
   </div>
   <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
+  <div class="accordion-section hidden" id="changePasswordSection">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-key'></i> Security</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <div class="accordion-body">
+      <button class="btn btn-sm btn-outline" style="width:100%;" onclick="showChangePassword()"><i class="fa-solid fa-key"></i> Change password</button>
+    </div>
+  </div>
   <div class="accordion-section hidden" id="accountDangerSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark' style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);filter:drop-shadow(0 0 5px color-mix(in srgb, var(--danger) 30%, transparent));"></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
@@ -776,6 +782,7 @@
     <label>New password</label>
     <input type="password" id="newPasswordInput" placeholder="New password (min 8 characters)" />
     <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
+      <button class="btn btn-sm btn-outline hidden" id="resetPasswordCancel" onclick="closeChangePasswordModal()">Cancel</button>
       <button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
     </div>
   </div>
@@ -2030,11 +2037,13 @@ function updateAuthUI() {
       <a class="notif-item" style="color:var(--danger);" onclick="closeAllPanels();logout();"><i class='fa-solid fa-right-from-bracket'></i> Logout</a>
     `;
     byId("accountDangerSection")?.classList.remove("hidden");
+    byId("changePasswordSection")?.classList.remove("hidden");
   } else {
     avatarBtn.classList.add("hidden");
     loginBtn.classList.remove("hidden");
     panel.innerHTML = "";
     byId("accountDangerSection")?.classList.add("hidden");
+    byId("changePasswordSection")?.classList.add("hidden");
   }
 }
 
@@ -3739,7 +3748,7 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details</h2>
-    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed.</p>
+    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed. Funds typically land in your account the next business day after a sale.</p>
     <div id="bankError" class="error-text hidden"></div>
     ${v.paystack_subaccount_code
       ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} — ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
@@ -5533,7 +5542,8 @@ function renderTerms() {
     <h3>3. Orders, rentals &amp; payments</h3>
     <ul>
       <li>Payments are processed through Paystack. Levromart never stores your card details.</li>
-      <li>Rentals may require a refundable deposit, held and returned per the vendor's stated terms once equipment is returned in its original condition.</li>
+      <li>Vendors are paid automatically once a sale is confirmed — funds typically reach their bank account the next business day.</li>
+      <li>Rentals may require a refundable deposit. If there's a dispute over damage or non-return, Levromart's dispute resolution process decides how it's handled, including a refund from Levromart where warranted.</li>
       <li>Vendors set their own prices; Levromart deducts a commission on completed transactions, disclosed to vendors in their dashboard.</li>
       <li>Some vendors accept offline payment (cash/transfer) on handover — Levromart still tracks commission owed on these orders.</li>
     </ul>
@@ -5603,7 +5613,7 @@ function renderRefundPolicy() {
     <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable — only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
 
     <h3>3. Refundable deposits</h3>
-    <p>Rental deposits are held to cover damage or non-return. Once you mark equipment as returned and the vendor confirms its condition, the deposit is released back to you. If there's a disagreement about the equipment's condition, either side can raise a dispute for a Levromart admin to review before the deposit is settled.</p>
+    <p>Rental deposits are meant to cover damage or non-return. If equipment is returned in its original condition, there's nothing further for you to do. If there's a disagreement about the equipment's condition or the deposit isn't returned, either side can raise a dispute for a Levromart admin to review, including a refund from Levromart where warranted.</p>
 
     <h3>4. Damaged, wrong, or misrepresented equipment</h3>
     <p>If what arrives doesn't match the listing, or is faulty on arrival, raise a dispute from the order page within 48 hours of handover. Admins will review evidence from both sides and can direct a full or partial refund from the vendor's proceeds.</p>
@@ -5631,6 +5641,21 @@ sb.auth.onAuthStateChange((_event) => {
   refreshAuthStateOnce();
 });
 
+// Voluntary change — from Settings, while already logged in, no email link
+// needed. Reuses the exact same modal/submit path as the forced
+// PASSWORD_RECOVERY flow above (same sb.auth.updateUser call), just adds a
+// Cancel button since this entry point isn't a "you must set one" moment.
+function showChangePassword() {
+  byId("newPasswordInput").value = "";
+  byId("resetPasswordError").classList.add("hidden");
+  byId("resetPasswordCancel").classList.remove("hidden");
+  byId("resetPasswordModal").classList.remove("hidden");
+  trackModalOpened("resetPasswordModal");
+}
+function closeChangePasswordModal() {
+  byId("resetPasswordModal").classList.add("hidden");
+  if (dismissibleModalId === "resetPasswordModal") dismissibleModalId = null;
+}
 async function submitNewPassword() {
   const password = byId("newPasswordInput").value;
   const errorEl = byId("resetPasswordError");
