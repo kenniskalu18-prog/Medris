@@ -158,6 +158,20 @@
   .tour-dot.active { background: var(--primary); transform: scale(1.1); width: 1.1rem; border-radius: 999px; }
   .tour-skip { display: block; margin: 0.9rem auto 0; background: none; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
   @media (prefers-reduced-motion: reduce) { .tour-content, .tour-content .install-modal-badge, .tour-content h3, .tour-content #tourBody { animation: none; } }
+  .tour-spotlight-overlay { position: fixed; inset: 0; z-index: 480; }
+  .tour-spotlight-overlay.hidden { display: none; }
+  .tour-spotlight-hole {
+    position: fixed; border-radius: 1rem; box-shadow: 0 0 0 9999px rgba(0,0,0,0.72), 0 0 0 2px var(--primary), 0 0 24px color-mix(in srgb, var(--primary) 60%, transparent);
+    pointer-events: none; transition: top 0.4s cubic-bezier(.22,.9,.24,1), left 0.4s cubic-bezier(.22,.9,.24,1), width 0.4s cubic-bezier(.22,.9,.24,1), height 0.4s cubic-bezier(.22,.9,.24,1), opacity 0.25s ease;
+  }
+  .tour-spotlight-hole.centered { width: 0; height: 0; top: 50%; left: 50%; opacity: 0; box-shadow: 0 0 0 9999px rgba(0,0,0,0.72); }
+  .tour-callout {
+    position: fixed; width: min(300px, calc(100vw - 24px)); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); padding: 1.4rem; border-radius: 1.1rem; box-shadow: 0 20px 50px rgba(0,0,0,0.35); color: var(--text);
+    transition: top 0.4s cubic-bezier(.22,.9,.24,1), left 0.4s cubic-bezier(.22,.9,.24,1);
+  }
+  .tour-callout.centered { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); }
+  @media (prefers-reduced-motion: reduce) { .tour-spotlight-hole, .tour-callout { transition: none; } }
   .site-footer { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: center; justify-content: center; padding: 1.4rem 1rem; margin-top: 1rem; border-top: 1px solid var(--border); }
   .site-footer a { color: var(--text-muted); font-size: 0.82rem; text-decoration: none; }
   .site-footer a:hover { color: var(--primary); text-decoration: underline; }
@@ -299,8 +313,16 @@
   .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.87rem; line-height: 1.4; white-space: pre-wrap; }
   .ai-chat-msg.user { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.2rem; }
   .ai-chat-msg.assistant { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 0.2rem; }
+  .ai-chat-nav-btn { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; background: var(--primary-grad); color: #fff; border: none; border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent); transition: transform 0.15s ease; }
+  .ai-chat-nav-btn:hover { transform: translateY(-1px); }
+  .ai-chat-msg-speak { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; margin-top: 0.4rem; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; opacity: 0.6; transition: opacity 0.15s ease, color 0.15s ease; }
+  .ai-chat-msg-speak:hover, .ai-chat-msg-speak.speaking { opacity: 1; color: var(--primary); }
   .ai-chat-input-row { display: flex; gap: 0.5rem; align-items: center; }
   .ai-chat-input-row input { margin: 0; }
+  .ai-chat-mic-btn { flex-shrink: 0; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1.5px solid var(--border); background: var(--card); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
+  .ai-chat-mic-btn.listening { background: var(--primary-grad); color: #fff; border-color: transparent; animation: micPulse 1.1s ease-in-out infinite; }
+  @keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 0%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { .ai-chat-mic-btn.listening { animation: none; } }
 
   /* ---- header icon buttons ---- */
   .icon-wrap { position: relative; display: inline-flex; }
@@ -662,8 +684,9 @@
   </div>
 </div>
 
-<div id="tourModal" class="modal hidden">
-  <div class="modal-content install-modal-content tour-content">
+<div id="tourModal" class="tour-spotlight-overlay hidden">
+  <div class="tour-spotlight-hole centered" id="tourSpotlightHole"></div>
+  <div class="install-modal-content tour-content tour-callout centered" id="tourCallout">
     <div class="install-modal-badge"><i id="tourIcon" class="fa-solid fa-hand-sparkles" style="font-size:1.8rem;color:#fff;"></i></div>
     <h3 id="tourTitle">Welcome to Levromart</h3>
     <p class="muted" id="tourBody"></p>
@@ -856,6 +879,7 @@
   <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
   <div class="ai-chat-input-row">
+    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <input type="text" id="aiChatInput" placeholder="Ask about products, renting, buying…" onkeydown="if(event.key==='Enter')sendAiChatMessage();" />
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
@@ -991,44 +1015,112 @@ async function enablePushNotifications() {
   dismissNotifPrompt();
 }
 
-// ---------- FIRST-VISIT APP TOUR ----------
-const TOUR_SLIDES = [
-  { icon: "fa-hand-sparkles", title: "Welcome to Levromart", body: "Rent, buy, or offer anything — healthcare equipment, food, electronics, fashion, services, and more — from verified vendors across Lagos." },
-  { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector icon on the home page — Healthcare, Food, Electronics, and more — to see only what's relevant to you." },
-  { icon: "fa-rotate", title: "Rent, Buy, Sell, or Request", body: "The quick-action buttons at the top of Home take you straight into renting, buying, listing your own items, or requesting something you can't find." },
-  { icon: "fa-compass", title: "Get around with the bottom bar", body: "Home, Vendors, Wishlist, Requests, and My Shop are always one tap away at the bottom of the screen." },
-  { icon: "fa-comments", title: "Meet Levi", body: "Tap the floating chat bubble any time to talk to Levi, your Levromart assistant — it can help you find what you need or explain how anything on the site works." },
-  { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications to get pinged the moment you get an order, offer, or update — right on your device, on top of email." },
+// ---------- FIRST-VISIT APP TOUR (live — walks the real pages, spotlights real elements) ----------
+// Each step (except the intro/outro) names a real selector on a real page.
+// The tour navigates there with the actual navigate() function and points
+// at the actual DOM element — nothing here is a mockup or a slide.
+const LIVE_TOUR_STEPS = [
+  { icon: "fa-hand-sparkles", title: "Welcome to Levromart", body: "Let's take a real, quick walk through the app — everything you're about to see is the actual site, not a slideshow.", selector: null, view: "home" },
+  { icon: "fa-house", title: "This is Home", body: "Tap the Levromart logo any time, from anywhere in the app, to jump straight back here.", selector: "header h1", view: "home" },
+  { icon: "fa-rotate", title: "Rent, buy, sell, or request", body: "These quick actions take you straight into renting, buying, listing your own items, or requesting something you can't find.", selector: ".hero-quick-actions", view: "home" },
+  { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector to narrow the marketplace down to just what's relevant to you — Healthcare, Food, Electronics, and more.", selector: ".sector-row", view: "home" },
+  { icon: "fa-compass", title: "Get around from here", body: "The bottom bar is always one tap away, wherever you are on the site.", selector: "#bottomNav", view: "home" },
+  { icon: "fa-store", title: "This is a vendor", body: "Every card like this is a real, verified vendor — tap one any time to see their storefront, products, and reviews.", selector: ".vendor-card", view: "vendors" },
+  { icon: "fa-comments", title: "Meet Levi", body: "Tap here any time to talk to Levi — ask what to buy, get pointed straight to a vendor, or ask how something works.", selector: "#aiChatFab", view: "home" },
+  { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update — right on your device.", selector: "#notifWrap", view: "home" },
 ];
-let tourStep = 0;
-function showTour() {
-  tourStep = 0;
-  renderTourStep();
+let liveTourStep = 0;
+async function waitForTourTarget(selector, maxMs = 2000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const el = document.querySelector(selector);
+    if (el && el.offsetParent !== null) return el;
+    await new Promise((r) => setTimeout(r, 120));
+  }
+  return null;
+}
+async function showTour() {
+  liveTourStep = 0;
   byId("tourModal").classList.remove("hidden");
   trackModalOpened("tourModal");
+  await runTourStep();
 }
-function renderTourStep() {
-  const s = TOUR_SLIDES[tourStep];
-  byId("tourIcon").className = `fa-solid ${s.icon}`;
-  byId("tourTitle").textContent = s.title;
-  byId("tourBody").textContent = s.body;
-  byId("tourDots").innerHTML = TOUR_SLIDES.map((_, i) => `<span class="tour-dot ${i === tourStep ? "active" : ""}"></span>`).join("");
-  byId("tourBackBtn").classList.toggle("hidden", tourStep === 0);
-  byId("tourNextBtn").textContent = tourStep === TOUR_SLIDES.length - 1 ? "Get started" : "Next";
-  const content = byId("tourModal").querySelector(".tour-content");
+async function runTourStep() {
+  const step = LIVE_TOUR_STEPS[liveTourStep];
+  if (step.view && step.view !== currentView) await navigate(step.view, {});
+
+  byId("tourIcon").className = `fa-solid ${step.icon}`;
+  byId("tourTitle").textContent = step.title;
+  byId("tourBody").textContent = step.body;
+  byId("tourDots").innerHTML = LIVE_TOUR_STEPS.map((_, i) => `<span class="tour-dot ${i === liveTourStep ? "active" : ""}"></span>`).join("");
+  byId("tourBackBtn").classList.toggle("hidden", liveTourStep === 0);
+  byId("tourNextBtn").textContent = liveTourStep === LIVE_TOUR_STEPS.length - 1 ? "Get started" : "Next";
+
+  let rect = null;
+  if (step.selector) {
+    // Some targets (e.g. the vendor directory grid) render "Loading…" first
+    // and fill in via a deferred fetch — wait for the real element rather
+    // than judging it missing off the very first frame after navigating.
+    const el = await waitForTourTarget(step.selector);
+    if (!el) {
+      // Genuinely not there right now (logged out, no vendors yet, etc) —
+      // skip straight past it instead of spotlighting empty space.
+      if (liveTourStep < LIVE_TOUR_STEPS.length - 1) { liveTourStep++; return runTourStep(); }
+      finishTour();
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    await new Promise((r) => setTimeout(r, 380));
+    rect = el.getBoundingClientRect();
+  }
+  positionTourSpotlight(rect);
+
+  const content = byId("tourCallout");
   content.classList.remove("tour-content");
   void content.offsetWidth; // restart the fade-in animation on every step
   content.classList.add("tour-content");
 }
+function positionTourSpotlight(rect) {
+  const hole = byId("tourSpotlightHole");
+  const callout = byId("tourCallout");
+  if (!rect) {
+    hole.classList.add("centered");
+    callout.classList.add("centered");
+    return;
+  }
+  hole.classList.remove("centered");
+  callout.classList.remove("centered");
+  const pad = 10;
+  hole.style.top = `${rect.top - pad}px`;
+  hole.style.left = `${rect.left - pad}px`;
+  hole.style.width = `${rect.width + pad * 2}px`;
+  hole.style.height = `${rect.height + pad * 2}px`;
+
+  const calloutWidth = callout.offsetWidth || 300;
+  const calloutHeight = callout.offsetHeight || 220;
+  const placeBelow = window.innerHeight - rect.bottom > calloutHeight + 30 || rect.top < calloutHeight + 30;
+  let top = placeBelow ? rect.bottom + pad + 14 : rect.top - pad - 14 - calloutHeight;
+  top = Math.max(12, Math.min(top, window.innerHeight - calloutHeight - 12));
+  let left = rect.left + rect.width / 2 - calloutWidth / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - calloutWidth - 12));
+  callout.style.top = `${top}px`;
+  callout.style.left = `${left}px`;
+}
+function tourReposition() {
+  if (byId("tourModal")?.classList.contains("hidden")) return;
+  const step = LIVE_TOUR_STEPS[liveTourStep];
+  positionTourSpotlight(step.selector ? document.querySelector(step.selector)?.getBoundingClientRect() : null);
+}
+window.addEventListener("resize", tourReposition);
 function tourNext() {
-  if (tourStep === TOUR_SLIDES.length - 1) { finishTour(); return; }
-  tourStep++;
-  renderTourStep();
+  if (liveTourStep === LIVE_TOUR_STEPS.length - 1) { finishTour(); return; }
+  liveTourStep++;
+  runTourStep();
 }
 function tourBack() {
-  if (tourStep === 0) return;
-  tourStep--;
-  renderTourStep();
+  if (liveTourStep === 0) return;
+  liveTourStep--;
+  runTourStep();
 }
 function finishTour() {
   byId("tourModal").classList.add("hidden");
@@ -1903,6 +1995,7 @@ function updateAuthUI() {
       links.push({ label: "<i class='fa-solid fa-users-gear'></i> Manage admins", action: "navigate('adminUsers')" });
       links.push({ label: "<i class='fa-solid fa-sack-dollar'></i> Vendors &amp; transactions", action: "navigate('adminFinance')" });
     }
+    links.push({ label: "<i class='fa-solid fa-route'></i> Take the tour", action: "showTour()" });
 
     panel.innerHTML = `
       <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
@@ -5384,15 +5477,102 @@ document.addEventListener("click", (e) => {
   if (e.target.id !== "app") return;
   navigate("messages");
 });
+// Levi ends a reply with an invisible [[NAV:view|param=value]] tag when it
+// wants to offer taking the person somewhere — this splits that off from
+// the text that actually gets displayed/spoken/re-sent as history.
+const AI_NAV_TAG_RE = /\[\[NAV:([a-zA-Z]+)((?:\|[a-zA-Z]+=[^|\]]+)*)\]\]\s*$/;
+function parseAiNavTag(content) {
+  const m = AI_NAV_TAG_RE.exec(String(content || "").trim());
+  if (!m) return { text: content, nav: null };
+  const params = {};
+  (m[2] || "").split("|").filter(Boolean).forEach((pair) => {
+    const eq = pair.indexOf("=");
+    if (eq > 0) params[pair.slice(0, eq)] = pair.slice(eq + 1);
+  });
+  return { text: content.slice(0, m.index).trim(), nav: { view: m[1], params } };
+}
+function goToAiChatNav(nav) {
+  toggleAiChat();
+  if (nav.view === "settings") { toggleSettingsPanel(); return; }
+  navigate(nav.view, nav.params);
+}
 function appendAiChatMessage(role, content) {
-  if (role !== "typing") aiChatMessages.push({ role, content });
+  let displayText = content;
+  let nav = null;
+  if (role === "assistant") {
+    const parsed = parseAiNavTag(content);
+    displayText = parsed.text;
+    nav = parsed.nav;
+  }
+  if (role !== "typing") aiChatMessages.push({ role, content: displayText });
   const wrap = byId("aiChatMessages");
   const el = document.createElement("div");
   el.className = `ai-chat-msg ${role === "typing" ? "assistant" : role}`;
   if (role === "typing") { el.id = "aiChatTyping"; el.innerHTML = `<i class="fa-solid fa-ellipsis" style="opacity:.6;"></i>`; }
-  else el.textContent = content;
+  else {
+    el.textContent = displayText;
+    if (role === "assistant" && "speechSynthesis" in window) {
+      const speakBtn = document.createElement("button");
+      speakBtn.className = "ai-chat-msg-speak";
+      speakBtn.title = "Read aloud";
+      speakBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+      speakBtn.onclick = () => speakAiChatMessage(displayText, speakBtn);
+      el.appendChild(speakBtn);
+    }
+    if (nav) {
+      const navBtn = document.createElement("button");
+      navBtn.className = "ai-chat-nav-btn";
+      navBtn.innerHTML = `<i class="fa-solid fa-arrow-right"></i> Take me there`;
+      navBtn.onclick = () => goToAiChatNav(nav);
+      el.appendChild(document.createElement("br"));
+      el.appendChild(navBtn);
+    }
+  }
   wrap.appendChild(el);
   wrap.scrollTop = wrap.scrollHeight;
+}
+function speakAiChatMessage(text, btn) {
+  if (!("speechSynthesis" in window)) return;
+  const wasSpeakingThis = btn.classList.contains("speaking");
+  speechSynthesis.cancel();
+  document.querySelectorAll(".ai-chat-msg-speak.speaking").forEach((b) => b.classList.remove("speaking"));
+  if (wasSpeakingThis) return; // clicking an already-speaking button stops it
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 1.02;
+  btn.classList.add("speaking");
+  utter.onend = utter.onerror = () => btn.classList.remove("speaking");
+  speechSynthesis.speak(utter);
+}
+
+// Tap-to-talk: fills the input from speech rather than auto-sending, so a
+// mis-heard word can be fixed before it goes anywhere. Feature-detected —
+// support (especially on iOS Safari) is inconsistent, so the mic button
+// stays hidden entirely rather than showing something that might not work.
+const AiSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let aiChatRecognizer = null;
+let aiChatListening = false;
+function initAiChatMic() {
+  const btn = byId("aiChatMicBtn");
+  if (btn && AiSpeechRecognition) btn.classList.remove("hidden");
+}
+function toggleAiChatMic() {
+  if (!AiSpeechRecognition) return;
+  const btn = byId("aiChatMicBtn");
+  if (aiChatListening) { aiChatRecognizer?.stop(); return; }
+  aiChatRecognizer = new AiSpeechRecognition();
+  aiChatRecognizer.lang = "en-NG";
+  aiChatRecognizer.interimResults = false;
+  aiChatRecognizer.maxAlternatives = 1;
+  aiChatRecognizer.onstart = () => { aiChatListening = true; btn.classList.add("listening"); };
+  aiChatRecognizer.onresult = (e) => {
+    const transcript = e.results?.[0]?.[0]?.transcript || "";
+    if (transcript) { byId("aiChatInput").value = transcript; byId("aiChatInput").focus(); }
+  };
+  aiChatRecognizer.onerror = (e) => {
+    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that — try again.", "error");
+  };
+  aiChatRecognizer.onend = () => { aiChatListening = false; btn.classList.remove("listening"); };
+  try { aiChatRecognizer.start(); } catch (e) { /* already running */ }
 }
 async function sendAiChatMessage() {
   const input = byId("aiChatInput");
@@ -5525,6 +5705,7 @@ window.addEventListener("popstate", (e) => {
   initTheme();
   initAccent();
   initSound();
+  initAiChatMic();
   setTimeout(hideSplashScreen, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1900);
   byId("footerYear").textContent = new Date().getFullYear();
   history.replaceState({ view: "home", params: {} }, "", location.pathname + location.search);
