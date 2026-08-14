@@ -17,7 +17,7 @@ const MODEL = "gemini-flash-latest";
 const FALLBACK_MODEL = "gemini-2.0-flash";
 const DAILY_MESSAGE_LIMIT = 40;
 const SYSTEM_PROMPT =
-  "You are Levromart Assistant, a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.";
+  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.";
 
 // Pulls a small, relevant slice of real marketplace data to ground the
 // model's answers in — without this it can only speak in generalities
@@ -67,6 +67,47 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
   return `LIVE MARKETPLACE DATA (as of right now):\nTop-rated verified vendors:\n${vendorLines.join("\n") || "(none yet)"}\n\nProducts/services matching this question:\n${productLines.join("\n") || "(no direct keyword matches — only use the vendor list above, and say so if nothing fits)"}`;
 }
 
+// Only runs (and only reveals anything) when the person chatting is
+// themselves a vendor — pulled with the service-role key because orders,
+// view counts and commission status aren't public data, unlike the
+// vendors/products snapshot above. Returns "" for buyers so the prompt
+// stays buyer-only and Levi never claims to have business data it wasn't
+// actually given.
+async function buildVendorContext(SUPABASE_URL, svcServiceHeaders, userId) {
+  const vRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/vendors?user_id=eq.${userId}&deleted_at=is.null&select=id,business_name,avg_rating,review_count,is_active,verification_status,commission_pct`,
+    { headers: svcServiceHeaders }
+  );
+  if (!vRes.ok) return "";
+  const [v] = await vRes.json();
+  if (!v) return "";
+
+  const [ordersRes, productsRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/orders?vendor_id=eq.${v.id}&select=status,total_amount`, { headers: svcServiceHeaders }),
+    fetch(`${SUPABASE_URL}/rest/v1/products?vendor_id=eq.${v.id}&select=id,view_count,status`, { headers: svcServiceHeaders }),
+  ]);
+  const orders = ordersRes.ok ? await ordersRes.json() : [];
+  const products = productsRes.ok ? await productsRes.json() : [];
+
+  const completed = (orders || []).filter((o) => o.status === "completed");
+  const pending = (orders || []).filter((o) => ["pending", "confirmed"].includes(o.status)).length;
+  const revenue = completed.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+  const activeListings = (products || []).filter((p) => p.status === "active").length;
+  const totalViews = (products || []).reduce((s, p) => s + (p.view_count || 0), 0);
+
+  const productIds = (products || []).map((p) => p.id);
+  let totalFavorites = 0;
+  if (productIds.length) {
+    const favRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/favorites?product_id=in.(${productIds.join(",")})&select=product_id`,
+      { headers: svcServiceHeaders }
+    );
+    totalFavorites = favRes.ok ? (await favRes.json()).length : 0;
+  }
+
+  return `\n\nYOUR STORE DATA (private — this is ${v.business_name}'s own numbers, not visible to anyone else):\n- Verification: ${v.verification_status}, storefront currently ${v.is_active ? "active" : "paused"}\n- Rating: ${Number(v.avg_rating || 0).toFixed(1)} out of 5, from ${v.review_count || 0} review(s)\n- Listings: ${activeListings} active out of ${products.length} total\n- Orders: ${orders.length} total — ${pending} pending/awaiting action, ${completed.length} completed\n- Revenue from completed orders: ₦${revenue.toLocaleString("en-NG")}\n- Product page views (all-time): ${totalViews}\n- Wishlist saves across your listings: ${totalFavorites}`;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   try {
@@ -107,13 +148,22 @@ module.exports = async function handler(req, res) {
       marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
     }
 
+    let vendorContext = "";
+    try {
+      const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+      const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+      vendorContext = await buildVendorContext(SUPABASE_URL, svcService, me.id);
+    } catch (e) {
+      vendorContext = "";
+    }
+
     const callGemini = (model) => fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
         headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}` }] },
+          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${vendorContext}` }] },
           contents,
           generationConfig: { maxOutputTokens: 400 },
         }),
