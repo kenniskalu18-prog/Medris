@@ -777,10 +777,14 @@
 <!-- Set new password (opened automatically from the emailed reset link) -->
 <div id="resetPasswordModal" class="modal hidden">
   <div class="modal-content" style="max-width:380px;">
-    <h3><i class="fa-solid fa-key"></i> Set a new password</h3>
+    <h3 id="resetPasswordTitle"><i class="fa-solid fa-key"></i> Set a new password</h3>
     <div id="resetPasswordError" class="error-text hidden"></div>
+    <div id="currentPasswordWrap" class="hidden">
+      <label>Current password</label>
+      <input type="password" id="currentPasswordInput" placeholder="Your current password" autocomplete="current-password" />
+    </div>
     <label>New password</label>
-    <input type="password" id="newPasswordInput" placeholder="New password (min 8 characters)" />
+    <input type="password" id="newPasswordInput" placeholder="New password (min 8 characters)" autocomplete="new-password" />
     <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
       <button class="btn btn-sm btn-outline hidden" id="resetPasswordCancel" onclick="closeChangePasswordModal()">Cancel</button>
       <button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
@@ -3738,13 +3742,13 @@ async function renderVendorEarnings() {
   vendorEarningsPeriod = "today";
 
   const { data: orders } = await sb.from("orders")
-    .select("id, total_amount, order_type, payout_released_at, items:order_items(quantity, unit_price, product:products(name))")
+    .select("id, total_amount, order_type, payout_released_at, items:order_items(quantity, unit_price, product:products(name)), payments(created_at, status)")
     .eq("vendor_id", v.id).eq("payout_status", "released").not("payout_released_at", "is", null)
     .order("payout_released_at", { ascending: false });
   window.__vendorEarningsOrders = orders || [];
 
   let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Earnings</h2>
-  <p class="muted">Orders where your split payment has actually landed in your bank account — use this to check what Levromart has paid you against your own records.</p>`;
+  <p class="muted">A running in-and-out ledger: when a buyer's payment came in, and when your cut actually went out to your bank — use this to check what Levromart has paid you against your own records.</p>`;
   html += `<div class="flex" style="flex-wrap:wrap;margin-bottom:1rem;" id="vendorEarningsTabs">
     ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="btn btn-sm ${p === "today" ? "" : "btn-outline"}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
   </div>`;
@@ -3781,16 +3785,27 @@ function renderVendorEarningsBody() {
     html += `<div class="category-group-header flex" style="justify-content:space-between;">
       <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th>Est. paid to you</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th>Est. paid to you</th></tr></thead><tbody>`;
     dayOrders.forEach((o) => {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
-      html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;"><td>${items}</td><td>${naira(o.total_amount)}</td><td>${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td></tr>`;
+      const paidTimestamps = (o.payments || []).filter((p) => p.status === "paid").map((p) => p.created_at).sort();
+      const buyerPaidAt = paidTimestamps[0];
+      html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
+        <td>${items}</td>
+        <td>${naira(o.total_amount)}</td>
+        <td>${buyerPaidAt ? esc(formatEarningsDateTime(buyerPaidAt)) : '<span class="muted">—</span>'}</td>
+        <td>${esc(formatEarningsDateTime(o.payout_released_at))}</td>
+        <td>${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
+      </tr>`;
     });
     html += `</tbody></table></div>`;
   });
 
   html += `<p class="muted" style="font-size:0.82rem;margin-top:0.6rem;">"Est. paid to you" is your order total minus Levromart's ${commissionPct}% commission. It's an estimate — it doesn't subtract Paystack's own processing fee, so the amount that actually lands in your bank may be a little lower.</p>`;
   body.innerHTML = html;
+}
+function formatEarningsDateTime(dateStr) {
+  return new Date(dateStr).toLocaleString("en-NG", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 // ---------- VENDOR: EDIT PROFILE ----------
@@ -5782,6 +5797,9 @@ function renderRefundPolicy() {
 sb.auth.onAuthStateChange((_event) => {
   if (_event === "PASSWORD_RECOVERY") {
     hideLogin();
+    isVoluntaryPasswordChange = false;
+    byId("currentPasswordWrap").classList.add("hidden");
+    byId("resetPasswordTitle").innerHTML = '<i class="fa-solid fa-key"></i> Set a new password';
     byId("newPasswordInput").value = "";
     byId("resetPasswordError").classList.add("hidden");
     byId("resetPasswordModal").classList.remove("hidden");
@@ -5798,9 +5816,14 @@ sb.auth.onAuthStateChange((_event) => {
 // needed. Reuses the exact same modal/submit path as the forced
 // PASSWORD_RECOVERY flow above (same sb.auth.updateUser call), just adds a
 // Cancel button since this entry point isn't a "you must set one" moment.
+let isVoluntaryPasswordChange = false;
 function showChangePassword() {
+  isVoluntaryPasswordChange = true;
+  byId("currentPasswordInput").value = "";
   byId("newPasswordInput").value = "";
   byId("resetPasswordError").classList.add("hidden");
+  byId("currentPasswordWrap").classList.remove("hidden");
+  byId("resetPasswordTitle").innerHTML = '<i class="fa-solid fa-key"></i> Change password';
   byId("resetPasswordCancel").classList.remove("hidden");
   byId("resetPasswordModal").classList.remove("hidden");
   trackModalOpened("resetPasswordModal");
@@ -5817,9 +5840,21 @@ async function submitNewPassword() {
   const btn = byId("resetPasswordSubmit");
   btn.disabled = true;
   try {
+    // Voluntary changes (already logged in, from Settings) must prove they
+    // know the current password first — re-authenticating with it is the
+    // standard way to do that with Supabase Auth, since there's no separate
+    // "verify password" call. The forced PASSWORD_RECOVERY flow (from the
+    // emailed reset link) skips this — the email link itself is the proof.
+    if (isVoluntaryPasswordChange) {
+      const currentPassword = byId("currentPasswordInput").value;
+      if (!currentPassword) { errorEl.textContent = "Enter your current password."; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
+      const { error: reauthError } = await sb.auth.signInWithPassword({ email: session.user.email, password: currentPassword });
+      if (reauthError) { errorEl.textContent = "Current password is incorrect."; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
+    }
     const { error } = await sb.auth.updateUser({ password });
     if (error) throw error;
     byId("resetPasswordModal").classList.add("hidden");
+    isVoluntaryPasswordChange = false;
     showToast("Password updated. You're logged in.", "success");
     await refreshAuthStateOnce();
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
