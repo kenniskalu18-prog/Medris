@@ -30,6 +30,7 @@
     --danger: #ef4444;
     --warning: #f59e0b;
     --success: #16a34a;
+    --info: #3b82f6;
     --glass-bg: rgba(255,255,255,0.72);
     --glass-border: rgba(255,255,255,0.4);
     --shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -162,6 +163,7 @@
   .badge.success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
   .badge.warning { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
   .badge.danger { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+  .badge.info { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
   .banner { border-radius: 0.9rem; padding: 1rem 1.2rem; margin-bottom: 1rem; border: 1px solid; color: var(--text); }
   .banner-success { background: color-mix(in srgb, var(--success) 16%, var(--card)); border-color: color-mix(in srgb, var(--success) 35%, var(--card)); }
   .banner-warning { background: color-mix(in srgb, var(--warning) 16%, var(--card)); border-color: color-mix(in srgb, var(--warning) 35%, var(--card)); }
@@ -360,9 +362,11 @@
   .modern-chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.1rem 1rem 0.8rem; }
   .modern-chart-total { font-size: 1.4rem; font-weight: 700; }
   .modern-chart-svg { width: 100%; height: 150px; margin: 0.7rem 0 0.3rem; overflow: visible; }
-  .modern-chart-line { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent)); }
-  .chart-dot { fill: var(--card); stroke: var(--primary); stroke-width: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--primary) 60%, transparent)); cursor: pointer; }
-  .chart-dot:hover, .chart-dot.active { fill: var(--primary); r: 2.4; }
+  .modern-chart-line { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent)); transition: stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1); }
+  .modern-chart-area { opacity: 0; transition: opacity 0.8s ease 0.5s; }
+  .chart-dot { fill: var(--card); stroke: var(--primary); stroke-width: 0.9; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--primary) 50%, transparent)); cursor: pointer; opacity: 0; transition: opacity 0.4s ease, r 0.15s ease; }
+  .chart-dot:hover, .chart-dot.active { fill: var(--primary); r: 2.2; }
+  @media (prefers-reduced-motion: reduce) { .modern-chart-line, .modern-chart-area, .chart-dot { transition: none; opacity: 1; } }
   .modern-chart-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-muted); }
   .modern-chart-tooltip { font-size: 0.78rem; text-align: center; margin-top: 0.3rem; min-height: 1.1rem; color: var(--primary); font-weight: 600; }
   .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
@@ -471,6 +475,8 @@
   .chat-bubble.mine { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.25rem; }
   .chat-bubble.theirs { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); border-bottom-left-radius: 0.25rem; }
   .chat-bubble .chat-time { display: block; font-size: 0.68rem; opacity: 0.75; margin-top: 0.2rem; }
+  .chat-tick { margin-left: 0.35rem; font-size: 0.7rem; }
+  .chat-tick.read { color: #53bdeb; }
   .chat-input-row { display: flex; gap: 0.5rem; padding: 0.7rem; border-top: 1px solid var(--border); }
   .chat-input-row input { margin: 0; flex: 1; }
   .chat-input-row .btn { flex-shrink: 0; }
@@ -1450,6 +1456,13 @@ async function refreshNotifications() {
   const { data: convs } = await sb.rpc("list_my_conversations");
   unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
 
+  // Every message sent to me that I haven't already "received" (i.e. my
+  // client has now synced it, whether or not I've actually opened that
+  // conversation) flips from single check to double check for the sender —
+  // this runs on basically every app refresh, so it fires the moment I'm
+  // back online, same idea as WhatsApp's grey double-tick.
+  sb.from("messages").update({ delivered_at: new Date().toISOString() }).is("delivered_at", null).neq("sender_id", session.user.id).then(() => {});
+
   renderBottomNav();
 
   if (byId("notifPanel")) await renderNotifPanel();
@@ -1728,6 +1741,7 @@ function updateAuthUI() {
       links.push({ label: "<i class='fa-solid fa-hand'></i> Request an item", action: "navigate('requestEquipment')" });
     }
     if (profile.role !== "admin") {
+      links.push({ label: "<i class='fa-solid fa-id-card'></i> My details", action: "navigate('editProfile')" });
       links.push({ label: "<i class='fa-solid fa-comment-dots'></i> Messages", action: "navigate('messages')" });
       links.push({ label: "<i class='fa-solid fa-heart'></i> Wishlist", action: "navigate('wishlist')" });
     }
@@ -1745,7 +1759,7 @@ function updateAuthUI() {
           <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
           <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
         </div>
-        <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${esc(profile.role)}</span></div>
+        <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${profile.role === "admin" ? "admin" : vendor ? "vendor" : "buyer"}</span></div>
       </div>
       <div class="divider"></div>
       ${links.map((l) => `<a class="notif-item" onclick="closeAllPanels();${l.action};">${l.label}</a>`).join("")}
@@ -1775,6 +1789,44 @@ async function uploadAvatar(event) {
   profile.avatar_url = url;
   updateAuthUI();
   showToast("Profile photo updated.", "success");
+}
+
+// ---------- MY DETAILS (any logged-in buyer/vendor's own contact info) ----------
+function renderEditProfile() {
+  if (!session || !profile) return '<div class="empty-state">Please log in.</div>';
+  return `<h2><i class="fa-solid fa-id-card"></i> My details</h2>
+  <p class="muted">Keep this up to date — it's what fills in automatically at checkout, so a typo here won't follow you into every future order.</p>
+  <div class="card" style="max-width:480px;">
+    <div id="editProfileError" class="error-text hidden"></div>
+    <label>Full name</label>
+    <input type="text" id="epName" value="${esc(profile.name || "")}" />
+    <label>Phone number</label>
+    <input type="tel" id="epPhone" value="${esc(profile.phone || "")}" />
+    <label>City</label>
+    <input type="text" id="epCity" value="${esc(profile.city || "")}" />
+    <label>Delivery address</label>
+    <textarea id="epAddress" rows="2" placeholder="e.g. Elkanemi Hostel, Block A, Room A12">${esc(profile.address || "")}</textarea>
+    <button class="btn btn-sm" id="epSaveBtn" style="margin-top:0.8rem;width:100%;" onclick="submitEditProfile()"><i class="fa-solid fa-check"></i> Save changes</button>
+  </div>`;
+}
+async function submitEditProfile() {
+  const errorEl = byId("editProfileError");
+  errorEl.classList.add("hidden");
+  const name = byId("epName").value.trim();
+  if (!name) { errorEl.textContent = "Full name is required."; errorEl.classList.remove("hidden"); return; }
+  const btn = byId("epSaveBtn");
+  btn.disabled = true;
+  const { error } = await sb.from("users").update({
+    name,
+    phone: byId("epPhone").value.trim() || null,
+    city: byId("epCity").value.trim() || null,
+    address: byId("epAddress").value.trim() || null,
+  }).eq("id", session.user.id);
+  btn.disabled = false;
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  Object.assign(profile, { name, phone: byId("epPhone").value.trim() || null, city: byId("epCity").value.trim() || null, address: byId("epAddress").value.trim() || null });
+  updateAuthUI();
+  showToast("Details updated.", "success");
 }
 
 // ---------- BOTTOM NAV (mobile) ----------
@@ -2077,9 +2129,10 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorApply": app.innerHTML = await renderVendorApply(); break;
       case "vendorDashboard": app.innerHTML = await renderVendorDashboard(); break;
       case "vendorEditProfile": app.innerHTML = await renderVendorEditProfile(); break;
+      case "editProfile": app.innerHTML = renderEditProfile(); break;
       case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
       case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
-      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type); break;
+      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
       case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
       case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
       case "adminPanel": app.innerHTML = await renderAdminPanel(params.status); break;
@@ -2164,7 +2217,7 @@ async function renderHome() {
     <div class="hero-content">
       <div class="hero-search flex">
         <i class="fa-solid fa-magnifying-glass hero-search-icon"></i>
-        <input type="text" id="heroSearch" placeholder="Search products, services, or a vendor name…" oninput="syncHeroSearch()" onfocus="if(this.value.trim())fetchSearchSuggestions(this.value.trim())" onblur="setTimeout(hideSearchSuggestions,150)" autocomplete="off" />
+        <input type="text" id="heroSearch" placeholder="Search products, services, or a vendor name…" oninput="syncHeroSearch()" onfocus="if(this.value.trim())fetchSearchSuggestions(this.value.trim())" onblur="setTimeout(hideSearchSuggestions,150)" onkeydown="if(event.key==='Enter')submitHeroSearch();" autocomplete="off" />
         <div id="heroSearchSuggest" class="search-suggest hidden"></div>
       </div>
       <div class="hero-quick-actions">
@@ -2226,12 +2279,19 @@ function syncHeroSearch() {
   const val = byId("heroSearch").value;
   const target = byId("searchInput");
   if (target) { target.value = val; filterHomeProducts(); }
-  if (val) byId("browseSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // No auto-scroll here — the suggestions dropdown already shows matches
+  // right under the search bar as you type; jumping the whole page down on
+  // every keystroke was disorienting. Only Enter (submitHeroSearch) jumps
+  // to the full results, as a deliberate action.
 
   clearTimeout(searchSuggestTimer);
   const term = val.trim();
   if (!term) { hideSearchSuggestions(); return; }
   searchSuggestTimer = setTimeout(() => fetchSearchSuggestions(term), 220);
+}
+function submitHeroSearch() {
+  hideSearchSuggestions();
+  byId("browseSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function fetchSearchSuggestions(term) {
@@ -2475,7 +2535,7 @@ async function renderMessages(conversationId) {
 
   const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
 
-  sb.from("messages").update({ read_at: new Date().toISOString() })
+  sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() })
     .eq("conversation_id", conversationId).is("read_at", null).neq("sender_id", session.user.id)
     .then(() => refreshNotifications());
 
@@ -2498,10 +2558,19 @@ async function renderMessages(conversationId) {
   return html;
 }
 
+// Sent (single check) -> delivered, i.e. synced to the other person's
+// device (double check, gray) -> read, i.e. they actually opened this
+// conversation (double check, blue) — only shown on your own messages,
+// same as WhatsApp.
+function messageTicksHtml(m) {
+  if (m.read_at) return `<i class="fa-solid fa-check-double chat-tick read"></i>`;
+  if (m.delivered_at) return `<i class="fa-solid fa-check-double chat-tick"></i>`;
+  return `<i class="fa-solid fa-check chat-tick"></i>`;
+}
 function chatBubbleHtml(m) {
   const mine = m.sender_id === session.user.id;
   const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  return `<div class="chat-bubble ${mine ? "mine" : "theirs"}">${esc(m.body)}<span class="chat-time">${time}</span></div>`;
+  return `<div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}">${esc(m.body)}<span class="chat-time">${time}${mine ? messageTicksHtml(m) : ""}</span></div>`;
 }
 
 function scrollChatToBottom() {
@@ -2518,8 +2587,16 @@ function subscribeToConversation(conversationId) {
       if (payload.new.sender_id !== session.user.id) {
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
-        sb.from("messages").update({ read_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
+        sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
+    })
+    // Ticks on my own messages update live while I'm sitting in this
+    // conversation — I don't have to leave and come back to see the other
+    // person's double-check turn blue.
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+      if (activeConversationId !== conversationId || payload.new.sender_id !== session.user.id) return;
+      const bubble = document.querySelector(`.chat-bubble[data-msg-id="${payload.new.id}"] .chat-time`);
+      if (bubble) bubble.innerHTML = `${new Date(payload.new.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${messageTicksHtml(payload.new)}`;
     })
     .subscribe();
 }
@@ -2653,9 +2730,10 @@ function deliveryFieldsHtml(prefix, deliveryFee) {
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="hidden">
-      <input type="text" id="${prefix}Address" placeholder="Delivery address" />
-      <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" />
+      <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
+      <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
       ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
+      <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a> — it'll remember for next time.</p>
     </div>`;
 }
 function toggleDeliveryFields(prefix) {
@@ -3237,13 +3315,13 @@ async function renderVendorDashboard() {
     <button class="quick-action outline" onclick="navigate('storefront',{vendorId:'${v.id}'})"><span class="quick-action-icon"><i class='fa-solid fa-store'></i></span><span>Storefront</span></button>
     <button class="quick-action outline" onclick="toggleVendorActive(${v.is_active})"><span class="quick-action-icon"><i class='fa-solid fa-${v.is_active ? "pause" : "play"}'></i></span><span>${v.is_active ? "Pause" : "Resume"}</span></button>` : ""}
   </div>`;
-  html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;">
+  html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
     <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
     <div class="stat"><div class="n">${naira(revenue)}</div><div class="muted">Revenue (completed)</div></div>
     <div class="stat"><div class="n">${totalViews}</div><div class="muted">Product views</div></div>
     <div class="stat"><div class="n">${totalFavorites}</div><div class="muted">Wishlist saves</div></div>
   </div>`;
-  html += `<div id="vendorRevenueChartArea" style="max-width:700px;"></div>`;
+  html += `<div id="vendorRevenueChartArea" style="max-width:700px;margin-top:0.4rem;"></div>`;
 
   const recentCompleted = (orders || []).filter((o) => o.status === "completed");
   setTimeout(() => {
@@ -3910,29 +3988,49 @@ function orderCategory(order) {
   return "sale";
 }
 
-async function renderVendorOrders(status, type) {
+function isOrderPaid(o) {
+  return (o.payments || []).some((p) => (p.payment_type === "sale_price" || p.payment_type === "rental_fee") && p.status === "paid");
+}
+
+async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
   if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle(); vendor = v; }
   if (!vendor) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   status = ORDER_TABS.includes(status) ? status : "all";
   type = ORDER_TYPE_TABS.some((t) => t.value === type) ? type : "all";
+  payment = ["all", "paid", "unpaid"].includes(payment) ? payment : "all";
+  dateFrom = dateFrom || "";
+  dateTo = dateTo || "";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(product:products(is_service))").eq("vendor_id", vendor.id);
+  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(product:products(is_service)), payments(payment_type, status)").eq("vendor_id", vendor.id);
   if (status !== "all") query = query.eq("status", status);
+  if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
+  if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
   const { data: allOrders } = await query.order("created_at", { ascending: false });
-  const orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
+  let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
+  if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
 
-  // Two rows of tab pills (8 statuses + 4 types) wrapped into an unreadable
-  // jumble on narrow screens — two compact dropdowns say the same thing in
-  // a fraction of the space.
+  // Three rows of tab pills used to wrap into an unreadable jumble on
+  // narrow screens — compact dropdowns plus a date range say the same
+  // thing in a fraction of the space.
   let html = `<h2>Orders</h2>
   <div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
-    <select onchange="navigate('vendorOrders',{status:this.value,type:'${type}'})" style="flex:1;min-width:150px;">
+    <select onchange="navigate('vendorOrders',{status:this.value,type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
       ${ORDER_TABS.map((t) => `<option value="${t}" ${t === status ? "selected" : ""}>${t === "all" ? "All statuses" : esc(t.replace("_", " ").replace(/^./, (c) => c.toUpperCase()))}</option>`).join("")}
     </select>
-    <select onchange="navigate('vendorOrders',{status:'${status}',type:this.value})" style="flex:1;min-width:150px;">
+    <select onchange="navigate('vendorOrders',{status:'${status}',type:this.value,payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
       ${ORDER_TYPE_TABS.map((t) => `<option value="${t.value}" ${t.value === type ? "selected" : ""}>${t.value === "all" ? "All types" : esc(t.label)}</option>`).join("")}
     </select>
+    <select onchange="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:this.value,dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
+      <option value="all" ${payment === "all" ? "selected" : ""}>All payments</option>
+      <option value="paid" ${payment === "paid" ? "selected" : ""}>Paid</option>
+      <option value="unpaid" ${payment === "unpaid" ? "selected" : ""}>Not paid yet</option>
+    </select>
+  </div>
+  <div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0 0 0.8rem;align-items:center;">
+    <label style="margin:0;font-size:0.78rem;font-weight:400;">From <input type="date" value="${esc(dateFrom)}" onchange="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:this.value,dateTo:'${dateTo}'})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
+    <label style="margin:0;font-size:0.78rem;font-weight:400;">To <input type="date" value="${esc(dateTo)}" onchange="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:this.value})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
+    ${dateFrom || dateTo ? `<a href="#" onclick="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:'${payment}'});return false;">Clear dates</a>` : ""}
   </div>`;
   html += orderListHtml(sortOrdersForList(orders), false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
@@ -3952,7 +4050,8 @@ function orderStatusBadgeClass(status) {
   if (status === "cancelled" || status === "disputed") return "danger";
   if (status === "completed") return "success";
   if (status === "handed_over" || status === "returned") return "warning";
-  return "";
+  if (status === "confirmed") return "info";
+  return ""; // pending — plain accent color
 }
 
 // Pending orders need action, so they float to the top regardless of when
@@ -4076,19 +4175,20 @@ async function renderOrderDetail(orderId) {
   }
 
   if (canRecordPayment) {
-    html += `<div class="card"><h3><i class="fa-solid fa-hand-holding-dollar"></i> Offline payment (cash / bank transfer)</h3>
-      <p class="muted">Use this if the buyer paid you directly — outside Paystack — in cash or by bank transfer. It marks the order as paid and adds your commission to what you owe Levromart.</p>
+    html += `<div class="card"><h3><i class="fa-solid fa-hand-holding-dollar"></i> Paid outside Paystack?</h3>
+      <p class="muted" style="font-size:0.85rem;">Record cash or bank transfer payments here — it marks this order paid and adds your commission to what you owe Levromart.</p>
       <div id="recordPaymentError" class="error-text hidden"></div>
-      <div class="flex">
-        <select id="rpType"><option value="${feeType}">${feeType === "sale_price" ? "Sale price" : "Rental fee"}</option><option value="deposit">Deposit</option></select>
-        <input type="number" id="rpAmount" value="${feePaid ? order.deposit_amount : order.total_amount}" style="width:120px;" />
-        <select id="rpMethod"><option value="cash">Cash</option><option value="transfer">Transfer</option></select>
-        <button class="btn btn-sm" onclick="recordOfflinePayment('${order.id}')">Record offline payment received</button>
-      </div>
+      <label>Payment for</label>
+      <select id="rpType"><option value="${feeType}">${feeType === "sale_price" ? "Sale price" : "Rental fee"}</option><option value="deposit">Deposit</option></select>
+      <label>Amount</label>
+      <input type="number" id="rpAmount" value="${feePaid ? order.deposit_amount : order.total_amount}" />
+      <label>Method</label>
+      <select id="rpMethod"><option value="cash">Cash</option><option value="transfer">Transfer</option></select>
+      <button class="btn btn-sm" style="margin-top:0.8rem;width:100%;" onclick="recordOfflinePayment('${order.id}')"><i class="fa-solid fa-check"></i> Mark as paid</button>
     </div>`;
   }
 
-  html += `<div class="flex" style="margin-top:1rem;">${orderActionButtonsHtml(order, isBuyer, isVendor)}</div>`;
+  html += `<div class="flex" style="margin-top:1rem;">${orderActionButtonsHtml(order, isBuyer, isVendor, feePaid)}</div>`;
 
   if (isBuyer && order.status === "completed" && !order.review) {
     html += `<div class="card"><h3>Leave a review</h3>
@@ -4129,19 +4229,34 @@ async function renderOrderDetail(orderId) {
   return html;
 }
 
-function orderActionButtonsHtml(order, isBuyer, isVendor) {
+function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   const buttons = [];
   if (isVendor) {
     if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
-    if (order.status === "confirmed") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
+    // Can't hand over what hasn't been paid for yet — avoids a mismatch
+    // where the order's marked handed_over/completed but no payment ever
+    // actually came in.
+    if (order.status === "confirmed") {
+      if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
+      else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this can be marked handed over.</p>`);
+    }
     if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
   }
   if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
   if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
   // Only the buyer confirms completion — that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
-  if (isBuyer && order.status === "handed_over" && order.order_type === "sale") buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
-  if (isBuyer && order.status === "returned" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
+  // Also gated on feePaid for the same reason as the vendor's handover
+  // button — shouldn't be possible to complete an order that was never
+  // actually paid for.
+  if (isBuyer && order.status === "handed_over" && order.order_type === "sale") {
+    if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
+    else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
+  }
+  if (isBuyer && order.status === "returned" && order.order_type === "rental") {
+    if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
+    else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
+  }
   return buttons.join("");
 }
 
@@ -4730,7 +4845,7 @@ function buildRevenueChart(paidTxns, range, opts) {
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
   const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(2)},${H} L${points[0].x.toFixed(2)},${H} Z`;
   const gradId = `chartFill${Math.random().toString(36).slice(2, 8)}`;
-  const dotsSvg = points.map((p, i) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.6" class="chart-dot" data-i="${i}"></circle>`).join("");
+  const dotsSvg = points.map((p, i) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.1" class="chart-dot" data-i="${i}" style="transition-delay:${(0.5 + i * 0.04).toFixed(2)}s;"></circle>`).join("");
 
   wrap.innerHTML = `<div class="modern-chart-card">
     <div class="flex" style="justify-content:space-between;align-items:flex-start;">
@@ -4745,7 +4860,7 @@ function buildRevenueChart(paidTxns, range, opts) {
         <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.35"/>
         <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
       </linearGradient></defs>
-      <path d="${areaPath}" fill="url(#${gradId})" stroke="none"></path>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none" class="modern-chart-area"></path>
       <path d="${linePath}" fill="none" stroke="var(--primary)" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" class="modern-chart-line"></path>
       ${dotsSvg}
     </svg>
@@ -4762,6 +4877,20 @@ function buildRevenueChart(paidTxns, range, opts) {
       tooltip.textContent = `${p.b.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${naira(p.b.total)}`;
     });
   });
+
+  // Draw the line in from left to right, then fade in the area fill and
+  // dots behind it, instead of everything just appearing at once.
+  const lineEl = wrap.querySelector(".modern-chart-line");
+  if (lineEl) {
+    const len = lineEl.getTotalLength();
+    lineEl.style.strokeDasharray = `${len}`;
+    lineEl.style.strokeDashoffset = `${len}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { lineEl.style.strokeDashoffset = "0"; }));
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wrap.querySelector(".modern-chart-area")?.style.setProperty("opacity", "1");
+    wrap.querySelectorAll(".chart-dot").forEach((d) => { d.style.opacity = "1"; });
+  }));
   return wrap;
 }
 
