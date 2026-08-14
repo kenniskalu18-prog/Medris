@@ -851,9 +851,9 @@
 <div id="toastStack" class="toast-stack"></div>
 
 <!-- Floating, draggable AI chat -->
-<div id="aiChatFab" class="ai-chat-fab" title="Chat with Levromart Assistant"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
+<div id="aiChatFab" class="ai-chat-fab" title="Chat with Levi"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
 <div id="aiChatPanel" class="ai-chat-panel hidden">
-  <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levromart Assistant</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
   <div class="ai-chat-input-row">
     <input type="text" id="aiChatInput" placeholder="Ask about products, renting, buying…" onkeydown="if(event.key==='Enter')sendAiChatMessage();" />
@@ -997,7 +997,7 @@ const TOUR_SLIDES = [
   { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector icon on the home page — Healthcare, Food, Electronics, and more — to see only what's relevant to you." },
   { icon: "fa-rotate", title: "Rent, Buy, Sell, or Request", body: "The quick-action buttons at the top of Home take you straight into renting, buying, listing your own items, or requesting something you can't find." },
   { icon: "fa-compass", title: "Get around with the bottom bar", body: "Home, Vendors, Wishlist, Requests, and My Shop are always one tap away at the bottom of the screen." },
-  { icon: "fa-comments", title: "Ask the assistant", body: "Tap the floating chat bubble any time — it can help you find what you need or explain how anything on Levromart works." },
+  { icon: "fa-comments", title: "Meet Levi", body: "Tap the floating chat bubble any time to talk to Levi, your Levromart assistant — it can help you find what you need or explain how anything on the site works." },
   { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications to get pinged the moment you get an order, offer, or update — right on your device, on top of email." },
 ];
 let tourStep = 0;
@@ -1330,6 +1330,16 @@ const ACCENT_PALETTE = [
   { name: "Slate", base: "#334155", light: "#64748b" },
   { name: "Crimson", base: "#b91c1c", light: "#ef4444" },
   { name: "Cyan", base: "#0e7490", light: "#06b6d4" },
+  { name: "Forest Green", base: "#166534", light: "#22c55e" },
+  { name: "Sunset Orange", base: "#c2410c", light: "#fb923c" },
+  { name: "Magenta", base: "#a21caf", light: "#e879f9" },
+  { name: "Sky", base: "#0369a1", light: "#38bdf8" },
+  { name: "Lime", base: "#4d7c0f", light: "#a3e635" },
+  { name: "Coral", base: "#9d174d", light: "#fb7185" },
+  { name: "Violet", base: "#5b21b6", light: "#8b5cf6" },
+  { name: "Gold", base: "#a16207", light: "#eab308" },
+  { name: "Steel Blue", base: "#1e40af", light: "#60a5fa" },
+  { name: "Plum", base: "#86198f", light: "#d946ef" },
 ];
 let currentAccentIndex = 0;
 function lightenHex(hex, amt) {
@@ -3473,9 +3483,6 @@ async function renderVendorDashboard() {
   </div>`;
   html += `<div class="dash-actions">
     <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
-    ${v.verification_status === "verified" ? `
-    <button class="quick-action outline" onclick="navigate('storefront',{vendorId:'${v.id}'})"><span class="quick-action-icon"><i class='fa-solid fa-store'></i></span><span>Storefront</span></button>
-    <button class="quick-action outline" onclick="toggleVendorActive(${v.is_active})"><span class="quick-action-icon"><i class='fa-solid fa-${v.is_active ? "pause" : "play"}'></i></span><span>${v.is_active ? "Pause" : "Resume"}</span></button>` : ""}
   </div>`;
   html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
     <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
@@ -3517,6 +3524,11 @@ async function renderVendorEditProfile() {
     <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 3)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
     <div id="commissionError" class="error-text hidden"></div>
     <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
+  </div>` : ""}
+  ${v.verification_status === "verified" ? `
+  <div class="dash-actions" style="max-width:480px;margin:0 auto 1rem;">
+    <button class="quick-action outline" onclick="navigate('storefront',{vendorId:'${v.id}'})"><span class="quick-action-icon"><i class='fa-solid fa-store'></i></span><span>Storefront</span></button>
+    <button class="quick-action outline" onclick="toggleVendorActive(${v.is_active})"><span class="quick-action-icon"><i class='fa-solid fa-${v.is_active ? "pause" : "play"}'></i></span><span>${v.is_active ? "Pause" : "Resume"}</span></button>
   </div>` : ""}
   <div class="card" style="max-width:480px;margin:0 auto;">
     <h2>Edit business profile</h2>
@@ -5350,7 +5362,9 @@ function toggleAiChat() {
   if (!panel.classList.contains("hidden")) {
     playSound("open");
     if (aiChatMessages.length === 0) {
-      appendAiChatMessage("assistant", "Hi! I'm the Levromart Assistant. Ask me what you're looking for — healthcare equipment, food, electronics, and more — how renting, buying or requesting works, or anything else about the marketplace.");
+      appendAiChatMessage("assistant", vendor
+        ? "Hi, I'm Levi! Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart."
+        : "Hi, I'm Levi! Ask me what you're looking for — healthcare equipment, food, electronics, and more — how renting, buying or requesting works, or anything else about the marketplace.");
     }
     byId("aiChatInput").focus();
   }
