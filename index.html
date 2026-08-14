@@ -302,6 +302,10 @@
     50% { box-shadow: var(--shadow-float), 0 0 0 9px color-mix(in srgb, var(--primary) 16%, transparent); }
   }
   @media (prefers-reduced-motion: reduce) { .ai-chat-fab { animation: none; } }
+  .ai-chat-fab.directing { animation: fabPoint 0.65s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes fabPoint { 0% { transform: scale(1) rotate(0); } 35% { transform: scale(1.25) rotate(-14deg); } 65% { transform: scale(1.15) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
+  .ai-chat-fab-hand { font-size: 1.5rem; animation: fabPoint 0.65s cubic-bezier(.34,1.56,.64,1); }
+  @media (prefers-reduced-motion: reduce) { .ai-chat-fab.directing, .ai-chat-fab-hand { animation: none; } }
   .ai-chat-panel {
     position: fixed; right: 1.2rem; bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); width: min(360px, 90vw); height: min(500px, 68vh);
     background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -622,6 +626,14 @@
     <div class="accordion-body">
       <div id="settingsInstallRow" class="flex" style="justify-content:space-between;margin-bottom:0.6rem;"></div>
       <div id="settingsNotifRow" class="flex" style="justify-content:space-between;"></div>
+    </div>
+  </div>
+  <div class="accordion-section hidden" id="voiceSettingsSection">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-waveform-lines'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <div class="accordion-body">
+      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
+      <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
+      <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
     </div>
   </div>
   <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
@@ -5493,10 +5505,32 @@ function parseAiNavTag(content) {
 }
 function goToAiChatNav(nav) {
   toggleAiChat();
-  if (nav.view === "settings") { toggleSettingsPanel(); return; }
-  navigate(nav.view, nav.params);
+  animateAiFabPointing().then(() => {
+    if (nav.view === "settings") { toggleSettingsPanel(); return; }
+    navigate(nav.view, nav.params);
+  });
 }
-function appendAiChatMessage(role, content) {
+// A little flourish so tapping "Take me there" feels like Levi is
+// physically pointing the way rather than just silently redirecting.
+function animateAiFabPointing() {
+  return new Promise((resolve) => {
+    const fab = byId("aiChatFab");
+    const logo = byId("aiChatFabLogo");
+    if (!fab || !logo) { resolve(); return; }
+    fab.classList.add("directing");
+    logo.classList.add("hidden");
+    const hand = document.createElement("i");
+    hand.className = "fa-solid fa-hand-point-right ai-chat-fab-hand";
+    fab.appendChild(hand);
+    setTimeout(() => {
+      fab.classList.remove("directing");
+      hand.remove();
+      logo.classList.remove("hidden");
+      resolve();
+    }, 650);
+  });
+}
+function appendAiChatMessage(role, content, autoSpeak) {
   let displayText = content;
   let nav = null;
   if (role === "assistant") {
@@ -5518,6 +5552,7 @@ function appendAiChatMessage(role, content) {
       speakBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
       speakBtn.onclick = () => speakAiChatMessage(displayText, speakBtn);
       el.appendChild(speakBtn);
+      if (autoSpeak) speakAiChatMessage(displayText, speakBtn);
     }
     if (nav) {
       const navBtn = document.createElement("button");
@@ -5533,15 +5568,60 @@ function appendAiChatMessage(role, content) {
 }
 function speakAiChatMessage(text, btn) {
   if (!("speechSynthesis" in window)) return;
-  const wasSpeakingThis = btn.classList.contains("speaking");
+  const wasSpeakingThis = btn?.classList.contains("speaking");
   speechSynthesis.cancel();
   document.querySelectorAll(".ai-chat-msg-speak.speaking").forEach((b) => b.classList.remove("speaking"));
   if (wasSpeakingThis) return; // clicking an already-speaking button stops it
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 1.02;
-  btn.classList.add("speaking");
-  utter.onend = utter.onerror = () => btn.classList.remove("speaking");
+  const voice = getSelectedAiVoice();
+  if (voice) utter.voice = voice;
+  btn?.classList.add("speaking");
+  utter.onend = utter.onerror = () => btn?.classList.remove("speaking");
   speechSynthesis.speak(utter);
+}
+
+// Voices come from whatever's actually installed on the device/browser —
+// there's no way to make the built-in engine sound more human than that,
+// but picking a good default (network/"enhanced" voices tend to sound
+// noticeably less robotic than the compact on-device ones) and letting the
+// person pick their own gets closer than just taking the browser's default.
+let aiVoices = [];
+function pickDefaultAiVoice(voices) {
+  if (!voices.length) return null;
+  const scored = voices.map((v) => {
+    let score = 0;
+    if (!v.localService) score += 2; // network-backed voices are usually the higher-quality ones
+    if (/en-US|en_US/i.test(v.lang)) score += 1;
+    if (/Google|Natural|Enhanced|Premium/i.test(v.name)) score += 1;
+    return { v, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].v;
+}
+function getSelectedAiVoice() {
+  const uri = localStorage.getItem("levi-voice");
+  return aiVoices.find((v) => v.voiceURI === uri) || pickDefaultAiVoice(aiVoices);
+}
+function loadAiVoices() {
+  if (!("speechSynthesis" in window)) return;
+  aiVoices = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("en"));
+  if (!aiVoices.length) return;
+  byId("voiceSettingsSection")?.classList.remove("hidden");
+  const saved = localStorage.getItem("levi-voice");
+  if (!saved || !aiVoices.some((v) => v.voiceURI === saved)) {
+    const def = pickDefaultAiVoice(aiVoices);
+    if (def) localStorage.setItem("levi-voice", def.voiceURI);
+  }
+  const activeURI = localStorage.getItem("levi-voice");
+  const sel = byId("voiceSelect");
+  if (sel) sel.innerHTML = aiVoices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+}
+function setAiVoice(uri) { localStorage.setItem("levi-voice", uri); }
+function previewAiVoice() { speakAiChatMessage("Hi, I'm Levi. This is what I sound like.", null); }
+if ("speechSynthesis" in window) {
+  loadAiVoices();
+  speechSynthesis.onvoiceschanged = loadAiVoices;
 }
 
 // Tap-to-talk: fills the input from speech rather than auto-sending, so a
@@ -5551,6 +5631,10 @@ function speakAiChatMessage(text, btn) {
 const AiSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let aiChatRecognizer = null;
 let aiChatListening = false;
+// Talked to Levi instead of typing? Its reply reads itself aloud
+// automatically, same as a real conversation — typed messages stay
+// text-only unless the speaker icon is tapped manually.
+let aiChatLastInputVoice = false;
 function initAiChatMic() {
   const btn = byId("aiChatMicBtn");
   if (btn && AiSpeechRecognition) btn.classList.remove("hidden");
@@ -5566,7 +5650,7 @@ function toggleAiChatMic() {
   aiChatRecognizer.onstart = () => { aiChatListening = true; btn.classList.add("listening"); };
   aiChatRecognizer.onresult = (e) => {
     const transcript = e.results?.[0]?.[0]?.transcript || "";
-    if (transcript) { byId("aiChatInput").value = transcript; byId("aiChatInput").focus(); }
+    if (transcript) { byId("aiChatInput").value = transcript; byId("aiChatInput").focus(); aiChatLastInputVoice = true; }
   };
   aiChatRecognizer.onerror = (e) => {
     if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that — try again.", "error");
@@ -5577,6 +5661,8 @@ function toggleAiChatMic() {
 async function sendAiChatMessage() {
   const input = byId("aiChatInput");
   const text = input.value.trim();
+  const wasVoice = aiChatLastInputVoice;
+  aiChatLastInputVoice = false;
   if (!text) return;
   input.value = "";
   appendAiChatMessage("user", text);
@@ -5590,7 +5676,7 @@ async function sendAiChatMessage() {
     const json = await res.json();
     byId("aiChatTyping")?.remove();
     if (!res.ok) throw new Error(json.error || "AI service unavailable.");
-    appendAiChatMessage("assistant", json.reply);
+    appendAiChatMessage("assistant", json.reply, wasVoice);
     playSound("notify");
   } catch (err) {
     byId("aiChatTyping")?.remove();
