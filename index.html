@@ -814,6 +814,8 @@
     <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;"><input type="checkbox" id="prodIsService" onchange="updateProductFormFields()" style="width:auto;margin:0;" /> This is a service, not a physical product (e.g. hairdressing, baking, repairs)</label>
     <label>Description</label>
     <textarea id="prodDesc" placeholder="Description" rows="2"></textarea>
+    <label>Sector</label>
+    <select id="prodSector" onchange="loadProdCategoriesForSector()"></select>
     <label>Category</label>
     <select id="prodCategory" onchange="toggleProdCategoryOther()"><option value="">Uncategorized</option></select>
     <input type="text" id="prodCategoryOther" class="hidden" placeholder="Name your category (e.g. Wound Care)" />
@@ -2412,6 +2414,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "editProfile": app.innerHTML = renderEditProfile(); break;
       case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
       case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
+      case "vendorEarnings": app.innerHTML = await renderVendorEarnings(); break;
       case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
       case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
       case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
@@ -2484,9 +2487,13 @@ async function renderHome() {
 
   const activeSector = sectors.find((s) => s.id === currentSectorId) || null;
 
-  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, view_count, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
+  // Filtered by the product's own category's sector, not the vendor's
+  // registered sector — a vendor can list across any sector now, so
+  // "browsing Fashion" should surface a Fashion product even from a
+  // vendor whose primary sector is Healthcare.
+  let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, view_count, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)")
     .eq("status", "active").eq("vendor.verification_status", "verified");
-  if (activeSector) vendorQuery = vendorQuery.eq("vendor.sector_id", activeSector.id);
+  if (activeSector) vendorQuery = vendorQuery.eq("category.sector_id", activeSector.id);
   let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, review_count, logo_url").eq("verification_status", "verified");
   if (activeSector) topVendorsQuery = topVendorsQuery.eq("sector_id", activeSector.id);
 
@@ -2617,7 +2624,7 @@ async function filterHomeProducts() {
 
   let query = sb
     .from("products")
-    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, sector_id, logo_url)")
+    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)")
     .eq("status", "active")
     .eq("vendor.verification_status", "verified");
 
@@ -2625,7 +2632,9 @@ async function filterHomeProducts() {
   if (listing === "rent") query = query.in("listing_type", ["rent", "both"]);
   if (listing === "sale") query = query.in("listing_type", ["sale", "both"]);
   if (catId) query = query.eq("category_id", catId);
-  if (currentSectorId) query = query.eq("vendor.sector_id", currentSectorId);
+  // Filtered by the product's own category's sector — a vendor can list
+  // across any sector, so this must not depend on vendor.sector_id.
+  if (currentSectorId) query = query.eq("category.sector_id", currentSectorId);
 
   const { data: products, error } = await query.order("created_at", { ascending: false });
   if (error || !products || products.length === 0) {
@@ -3675,6 +3684,7 @@ async function renderVendorDashboard() {
     <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
   </div>`;
   html += `<div class="dash-actions">
+    <button class="quick-action outline" onclick="navigate('vendorEarnings')"><span class="quick-action-icon"><i class='fa-solid fa-sack-dollar'></i></span><span>Earnings</span></button>
     <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
   </div>`;
   html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
@@ -3698,6 +3708,89 @@ async function toggleVendorActive(currentlyActive) {
   const { error } = await sb.from("vendors").update({ is_active: !currentlyActive }).eq("id", vendor.id);
   if (error) { showToast(error.message, "error"); return; }
   navigate("vendorDashboard");
+}
+
+// ---------- VENDOR: EARNINGS (payout history, so a vendor can verify
+// what Levromart has actually paid them against their own records) ----------
+let vendorEarningsPeriod = "today";
+const VENDOR_EARNINGS_PERIODS = { today: "Today", week: "This week", month: "This month", all: "All time" };
+function vendorEarningsNet(totalAmount, commissionPct) {
+  return Math.round(Number(totalAmount || 0) * (1 - commissionPct / 100));
+}
+function vendorEarningsInPeriod(dateStr, period) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (period === "today") return d.toDateString() === now.toDateString();
+  if (period === "week") {
+    const start = new Date(now);
+    start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    start.setHours(0, 0, 0, 0);
+    return d >= start;
+  }
+  if (period === "month") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  return true;
+}
+async function renderVendorEarnings() {
+  if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
+  const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
+  if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
+  vendor = v;
+  vendorEarningsPeriod = "today";
+
+  const { data: orders } = await sb.from("orders")
+    .select("id, total_amount, order_type, payout_released_at, items:order_items(quantity, unit_price, product:products(name))")
+    .eq("vendor_id", v.id).eq("payout_status", "released").not("payout_released_at", "is", null)
+    .order("payout_released_at", { ascending: false });
+  window.__vendorEarningsOrders = orders || [];
+
+  let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Earnings</h2>
+  <p class="muted">Orders where your split payment has actually landed in your bank account — use this to check what Levromart has paid you against your own records.</p>`;
+  html += `<div class="flex" style="flex-wrap:wrap;margin-bottom:1rem;" id="vendorEarningsTabs">
+    ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="btn btn-sm ${p === "today" ? "" : "btn-outline"}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
+  </div>`;
+  html += `<div id="vendorEarningsBody"></div>`;
+  setTimeout(renderVendorEarningsBody, 0);
+  return html;
+}
+function switchVendorEarningsPeriod(period) {
+  vendorEarningsPeriod = period;
+  document.querySelectorAll("#vendorEarningsTabs [data-earn-period]").forEach((btn) => btn.classList.toggle("btn-outline", btn.dataset.earnPeriod !== period));
+  renderVendorEarningsBody();
+}
+function renderVendorEarningsBody() {
+  const body = byId("vendorEarningsBody");
+  if (!body) return;
+  const all = window.__vendorEarningsOrders || [];
+  const filtered = all.filter((o) => vendorEarningsInPeriod(o.payout_released_at, vendorEarningsPeriod));
+  const commissionPct = Number(vendor.commission_pct ?? 3);
+
+  if (!filtered.length) { body.innerHTML = `<div class="empty-state">No payouts in this period yet.</div>`; return; }
+
+  const periodTotal = filtered.reduce((s, o) => s + vendorEarningsNet(o.total_amount, commissionPct), 0);
+  let html = `<div class="stat" style="max-width:280px;margin-bottom:1.2rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Estimated total paid to you (${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()})</div></div>`;
+
+  const byDate = new Map();
+  filtered.forEach((o) => {
+    const dateKey = new Date(o.payout_released_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey).push(o);
+  });
+
+  byDate.forEach((dayOrders, dateKey) => {
+    const dayTotal = dayOrders.reduce((s, o) => s + vendorEarningsNet(o.total_amount, commissionPct), 0);
+    html += `<div class="category-group-header flex" style="justify-content:space-between;">
+      <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
+    </div>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th>Est. paid to you</th></tr></thead><tbody>`;
+    dayOrders.forEach((o) => {
+      const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
+      html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;"><td>${items}</td><td>${naira(o.total_amount)}</td><td>${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  html += `<p class="muted" style="font-size:0.82rem;margin-top:0.6rem;">"Est. paid to you" is your order total minus Levromart's ${commissionPct}% commission. It's an estimate — it doesn't subtract Paystack's own processing fee, so the amount that actually lands in your bank may be a little lower.</p>`;
+  body.innerHTML = html;
 }
 
 // ---------- VENDOR: EDIT PROFILE ----------
@@ -3873,11 +3966,17 @@ async function renderVendorProducts() {
 
   const [{ data: products }, { data: orderItems }] = await Promise.all([
     sb.from("products").select("*, category:categories(name)").eq("vendor_id", v.id).order("created_at", { ascending: false }),
-    sb.from("order_items").select("product_id, quantity, unit_price, order:orders!inner(status, vendor_id)").eq("order.vendor_id", v.id).eq("order.status", "completed"),
+    sb.from("order_items").select("product_id, quantity, unit_price, order:orders!inner(status, vendor_id)").eq("order.vendor_id", v.id),
   ]);
   const favCounts = await Promise.all((products || []).map((p) => sb.rpc("get_favorite_count", { p_product_id: p.id })));
   const revenueByProduct = {};
-  (orderItems || []).forEach((oi) => { revenueByProduct[oi.product_id] = (revenueByProduct[oi.product_id] || 0) + oi.quantity * oi.unit_price; });
+  const pendingProductIds = new Set();
+  const PENDING_ORDER_STATUSES = new Set(["pending", "confirmed", "handed_over", "returned", "disputed"]);
+  (orderItems || []).forEach((oi) => {
+    if (oi.order?.status === "completed") revenueByProduct[oi.product_id] = (revenueByProduct[oi.product_id] || 0) + oi.quantity * oi.unit_price;
+    if (PENDING_ORDER_STATUSES.has(oi.order?.status)) pendingProductIds.add(oi.product_id);
+  });
+  window.__vendorPendingProductIds = pendingProductIds;
 
   let html = `<div class="flex" style="justify-content:space-between;">
     <h2>My Products</h2>
@@ -3933,16 +4032,19 @@ async function renderVendorProducts() {
     groups.get(catName).forEach((p) => {
       const img = p.photos?.[0];
       const favCount = favCounts[products.indexOf(p)]?.data ?? 0;
+      const hasPendingOrder = pendingProductIds.has(p.id);
       html += `<div class="card" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc(catName.toLowerCase())}">
         <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
         <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
         <p class="muted">${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available · ${p.status}</p>
         <p class="muted" style="font-size:0.8rem;"><i class='fa-solid fa-eye'></i> ${p.view_count || 0} views · <i class='fa-solid fa-heart'></i> ${favCount} saved · <i class="fa-solid fa-sack-dollar"></i> ${naira(revenueByProduct[p.id] || 0)}</p>
+        ${hasPendingOrder ? `<p class="muted" style="font-size:0.8rem;color:var(--danger,#dc2626);"><i class="fa-solid fa-circle-exclamation"></i> Has a pending order — can't be removed until it's cleared</p>` : ""}
         <div class="flex">
           <button class="btn btn-sm" onclick="openEditProductModal('${p.id}')"><i class='fa-solid fa-pen'></i> Edit</button>
           ${p.status === "active" ? `<button class="btn btn-sm" style="background:#6b7280;" onclick="setProductStatus('${p.id}','paused')">Pause</button>` : ""}
           ${p.status === "paused" ? `<button class="btn btn-sm" onclick="setProductStatus('${p.id}','active')">Activate</button>` : ""}
-          ${p.status !== "removed" ? `<button class="btn btn-sm btn-danger" onclick="removeProduct('${p.id}')"><i class='fa-solid fa-trash'></i> Remove</button>` : ""}
+          ${p.status !== "removed" ? `<button class="btn btn-sm btn-danger" ${hasPendingOrder ? "disabled title=\"Can't remove — this product has a pending order\"" : ""} onclick="removeProduct('${p.id}')"><i class='fa-solid fa-trash'></i> Remove</button>` : ""}
+          ${p.status === "removed" ? `<button class="btn btn-sm btn-danger" onclick="deleteProductCompletely('${p.id}')"><i class='fa-solid fa-trash-can'></i> Delete completely</button>` : ""}
         </div>
       </div>`;
     });
@@ -3972,23 +4074,24 @@ async function openEditProductModal(productId) {
   await showProductModal();
 }
 
+// A vendor can list products under any sector, not just the one they
+// registered under (e.g. a mostly-healthcare vendor who also sells
+// clothing) — so the modal offers every sector's category tree, not just
+// vendor.sector_id's. The product's own category_id is all that's stored;
+// its "sector" is just whatever sector that category belongs to.
+let productModalCategories = [];
+let productModalSectors = [];
 async function showProductModal() {
-  const { data: categories } = await sb.from("categories").select("*").eq("sector_id", vendor.sector_id).order("name");
-  const select = byId("prodCategory");
-  select.innerHTML = '<option value="">Uncategorized</option>';
-  (categories || []).filter((c) => !c.parent_category_id).forEach((parent) => {
-    const group = document.createElement("optgroup");
-    group.label = parent.name;
-    categories.filter((c) => c.parent_category_id === parent.id).forEach((child) => {
-      const opt = document.createElement("option");
-      opt.value = child.id; opt.textContent = child.name;
-      group.appendChild(opt);
-    });
-    select.appendChild(group);
-  });
-  const otherOpt = document.createElement("option");
-  otherOpt.value = "__other__"; otherOpt.textContent = "＋ Other (not listed)";
-  select.appendChild(otherOpt);
+  const [{ data: categories }, { data: sectorsData }] = await Promise.all([
+    sb.from("categories").select("*").order("name"),
+    sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
+  ]);
+  productModalCategories = categories || [];
+  if (!sectors.length) sectors = sectorsData || [];
+  productModalSectors = sectors;
+
+  const sectorSelect = byId("prodSector");
+  sectorSelect.innerHTML = productModalSectors.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");
 
   byId("productError").classList.add("hidden");
   byId("prodExistingPhotos").innerHTML = "";
@@ -3998,12 +4101,12 @@ async function showProductModal() {
   byId("prodCategoryOther").classList.add("hidden");
   window.__existingPhotos = [];
 
+  let presetCategoryId = "";
   if (editingProductId) {
     const { data: p } = await sb.from("products").select("*").eq("id", editingProductId).single();
     byId("productModalTitle").textContent = "Edit Product";
     byId("prodName").value = p.name;
     byId("prodDesc").value = p.description || "";
-    byId("prodCategory").value = p.category_id || "";
     byId("prodCondition").value = p.condition;
     byId("prodListingType").value = p.listing_type;
     byId("prodSalePrice").value = p.sale_price ?? "";
@@ -4015,6 +4118,9 @@ async function showProductModal() {
     byId("prodServiceUnit").value = p.service_price_unit || "flat";
     window.__existingPhotos = p.photos || [];
     renderExistingPhotos();
+    const currentCat = productModalCategories.find((c) => c.id === p.category_id);
+    sectorSelect.value = currentCat?.sector_id || vendor.sector_id || productModalSectors[0]?.id || "";
+    presetCategoryId = p.category_id || "";
   } else {
     byId("productModalTitle").textContent = "Add New Product";
     ["prodName", "prodDesc", "prodSalePrice", "prodRentalRate", "prodDeposit"].forEach((id) => (byId(id).value = ""));
@@ -4022,10 +4128,38 @@ async function showProductModal() {
     byId("prodListingType").value = "rent";
     byId("prodIsService").checked = false;
     byId("prodServiceUnit").value = "flat";
+    sectorSelect.value = vendor.sector_id || productModalSectors[0]?.id || "";
   }
+  // Fires the custom dropdown's own resync (see enhanceSelect) as well as
+  // the plain onchange="loadProdCategoriesForSector()" on the real select —
+  // the explicit call right after is what actually applies presetCategoryId.
+  sectorSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  loadProdCategoriesForSector(presetCategoryId);
   updateProductFormFields();
   byId("productModal").classList.remove("hidden");
   trackModalOpened("productModal");
+  enhanceSelectsIn(byId("productModal"));
+}
+function loadProdCategoriesForSector(presetCategoryId) {
+  const sectorId = byId("prodSector").value;
+  const select = byId("prodCategory");
+  const cats = productModalCategories.filter((c) => c.sector_id === sectorId);
+  select.innerHTML = '<option value="">Uncategorized</option>';
+  cats.filter((c) => !c.parent_category_id).forEach((parent) => {
+    const group = document.createElement("optgroup");
+    group.label = parent.name;
+    cats.filter((c) => c.parent_category_id === parent.id).forEach((child) => {
+      const opt = document.createElement("option");
+      opt.value = child.id; opt.textContent = child.name;
+      group.appendChild(opt);
+    });
+    select.appendChild(group);
+  });
+  const otherOpt = document.createElement("option");
+  otherOpt.value = "__other__"; otherOpt.textContent = "＋ Other (not listed)";
+  select.appendChild(otherOpt);
+  if (presetCategoryId) select.value = presetCategoryId;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function renderExistingPhotos() {
@@ -4128,13 +4262,14 @@ async function saveProduct() {
     if (category_id === "__other__") {
       const customName = byId("prodCategoryOther").value.trim();
       if (!customName) throw new Error("Type a name for the new category, or pick one from the list.");
-      const { data: otherParent } = await sb.from("categories").select("id").eq("sector_id", vendor.sector_id).is("parent_category_id", null).ilike("name", "Other").maybeSingle();
+      const chosenSectorId = byId("prodSector").value;
+      const { data: otherParent } = await sb.from("categories").select("id").eq("sector_id", chosenSectorId).is("parent_category_id", null).ilike("name", "Other").maybeSingle();
       const otherParentId = otherParent?.id;
       const { data: existingCat } = await sb.from("categories").select("id").eq("parent_category_id", otherParentId).ilike("name", customName).maybeSingle();
       if (existingCat) {
         category_id = existingCat.id;
       } else {
-        const { data: newCat, error: catErr } = await sb.from("categories").insert({ name: customName, parent_category_id: otherParentId, sector_id: vendor.sector_id }).select("id").single();
+        const { data: newCat, error: catErr } = await sb.from("categories").insert({ name: customName, parent_category_id: otherParentId, sector_id: chosenSectorId }).select("id").single();
         if (catErr) throw new Error(`Couldn't create that category: ${catErr.message}`);
         category_id = newCat.id;
       }
@@ -4194,7 +4329,25 @@ async function setProductStatus(id, status) {
   navigate("vendorProducts");
 }
 async function removeProduct(id) {
+  if ((window.__vendorPendingProductIds || new Set()).has(id)) {
+    showToast("This product has a pending order — it can't be removed until that order is cleared (completed, returned, or cancelled).", "error");
+    return;
+  }
   if (await showConfirmDialog("Remove this listing? It will no longer be visible to buyers.", { title: "Remove listing", okLabel: "Remove", danger: true })) setProductStatus(id, "removed");
+}
+async function deleteProductCompletely(id) {
+  if ((window.__vendorPendingProductIds || new Set()).has(id)) {
+    showToast("This product has a pending order — it can't be deleted until that order is cleared.", "error");
+    return;
+  }
+  if (!(await showConfirmDialog("Delete this product completely? This can't be undone.", { title: "Delete completely", okLabel: "Delete", danger: true }))) return;
+  const { error } = await sb.from("products").delete().eq("id", id).eq("vendor_id", vendor.id);
+  if (error) {
+    showToast("Couldn't fully delete this — it has past order history on record, so it stays hidden as a removed listing instead.", "error");
+    return;
+  }
+  showToast("Product deleted.", "success");
+  navigate("vendorProducts");
 }
 
 // ---------- VENDOR PACKAGES (bundle deals, e.g. an "Outreach Kit") ----------
