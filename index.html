@@ -1,18 +1,22 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>Levromart</title>
-<meta name="description" content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more.">
-<link id="faviconLink" rel="icon" type="image/webp" href="">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0e8f7f">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Levromart">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more." name="description"/>
+<link href="" id="faviconLink" rel="icon" type="image/webp"/>
+<link href="/manifest.json" rel="manifest"/>
+<meta content="#0e8f7f" name="theme-color"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Levromart" name="apple-mobile-web-app-title"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -598,367 +602,344 @@
 </head>
 <body>
 <div id="splashScreen">
-  <div class="splash-stack">
-    <img id="splashCircle" class="splash-layer splash-circle" alt="" />
-    <img id="splashLeft" class="splash-layer splash-left" alt="" />
-    <img id="splashRight" class="splash-layer splash-right" alt="" />
-  </div>
+<div class="splash-stack">
+<img alt="" class="splash-layer splash-circle" id="splashCircle"/>
+<img alt="" class="splash-layer splash-left" id="splashLeft"/>
+<img alt="" class="splash-layer splash-right" id="splashRight"/>
+</div>
 </div>
 <header>
-  <div class="header-left">
-    <div class="icon-wrap" id="profileWrap">
-      <button class="icon-btn avatar-btn hidden" id="avatarBtn" onclick="toggleProfilePanel()" title="Profile"></button>
-      <button class="icon-btn" id="loginBtn" onclick="showLogin()" title="Login / Register"><i class='fa-solid fa-user'></i></button>
-    </div>
-    <h1 onclick="navigate('home')"><span class="brand-logo-stack"><img id="brandLogoLeft" class="brand-logo-layer" alt="" /><img id="brandLogoCircle" class="brand-logo-layer brand-logo-circle" alt="" /><img id="brandLogoRight" class="brand-logo-layer" alt="" /></span><span class="sr-only">Levromart</span></h1>
-  </div>
-  <div class="header-right">
-    <div class="icon-wrap hidden" id="notifWrap">
-      <button class="icon-btn" onclick="toggleNotifPanel()" title="Notifications"><i class='fa-solid fa-bell'></i><span id="notifDot" class="notif-dot hidden">0</span></button>
-    </div>
-    <div class="icon-wrap">
-      <button class="icon-btn" onclick="toggleSettingsPanel()" title="Settings"><i class='fa-solid fa-gear'></i></button>
-    </div>
-  </div>
+<div class="header-left">
+<div class="icon-wrap" id="profileWrap">
+<button class="icon-btn avatar-btn hidden" id="avatarBtn" onclick="toggleProfilePanel()" title="Profile"></button>
+<button class="icon-btn" id="loginBtn" onclick="showLogin()" title="Login / Register"><i class="fa-solid fa-user"></i></button>
+</div>
+<h1 onclick="navigate('home')"><span class="brand-logo-stack"><img alt="" class="brand-logo-layer" id="brandLogoLeft"/><img alt="" class="brand-logo-layer brand-logo-circle" id="brandLogoCircle"/><img alt="" class="brand-logo-layer" id="brandLogoRight"/></span><span class="sr-only">Levromart</span></h1>
+</div>
+<div class="header-right">
+<div class="icon-wrap hidden" id="notifWrap">
+<button class="icon-btn" onclick="toggleNotifPanel()" title="Notifications"><i class="fa-solid fa-bell"></i><span class="notif-dot hidden" id="notifDot">0</span></button>
+</div>
+<div class="icon-wrap">
+<button class="icon-btn" onclick="toggleSettingsPanel()" title="Settings"><i class="fa-solid fa-gear"></i></button>
+</div>
+</div>
 </header>
-
 <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeAllPanels()"></div>
 <div class="side-drawer right" id="notifPanel"></div>
 <div class="side-drawer right" id="settingsPanel">
-  <div class="drawer-header"><h4>Settings</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
-  <div class="accordion-section">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-palette'></i> Appearance</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <div class="theme-option" data-theme-choice="light" onclick="setTheme('light')"><i class='fa-solid fa-sun'></i> Light</div>
-      <div class="theme-option" data-theme-choice="dark" onclick="setTheme('dark')"><i class='fa-solid fa-moon'></i> Dark</div>
-      <div class="theme-option" data-theme-choice="black" onclick="setTheme('black')"><i class='fa-solid fa-circle'></i> Deep black</div>
-    </div>
-  </div>
-  <div class="accordion-section">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-fill-drip'></i> Accent color</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <div class="accent-swatches" id="accentSwatches"></div>
-    </div>
-  </div>
-  <div class="accordion-section">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-mobile-screen-button'></i> App &amp; notifications</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <div id="settingsInstallRow" class="flex" style="justify-content:space-between;margin-bottom:0.6rem;"></div>
-      <div id="settingsNotifRow" class="flex" style="justify-content:space-between;"></div>
-    </div>
-  </div>
-  <div class="accordion-section hidden" id="voiceSettingsSection">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-volume-high'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
-      <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
-      <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
-    </div>
-  </div>
-  <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
-  <div class="accordion-section hidden" id="changePasswordSection">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-key'></i> Security</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <button class="btn btn-sm btn-outline" style="width:100%;" onclick="showChangePassword()"><i class="fa-solid fa-key"></i> Change password</button>
-    </div>
-  </div>
-  <div class="accordion-section hidden" id="accountDangerSection">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark' style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);filter:drop-shadow(0 0 5px color-mix(in srgb, var(--danger) 30%, transparent));"></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
-    <div class="accordion-body">
-      <p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently deletes your profile and signs you out everywhere. Blocked if you have orders still in progress or commission owed.</p>
-      <button class="btn btn-sm btn-danger" onclick="startDeleteAccount()">Delete my account</button>
-    </div>
-  </div>
+<div class="drawer-header"><h4>Settings</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="accordion-section">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-palette"></i> Appearance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<div class="theme-option" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i> Light</div>
+<div class="theme-option" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i> Dark</div>
+<div class="theme-option" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i> Deep black</div>
+</div>
+</div>
+<div class="accordion-section">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-fill-drip"></i> Accent color</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<div class="accent-swatches" id="accentSwatches"></div>
+</div>
+</div>
+<div class="accordion-section">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-mobile-screen-button"></i> App &amp; notifications</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<div class="flex" id="settingsInstallRow" style="justify-content:space-between;margin-bottom:0.6rem;"></div>
+<div class="flex" id="settingsNotifRow" style="justify-content:space-between;"></div>
+</div>
+</div>
+<div class="accordion-section hidden" id="voiceSettingsSection">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-volume-high"></i> Levi's voice</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
+<select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
+<button class="btn btn-sm btn-outline" onclick="previewAiVoice()" style="margin-top:0.6rem;width:100%;"><i class="fa-solid fa-play"></i> Preview voice</button>
+</div>
+</div>
+<div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
+<div class="accordion-section hidden" id="changePasswordSection">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-key"></i> Security</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<button class="btn btn-sm btn-outline" onclick="showChangePassword()" style="width:100%;"><i class="fa-solid fa-key"></i> Change password</button>
+</div>
+</div>
+<div class="accordion-section hidden" id="accountDangerSection">
+<button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-user-xmark" style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);filter:drop-shadow(0 0 5px color-mix(in srgb, var(--danger) 30%, transparent));"></i> Account</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+<div class="accordion-body">
+<p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently deletes your profile and signs you out everywhere. Blocked if you have orders still in progress or commission owed.</p>
+<button class="btn btn-sm btn-danger" onclick="startDeleteAccount()">Delete my account</button>
+</div>
+</div>
 </div>
 <div class="side-drawer left" id="profilePanel"></div>
-
-<div id="deleteAccountModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete your account?</h3>
-    <p class="muted" style="margin:0.6rem 0;">This can't be undone. Confirm your password to continue.</p>
-    <input type="password" id="deleteAccountPassword" placeholder="Your password" autocomplete="off" />
-    <p id="deleteAccountError" class="error-text hidden"></p>
-    <div class="flex" style="justify-content:flex-end;">
-      <button class="btn btn-sm" style="background:#6b7280;" onclick="byId('deleteAccountModal').classList.add('hidden')">Cancel</button>
-      <button class="btn btn-sm btn-danger" id="deleteAccountConfirmBtn" onclick="confirmDeleteAccount()">Delete permanently</button>
-    </div>
-  </div>
+<div class="modal hidden" id="deleteAccountModal">
+<div class="modal-content" style="max-width:380px;">
+<h3><i class="fa-solid fa-triangle-exclamation"></i> Delete your account?</h3>
+<p class="muted" style="margin:0.6rem 0;">This can't be undone. Confirm your password to continue.</p>
+<input autocomplete="off" id="deleteAccountPassword" placeholder="Your password" type="password"/>
+<p class="error-text hidden" id="deleteAccountError"></p>
+<div class="flex" style="justify-content:flex-end;">
+<button class="btn btn-sm" onclick="byId('deleteAccountModal').classList.add('hidden')" style="background:#6b7280;">Cancel</button>
+<button class="btn btn-sm btn-danger" id="deleteAccountConfirmBtn" onclick="confirmDeleteAccount()">Delete permanently</button>
 </div>
-
+</div>
+</div>
 <div class="container" id="app"><p class="muted">Loading…</p></div>
-
 <footer class="site-footer">
-  <a href="#" onclick="navigate('terms');return false;">Terms of Service</a>
-  <a href="#" onclick="navigate('privacy');return false;">Privacy Policy</a>
-  <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation</a>
-  <span class="muted" style="font-size:0.78rem;">© <span id="footerYear"></span> Levromart</span>
+<a href="#" onclick="navigate('terms');return false;">Terms of Service</a>
+<a href="#" onclick="navigate('privacy');return false;">Privacy Policy</a>
+<a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation</a>
+<span class="muted" style="font-size:0.78rem;">© <span id="footerYear"></span> Levromart</span>
 </footer>
-
 <nav class="bottom-nav" id="bottomNav"></nav>
-
-<div id="installPromptModal" class="modal hidden">
-  <div class="modal-content install-modal-content">
-    <div class="install-modal-badge"><img id="installModalLogo" alt="" /></div>
-    <h3>Get the Levromart app</h3>
-    <p class="muted">Install it on your home screen for a faster, full-screen experience — even offline.</p>
-    <p id="installModalIosMsg" class="muted install-modal-ios hidden"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap the Share icon, then "Add to Home Screen".</p>
-    <div class="install-modal-actions">
-      <button class="btn btn-sm btn-outline" onclick="dismissInstallPrompt()">Not now</button>
-      <button class="btn" id="installModalActionBtn" onclick="runInstallPrompt()"><i class="fa-solid fa-arrow-down-to-line"></i> Install</button>
-    </div>
-  </div>
+<div class="modal hidden" id="installPromptModal">
+<div class="modal-content install-modal-content">
+<div class="install-modal-badge"><img alt="" id="installModalLogo"/></div>
+<h3>Get the Levromart app</h3>
+<p class="muted">Install it on your home screen for a faster, full-screen experience — even offline.</p>
+<p class="muted install-modal-ios hidden" id="installModalIosMsg"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap the Share icon, then "Add to Home Screen".</p>
+<div class="install-modal-actions">
+<button class="btn btn-sm btn-outline" onclick="dismissInstallPrompt()">Not now</button>
+<button class="btn" id="installModalActionBtn" onclick="runInstallPrompt()"><i class="fa-solid fa-arrow-down-to-line"></i> Install</button>
 </div>
-
-<div id="notifPromptModal" class="modal hidden">
-  <div class="modal-content install-modal-content">
-    <div class="install-modal-badge"><i class="fa-solid fa-bell" style="font-size:1.7rem;color:#fff;"></i></div>
-    <h3>Turn on notifications</h3>
-    <p class="muted">Get notified instantly on this device for new orders, offers, and updates — on top of email.</p>
-    <div class="install-modal-actions">
-      <button class="btn btn-sm btn-outline" onclick="dismissNotifPrompt()">Not now</button>
-      <button class="btn" onclick="enablePushNotifications()"><i class="fa-solid fa-bell"></i> Turn on</button>
-    </div>
-  </div>
 </div>
-
-<div id="tourModal" class="tour-spotlight-overlay hidden">
-  <div class="tour-spotlight-hole centered" id="tourSpotlightHole"></div>
-  <div class="install-modal-content tour-content tour-callout centered" id="tourCallout">
-    <div class="install-modal-badge"><i id="tourIcon" class="fa-solid fa-hand-sparkles" style="font-size:1.8rem;color:#fff;"></i></div>
-    <h3 id="tourTitle">Welcome to Levromart</h3>
-    <p class="muted" id="tourBody"></p>
-    <div class="tour-dots" id="tourDots"></div>
-    <div class="install-modal-actions">
-      <button class="btn btn-sm btn-outline hidden" id="tourBackBtn" onclick="tourBack()">Back</button>
-      <button class="btn" id="tourNextBtn" onclick="tourNext()">Next</button>
-    </div>
-    <button class="tour-skip" onclick="skipTour()">Skip tour</button>
-  </div>
 </div>
-
+<div class="modal hidden" id="notifPromptModal">
+<div class="modal-content install-modal-content">
+<div class="install-modal-badge"><i class="fa-solid fa-bell" style="font-size:1.7rem;color:#fff;"></i></div>
+<h3>Turn on notifications</h3>
+<p class="muted">Get notified instantly on this device for new orders, offers, and updates — on top of email.</p>
+<div class="install-modal-actions">
+<button class="btn btn-sm btn-outline" onclick="dismissNotifPrompt()">Not now</button>
+<button class="btn" onclick="enablePushNotifications()"><i class="fa-solid fa-bell"></i> Turn on</button>
+</div>
+</div>
+</div>
+<div class="tour-spotlight-overlay hidden" id="tourModal">
+<div class="tour-spotlight-hole centered" id="tourSpotlightHole"></div>
+<div class="install-modal-content tour-content tour-callout centered" id="tourCallout">
+<div class="install-modal-badge"><i class="fa-solid fa-hand-sparkles" id="tourIcon" style="font-size:1.8rem;color:#fff;"></i></div>
+<h3 id="tourTitle">Welcome to Levromart</h3>
+<p class="muted" id="tourBody"></p>
+<div class="tour-dots" id="tourDots"></div>
+<div class="install-modal-actions">
+<button class="btn btn-sm btn-outline hidden" id="tourBackBtn" onclick="tourBack()">Back</button>
+<button class="btn" id="tourNextBtn" onclick="tourNext()">Next</button>
+</div>
+<button class="tour-skip" onclick="skipTour()">Skip tour</button>
+</div>
+</div>
 <!-- Login / Signup Modal -->
-<div id="loginModal" class="modal hidden">
-  <div class="modal-content">
-    <img id="loginModalLogo" class="login-modal-logo" alt="Levromart" />
-    <h3 id="authModalTitle"><i class='fa-solid fa-right-to-bracket'></i> Welcome to Levromart</h3>
-    <div id="authError" class="error-text hidden"></div>
-
-    <div id="signupExtraFields" class="hidden">
-      <label>Full name</label>
-      <input type="text" id="loginName" placeholder="Full name" />
-      <label>I am a…</label>
-      <select id="loginRole">
-        <option value="buyer">Buyer (Student / Clinic / Health worker)</option>
-        <option value="vendor">Vendor (Equipment owner)</option>
-      </select>
-      <label>City</label>
-      <input type="text" id="loginCity" placeholder="City" value="Lagos" />
-      <label>Phone</label>
-      <input type="tel" id="loginPhone" placeholder="Phone" />
-    </div>
-
-    <label>Email</label>
-    <input type="email" id="loginEmail" placeholder="Email address" />
-    <div id="loginPasswordWrap">
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
-    </div>
-    <div id="confirmPasswordWrap" class="hidden">
-      <label>Confirm password</label>
-      <input type="password" id="loginPasswordConfirm" placeholder="Retype your password" />
-    </div>
-    <p id="forgotPasswordMsg" class="muted hidden" style="font-size:0.85rem;">We'll email you a link to set a new password.</p>
-    <p id="authAgreementMsg" class="muted hidden" style="font-size:0.78rem;">By creating an account you agree to Levromart's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
-
-    <div class="flex" style="justify-content: space-between; margin-top: 0.8rem;">
-      <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
-      <button class="btn btn-sm" style="background:#6b7280;" onclick="hideLogin()">Cancel</button>
-    </div>
-    <p style="font-size:0.85rem;margin-top:0.8rem;">
-      <a href="#" id="authToggleLink">Need an account? Register</a>
-    </p>
-    <p id="forgotPasswordLinkWrap" style="font-size:0.85rem;margin-top:0.3rem;">
-      <a href="#" onclick="setAuthMode('forgot');return false;" id="forgotPasswordLink">Forgot password?</a>
-    </p>
-  </div>
+<div class="modal hidden" id="loginModal">
+<div class="modal-content">
+<img alt="Levromart" class="login-modal-logo" id="loginModalLogo"/>
+<h3 id="authModalTitle"><i class="fa-solid fa-right-to-bracket"></i> Welcome to Levromart</h3>
+<div class="error-text hidden" id="authError"></div>
+<div class="hidden" id="signupExtraFields">
+<label>Full name</label>
+<input id="loginName" placeholder="Full name" type="text"/>
+<label>I am a…</label>
+<select id="loginRole">
+<option value="buyer">Buyer (Student / Clinic / Health worker)</option>
+<option value="vendor">Vendor (Equipment owner)</option>
+</select>
+<label>City</label>
+<input id="loginCity" placeholder="City" type="text" value="Lagos"/>
+<label>Phone</label>
+<input id="loginPhone" placeholder="Phone" type="tel"/>
 </div>
-
+<label>Email</label>
+<input id="loginEmail" placeholder="Email address" type="email"/>
+<div id="loginPasswordWrap">
+<label>Password</label>
+<input id="loginPassword" placeholder="Password (min 8 characters)" type="password"/>
+</div>
+<div class="hidden" id="confirmPasswordWrap">
+<label>Confirm password</label>
+<input id="loginPasswordConfirm" placeholder="Retype your password" type="password"/>
+</div>
+<p class="muted hidden" id="forgotPasswordMsg" style="font-size:0.85rem;">We'll email you a link to set a new password.</p>
+<p class="muted hidden" id="authAgreementMsg" style="font-size:0.78rem;">By creating an account you agree to Levromart's <a href="#" onclick="hideLogin();navigate('terms');return false;">Terms of Service</a> and <a href="#" onclick="hideLogin();navigate('privacy');return false;">Privacy Policy</a>.</p>
+<div class="flex" style="justify-content: space-between; margin-top: 0.8rem;">
+<button class="btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
+<button class="btn btn-sm" onclick="hideLogin()" style="background:#6b7280;">Cancel</button>
+</div>
+<p style="font-size:0.85rem;margin-top:0.8rem;">
+<a href="#" id="authToggleLink">Need an account? Register</a>
+</p>
+<p id="forgotPasswordLinkWrap" style="font-size:0.85rem;margin-top:0.3rem;">
+<a href="#" id="forgotPasswordLink" onclick="setAuthMode('forgot');return false;">Forgot password?</a>
+</p>
+</div>
+</div>
 <!-- Set new password (opened automatically from the emailed reset link) -->
-<div id="resetPasswordModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3 id="resetPasswordTitle"><i class="fa-solid fa-key"></i> Set a new password</h3>
-    <div id="resetPasswordError" class="error-text hidden"></div>
-    <div id="currentPasswordWrap" class="hidden">
-      <label>Current password</label>
-      <input type="password" id="currentPasswordInput" placeholder="Your current password" autocomplete="current-password" />
-    </div>
-    <label>New password</label>
-    <input type="password" id="newPasswordInput" placeholder="New password (min 8 characters)" autocomplete="new-password" />
-    <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
-      <button class="btn btn-sm btn-outline hidden" id="resetPasswordCancel" onclick="closeChangePasswordModal()">Cancel</button>
-      <button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
-    </div>
-  </div>
+<div class="modal hidden" id="resetPasswordModal">
+<div class="modal-content" style="max-width:380px;">
+<h3 id="resetPasswordTitle"><i class="fa-solid fa-key"></i> Set a new password</h3>
+<div class="error-text hidden" id="resetPasswordError"></div>
+<div class="hidden" id="currentPasswordWrap">
+<label>Current password</label>
+<input autocomplete="current-password" id="currentPasswordInput" placeholder="Your current password" type="password"/>
 </div>
-
+<label>New password</label>
+<input autocomplete="new-password" id="newPasswordInput" placeholder="New password (min 8 characters)" type="password"/>
+<div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
+<button class="btn btn-sm btn-outline hidden" id="resetPasswordCancel" onclick="closeChangePasswordModal()">Cancel</button>
+<button class="btn btn-sm" id="resetPasswordSubmit" onclick="submitNewPassword()">Set password</button>
+</div>
+</div>
+</div>
 <!-- Guarded "I have not received this order" report -->
-<div id="notReceivedModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Report not received</h3>
-    <p class="muted" style="font-size:0.85rem;">This tells Levromart you have not received this order and opens a dispute for an admin to review. Enter your password to confirm — this is a serious report, so please only submit it if the item genuinely never arrived.</p>
-    <div id="notReceivedError" class="error-text hidden"></div>
-    <label>Your password</label>
-    <input type="password" id="notReceivedPassword" placeholder="Confirm it's really you" autocomplete="current-password" />
-    <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
-      <button class="btn btn-sm btn-outline" onclick="closeNotReceivedModal()">Cancel</button>
-      <button class="btn btn-sm btn-danger" id="notReceivedSubmit" onclick="submitNotReceived()">Confirm — not received</button>
-    </div>
-  </div>
+<div class="modal hidden" id="notReceivedModal">
+<div class="modal-content" style="max-width:380px;">
+<h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Report not received</h3>
+<p class="muted" style="font-size:0.85rem;">This tells Levromart you have not received this order and opens a dispute for an admin to review. Enter your password to confirm — this is a serious report, so please only submit it if the item genuinely never arrived.</p>
+<div class="error-text hidden" id="notReceivedError"></div>
+<label>Your password</label>
+<input autocomplete="current-password" id="notReceivedPassword" placeholder="Confirm it's really you" type="password"/>
+<div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
+<button class="btn btn-sm btn-outline" onclick="closeNotReceivedModal()">Cancel</button>
+<button class="btn btn-sm btn-danger" id="notReceivedSubmit" onclick="submitNotReceived()">Confirm — not received</button>
 </div>
-
+</div>
+</div>
 <!-- Admin login OTP -->
-<div id="otpModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3><i class="fa-solid fa-envelope-open-text"></i> Check your email</h3>
-    <p class="muted" style="font-size:0.88rem;">We sent a 6-digit code to your email to confirm it's really you. Enter it below to finish logging in.</p>
-    <div id="otpError" class="error-text hidden"></div>
-    <label>Login code</label>
-    <input type="text" id="otpInput" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" />
-    <div class="flex" style="justify-content:space-between;margin-top:0.8rem;">
-      <button class="btn" id="otpSubmitBtn" onclick="submitLoginOtp()">Confirm</button>
-      <button class="btn btn-sm" style="background:#6b7280;" onclick="cancelLoginOtp()">Cancel</button>
-    </div>
-    <p style="font-size:0.8rem;margin-top:0.7rem;"><a href="#" onclick="resendLoginOtp();return false;">Resend code</a></p>
-  </div>
+<div class="modal hidden" id="otpModal">
+<div class="modal-content" style="max-width:380px;">
+<h3><i class="fa-solid fa-envelope-open-text"></i> Check your email</h3>
+<p class="muted" style="font-size:0.88rem;">We sent a 6-digit code to your email to confirm it's really you. Enter it below to finish logging in.</p>
+<div class="error-text hidden" id="otpError"></div>
+<label>Login code</label>
+<input autocomplete="one-time-code" id="otpInput" inputmode="numeric" maxlength="6" placeholder="123456" type="text"/>
+<div class="flex" style="justify-content:space-between;margin-top:0.8rem;">
+<button class="btn" id="otpSubmitBtn" onclick="submitLoginOtp()">Confirm</button>
+<button class="btn btn-sm" onclick="cancelLoginOtp()" style="background:#6b7280;">Cancel</button>
 </div>
-
+<p style="font-size:0.8rem;margin-top:0.7rem;"><a href="#" onclick="resendLoginOtp();return false;">Resend code</a></p>
+</div>
+</div>
 <!-- Add/Edit Product Modal -->
-<div id="productModal" class="modal hidden">
-  <div class="modal-content" style="max-width:550px;">
-    <h3 id="productModalTitle">Add New Product</h3>
-    <div id="productError" class="error-text hidden"></div>
-    <label>Product name</label>
-    <input type="text" id="prodName" placeholder="e.g. BP Monitor, or Hair Braiding" />
-    <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;"><input type="checkbox" id="prodIsService" onchange="updateProductFormFields()" style="width:auto;margin:0;" /> This is a service, not a physical product (e.g. hairdressing, baking, repairs)</label>
-    <label>Description</label>
-    <textarea id="prodDesc" placeholder="Description" rows="2"></textarea>
-    <label>Sector</label>
-    <select id="prodSector" onchange="loadProdCategoriesForSector()"></select>
-    <label>Category</label>
-    <select id="prodCategory" onchange="toggleProdCategoryOther()"><option value="">Uncategorized</option></select>
-    <input type="text" id="prodCategoryOther" class="hidden" placeholder="Name your category (e.g. Wound Care)" />
-    <div class="flex">
-      <div style="flex:1;" id="prodConditionWrap">
-        <label>Condition</label>
-        <select id="prodCondition"><option value="new">New</option><option value="used-good" selected>Used - good</option><option value="used-fair">Used - fair</option></select>
-      </div>
-      <div style="flex:1;" id="prodListingTypeWrap">
-        <label>Listing type</label>
-        <select id="prodListingType" onchange="updateProductFormFields()"><option value="rent">Rent only</option><option value="sale">Sale only</option><option value="both">Rent &amp; Sale</option></select>
-      </div>
-    </div>
-    <div class="flex">
-      <div style="flex:1;" id="prodSalePriceWrap"><label id="prodSalePriceLabel">Sale price (₦)</label><input type="number" id="prodSalePrice" step="0.01" /></div>
-      <div style="flex:1;" id="prodRentalRateWrap"><label>Rental rate (₦)</label><input type="number" id="prodRentalRate" step="0.01" /></div>
-      <div style="flex:1;" id="prodServiceUnitWrap"><label>Price is</label><select id="prodServiceUnit" onchange="updateProductFormFields()"><option value="flat">One-time (flat)</option><option value="hour">Per hour</option><option value="day">Per day</option><option value="week">Per week</option></select></div>
-    </div>
-    <div id="prodRateUnitWrap"><label>Per</label><select id="prodRateUnit"><option value="day">Day</option><option value="week">Week</option></select></div>
-    <div id="prodDepositWrap"><label>Refundable deposit (₦, optional)</label><input type="number" id="prodDeposit" step="0.01" /></div>
-    <div id="prodQtyWrap">
-      <label>Quantity available</label>
-      <input type="number" id="prodQtyTotal" value="1" min="1" />
-    </div>
-    <label>Photos</label>
-    <div class="photo-grid" id="prodExistingPhotos"></div>
-    <label class="photo-dropzone" id="photoDropzone" for="prodPhotoFiles">
-      <i class="fa-solid fa-cloud-arrow-up"></i>
-      <strong>Add photos</strong>
-      <span class="muted">Tap to choose, or drag images here</span>
-    </label>
-    <input type="file" id="prodPhotoFiles" accept="image/*" multiple class="hidden" onchange="previewNewProductPhotos()" />
-    <div class="photo-grid" id="prodNewPhotoPreviews"></div>
-    <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
-      <button class="btn btn-sm" style="background:#6b7280;" onclick="closeProductModal()">Cancel</button>
-      <button class="btn" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
-    </div>
-  </div>
+<div class="modal hidden" id="productModal">
+<div class="modal-content" style="max-width:550px;">
+<h3 id="productModalTitle">Add New Product</h3>
+<div class="error-text hidden" id="productError"></div>
+<label>Product name</label>
+<input id="prodName" placeholder="e.g. BP Monitor, or Hair Braiding" type="text"/>
+<label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;"><input id="prodIsService" onchange="updateProductFormFields()" style="width:auto;margin:0;" type="checkbox"/> This is a service, not a physical product (e.g. hairdressing, baking, repairs)</label>
+<label>Description</label>
+<textarea id="prodDesc" placeholder="Description" rows="2"></textarea>
+<label>Sector</label>
+<select id="prodSector" onchange="loadProdCategoriesForSector()"></select>
+<label>Category</label>
+<select id="prodCategory" onchange="toggleProdCategoryOther()"><option value="">Uncategorized</option></select>
+<input class="hidden" id="prodCategoryOther" placeholder="Name your category (e.g. Wound Care)" type="text"/>
+<div class="flex">
+<div id="prodConditionWrap" style="flex:1;">
+<label>Condition</label>
+<select id="prodCondition"><option value="new">New</option><option selected="" value="used-good">Used - good</option><option value="used-fair">Used - fair</option></select>
 </div>
-
-<div id="packageModal" class="modal hidden">
-  <div class="modal-content" style="max-width:520px;">
-    <h3 id="packageModalTitle">Add New Package</h3>
-    <div id="packageError" class="error-text hidden"></div>
-    <label>Package name</label>
-    <input type="text" id="pkgName" placeholder="e.g. Basic Outreach Kit" />
-    <label>Description (optional)</label>
-    <textarea id="pkgDesc" rows="2" placeholder="What's included, who it's for…"></textarea>
-    <label>Package price (₦)</label>
-    <input type="number" id="pkgPrice" step="0.01" placeholder="e.g. 5000" />
-    <label>Items in this package</label>
-    <div id="pkgItemsList" class="pkg-items-list"></div>
-    <p class="muted" style="font-size:0.8rem;">Only your products listed for sale can go in a package.</p>
-    <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
-      <button class="btn btn-sm" style="background:#6b7280;" onclick="closePackageModal()">Cancel</button>
-      <button class="btn" id="savePackageBtn" onclick="savePackage()">Save Package</button>
-    </div>
-  </div>
+<div id="prodListingTypeWrap" style="flex:1;">
+<label>Listing type</label>
+<select id="prodListingType" onchange="updateProductFormFields()"><option value="rent">Rent only</option><option value="sale">Sale only</option><option value="both">Rent &amp; Sale</option></select>
 </div>
-
+</div>
+<div class="flex">
+<div id="prodSalePriceWrap" style="flex:1;"><label id="prodSalePriceLabel">Sale price (₦)</label><input id="prodSalePrice" step="0.01" type="number"/></div>
+<div id="prodRentalRateWrap" style="flex:1;"><label>Rental rate (₦)</label><input id="prodRentalRate" step="0.01" type="number"/></div>
+<div id="prodServiceUnitWrap" style="flex:1;"><label>Price is</label><select id="prodServiceUnit" onchange="updateProductFormFields()"><option value="flat">One-time (flat)</option><option value="hour">Per hour</option><option value="day">Per day</option><option value="week">Per week</option></select></div>
+</div>
+<div id="prodRateUnitWrap"><label>Per</label><select id="prodRateUnit"><option value="day">Day</option><option value="week">Week</option></select></div>
+<div id="prodDepositWrap"><label>Refundable deposit (₦, optional)</label><input id="prodDeposit" step="0.01" type="number"/></div>
+<div id="prodQtyWrap">
+<label>Quantity available</label>
+<input id="prodQtyTotal" min="1" type="number" value="1"/>
+</div>
+<label>Photos</label>
+<div class="photo-grid" id="prodExistingPhotos"></div>
+<label class="photo-dropzone" for="prodPhotoFiles" id="photoDropzone">
+<i class="fa-solid fa-cloud-arrow-up"></i>
+<strong>Add photos</strong>
+<span class="muted">Tap to choose, or drag images here</span>
+</label>
+<input accept="image/*" class="hidden" id="prodPhotoFiles" multiple="" onchange="previewNewProductPhotos()" type="file"/>
+<div class="photo-grid" id="prodNewPhotoPreviews"></div>
+<div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
+<button class="btn btn-sm" onclick="closeProductModal()" style="background:#6b7280;">Cancel</button>
+<button class="btn" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
+</div>
+</div>
+</div>
+<div class="modal hidden" id="packageModal">
+<div class="modal-content" style="max-width:520px;">
+<h3 id="packageModalTitle">Add New Package</h3>
+<div class="error-text hidden" id="packageError"></div>
+<label>Package name</label>
+<input id="pkgName" placeholder="e.g. Basic Outreach Kit" type="text"/>
+<label>Description (optional)</label>
+<textarea id="pkgDesc" placeholder="What's included, who it's for…" rows="2"></textarea>
+<label>Package price (₦)</label>
+<input id="pkgPrice" placeholder="e.g. 5000" step="0.01" type="number"/>
+<label>Items in this package</label>
+<div class="pkg-items-list" id="pkgItemsList"></div>
+<p class="muted" style="font-size:0.8rem;">Only your products listed for sale can go in a package.</p>
+<div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
+<button class="btn btn-sm" onclick="closePackageModal()" style="background:#6b7280;">Cancel</button>
+<button class="btn" id="savePackageBtn" onclick="savePackage()">Save Package</button>
+</div>
+</div>
+</div>
 <!-- Confirm dialog (replaces native confirm()) -->
-<div id="confirmModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3 id="confirmModalTitle">Please confirm</h3>
-    <p id="confirmModalMsg" class="muted" style="margin:0.8rem 0 1.2rem;"></p>
-    <div class="flex" style="justify-content:flex-end;">
-      <button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
-      <button class="btn btn-sm" id="confirmModalOk">Confirm</button>
-    </div>
-  </div>
+<div class="modal hidden" id="confirmModal">
+<div class="modal-content" style="max-width:380px;">
+<h3 id="confirmModalTitle">Please confirm</h3>
+<p class="muted" id="confirmModalMsg" style="margin:0.8rem 0 1.2rem;"></p>
+<div class="flex" style="justify-content:flex-end;">
+<button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
+<button class="btn btn-sm" id="confirmModalOk">Confirm</button>
 </div>
-
-<div id="suggestionModal" class="modal hidden">
-  <div class="modal-content" style="max-width:420px;">
-    <h3 id="suggestionModalTitle"><i class="fa-solid fa-comment-medical"></i> Send feedback</h3>
-    <div id="suggestionError" class="error-text hidden"></div>
-    <textarea id="suggestionText" rows="4" placeholder="What's on your mind?" maxlength="2000"></textarea>
-    <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;margin-top:0.6rem;font-size:0.85rem;">
-      <input type="checkbox" id="suggestionAnon" style="width:auto;margin:0;" /> Send anonymously
+</div>
+</div>
+<div class="modal hidden" id="suggestionModal">
+<div class="modal-content" style="max-width:420px;">
+<h3 id="suggestionModalTitle"><i class="fa-solid fa-comment-medical"></i> Send feedback</h3>
+<div class="error-text hidden" id="suggestionError"></div>
+<textarea id="suggestionText" maxlength="2000" placeholder="What's on your mind?" rows="4"></textarea>
+<label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;margin-top:0.6rem;font-size:0.85rem;">
+<input id="suggestionAnon" style="width:auto;margin:0;" type="checkbox"/> Send anonymously
     </label>
-    <div class="install-modal-actions" style="margin-top:0.9rem;">
-      <button class="btn btn-sm btn-outline" onclick="closeSuggestionModal()">Cancel</button>
-      <button class="btn btn-sm" id="suggestionSubmitBtn" onclick="submitSuggestion()"><i class="fa-solid fa-paper-plane"></i> Send</button>
-    </div>
-  </div>
+<div class="install-modal-actions" style="margin-top:0.9rem;">
+<button class="btn btn-sm btn-outline" onclick="closeSuggestionModal()">Cancel</button>
+<button class="btn btn-sm" id="suggestionSubmitBtn" onclick="submitSuggestion()"><i class="fa-solid fa-paper-plane"></i> Send</button>
 </div>
-
-<div id="adminPasswordModal" class="modal hidden">
-  <div class="modal-content" style="max-width:380px;">
-    <h3><i class="fa-solid fa-shield-halved"></i> Confirm action</h3>
-    <p id="adminPasswordModalMsg" class="muted" style="margin:0.6rem 0;"></p>
-    <input type="password" id="adminPasswordInput" placeholder="Admin action password" autocomplete="off" />
-    <p id="adminPasswordError" class="error-text hidden">Incorrect password.</p>
-    <div class="flex" style="justify-content:flex-end;">
-      <button class="btn btn-sm" id="adminPasswordCancel" style="background:#6b7280;">Cancel</button>
-      <button class="btn btn-sm btn-danger" id="adminPasswordOk">Confirm</button>
-    </div>
-  </div>
 </div>
-
+</div>
+<div class="modal hidden" id="adminPasswordModal">
+<div class="modal-content" style="max-width:380px;">
+<h3><i class="fa-solid fa-shield-halved"></i> Confirm action</h3>
+<p class="muted" id="adminPasswordModalMsg" style="margin:0.6rem 0;"></p>
+<input autocomplete="off" id="adminPasswordInput" placeholder="Admin action password" type="password"/>
+<p class="error-text hidden" id="adminPasswordError">Incorrect password.</p>
+<div class="flex" style="justify-content:flex-end;">
+<button class="btn btn-sm" id="adminPasswordCancel" style="background:#6b7280;">Cancel</button>
+<button class="btn btn-sm btn-danger" id="adminPasswordOk">Confirm</button>
+</div>
+</div>
+</div>
 <!-- Toast stack (replaces native alert()) -->
-<div id="toastStack" class="toast-stack"></div>
-
+<div class="toast-stack" id="toastStack"></div>
 <!-- Floating, draggable AI chat -->
-<div id="aiChatFab" class="ai-chat-fab" title="Chat with Levi"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
-<div id="aiChatPanel" class="ai-chat-panel hidden">
-  <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
-  <div id="aiChatMessages" class="ai-chat-messages"></div>
-  <div class="ai-chat-input-row">
-    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
-    <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
-    <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
-  </div>
+<div class="ai-chat-fab" id="aiChatFab" title="Chat with Levi"><img alt="" class="ai-chat-fab-logo" id="aiChatFabLogo"/></div>
+<div class="ai-chat-panel hidden" id="aiChatPanel">
+<div class="drawer-header"><h4><img alt="" class="ai-chat-header-logo" id="aiChatHeaderLogo"/> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="ai-chat-messages" id="aiChatMessages"></div>
+<div class="ai-chat-input-row">
+<button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
+<textarea id="aiChatInput" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' &amp;&amp; !event.shiftKey &amp;&amp; !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}" placeholder="Ask about products, renting, buying…" rows="1"></textarea>
+<button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
 </div>
-
+</div>
 <script>
 // ---------- SUPABASE ----------
 // Public project URL + anon key — safe to expose client-side. Row Level
