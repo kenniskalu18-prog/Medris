@@ -231,6 +231,7 @@
   .ms-search-wrap { position: sticky; top: 0; background: inherit; padding-bottom: 0.35rem; margin-bottom: 0.2rem; z-index: 1; }
   .ms-search { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 0.6rem; font-size: 0.85rem; font-family: inherit; background: var(--input-bg); color: var(--text); margin: 0; }
   .ms-empty { padding: 0.65rem 0.85rem; font-size: 0.85rem; color: var(--text-muted); }
+  .ms-list a.ms-item { display: block; color: inherit; text-decoration: none; }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
@@ -1336,6 +1337,18 @@ function enhanceSelect(sel) {
 }
 function enhanceSelectsIn(root) {
   (root || document).querySelectorAll("select").forEach(enhanceSelect);
+}
+// Generic small overflow menu (reuses the .ms-list/.ms-item dropdown look)
+// for grouping secondary actions behind a single "More" button instead of
+// a row of same-weight buttons — the global outside-click handler below
+// already closes any .ms-list, so this needs no extra wiring.
+function toggleInlineMenu(id, evt) {
+  evt?.stopPropagation();
+  const list = byId(id);
+  if (!list) return;
+  const willOpen = list.classList.contains("hidden");
+  document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
+  if (willOpen) list.classList.remove("hidden");
 }
 document.addEventListener("click", () => {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
@@ -3386,10 +3399,16 @@ async function renderStorefront(vendorId) {
     ${yearsSince(v.created_at) ? `<span class="badge">${yearsSince(v.created_at)}</span>` : ""}
     ${v.opening_hours ? `<span class="badge"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</span>` : ""}
   </div>`;
+  const storefrontMoreItems = [
+    v.phone ? `<a class="ms-item" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : "",
+    profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
+  ].filter(Boolean).join("");
   html += `<div class="contact-actions">
     ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-solid fa-comment-dots'></i> Message</button>` : ""}
-    ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
-    ${profile?.role !== "admin" ? `<button class="btn btn-sm btn-outline" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</button>` : ""}
+    ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;">
+      <button class="btn btn-sm btn-outline" type="button" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button>
+      <div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:170px;">${storefrontMoreItems}</div>
+    </div>` : ""}
   </div>`;
   if (packages && packages.length > 0) {
     html += `<h3 style="margin-top:1.2rem;"><i class="fa-solid fa-boxes-packing"></i> Special packages</h3>`;
@@ -3801,10 +3820,10 @@ async function renderVendorDashboard() {
     <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
     <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
   </div>`;
-  html += `<div class="dash-actions">
-    <button class="quick-action outline" onclick="navigate('vendorEarnings')"><span class="quick-action-icon"><i class='fa-solid fa-sack-dollar'></i></span><span>Earnings</span></button>
-    <button class="quick-action outline" onclick="navigate('vendorSuggestionsInbox')"><span class="quick-action-icon" style="position:relative;"><i class='fa-solid fa-inbox'></i>${unreadSuggestionCount > 0 ? `<span class="notif-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</span><span>Suggestions</span></button>
-    <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
+  html += `<div class="flex" style="gap:0.5rem;flex-wrap:wrap;margin:0.9rem 0 1.2rem;">
+    <button class="btn btn-sm btn-outline" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
+    <button class="btn btn-sm btn-outline" onclick="navigate('vendorSuggestionsInbox')" style="position:relative;"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
+    <button class="btn btn-sm btn-outline" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
   html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
     <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
@@ -5224,7 +5243,7 @@ function adminNavHtml(active) {
     ["adminUsers", "fa-user-shield", "Admins"],
     ["adminLog", "fa-clock-rotate-left", "Log"],
   ];
-  return `<div class="dash-actions">${items.map(([view, icon, label]) => `<button class="quick-action ${view === active ? "" : "outline"}" onclick="navigate('${view}')"><span class="quick-action-icon" style="position:relative;"><i class="fa-solid ${icon}"></i>${view === "adminFeedback" && unreadSuggestionCount > 0 ? `<span class="notif-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</span><span>${label}</span></button>`).join("")}</div>`;
+  return `<div class="flex" style="gap:0.4rem;flex-wrap:wrap;margin:0.8rem 0 1rem;">${items.map(([view, icon, label]) => `<button class="btn btn-sm ${view === active ? "" : "btn-outline"}" onclick="navigate('${view}')" style="position:relative;"><i class="fa-solid ${icon}"></i> ${label}${view === "adminFeedback" && unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>`).join("")}</div>`;
 }
 
 async function renderAdminPanel(status) {
