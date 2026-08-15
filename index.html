@@ -4842,7 +4842,11 @@ async function renderOrderDetail(orderId) {
       <span class="badge ${orderStatusBadgeClass(order.status)}" style="text-transform:capitalize;flex-shrink:0;">${order.status.replace("_", " ")}</span>
     </div>
     ${order.created_at ? `<p class="muted" style="font-size:0.8rem;margin-top:0.7rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
-    ${ORDER_STATUS_HELP[order.status] ? `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_HELP[order.status])}</p>` : ""}
+    ${ORDER_STATUS_HELP[order.status]
+      ? order.status === "pending"
+        ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_HELP[order.status])}</div>`
+        : `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_HELP[order.status])}</p>`
+      : ""}
     ${order.payout_status && order.payout_status !== "not_applicable" ? `<div class="banner ${order.payout_status === "held" ? "banner-warning" : order.payout_status === "released" ? "banner-success" : "banner-muted"}" style="margin-top:0.6rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status)}</div>` : ""}
   </div>`;
 
