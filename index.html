@@ -522,8 +522,8 @@
   @media (prefers-reduced-motion: reduce) { .product-card-wrap, .vendor-card { animation: none; } }
   .fav-btn { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: rgba(255,255,255,0.85); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: transform 0.15s; }
   .fav-btn:hover { transform: scale(1.12); }
-  .trust-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
-  .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.8rem 0; }
+  .trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.6rem 0; }
+  .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
   .btn-whatsapp:hover { filter: brightness(1.08); }
   .conv-list-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border); }
@@ -2944,6 +2944,16 @@ function setMsgListFilter(f) {
   navigate("messages", {}, false);
 }
 
+function filterMsgList() {
+  const wrap = byId("convListWrap");
+  if (!wrap) return;
+  const convs = window.__conversations || [];
+  const q = (byId("msgSearchInput")?.value || "").trim().toLowerCase();
+  let shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
+  if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
+  wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
+}
+
 async function togglePinConversation(conversationId) {
   const { error } = await sb.rpc("toggle_conversation_pin", { p_conversation_id: conversationId });
   if (error) { showToast(error.message, "error"); return; }
@@ -2965,16 +2975,15 @@ async function renderMessages(conversationId) {
     }
 
     window.__conversations = convs;
-    const shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
 
     let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2>`;
     html += `<div class="tabs">
       <a class="${msgListFilter === "all" ? "active" : ""}" onclick="setMsgListFilter('all')">all</a>
       <a class="${msgListFilter === "unread" ? "active" : ""}" onclick="setMsgListFilter('unread')">unread</a>
     </div>`;
-    html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap">`;
-    html += shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
-    html += `</div>`;
+    html += `<input type="text" id="msgSearchInput" placeholder="Search conversations…" oninput="filterMsgList()" style="margin:0.2rem 0 0.8rem;max-width:340px;" />`;
+    html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap"></div>`;
+    setTimeout(filterMsgList, 0);
     return html;
   }
 
@@ -3820,7 +3829,7 @@ async function renderVendorDashboard() {
     <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
     <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
   </div>`;
-  html += `<div class="flex" style="gap:0.5rem;flex-wrap:wrap;margin:0.9rem 0 1.2rem;">
+  html += `<div class="flex" style="gap:0.5rem;flex-wrap:wrap;justify-content:center;margin:0.9rem 0 1.2rem;">
     <button class="btn btn-sm btn-outline" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="btn btn-sm btn-outline" onclick="navigate('vendorSuggestionsInbox')" style="position:relative;"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
     <button class="btn btn-sm btn-outline" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
@@ -4914,6 +4923,7 @@ async function renderOrderDetail(orderId) {
   if (canPayOnline) {
     html += `<div class="card"><h3><i class="fa-solid fa-credit-card"></i> Pay online</h3>
       <p class="muted">Pay by card, bank transfer or USSD through Paystack — instant, and the vendor gets notified right away.</p>
+      <p class="muted" style="font-size:0.78rem;"><i class="fa-solid fa-circle-info"></i> No card? Opay, Moniepoint, Kuda, PalmPay and other microfinance banks all give you a free virtual card that works fine here.</p>
       <div id="payOnlineError" class="error-text hidden"></div>
       <button class="btn btn-sm" id="payOnlineBtn" onclick="payOnline('${order.id}')"><i class="fa-solid fa-credit-card"></i> Pay ${naira(feePaid ? order.deposit_amount : order.total_amount)} now</button>
     </div>`;
@@ -5243,7 +5253,7 @@ function adminNavHtml(active) {
     ["adminUsers", "fa-user-shield", "Admins"],
     ["adminLog", "fa-clock-rotate-left", "Log"],
   ];
-  return `<div class="flex" style="gap:0.4rem;flex-wrap:wrap;margin:0.8rem 0 1rem;">${items.map(([view, icon, label]) => `<button class="btn btn-sm ${view === active ? "" : "btn-outline"}" onclick="navigate('${view}')" style="position:relative;"><i class="fa-solid ${icon}"></i> ${label}${view === "adminFeedback" && unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>`).join("")}</div>`;
+  return `<div class="flex" style="gap:0.4rem;flex-wrap:wrap;justify-content:center;margin:0.8rem 0 1rem;">${items.map(([view, icon, label]) => `<button class="btn btn-sm ${view === active ? "" : "btn-outline"}" onclick="navigate('${view}')" style="position:relative;"><i class="fa-solid ${icon}"></i> ${label}${view === "adminFeedback" && unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>`).join("")}</div>`;
 }
 
 async function renderAdminPanel(status) {
