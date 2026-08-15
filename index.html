@@ -800,6 +800,21 @@
   </div>
 </div>
 
+<!-- Guarded "I have not received this order" report -->
+<div id="notReceivedModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Report not received</h3>
+    <p class="muted" style="font-size:0.85rem;">This tells Levromart you have not received this order and opens a dispute for an admin to review. Enter your password to confirm — this is a serious report, so please only submit it if the item genuinely never arrived.</p>
+    <div id="notReceivedError" class="error-text hidden"></div>
+    <label>Your password</label>
+    <input type="password" id="notReceivedPassword" placeholder="Confirm it's really you" autocomplete="current-password" />
+    <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
+      <button class="btn btn-sm btn-outline" onclick="closeNotReceivedModal()">Cancel</button>
+      <button class="btn btn-sm btn-danger" id="notReceivedSubmit" onclick="submitNotReceived()">Confirm — not received</button>
+    </div>
+  </div>
+</div>
+
 <!-- Admin login OTP -->
 <div id="otpModal" class="modal hidden">
   <div class="modal-content" style="max-width:380px;">
@@ -4957,18 +4972,34 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   // button — shouldn't be possible to complete an order that was never
   // actually paid for.
   if (isBuyer && order.status === "handed_over" && order.order_type === "sale") {
-    if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
-    else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
+    if (feePaid) {
+      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
+      buttons.push(notReceivedButtonHtml(order));
+    } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
   if (isBuyer && order.status === "returned" && order.order_type === "rental") {
-    if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
-    else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
+    if (feePaid) {
+      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
+      buttons.push(notReceivedButtonHtml(order));
+    } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
   return buttons.join("");
 }
 
+// The buyer's "I have not received this" escape hatch — deliberately held
+// back for a few hours after handover (real deliveries take time) and
+// gated behind re-entering the account password (raising a dispute has
+// real consequences for the vendor, so it shouldn't be one accidental tap).
+const NOT_RECEIVED_WAIT_HOURS = 5;
+function notReceivedButtonHtml(order) {
+  if (!order.awaiting_confirmation_since) return "";
+  const hoursSince = (Date.now() - new Date(order.awaiting_confirmation_since).getTime()) / 3600000;
+  if (hoursSince < NOT_RECEIVED_WAIT_HOURS) return "";
+  return `<button class="btn btn-sm btn-danger" onclick="showNotReceivedModal('${order.id}')"><i class="fa-solid fa-triangle-exclamation"></i> I have not received this</button>`;
+}
+
 const ORDER_STATUS_HELP = {
-  pending: "Waiting for the vendor to confirm your order.",
+  pending: "Waiting for the vendor to confirm your order — you haven't been charged yet. You'll be able to pay once they accept.",
   confirmed: "The vendor has accepted — next they'll hand over the equipment.",
   handed_over: "The equipment has physically been handed to the buyer (picked up or delivered). For rentals, either side can mark it \"returned\" once it's back with the vendor. For sales, the buyer confirms receipt to complete the order and release payment.",
   returned: "The rented equipment is back with the vendor — the buyer confirms to complete the order and release payment.",
@@ -4987,6 +5018,41 @@ async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
   navigate("orderDetail", { orderId });
+}
+
+let notReceivedOrderId = null;
+function showNotReceivedModal(orderId) {
+  notReceivedOrderId = orderId;
+  byId("notReceivedPassword").value = "";
+  byId("notReceivedError").classList.add("hidden");
+  byId("notReceivedModal").classList.remove("hidden");
+  trackModalOpened("notReceivedModal");
+}
+function closeNotReceivedModal() {
+  byId("notReceivedModal").classList.add("hidden");
+  if (dismissibleModalId === "notReceivedModal") dismissibleModalId = null;
+}
+async function submitNotReceived() {
+  const errorEl = byId("notReceivedError");
+  errorEl.classList.add("hidden");
+  const password = byId("notReceivedPassword").value;
+  if (!password) { errorEl.textContent = "Enter your password to confirm."; errorEl.classList.remove("hidden"); return; }
+  const btn = byId("notReceivedSubmit");
+  btn.disabled = true;
+  try {
+    // Re-authenticating (same pattern as the voluntary change-password
+    // flow) is the proof-of-identity for a report this consequential —
+    // it can trigger a refund out of the platform's own balance.
+    const { error: reauthError } = await sb.auth.signInWithPassword({ email: session.user.email, password });
+    if (reauthError) { errorEl.textContent = "Password is incorrect."; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
+    const { error } = await sb.rpc("raise_dispute", { p_order_id: notReceivedOrderId, p_reason: "Buyer reports this order was never received." });
+    if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
+    byId("notReceivedModal").classList.add("hidden");
+    showToast("Reported — an admin will review this.", "success");
+    navigate("orderDetail", { orderId: notReceivedOrderId });
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // The buyer's "I've received this" / "Confirm & complete" action — unlike
