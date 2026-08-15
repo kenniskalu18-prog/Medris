@@ -3721,6 +3721,20 @@ const VENDOR_EARNINGS_PERIODS = { today: "Today", week: "This week", month: "Thi
 function vendorEarningsNet(totalAmount, commissionPct) {
   return Math.round(Number(totalAmount || 0) * (1 - commissionPct / 100));
 }
+// Paystack settles a subaccount split the next business day after the
+// buyer's payment (T+1) — not whenever our own order status happened to
+// change to "handed over". Weekends push it to the following Monday.
+// This is our best estimate of when it actually lands, since Paystack
+// doesn't send us a separate settlement webhook to confirm the exact date.
+function estimatePayoutDate(paidAtStr) {
+  if (!paidAtStr) return null;
+  const d = new Date(paidAtStr);
+  d.setDate(d.getDate() + 1);
+  const day = d.getDay();
+  if (day === 6) d.setDate(d.getDate() + 2);
+  else if (day === 0) d.setDate(d.getDate() + 1);
+  return d;
+}
 function vendorEarningsInPeriod(dateStr, period) {
   const d = new Date(dateStr);
   const now = new Date();
@@ -3765,17 +3779,24 @@ function renderVendorEarningsBody() {
   const body = byId("vendorEarningsBody");
   if (!body) return;
   const all = window.__vendorEarningsOrders || [];
-  const filtered = all.filter((o) => vendorEarningsInPeriod(o.payout_released_at, vendorEarningsPeriod));
+  const withDates = all.map((o) => {
+    const paidTimestamps = (o.payments || []).filter((p) => p.status === "paid").map((p) => p.created_at).sort();
+    const buyerPaidAt = paidTimestamps[0] || null;
+    const payoutDate = estimatePayoutDate(buyerPaidAt) || new Date(o.payout_released_at);
+    return { ...o, buyerPaidAt, payoutDate };
+  });
+  const filtered = withDates.filter((o) => vendorEarningsInPeriod(o.payoutDate, vendorEarningsPeriod));
   const commissionPct = Number(vendor.commission_pct ?? 3);
 
   if (!filtered.length) { body.innerHTML = `<div class="empty-state">No payouts in this period yet.</div>`; return; }
 
   const periodTotal = filtered.reduce((s, o) => s + vendorEarningsNet(o.total_amount, commissionPct), 0);
   let html = `<div class="stat" style="max-width:280px;margin-bottom:1.2rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Estimated total paid to you (${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()})</div></div>`;
+  html += `<p class="muted" style="font-size:0.8rem;margin-top:-0.6rem;margin-bottom:1rem;">Grouped by Paystack's expected settlement date — the business day after the buyer paid (weekends roll to the following Monday), since Paystack doesn't tell us the exact date it lands.</p>`;
 
   const byDate = new Map();
   filtered.forEach((o) => {
-    const dateKey = new Date(o.payout_released_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    const dateKey = o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
     if (!byDate.has(dateKey)) byDate.set(dateKey, []);
     byDate.get(dateKey).push(o);
   });
@@ -3785,16 +3806,14 @@ function renderVendorEarningsBody() {
     html += `<div class="category-group-header flex" style="justify-content:space-between;">
       <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th>Est. paid to you</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Expected in your bank</th><th>Est. paid to you</th></tr></thead><tbody>`;
     dayOrders.forEach((o) => {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
-      const paidTimestamps = (o.payments || []).filter((p) => p.status === "paid").map((p) => p.created_at).sort();
-      const buyerPaidAt = paidTimestamps[0];
       html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
         <td>${items}</td>
         <td>${naira(o.total_amount)}</td>
-        <td>${buyerPaidAt ? esc(formatEarningsDateTime(buyerPaidAt)) : '<span class="muted">—</span>'}</td>
-        <td>${esc(formatEarningsDateTime(o.payout_released_at))}</td>
+        <td>${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">—</span>'}</td>
+        <td>${esc(o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }))}</td>
         <td>${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
       </tr>`;
     });
@@ -3864,7 +3883,7 @@ async function renderVendorEditProfile() {
       : `<div class="banner banner-warning" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Not set up yet.</strong> Until you add your bank, order payments go to Levromart and you'll be paid out manually.</div>`}
     <div id="bankFormWrap" class="${v.paystack_subaccount_code ? "hidden" : ""}" style="margin-top:0.8rem;">
       <label>Bank</label>
-      <select id="veBankCode">${NIGERIAN_BANKS.map((b) => `<option value="${b.code}">${esc(b.name)}</option>`).join("")}</select>
+      <select id="veBankCode">${NIGERIAN_BANKS.map((b) => `<option value="${b.code}" ${b.code === v.bank_code ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select>
       <label>Account number</label>
       <input id="veAccountNumber" inputmode="numeric" maxlength="10" placeholder="10-digit account number" value="${esc(v.account_number || "")}" />
       <button class="btn btn-sm" style="margin-top:0.6rem;" id="saveBankBtn" onclick="saveVendorBankDetails()">Save payout details</button>
