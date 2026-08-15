@@ -2,359 +2,625 @@
 
 <html lang="en"><head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>Levromart - Professional Marketplace</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<meta content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more." name="description"/>
+<link href="" id="faviconLink" rel="icon" type="image/webp"/>
+<link href="/manifest.json" rel="manifest"/>
+<meta content="#f8f9fa" name="theme-color"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Levromart" name="apple-mobile-web-app-title"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "surface-container-highest": "#e1e3e4",
-                        "error": "#ba1a1a",
-                        "secondary-fixed": "#dae2ff",
-                        "on-background": "#191c1d",
-                        "surface-container-lowest": "#ffffff",
-                        "secondary-container": "#356ee7",
-                        "on-secondary-fixed": "#001848",
-                        "on-secondary-fixed-variant": "#0040a2",
-                        "on-surface": "#191c1d",
-                        "surface": "#f8f9fa",
-                        "inverse-on-surface": "#f0f1f2",
-                        "primary-container": "#1c1b1b",
-                        "error-container": "#ffdad6",
-                        "on-error": "#ffffff",
-                        "on-primary-fixed-variant": "#474646",
-                        "primary-fixed-dim": "#c8c6c5",
-                        "on-secondary-container": "#fefcff",
-                        "on-secondary": "#ffffff",
-                        "surface-variant": "#e1e3e4",
-                        "inverse-primary": "#c8c6c5",
-                        "on-tertiary-fixed-variant": "#404754",
-                        "on-primary-fixed": "#1c1b1b",
-                        "background": "#f8f9fa",
-                        "surface-container": "#edeeef",
-                        "on-primary-container": "#858383",
-                        "secondary-fixed-dim": "#b2c5ff",
-                        "surface-container-high": "#e7e8e9",
-                        "tertiary": "#000000",
-                        "inverse-surface": "#2e3132",
-                        "surface-tint": "#5f5e5e",
-                        "primary": "#000000",
-                        "tertiary-fixed": "#dce2f3",
-                        "primary-fixed": "#e5e2e1",
-                        "on-tertiary": "#ffffff",
-                        "on-surface-variant": "#444748",
-                        "outline": "#747878",
-                        "surface-bright": "#f8f9fa",
-                        "outline-variant": "#c4c7c7",
-                        "secondary": "#0453cd",
-                        "on-tertiary-fixed": "#151c27",
-                        "surface-dim": "#d9dadb",
-                        "surface-container-low": "#f3f4f5",
-                        "on-error-container": "#93000a",
-                        "tertiary-fixed-dim": "#c0c7d6",
-                        "on-tertiary-container": "#7d8492",
-                        "tertiary-container": "#151c27",
-                        "on-primary": "#ffffff"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "unit": "8px",
-                        "container-max": "1280px",
-                        "gutter": "24px",
-                        "margin-desktop": "64px",
-                        "margin-mobile": "16px"
-                    },
-                    "fontFamily": {
-                        "body-lg": ["Inter"],
-                        "display-lg-mobile": ["Inter"],
-                        "body-md": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "display-lg": ["Inter"],
-                        "label-sm": ["Inter"]
-                    },
-                    "fontSize": {
-                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
-                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
-                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
-                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
-                    }
-                }
-            }
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-high": "#e7e8e9",
+                "error-container": "#ffdad6",
+                "surface-dim": "#d9dadb",
+                "tertiary-fixed-dim": "#c0c7d6",
+                "tertiary-container": "#151c27",
+                "on-primary-fixed-variant": "#474646",
+                "on-secondary-fixed-variant": "#0040a2",
+                "on-primary-container": "#858383",
+                "on-primary": "#ffffff",
+                "surface-container-low": "#f3f4f5",
+                "secondary-fixed": "#dae2ff",
+                "on-tertiary-fixed-variant": "#404754",
+                "on-secondary-fixed": "#001848",
+                "on-secondary-container": "#fefcff",
+                "secondary-container": "#356ee7",
+                "on-error": "#ffffff",
+                "surface-tint": "#5f5e5e",
+                "primary-fixed": "#e5e2e1",
+                "surface-container": "#edeeef",
+                "inverse-surface": "#2e3132",
+                "on-surface": "#191c1d",
+                "surface-variant": "#e1e3e4",
+                "on-error-container": "#93000a",
+                "outline": "#747878",
+                "error": "#ba1a1a",
+                "primary-container": "#1c1b1b",
+                "outline-variant": "#c4c7c7",
+                "secondary": "#0453cd",
+                "primary-fixed-dim": "#c8c6c5",
+                "surface-bright": "#f8f9fa",
+                "surface-container-highest": "#e1e3e4",
+                "surface-container-lowest": "#ffffff",
+                "inverse-primary": "#c8c6c5",
+                "on-tertiary-fixed": "#151c27",
+                "on-tertiary-container": "#7d8492",
+                "secondary-fixed-dim": "#b2c5ff",
+                "primary": "#000000",
+                "on-tertiary": "#ffffff",
+                "inverse-on-surface": "#f0f1f2",
+                "on-primary-fixed": "#1c1b1b",
+                "background": "#f8f9fa",
+                "tertiary": "#000000",
+                "on-background": "#191c1d",
+                "on-secondary": "#ffffff",
+                "tertiary-fixed": "#dce2f3",
+                "on-surface-variant": "#444748",
+                "surface": "#f8f9fa"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "margin-mobile": "16px",
+                "container-max": "1280px",
+                "margin-desktop": "64px",
+                "gutter": "24px",
+                "unit": "8px"
+        },
+        "fontFamily": {
+                "display-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-md": ["Inter"],
+                "label-sm": ["Inter"],
+                "body-lg": ["Inter"],
+                "display-lg-mobile": ["Inter"],
+                "sans": ["Inter", "sans-serif"]
+        },
+        "fontSize": {
+                "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
         }
-    </script>
+      }
+    }
+  }
+</script>
 <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #191c1d; }
-        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        .ambient-shadow { box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); }
-        .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12); }
-        
-        /* Pulse Animation */
-        @keyframes pulse-accent {
-            0%, 100% { filter: drop-shadow(0 0 5px rgba(4, 83, 205, 0.4)); transform: scale(1); }
-            50% { filter: drop-shadow(0 0 15px rgba(4, 83, 205, 0.8)); transform: scale(1.05); }
-        }
-        .pulse-icon { animation: pulse-accent 3s ease-in-out infinite; color: #0453cd; }
+  :root {
+    --brand-grad: linear-gradient(135deg, #14a894, #075c52);
+    --primary: #000000;
+    --primary-light: #5f5e5e;
+    --primary-grad: linear-gradient(135deg, #000000, #5f5e5e 60%, #c8c6c5);
+    --bg: #f8f9fa;
+    --bg-wash: transparent;
+    --card: #ffffff;
+    --text: #191c1d;
+    --text-muted: #444748;
+    --border: #e1e3e4;
+    --input-bg: #ffffff;
+    --danger: #ba1a1a;
+    --warning: #f59e0b;
+    --success: #16a34a;
+    --info: #3b82f6;
+    --glass-bg: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.4);
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-float: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+    color-scheme: light;
+  }
+  [data-theme="dark"] {
+    --primary: #ffffff;
+    --primary-light: #c8c6c5;
+    --primary-grad: linear-gradient(135deg, #ffffff, #c8c6c5 60%, #5f5e5e);
+    --bg: #151c27;
+    --bg-wash: transparent;
+    --card: #1c1b1b;
+    --text: #ffffff;
+    --text-muted: #858383;
+    --border: #444748;
+    --input-bg: #1c1b1b;
+    --glass-bg: rgba(21, 28, 39, 0.65);
+    --glass-border: rgba(255,255,255,0.08);
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-float: 0 12px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    color-scheme: dark;
+  }
+  
+  body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+  .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); }
+  .ambient-shadow { box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); }
+  .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12); }
+  
+  @keyframes pulse-accent {
+      0%, 100% { filter: brightness(0) invert(1) drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 45%, transparent)); transform: scale(1); }
+      50% { filter: brightness(0) invert(1) drop-shadow(0 0 15px color-mix(in srgb, var(--primary-light) 80%, transparent)); transform: scale(1.05); }
+  }
+  .pulse-icon { animation: pulse-accent 3s ease-in-out infinite; }
+  .brand-logo-layer { width: auto; height: 2rem; object-fit: contain; }
 
-        /* Minimal Chip Scroll */
-        .chip-scroll::-webkit-scrollbar { display: none; }
-        .chip-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+  .chip-scroll::-webkit-scrollbar { display: none; }
+  .chip-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Generic App Styles from Previous Version */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { width: 100%; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .spinner { width: 2.4rem; height: 2.4rem; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  #splashScreen { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.4s ease; }
+  #splashScreen.splash-hide { opacity: 0; pointer-events: none; }
+  #splashScreen.splash-gone { display: none; }
+  .splash-stack { position: relative; width: min(60vw, 320px); aspect-ratio: 788 / 200; display:flex; justify-content:center; align-items:center; }
+  .splash-circle { height: 4rem; animation: splashCirclePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards, pulse-accent 3s ease-in-out 0.7s infinite; }
+  @keyframes splashCirclePop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 16px; flex: 1; width: 100%; overflow-x: hidden; }
+  @media(min-width: 768px) { .container { padding: 0 64px; } }
+  
+  /* Buttons & Inputs */
+  .btn { padding: 0.5rem 1.2rem; border: none; border-radius: 9999px; background: var(--primary); color: var(--bg); cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: filter 0.15s, transform 0.1s; }
+  .btn:hover { background: var(--inverse-surface, #2e3132); }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.85rem; }
+  .btn-danger { background: var(--danger); color: white; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.6rem; color: var(--text); }
+  input, select, textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 0.5rem; margin: 0.3rem 0 0.5rem; font-size: 1rem; font-family: inherit; background: var(--input-bg); color: var(--text); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent); }
+  
+  .card { background: var(--card); padding: 1.5rem; border-radius: 1rem; box-shadow: var(--shadow-float); margin-bottom: 1.5rem; border: 1px solid var(--border); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+  .flex { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
+  .badge { padding: 0.2rem 0.6rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: var(--surface-container-highest); color: var(--text); }
+  .badge.success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+  .badge.warning { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
+  .badge.danger { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+  
+  .hidden { display: none !important; }
+  .muted { color: var(--text-muted); font-size: 0.9rem; }
+  .error-text { color: var(--danger); font-size: 0.85rem; margin: 0.3rem 0; }
+  
+  /* Modals & Drawers */
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(5px); }
+  .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+  
+  .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
+  .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+  .side-drawer { position: fixed; top: 0; bottom: 0; width: min(320px, 86vw); z-index: 200; background: var(--glass-bg); backdrop-filter: blur(24px); box-shadow: 0 0 46px rgba(0,0,0,0.35); padding: calc(1.1rem + env(safe-area-inset-top, 0px)) 1rem calc(1.1rem + env(safe-area-inset-bottom, 0px)); overflow-y: auto; color: var(--text); transition: transform 0.32s cubic-bezier(.22,1,.36,1); }
+  .side-drawer:not(.open) { pointer-events: none; }
+  .side-drawer.right { right: 0; border-left: 1px solid var(--glass-border); transform: translateX(105%); }
+  .side-drawer.right.open { transform: translateX(0); }
+  .side-drawer.left { left: 0; border-right: 1px solid var(--glass-border); transform: translateX(-105%); }
+  .side-drawer.left.open { transform: translateX(0); }
+  
+  .toast-stack { position: fixed; bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 0.6rem; align-items: center; width: min(420px, 92vw); pointer-events: none; }
+  .toast { display: flex; align-items: center; gap: 0.6rem; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 0.8rem 1.1rem; border-radius: 0.8rem; box-shadow: 0 12px 30px rgba(0,0,0,0.25); font-size: 0.88rem; opacity: 0; transform: translateY(16px); transition: opacity 0.25s ease, transform 0.25s ease; width: 100%; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Mobile Bottom Nav Pill */
+  .bottom-nav { display: none; }
+  @media (max-width: 767px) {
+    body { padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); }
+    .bottom-nav { display: flex; position: fixed; left: 1rem; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 80; align-items: center; justify-content: space-around; background: rgba(255,255,255,0.85); backdrop-filter: blur(28px); border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 0.6rem 0.5rem; box-shadow: 0 12px 38px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.25s ease; }
+    .dark .bottom-nav { background: rgba(30,30,30,0.85); border-color: rgba(255,255,255,0.1); }
+    .bottom-nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; color: var(--text-muted); font-size: 0.65rem; font-family: inherit; font-weight: 500; cursor: pointer; padding: 0.3rem 0.5rem; flex: 1; transition: transform 0.15s ease, color 0.2s; }
+    .bottom-nav-item i { font-size: 1.25rem; margin-bottom: 0.1rem; }
+    .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item.active i { background: var(--surface-container-highest); border-radius: 0.5rem; padding: 0.2rem 0.8rem; margin: -0.2rem -0.8rem 0.1rem; }
+  }
+
+  /* AI Chat Fab */
+  .ai-chat-fab { position: fixed; right: 1.5rem; bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); width: 3.5rem; height: 3.5rem; border-radius: 50%; background: #0453cd; color: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-float); cursor: grab; z-index: 150; animation: pulse-accent 3s ease-in-out infinite; }
+  @media (max-width: 767px) { .ai-chat-fab { bottom: calc(6rem + env(safe-area-inset-bottom, 0px)) !important; } }
+  .ai-chat-fab-logo { width: 1.8rem; height: auto; filter: brightness(0) invert(1); }
+  .ai-chat-panel { position: fixed; right: 1.5rem; bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); width: min(360px, 90vw); height: min(500px, 68vh); background: var(--glass-bg); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-radius: 1rem; box-shadow: 0 20px 50px rgba(0,0,0,0.3); z-index: 150; display: flex; flex-direction: column; padding: 1rem; color: var(--text); }
+  .ai-chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; margin: 0.5rem 0; }
+  .ai-chat-msg { max-width: 85%; padding: 0.7rem 0.9rem; border-radius: 1rem; font-size: 0.9rem; line-height: 1.4; }
+  .ai-chat-msg.user { align-self: flex-end; background: var(--primary); color: var(--bg); border-bottom-right-radius: 0.2rem; }
+  .ai-chat-msg.assistant { align-self: flex-start; background: var(--surface-container-high); color: var(--text); border-bottom-left-radius: 0.2rem; }
+
+  /* Custom Selects */
+  .ms-btn { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 1rem; text-align: left; background: var(--input-bg); color: var(--text); cursor: pointer; }
+</style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
-<!-- TopNavBar (Shared Component Blueprint) -->
+<div id="splashScreen">
+<div class="splash-stack">
+<img alt="Levromart" class="splash-circle" id="splashCircle" src="https://lh3.googleusercontent.com/aida/AP1WRLuGflm-_XLbswkA7dIAFoXVhZE9haSGJjcbKNvYBdMPEUa2sdGR6FId-bbXhFFO3_lFYarxecYTG6kCgRZmE1L8EvvEuHzcAyuwvAUvKDyHVY4IXJyKQJ6w8bWNby3p1RvuOwWxjMuDAcA6J7hyYyVoxi1uqvNQr2-FyNEyB5tv3AZMNAPx2wuBDq7kmyPORcB1Pa46eRKO5OLs33A6uHKorUkgLgkGNOiLJyiSJtBUEOz2r_JwhEnD"/>
+</div>
+</div>
 <nav class="fixed top-0 w-full z-50 bg-surface/70 dark:bg-surface-container-low/70 backdrop-blur-[20px] border-b border-outline-variant/30 shadow-sm transition-all duration-300">
 <div class="flex justify-between items-center h-20 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
-<!-- Brand -->
-<div class="flex items-center gap-4">
-<img alt="Levromart Brand Mark" class="h-8 w-auto pulse-icon" data-alt="A minimalist geometric brand mark consisting of overlapping clean shapes in a bright, modern light-mode setting. The design is precise, high-end, and professional, using a sophisticated palette with subtle translucent depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBspo4t6qWw1TrJpfkeUtoBNIQPzDw62GSqKYMIAON6jZO4ekxG0b9x86wTwEU0aTKH1EuoPbpSMzPtoxfUgdRBcCYPgs2m5y_8_KRGFfOyVLscrZ-68P1X5BufC00E0FboJctLN4IqtuaIgqULOwW8y7vHrNSqcMM2KGZkcbq76fmFvvKNTwhVDMWxeYEeYabjDfn8yX4Cw9EP_-__Fv9kgTeILjZmmYfrjRYgwnXsrUQWlo-XM74"/>
-<span class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter text-primary dark:text-on-surface">Levromart</span>
+<div class="flex items-center gap-4 cursor-pointer" onclick="navigate('home')">
+<img alt="Levromart Brand Mark" class="h-8 w-auto pulse-icon brand-logo-layer" id="headerLogo" src="https://lh3.googleusercontent.com/aida/AP1WRLuGflm-_XLbswkA7dIAFoXVhZE9haSGJjcbKNvYBdMPEUa2sdGR6FId-bbXhFFO3_lFYarxecYTG6kCgRZmE1L8EvvEuHzcAyuwvAUvKDyHVY4IXJyKQJ6w8bWNby3p1RvuOwWxjMuDAcA6J7hyYyVoxi1uqvNQr2-FyNEyB5tv3AZMNAPx2wuBDq7kmyPORcB1Pa46eRKO5OLs33A6uHKorUkgLgkGNOiLJyiSJtBUEOz2r_JwhEnD"/>
+<span class="font-display-lg-mobile md:font-display-lg text-[24px] md:text-display-lg tracking-tighter text-primary dark:text-on-surface font-bold">Levromart</span>
 </div>
-<!-- Search (Center) -->
-<div class="hidden md:flex flex-1 max-w-md mx-8 relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-surface-container-highest border-none rounded-full font-body-md text-body-md focus:ring-2 focus:ring-secondary transition-all" placeholder="Search equipment, vendors..." type="text"/>
-</div>
-<!-- Navigation Links (Web) -->
 <div class="hidden md:flex items-center gap-8">
-<a class="text-secondary font-bold border-b-2 border-secondary pb-1" href="#">Browse</a>
-<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md hover:bg-surface-container-high/50 px-3 py-1 rounded" href="#">Rentals</a>
-<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md hover:bg-surface-container-high/50 px-3 py-1 rounded" href="#">Sales</a>
-<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md hover:bg-surface-container-high/50 px-3 py-1 rounded" href="#">Services</a>
+<a class="text-secondary font-bold border-b-2 border-secondary pb-1" href="#" onclick="navigate('home');return false;">Browse</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md hover:bg-surface-container-high/50 px-3 py-1 rounded" href="#" onclick="navigate('vendors');return false;">Vendors</a>
 </div>
-<!-- Actions -->
 <div class="flex items-center gap-4">
-<button class="hidden md:flex bg-primary text-on-primary font-body-md text-body-md px-6 py-2 rounded-full hover:bg-inverse-surface transition-colors hover:shadow-md">List Equipment</button>
-<button class="text-on-surface hover:bg-surface-container-high/50 p-2 rounded-full transition-all"><span class="material-symbols-outlined">notifications</span></button>
-<button class="text-on-surface hover:bg-surface-container-high/50 p-2 rounded-full transition-all"><span class="material-symbols-outlined">shopping_cart</span></button>
-<img alt="User profile and settings" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A clean, professional headshot of a person used as a user profile placeholder. Bright, natural lighting with a subtle blurred background to fit a premium interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAr1CmZ4d_xQznK73iTgQDus-UOmDTVCM5Nhhr0vYgIb-fJEaDXb70wbQsIS9K8TnYNq-PJqWThfCuMVL5qvbWy3zIrmVtqABAHE2WB2g2_3Ie3Sm2s03Fh5pm8iYaQdthRlmzF1ygCHLuhelt9ig5EXAknVhIvcKBA7UmUgwO8JrQLx4ZdK3ZxTjQrSB47cBzF_sIOsI4Fk-rrEaeKat4czAaK-UEAY1_oAy9HtOtRyEh460tfnM"/>
+<button class="hidden md:flex bg-primary text-on-primary font-body-md text-body-md px-6 py-2 rounded-full hover:bg-inverse-surface transition-colors hover:shadow-md" onclick="requireLoginThen('vendorApply')">List Equipment</button>
+<div class="hidden relative" id="notifWrap">
+<button class="text-on-surface hover:bg-surface-container-high/50 p-2 rounded-full transition-all" onclick="toggleNotifPanel()"><span class="material-symbols-outlined">notifications</span></button>
+<span class="absolute top-0 right-0 bg-error text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden" id="notifDot">0</span>
+</div>
+<div class="relative flex items-center" id="profileWrap">
+<button class="text-on-surface hover:bg-surface-container-high/50 p-2 rounded-full transition-all" id="loginBtn" onclick="showLogin()"><span class="material-symbols-outlined">person</span></button>
+<button class="hidden rounded-full overflow-hidden border border-outline-variant w-10 h-10" id="avatarBtn" onclick="toggleProfilePanel()"></button>
+</div>
+<button class="text-on-surface hover:bg-surface-container-high/50 p-2 rounded-full transition-all" onclick="toggleSettingsPanel()"><span class="material-symbols-outlined">settings</span></button>
 </div>
 </div>
 </nav>
-<!-- Main Canvas -->
-<main class="flex-1 w-full pt-20">
-<!-- Hero Section -->
-<section class="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-surface-variant">
-<!-- Background Image -->
-<div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80" data-alt="A dramatic, cinematic product photography shot of high-end medical or professional equipment. The lighting is soft and ambient, creating a mad aesthetic with deep shadows and pristine white highlights. The composition features generous whitespace." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBdx9umWTxBaAhHFymgjLdNyU73p0Qgn7oGq-J3GSgnLfJaJah5FH3n_-_NmKYQKD1WKm8DECfBJD-cPn0ss7Lp_lX-Z5FnNq-_akHJX2EGHN08vKklbpoWd9tthwL4bhME29ZRIH7lSTVfZO_BdflscdXsZeOrGlV2tI8L-LNwlDebFd6-BZxVRkzqf2LjFXpkxn44pq7f9WEP0jAmAWPfn1Wqyy4E2h-KTOngg1n2p26AS7o3eJo')"></div>
-<!-- Glass Overlay -->
-<div class="absolute inset-0 bg-gradient-to-b from-surface/40 via-transparent to-surface pointer-events-none"></div>
-<!-- Hero Content -->
-<div class="relative z-10 w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center flex flex-col items-center">
-<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-6 max-w-3xl drop-shadow-sm">The Premium Equipment Marketplace</h1>
-<!-- Hero Search -->
-<div class="w-full max-w-2xl mb-12 relative glass-panel rounded-full p-2 flex items-center ambient-shadow">
-<span class="material-symbols-outlined ml-4 text-outline">search</span>
-<input class="flex-1 bg-transparent border-none focus:ring-0 font-body-lg text-body-lg text-on-surface placeholder:text-outline-variant px-4" placeholder="Find what you need in Lagos..." type="text"/>
-<button class="bg-secondary text-on-secondary px-8 py-3 rounded-full font-headline-md text-headline-md hover:bg-secondary-container hover:text-on-secondary-container transition-colors">Search</button>
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeAllPanels()"></div>
+<div class="side-drawer right" id="notifPanel"></div>
+<div class="side-drawer right" id="settingsPanel">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-headline-md text-headline-md">Settings</h4>
+<button class="text-on-surface-variant" onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></button>
 </div>
-<!-- Action Buttons -->
-<div class="flex flex-wrap justify-center gap-4">
-<button class="glass-panel px-8 py-4 rounded-xl font-headline-md text-headline-md text-primary hover-lift flex flex-col items-center gap-2 w-32">
-<span class="material-symbols-outlined text-3xl">key</span>
-                        Rent
-                    </button>
-<button class="glass-panel px-8 py-4 rounded-xl font-headline-md text-headline-md text-primary hover-lift flex flex-col items-center gap-2 w-32">
-<span class="material-symbols-outlined text-3xl">shopping_bag</span>
-                        Buy
-                    </button>
-<button class="glass-panel px-8 py-4 rounded-xl font-headline-md text-headline-md text-primary hover-lift flex flex-col items-center gap-2 w-32">
-<span class="material-symbols-outlined text-3xl">storefront</span>
-                        Sell
-                    </button>
-<button class="glass-panel px-8 py-4 rounded-xl font-headline-md text-headline-md text-primary hover-lift flex flex-col items-center gap-2 w-32">
-<span class="material-symbols-outlined text-3xl">handshake</span>
-                        Request
-                    </button>
-</div>
-</div>
-</section>
-<!-- Category Chips -->
-<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8 border-b border-outline-variant/20">
-<div class="flex gap-4 overflow-x-auto chip-scroll pb-2">
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-primary bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider">All Sectors</button>
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm text-label-sm uppercase tracking-wider transition-colors">Healthcare</button>
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm text-label-sm uppercase tracking-wider transition-colors">Food & Groceries</button>
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm text-label-sm uppercase tracking-wider transition-colors">Electronics</button>
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm text-label-sm uppercase tracking-wider transition-colors">Construction</button>
-<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm text-label-sm uppercase tracking-wider transition-colors">Events</button>
-</div>
-</section>
-<!-- Trending Now (Bento Grid) -->
-<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16">
-<div class="flex justify-between items-end mb-8">
-<h2 class="font-headline-md text-headline-md text-primary">Trending Now</h2>
-<a class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-1" href="#">View All <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-gutter">
-<!-- Large Feature Card -->
-<div class="col-span-1 md:col-span-2 lg:col-span-2 row-span-2 bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer">
-<div class="w-full h-64 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" data-alt="A sleek, modern portable ultrasound machine sitting on a clean, reflective white surface. Professional lighting emphasizes its premium build quality. Mad aesthetic, minimalist." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAYYoe_Fuf_5jh1jxSIpzKgISby8CEndiDTI1yhxACb9S3qtC5dzfelb5GRYyKrV4oEJeGsym7ag6fJpWY8ye_-9_CQu5R7UpJd8ipXPInTjADMQPN8a3O1Mh-QaPSpvZhvmZkEfyKHMxaYXEGrAMNQptE8SiiPJQSkrBWMJFxiq5Sph6WGMd35fpTi5vifjirXO-5v9ysylumNEgCym_LGLLJ7B25mzKZhWjY_kqRRYacDscvDfjo')"></div>
-<div class="p-6 flex-1 flex flex-col justify-between bg-surface relative z-10">
-<div>
-<div class="flex justify-between items-start mb-2">
-<span class="bg-secondary-container text-on-secondary-container px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">Premium Rent</span>
-<button class="text-outline hover:text-error"><span class="material-symbols-outlined">favorite</span></button>
-</div>
-<h3 class="font-headline-md text-headline-md mb-2">Portable Ultrasound System</h3>
-<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">High-resolution imaging for mobile clinics. Includes all standard probes.</p>
-</div>
-<div class="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center">
-<div>
-<span class="font-bold text-lg">₦45,000</span>
-<span class="text-sm text-on-surface-variant">/day</span>
-</div>
-<div class="flex items-center gap-2">
-<img alt="Vendor" class="w-6 h-6 rounded-full" data-alt="Small logo of a verified medical supplier, simple blue cross icon on white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkLnE542c3A_JnQrxv0YoPEz2SaEP2Cz4-LnHn6AuKARrWlUk50p-Si6PYLl0NuW5_iL4h-10IKV7Rc6jgUd4r4Sl-7WYvECiRgXA57rJgYbF-5fPTl4tTq_AsV5Q_XuQlwFD54f7ORafgvh8S5DnGnPQzKvYTMMJOZR1Pnla5tlKr7f7UQYEeOthvzzAxdBbHc3ZUJfznZzu71_IsU8e7I9jRoO2F9joV-fuvPDbvY0wzQS9SvdA"/>
-<span class="font-label-sm text-label-sm text-on-surface-variant">MedTech Pro</span>
+<div class="card p-4">
+<button class="w-full flex justify-between font-bold" onclick="toggleAccordion(this)"><span>Appearance</span> <i class="fa-solid fa-chevron-down"></i></button>
+<div class="mt-4 flex flex-col gap-2 hidden">
+<div class="p-2 hover:bg-surface-container-highest rounded cursor-pointer" onclick="setTheme('light')"><i class="fa-solid fa-sun w-6"></i> Light</div>
+<div class="p-2 hover:bg-surface-container-highest rounded cursor-pointer" onclick="setTheme('dark')"><i class="fa-solid fa-moon w-6"></i> Dark</div>
 </div>
 </div>
 </div>
-</div>
-<!-- Standard Cards -->
-<div class="bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer">
-<div class="w-full h-48 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" data-alt="A high-end commercial espresso machine in a pristine, brightly lit kitchen setting. Minimalist framing, highlighting the stainless steel finish." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAsU3qObyVahj3tdnkPzvyGXUjjQUCSPJLUaq1R7Hwxw9XHdbvPAjLVtIJTvmpnm4Tk2pelbVUgnnWKCBsiVfELkdU1JlWSrcd0llhIDf8Jlw9iat7bAmtRRWYwcXEM7ddK6n01XSjJ0od-mq5zFNembJvuksMWxR1jItvg4Rd7fQ_M9TUTVO9G1VAB1Fw6Hky7x1OxXtEzjlPjIDMuDHqUU6HVgKbTTHjq6YFWqXUGziZ4DBEpq08')"></div>
-<div class="p-4 flex-1 flex flex-col justify-between bg-surface relative z-10">
-<div>
-<div class="flex justify-between items-start mb-1">
-<span class="bg-surface-container-highest text-on-surface px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Buy / Rent</span>
-</div>
-<h4 class="font-body-lg text-body-lg font-semibold leading-tight mb-1">Commercial Espresso Maker</h4>
-</div>
-<div class="mt-3 flex justify-between items-center">
-<span class="font-bold">₦1.2M <span class="text-xs font-normal text-on-surface-variant">or ₦15k/day</span></span>
-</div>
-</div>
-</div>
-<div class="bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer">
-<div class="w-full h-48 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" data-alt="A heavy-duty industrial drone for surveying, resting on a clean concrete floor in a minimalist studio. Soft ambient shadows." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDUH_b_T3RYP3w8yTmOKW-KcjPBDMxFHqthMy4bQhBBJxFXHcRy8EzpM5b29V-Dh0mk_wKDo2ZpA31K8PPMDMG0p_nEkMrj2baf8Sl1sZJFQ_UX9at3SnCSYeb5dhwzPGGOALc-3pctgosPyc4WtbrGwWbpIeajt7RKn7zkMREJCl9Vlgaeno6pxyqkYOw7G5q-Z9B-C9R94vz9b8c-uf-SFSYMsMmr-yzVXOUtyrPhLTrzVtcx_J8')"></div>
-<div class="p-4 flex-1 flex flex-col justify-between bg-surface relative z-10">
-<div>
-<div class="flex justify-between items-start mb-1">
-<span class="bg-surface-container-highest text-on-surface px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Rent</span>
-</div>
-<h4 class="font-body-lg text-body-lg font-semibold leading-tight mb-1">Surveying Drone Pro</h4>
-</div>
-<div class="mt-3 flex justify-between items-center">
-<span class="font-bold">₦80,000 <span class="text-xs font-normal text-on-surface-variant">/day</span></span>
-</div>
-</div>
-</div>
-<div class="bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer">
-<div class="w-full h-48 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" data-alt="A pristine, modern hospital bed with digital controls, set against a seamless white background. High-key lighting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDvBj08-Y4EghRorSWYRAunIDuS-vW3HX5G0NY3OMGFZ1HxgChPju5jNAWdw_pILzgsII9JfgRue4w8D1W21hNtgJlsMcqH8BkdCwbAGx-cVaMv6Sz9QUr-cOWSxzP3WWlxkoGk6bI7MjaSa5R4kuCunfgOKYxSK8fBGW0q1dfXV6Pxn2z7qQj_a8Jn08dKLq45WbPxSEz7L9XKdeP9baHUQ-_JlRUcYgqEFmAFL6IsFmErN3n5Wvo')"></div>
-<div class="p-4 flex-1 flex flex-col justify-between bg-surface relative z-10">
-<div>
-<div class="flex justify-between items-start mb-1">
-<span class="bg-surface-container-highest text-on-surface px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Buy</span>
-</div>
-<h4 class="font-body-lg text-body-lg font-semibold leading-tight mb-1">Electric ICU Bed</h4>
-</div>
-<div class="mt-3 flex justify-between items-center">
-<span class="font-bold">₦450,000</span>
-</div>
-</div>
-</div>
-<div class="bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer">
-<div class="w-full h-48 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" data-alt="A professional heavy-duty generator enclosed in a soundproof canopy, photographed cleanly on a light grey background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCKIoSXbS3GZfkWy56doC_zOrEtflW6uYI2XBDqzNgzrGWqoFiGqrPI3ufrvUwcEaBHJiAfUTAZZVxPFe0aTBS67RN_nOESZbU1GwNAEZu5aboda8R-qiuHWXK2witJZZMNpppOxRH4Cd8vl7txLK4Z2nSq6mRzBBYKPpgAXg2VGTjCQhh2rCqOx6Mrpe2TKrt6055zJQvrlh_GP0c5elDDpWSJO9tVkSdiqAXP53758-yi0mP7yXY')"></div>
-<div class="p-4 flex-1 flex flex-col justify-between bg-surface relative z-10">
-<div>
-<div class="flex justify-between items-start mb-1">
-<span class="bg-surface-container-highest text-on-surface px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Rent</span>
-</div>
-<h4 class="font-body-lg text-body-lg font-semibold leading-tight mb-1">100kVA Generator</h4>
-</div>
-<div class="mt-3 flex justify-between items-center">
-<span class="font-bold">₦60,000 <span class="text-xs font-normal text-on-surface-variant">/day</span></span>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Top-rated Vendors (Horizontal Rail) -->
-<section class="w-full bg-surface-container-low py-16 border-y border-outline-variant/20">
-<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-<div class="flex justify-between items-end mb-8">
-<h2 class="font-headline-md text-headline-md text-primary">Top-rated Vendors</h2>
-</div>
-<div class="flex gap-6 overflow-x-auto chip-scroll pb-6 pt-2">
-<!-- Vendor Card -->
-<div class="flex-shrink-0 w-72 bg-surface rounded-xl p-6 border border-outline-variant/30 hover-lift cursor-pointer flex flex-col items-center text-center">
-<img alt="Vendor Logo" class="w-16 h-16 rounded-full mb-4 shadow-sm" data-alt="A sleek, minimalist logo for a medical supply company. Crisp lines, blue and grey tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvFOAXs7vrLLNCCy8cJmDt52dtCf3QAj4rKoiCeR1RWtGI4BYIQRuS7nBaJk-bTAw8OPV2Bey9xeB9pc35U34SGT8YAJoI_sTwmrfQ9RHT-HvFr8jAiKk01BZL4vv8InYlCGosFQ1M0MaB25dwSe4WXTV8EBowy2mKjJ27NqXG2iLuDkEznU-NwQt1HJNM7LGrmYq5Rt0rKi7Hc51gGC1RtsROwfUMzbrk9vO6GzZmtUIV6cugBnw"/>
-<h4 class="font-body-lg text-body-lg font-semibold mb-1">Lagos MedSupply</h4>
-<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm mb-3">
-<span class="material-symbols-outlined text-[14px] text-secondary">verified</span> Verified
-                        </div>
-<div class="flex items-center gap-1 text-sm font-bold text-primary mb-4">
-<span class="material-symbols-outlined text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
-                            4.9 <span class="font-normal text-on-surface-variant text-xs">(124 reviews)</span>
-</div>
-<button class="w-full py-2 border border-outline rounded-lg text-sm font-semibold hover:border-primary hover:bg-surface-container-highest transition-colors">View Store</button>
-</div>
-<div class="flex-shrink-0 w-72 bg-surface rounded-xl p-6 border border-outline-variant/30 hover-lift cursor-pointer flex flex-col items-center text-center">
-<img alt="Vendor Logo" class="w-16 h-16 rounded-full mb-4 shadow-sm" data-alt="A modern logo for an events and catering equipment rental company. Elegant typography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsPJ2uH0zoaSdLVSvxL1uSvIP44TlwdvfsR1hcPo3LS4K_H-uvFZNn-Dma838qDYObfNFVchL7wUY49gqGIj_nFkjOokiMS0TJas3gxrs4mpJCpz3CvVb8w8y1Eku6v6LRBHcQ1jQN1ZO27sJVHcmhSbAkMscc9I1fWk-idrTJbyGFHRe1m5aGj9nBa4cCh_hOX4alDTK6jJdN7DkNBlNkrqS-IBdCqhX-0bmJMGEbibAxWWie81I"/>
-<h4 class="font-body-lg text-body-lg font-semibold mb-1">Elite Event Rentals</h4>
-<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm mb-3">
-<span class="material-symbols-outlined text-[14px] text-secondary">verified</span> Verified
-                        </div>
-<div class="flex items-center gap-1 text-sm font-bold text-primary mb-4">
-<span class="material-symbols-outlined text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
-                            4.8 <span class="font-normal text-on-surface-variant text-xs">(89 reviews)</span>
-</div>
-<button class="w-full py-2 border border-outline rounded-lg text-sm font-semibold hover:border-primary hover:bg-surface-container-highest transition-colors">View Store</button>
-</div>
-<div class="flex-shrink-0 w-72 bg-surface rounded-xl p-6 border border-outline-variant/30 hover-lift cursor-pointer flex flex-col items-center text-center">
-<img alt="Vendor Logo" class="w-16 h-16 rounded-full mb-4 shadow-sm" data-alt="A bold, industrial logo for a heavy machinery and tools rental service. Strong contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWmeqsNBaLJ3XcgVzl5YkKMnwAVDmD8dZNK0YW2hlR_U3nl7HOsCjzuQRpj1-Qpm8lg0AdRnAIiRDT7hctm90n6BeOY7mNslEx9Wkxw-obsEJJYFI5zf2_IGMbyuFq6kGGaoOYwNVEOOKMJvpq8eRyTvAXKLyTPpQJ4wIarHJ35P3KdAApaqGCVKPgKrYPbypb6CusLcs-KNjBF99OB9qzam1U2zWKPbh4MN-1PCpqqNQ66i35T8g"/>
-<h4 class="font-body-lg text-body-lg font-semibold mb-1">BuildTech Lagos</h4>
-<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm mb-3">
-<span class="material-symbols-outlined text-[14px] text-secondary">verified</span> Verified
-                        </div>
-<div class="flex items-center gap-1 text-sm font-bold text-primary mb-4">
-<span class="material-symbols-outlined text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
-                            4.7 <span class="font-normal text-on-surface-variant text-xs">(56 reviews)</span>
-</div>
-<button class="w-full py-2 border border-outline rounded-lg text-sm font-semibold hover:border-primary hover:bg-surface-container-highest transition-colors">View Store</button>
-</div>
-<div class="flex-shrink-0 w-72 bg-surface rounded-xl p-6 border border-outline-variant/30 hover-lift cursor-pointer flex flex-col items-center text-center">
-<img alt="Vendor Logo" class="w-16 h-16 rounded-full mb-4 shadow-sm" data-alt="A clean, tech-focused logo for an electronics and AV equipment vendor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP7rRCL6CgzqiZpVF51UsZqe0u2uiRICDhzbmlXSygK2hFOVCw8BEEPhmx3w8OzwgWEfs1SVH7_EiMXZVC2sHLzQz9Ngc9n12Rl3VD5aXQyoHccVEkCXDhd13NoBTCuEIPeEYywc2iUBNxMj1AkXqxLeehUvFDV89fViLmVVuvS5RFJB0KAPjpp9JL29Z2T-_OPaGlV-b95tBZhA7WL8Z7AJ6hQbEZApajWjnHSU6xFjezfRhXwZQ"/>
-<h4 class="font-body-lg text-body-lg font-semibold mb-1">AV Pro Hub</h4>
-<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm mb-3">
-<span class="material-symbols-outlined text-[14px] text-secondary">verified</span> Verified
-                        </div>
-<div class="flex items-center gap-1 text-sm font-bold text-primary mb-4">
-<span class="material-symbols-outlined text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
-                            4.9 <span class="font-normal text-on-surface-variant text-xs">(210 reviews)</span>
-</div>
-<button class="w-full py-2 border border-outline rounded-lg text-sm font-semibold hover:border-primary hover:bg-surface-container-highest transition-colors">View Store</button>
-</div>
-</div>
-</div>
-</section>
+<div class="side-drawer left" id="profilePanel"></div>
+<main class="flex-1 w-full pt-20" id="app">
+<p class="muted p-8 text-center">Loading…</p>
 </main>
-<!-- Footer (Shared Component Blueprint) -->
-<footer class="w-full pt-margin-desktop pb-unit bg-surface dark:bg-surface-container-lowest border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto font-label-sm text-label-sm text-on-surface dark:text-on-surface-variant transition-opacity duration-300">
+<footer class="w-full pt-margin-desktop pb-unit bg-surface dark:bg-surface-container-lowest border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto font-label-sm text-label-sm text-on-surface dark:text-on-surface-variant mt-12">
 <div class="mb-4 md:mb-0">
 <span class="font-headline-md text-headline-md font-bold text-primary">Levromart</span>
-<p class="mt-2 text-on-surface-variant">© 2024 Levromart Global. All rights reserved.</p>
+<p class="mt-2 text-on-surface-variant">© <span id="footerYear"></span> Levromart Global. All rights reserved.</p>
 </div>
 <div class="flex flex-wrap justify-center gap-6">
-<a class="text-on-surface-variant hover:text-secondary hover:underline decoration-secondary transition-all" href="#">Privacy Policy</a>
-<a class="text-on-surface-variant hover:text-secondary hover:underline decoration-secondary transition-all" href="#">Terms of Service</a>
-<a class="text-on-surface-variant hover:text-secondary hover:underline decoration-secondary transition-all" href="#">Equipment Insurance</a>
-<a class="text-on-surface-variant hover:text-secondary hover:underline decoration-secondary transition-all" href="#">Support</a>
-<a class="text-on-surface-variant hover:text-secondary hover:underline decoration-secondary transition-all" href="#">Verified Vendor Program</a>
+<a class="text-on-surface-variant hover:text-secondary hover:underline" href="#" onclick="navigate('privacy');return false;">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-secondary hover:underline" href="#" onclick="navigate('terms');return false;">Terms of Service</a>
 </div>
 </footer>
+<nav class="bottom-nav" id="bottomNav"></nav>
+<!-- Modals from DOCUMENT_8 mapped to minimalist style -->
+<div class="modal hidden" id="loginModal">
+<div class="modal-content text-center">
+<img alt="Levromart" class="w-16 h-16 object-contain mx-auto mb-4 pulse-icon" id="loginModalLogo" src="https://lh3.googleusercontent.com/aida/AP1WRLuGflm-_XLbswkA7dIAFoXVhZE9haSGJjcbKNvYBdMPEUa2sdGR6FId-bbXhFFO3_lFYarxecYTG6kCgRZmE1L8EvvEuHzcAyuwvAUvKDyHVY4IXJyKQJ6w8bWNby3p1RvuOwWxjMuDAcA6J7hyYyVoxi1uqvNQr2-FyNEyB5tv3AZMNAPx2wuBDq7kmyPORcB1Pa46eRKO5OLs33A6uHKorUkgLgkGNOiLJyiSJtBUEOz2r_JwhEnD"/>
+<h3 class="font-headline-md text-headline-md mb-4 text-primary" id="authModalTitle">Welcome to Levromart</h3>
+<div class="error-text hidden mb-4" id="authError"></div>
+<div class="hidden text-left mb-4" id="signupExtraFields">
+<label>Full name</label><input id="loginName" type="text"/>
+<label>Role</label><select id="loginRole"><option value="buyer">Buyer</option><option value="vendor">Vendor</option></select>
+<label>Phone</label><input id="loginPhone" type="tel"/>
+</div>
+<div class="text-left mb-4">
+<label>Email</label><input id="loginEmail" type="email"/>
+<div id="loginPasswordWrap"><label>Password</label><input id="loginPassword" type="password"/></div>
+<div class="hidden" id="confirmPasswordWrap"><label>Confirm password</label><input id="loginPasswordConfirm" type="password"/></div>
+</div>
+<button class="btn w-full justify-center py-3 text-lg mb-4" id="authSubmitBtn" onclick="submitAuth()">Login</button>
+<a class="text-sm font-semibold text-secondary block mb-2" href="#" id="authToggleLink">Need an account? Register</a>
+<button class="text-sm text-on-surface-variant underline" onclick="hideLogin()">Cancel</button>
+</div>
+</div>
+<div class="toast-stack" id="toastStack"></div>
+<div class="ai-chat-fab" id="aiChatFab" onclick="toggleAiChat()" title="Chat with Levi">
+<img alt="AI" class="ai-chat-fab-logo" src="https://lh3.googleusercontent.com/aida/AP1WRLuGflm-_XLbswkA7dIAFoXVhZE9haSGJjcbKNvYBdMPEUa2sdGR6FId-bbXhFFO3_lFYarxecYTG6kCgRZmE1L8EvvEuHzcAyuwvAUvKDyHVY4IXJyKQJ6w8bWNby3p1RvuOwWxjMuDAcA6J7hyYyVoxi1uqvNQr2-FyNEyB5tv3AZMNAPx2wuBDq7kmyPORcB1Pa46eRKO5OLs33A6uHKorUkgLgkGNOiLJyiSJtBUEOz2r_JwhEnD"/>
+</div>
+<div class="ai-chat-panel hidden" id="aiChatPanel">
+<div class="flex justify-between items-center border-b border-border pb-2 mb-2">
+<h4 class="font-bold flex items-center gap-2"><img class="w-4 h-4 pulse-icon" src="https://lh3.googleusercontent.com/aida/AP1WRLuGflm-_XLbswkA7dIAFoXVhZE9haSGJjcbKNvYBdMPEUa2sdGR6FId-bbXhFFO3_lFYarxecYTG6kCgRZmE1L8EvvEuHzcAyuwvAUvKDyHVY4IXJyKQJ6w8bWNby3p1RvuOwWxjMuDAcA6J7hyYyVoxi1uqvNQr2-FyNEyB5tv3AZMNAPx2wuBDq7kmyPORcB1Pa46eRKO5OLs33A6uHKorUkgLgkGNOiLJyiSJtBUEOz2r_JwhEnD"/> Levi AI</h4>
+<button class="text-text-muted hover:text-text" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="ai-chat-messages" id="aiChatMessages"></div>
+<div class="flex gap-2 items-end mt-2">
+<textarea class="m-0 py-2 rounded-xl flex-1 bg-surface-container-high border-none resize-none" id="aiChatInput" placeholder="Ask Levi..." rows="1"></textarea>
+<button class="bg-primary text-bg w-10 h-10 rounded-full flex items-center justify-center shrink-0" onclick="sendAiChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</div>
+</div>
+<script>
+const SUPABASE_URL = "https://ovklnoroyxobijgvsyfp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_SjOSMDFWO-u9t5sKRp1sXQ_GsnrO2a7";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let session = null;
+let profile = null;
+let vendor = null;
+let favoriteIds = new Set();
+let authMode = "login";
+let currentView = "home";
+let currentSectorId = null;
+let sectors = [];
+let aiChatMessages = [];
+
+// Utility
+function byId(id) { return document.getElementById(id); }
+function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+function naira(n) { return "₦" + Number(n ?? 0).toLocaleString(); }
+function initials(name, email) { const s = (name || email || "?").trim(); return s[0]?.toUpperCase() || "?"; }
+function showToast(msg, type="info") {
+  const wrap = byId("toastStack");
+  if(!wrap) return;
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${esc(msg)}</span>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => { el.classList.remove("show"); setTimeout(()=>el.remove(),300); }, 3000);
+}
+
+// Drawers
+function toggleSettingsPanel() { openDrawer("settingsPanel"); }
+function toggleProfilePanel() { openDrawer("profilePanel"); }
+function toggleNotifPanel() { openDrawer("notifPanel"); }
+function openDrawer(id) {
+  closeAllPanels();
+  byId(id)?.classList.add("open");
+  byId("drawerBackdrop")?.classList.add("open");
+}
+function closeAllPanels() {
+  document.querySelectorAll(".side-drawer").forEach(d => d.classList.remove("open"));
+  byId("drawerBackdrop")?.classList.remove("open");
+}
+
+function toggleAccordion(btn) {
+  const content = btn.nextElementSibling;
+  content.classList.toggle("hidden");
+}
+function setTheme(t) {
+  document.documentElement.className = t === 'dark' ? 'dark antialiased min-h-screen flex flex-col' : 'antialiased min-h-screen flex flex-col';
+  document.documentElement.setAttribute('data-theme', t);
+  closeAllPanels();
+}
+
+// Navigation & Routing
+async function navigate(view, params = {}) {
+  currentView = view;
+  const app = byId("app");
+  app.innerHTML = '<p class="muted p-8 text-center">Loading…</p>';
+  updateAuthUI();
+  renderBottomNav();
+  window.scrollTo(0,0);
+  try {
+    if(view === 'home') app.innerHTML = await renderHome();
+    else if(view === 'vendors') app.innerHTML = await renderVendorsDirectory();
+    else app.innerHTML = `<div class="p-8 text-center text-on-surface-variant">View '${esc(view)}' not fully mapped in preview. Use Home or Vendors.</div>`;
+  } catch(e) {
+    app.innerHTML = `<div class="p-8 text-center text-error">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+// Auth
+async function refreshAuthState() {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  profile = null; vendor = null; favoriteIds = new Set();
+  if (session) {
+    const { data: p } = await sb.from("users").select("*").eq("id", session.user.id).single();
+    profile = p;
+    const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
+    vendor = profile?.role === "admin" ? null : v;
+  }
+  updateAuthUI();
+  renderBottomNav();
+}
+
+function updateAuthUI() {
+  if (session && profile) {
+    byId("loginBtn").classList.add("hidden");
+    byId("avatarBtn").classList.remove("hidden");
+    byId("avatarBtn").innerHTML = `<div class="w-full h-full bg-secondary text-white flex items-center justify-center font-bold">${initials(profile.name, profile.email)}</div>`;
+    byId("profilePanel").innerHTML = `
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg">Profile</h4>
+        <button onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="mb-4"><strong>${esc(profile.name)}</strong><br><span class="text-sm text-text-muted">${esc(profile.email)}</span></p>
+      <button class="btn btn-sm btn-danger w-full justify-center" onclick="logout()">Logout</button>
+    `;
+  } else {
+    byId("loginBtn").classList.remove("hidden");
+    byId("avatarBtn").classList.add("hidden");
+    byId("profilePanel").innerHTML = "";
+  }
+}
+
+function showLogin() { authMode = "login"; applyAuthMode(); byId("loginModal").classList.remove("hidden"); }
+function hideLogin() { byId("loginModal").classList.add("hidden"); }
+function toggleAuthMode() { authMode = authMode === "login" ? "register" : "login"; applyAuthMode(); }
+function applyAuthMode() {
+  const isReg = authMode === "register";
+  byId("authModalTitle").textContent = isReg ? "Create Account" : "Welcome Back";
+  byId("signupExtraFields").classList.toggle("hidden", !isReg);
+  byId("confirmPasswordWrap").classList.toggle("hidden", !isReg);
+  byId("authSubmitBtn").textContent = isReg ? "Register" : "Login";
+  byId("authToggleLink").textContent = isReg ? "Already have an account? Login" : "Need an account? Register";
+  byId("authToggleLink").onclick = (e) => { e.preventDefault(); toggleAuthMode(); };
+}
+
+async function submitAuth() {
+  const email = byId("loginEmail").value.trim();
+  const password = byId("loginPassword").value;
+  if (!email || !password) return showToast("Email and password required", "error");
+  
+  byId("authSubmitBtn").disabled = true;
+  try {
+    if (authMode === "register") {
+      const name = byId("loginName").value.trim();
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name, role: byId("loginRole").value } } });
+      if (error) throw error;
+      showToast("Signed up successfully!");
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      showToast("Logged in!");
+    }
+    hideLogin();
+    await refreshAuthState();
+    navigate("home");
+  } catch(e) { showToast(e.message, "error"); }
+  byId("authSubmitBtn").disabled = false;
+}
+async function logout() { await sb.auth.signOut(); await refreshAuthState(); closeAllPanels(); navigate("home"); }
+function requireLoginThen(view) { if(!session) showLogin(); else navigate(view); }
+
+// Bottom Nav
+function renderBottomNav() {
+  const nav = byId("bottomNav");
+  if(!nav) return;
+  const items = [
+    { icon: "fa-house", label: "Home", action: "navigate('home')" },
+    { icon: "fa-store", label: "Vendors", action: "navigate('vendors')" },
+    { icon: "fa-hand", label: "Request", action: "requireLoginThen('requestEquipment')" },
+    { icon: "fa-user", label: "Profile", action: session ? "toggleProfilePanel()" : "showLogin()" }
+  ];
+  nav.innerHTML = items.map(i => `<button class="bottom-nav-item" onclick="${i.action}"><i class="fa-solid ${i.icon}"></i><span>${i.label}</span></button>`).join("");
+}
+
+// Views
+async function renderHome() {
+  const [{ data: cats }, { data: sects }] = await Promise.all([
+    sb.from("categories").select("*"),
+    sb.from("sectors").select("*").order("sort_order")
+  ]);
+  sectors = sects || [];
+  
+  let q = sb.from("products").select("*, vendor:vendors(id, business_name)").eq("status", "active").limit(8);
+  const { data: trending } = await q;
+
+  let html = `
+  <section class="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-surface-variant">
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80" style="background-image: url('https://lh3.googleusercontent.com/aida/AP1WRLsX-UwmVPgnf_Zu_-WN5JJAfS9k-77dkIAF2C-LqTHh4U0o7Llc67cdLHdMj9Srj00pAyiSwZS2t0jBLUwpLp_VBqe0VKXvVZAIkoU5ZP6hd0Yyt0QIOoAR942-Ld590L-qAzts9vk311f8cT0bXe6Dj-kkIyu5Qai5VXum__PgLU99U9CShR0sltpMdV276mYY9cKV7DewuAQhirFZenrUoTGSaRLrAAaY5tDxSWYi_5cv5PZYAfd0AQ')"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-surface/40 via-transparent to-surface pointer-events-none"></div>
+    <div class="relative z-10 w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center flex flex-col items-center">
+      <h1 class="font-display-lg-mobile md:font-display-lg text-primary mb-6 max-w-3xl drop-shadow-sm">The Premium Equipment Marketplace</h1>
+      <div class="w-full max-w-2xl mb-12 relative glass-panel rounded-full p-2 flex items-center ambient-shadow">
+        <span class="material-symbols-outlined ml-4 text-outline">search</span>
+        <input class="flex-1 bg-transparent border-none focus:ring-0 font-body-lg text-on-surface placeholder:text-outline-variant px-4 py-2" placeholder="Find what you need in Lagos..." type="text"/>
+        <button class="bg-secondary text-white px-8 py-3 rounded-full font-bold hover:bg-secondary-container transition-colors">Search</button>
+      </div>
+      <div class="flex flex-wrap justify-center gap-4">
+        <button class="glass-panel px-8 py-4 rounded-xl font-bold text-primary hover-lift flex flex-col items-center gap-2 w-32"><span class="material-symbols-outlined text-3xl">key</span>Rent</button>
+        <button class="glass-panel px-8 py-4 rounded-xl font-bold text-primary hover-lift flex flex-col items-center gap-2 w-32"><span class="material-symbols-outlined text-3xl">shopping_bag</span>Buy</button>
+        <button class="glass-panel px-8 py-4 rounded-xl font-bold text-primary hover-lift flex flex-col items-center gap-2 w-32" onclick="requireLoginThen('vendorApply')"><span class="material-symbols-outlined text-3xl">storefront</span>Sell</button>
+        <button class="glass-panel px-8 py-4 rounded-xl font-bold text-primary hover-lift flex flex-col items-center gap-2 w-32"><span class="material-symbols-outlined text-3xl">handshake</span>Request</button>
+      </div>
+    </div>
+  </section>
+  
+  <section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8 border-b border-outline-variant/20">
+    <div class="flex gap-4 overflow-x-auto chip-scroll pb-2">
+      <button class="flex-shrink-0 px-6 py-2 rounded-full border border-primary bg-primary text-white font-label-sm uppercase tracking-wider">All Sectors</button>
+      ${sectors.map(s => `<button class="flex-shrink-0 px-6 py-2 rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface font-label-sm uppercase tracking-wider transition-colors">${esc(s.name)}</button>`).join("")}
+    </div>
+  </section>
+  
+  <section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16">
+    <div class="flex justify-between items-end mb-8">
+      <h2 class="font-headline-md text-primary">Trending Now</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-gutter">
+      ${(trending||[]).map(p => `
+        <div class="bg-surface rounded-2xl border border-outline-variant/30 overflow-hidden hover-lift flex flex-col group cursor-pointer h-72">
+          <div class="w-full h-40 bg-cover bg-center bg-surface-container-highest group-hover:scale-105 transition-transform duration-500" style="background-image: url('${p.photos?.[0] || 'https://lh3.googleusercontent.com/aida/AP1WRLsX-UwmVPgnf_Zu_-WN5JJAfS9k-77dkIAF2C-LqTHh4U0o7Llc67cdLHdMj9Srj00pAyiSwZS2t0jBLUwpLp_VBqe0VKXvVZAIkoU5ZP6hd0Yyt0QIOoAR942-Ld590L-qAzts9vk311f8cT0bXe6Dj-kkIyu5Qai5VXum__PgLU99U9CShR0sltpMdV276mYY9cKV7DewuAQhirFZenrUoTGSaRLrAAaY5tDxSWYi_5cv5PZYAfd0AQ'}')"></div>
+          <div class="p-4 flex-1 flex flex-col justify-between bg-surface relative z-10">
+            <div>
+              <span class="bg-surface-container-highest px-2 py-0.5 rounded text-[10px] font-bold uppercase">${p.listing_type}</span>
+              <h4 class="font-semibold leading-tight mt-2 line-clamp-1">${esc(p.name)}</h4>
+            </div>
+            <div class="mt-2 flex justify-between items-center text-sm">
+              <span class="font-bold">${naira(p.sale_price || p.rental_rate)}</span>
+              <span class="text-outline text-xs line-clamp-1 max-w-[50%]">${esc(p.vendor?.business_name)}</span>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  </section>
+  `;
+  return html;
+}
+
+async function renderVendorsDirectory() {
+  const { data: vends } = await sb.from("vendors").select("*").eq("verification_status", "verified");
+  let html = `<section class="w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-12">
+    <h2 class="font-headline-md text-primary mb-8">All Vendors</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      ${(vends||[]).map(v => `
+        <div class="bg-surface rounded-xl p-6 border border-outline-variant/30 hover-lift cursor-pointer flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-full mb-4 bg-primary text-white flex items-center justify-center font-bold text-xl">${esc(v.business_name[0])}</div>
+          <h4 class="font-bold mb-1">${esc(v.business_name)}</h4>
+          <span class="text-xs text-secondary bg-secondary/10 px-2 py-1 rounded-full mb-3"><i class="fa-solid fa-circle-check"></i> Verified</span>
+          <button class="w-full py-2 border border-outline rounded-lg text-sm font-semibold hover:border-primary transition-colors">View Store</button>
+        </div>
+      `).join("")}
+    </div>
+  </section>`;
+  return html;
+}
+
+// AI Chat Logic
+function toggleAiChat() {
+  const p = byId("aiChatPanel");
+  p.classList.toggle("hidden");
+  if(!p.classList.contains("hidden") && aiChatMessages.length===0) {
+    appendAiChatMessage("assistant", "Hi, I'm Levi! Ask me what buyers are searching for, or anything about Levromart.");
+  }
+}
+function appendAiChatMessage(role, text) {
+  aiChatMessages.push({role, content: text});
+  const wrap = byId("aiChatMessages");
+  const el = document.createElement("div");
+  el.className = `ai-chat-msg ${role}`;
+  el.textContent = text;
+  wrap.appendChild(el);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+async function sendAiChatMessage() {
+  const input = byId("aiChatInput");
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  appendAiChatMessage("user", text);
+  try {
+    const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages: aiChatMessages}) });
+    const json = await res.json();
+    appendAiChatMessage("assistant", json.reply || "I'm here to help!");
+  } catch(e) {
+    appendAiChatMessage("assistant", "I'm offline right now, but I'll be back soon.");
+  }
+}
+
+// Init
+window.onload = async () => {
+  byId("footerYear").textContent = new Date().getFullYear();
+  setTimeout(() => {
+    byId("splashScreen").classList.add("splash-hide");
+    setTimeout(() => byId("splashScreen").classList.add("splash-gone"), 400);
+  }, 1500);
+  await refreshAuthState();
+  navigate("home");
+};
+</script>
 </body></html>
