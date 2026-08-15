@@ -227,6 +227,10 @@
   .ms-item { padding: 0.65rem 0.85rem; border-radius: 0.6rem; font-size: 0.88rem; cursor: pointer; }
   .ms-item:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); }
   .ms-item.selected { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); font-weight: 600; }
+  .ms-group-label { padding: 0.5rem 0.85rem 0.2rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+  .ms-search-wrap { position: sticky; top: 0; background: inherit; padding-bottom: 0.35rem; margin-bottom: 0.2rem; z-index: 1; }
+  .ms-search { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 0.6rem; font-size: 0.85rem; font-family: inherit; background: var(--input-bg); color: var(--text); margin: 0; }
+  .ms-empty { padding: 0.65rem 0.85rem; font-size: 0.85rem; color: var(--text-muted); }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
@@ -247,6 +251,10 @@
   .tabs a.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
   .stat { background: var(--card); border: 1px solid var(--border); border-radius: 0.8rem; padding: 1rem; text-align: center; }
   .stat .n { font-size: 1.5rem; font-weight: 700; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .segmented-tabs { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem; gap: 0.2rem; max-width: 420px; margin: 0 auto; }
+  .segmented-tabs button { flex: 1; border: none; background: none; padding: 0.5rem 0.4rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: background-color 0.15s, color 0.15s; white-space: nowrap; }
+  .segmented-tabs button.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-float); }
+  @media (max-width: 420px) { .segmented-tabs button { font-size: 0.72rem; padding: 0.5rem 0.2rem; } }
   .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 0.4rem; }
   .photo-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.5rem 0; }
   .photo-grid:empty { display: none; }
@@ -639,7 +647,7 @@
     </div>
   </div>
   <div class="accordion-section hidden" id="voiceSettingsSection">
-    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-waveform-lines'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-volume-high'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
       <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
       <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
@@ -1192,6 +1200,7 @@ let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
 let vendorPendingOrderCount = 0;
 let unreadMessageCount = 0;
+let unreadSuggestionCount = 0;
 let notifTarget = null; // { view, params }
 let favoriteIds = new Set();
 
@@ -1225,18 +1234,75 @@ function enhanceSelect(sel) {
   wrap.appendChild(btn);
   wrap.appendChild(list);
 
+  // Long lists (a category picker with 20-30 entries across several
+  // groups, say) are unusable as a plain scroll — a search box to filter
+  // as you type, plus keeping each <optgroup>'s label visible as a
+  // section header, makes a big list navigable instead of just long.
+  const searchThreshold = 8;
+  let searchTerm = "";
+
+  function optionRows() {
+    // Flattens <optgroup>s into {opt, index, groupLabel} rows, since
+    // sel.options itself has no notion of group boundaries.
+    const rows = [];
+    let index = 0;
+    [...sel.children].forEach((child) => {
+      if (child.tagName === "OPTGROUP") {
+        [...child.children].forEach((opt) => { rows.push({ opt, index, groupLabel: child.label }); index++; });
+      } else if (child.tagName === "OPTION") {
+        rows.push({ opt: child, index, groupLabel: null });
+        index++;
+      }
+    });
+    return rows;
+  }
+
   function renderList() {
     list.innerHTML = "";
-    [...sel.options].forEach((opt, i) => {
-      const item = document.createElement("div");
-      item.className = "ms-item" + (i === sel.selectedIndex ? " selected" : "");
-      item.textContent = opt.text;
-      item.addEventListener("click", () => {
-        sel.selectedIndex = i;
-        sel.dispatchEvent(new Event("change", { bubbles: true }));
+    const showSearch = sel.options.length > searchThreshold;
+    if (showSearch) {
+      const searchWrap = document.createElement("div");
+      searchWrap.className = "ms-search-wrap";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "ms-search";
+      input.placeholder = "Search…";
+      input.value = searchTerm;
+      input.addEventListener("click", (e) => e.stopPropagation());
+      input.addEventListener("input", () => { searchTerm = input.value; renderItems(); });
+      searchWrap.appendChild(input);
+      list.appendChild(searchWrap);
+      setTimeout(() => input.focus(), 0);
+    }
+    const itemsWrap = document.createElement("div");
+    list.appendChild(itemsWrap);
+    renderItems(itemsWrap);
+
+    function renderItems(container) {
+      const target = container || itemsWrap;
+      target.innerHTML = "";
+      const term = searchTerm.trim().toLowerCase();
+      const rows = optionRows().filter((r) => !term || r.opt.text.toLowerCase().includes(term));
+      if (!rows.length) { target.innerHTML = `<div class="ms-empty">No matches.</div>`; return; }
+      let lastGroup;
+      rows.forEach(({ opt, index, groupLabel }) => {
+        if (groupLabel && groupLabel !== lastGroup) {
+          const label = document.createElement("div");
+          label.className = "ms-group-label";
+          label.textContent = groupLabel;
+          target.appendChild(label);
+        }
+        lastGroup = groupLabel;
+        const item = document.createElement("div");
+        item.className = "ms-item" + (index === sel.selectedIndex ? " selected" : "");
+        item.textContent = opt.text;
+        item.addEventListener("click", () => {
+          sel.selectedIndex = index;
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        target.appendChild(item);
       });
-      list.appendChild(item);
-    });
+    }
   }
   function sync() {
     btn.textContent = sel.options[sel.selectedIndex]?.text || "";
@@ -1250,7 +1316,7 @@ function enhanceSelect(sel) {
     const willOpen = list.classList.contains("hidden");
     document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
     document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
-    if (willOpen) { list.classList.remove("hidden"); btn.classList.add("open"); }
+    if (willOpen) { searchTerm = ""; renderList(); list.classList.remove("hidden"); btn.classList.add("open"); }
   });
 }
 function enhanceSelectsIn(root) {
@@ -1703,6 +1769,19 @@ async function refreshNotifications() {
     vendorPendingOrderCount = 0;
   }
 
+  // No lightweight count RPC exists for suggestions, and the table's tiny,
+  // so just reuse the same RPC the inbox pages call and count "new" ones —
+  // this is what powers the unread badges on the Feedback/Suggestions nav.
+  if (profile?.role === "admin") {
+    const { data: sugg } = await sb.rpc("get_platform_suggestions");
+    unreadSuggestionCount = (sugg || []).filter((s) => s.status === "new").length;
+  } else if (vendor) {
+    const { data: sugg } = await sb.rpc("get_vendor_suggestions");
+    unreadSuggestionCount = (sugg || []).filter((s) => s.status === "new").length;
+  } else {
+    unreadSuggestionCount = 0;
+  }
+
   const { data: convs } = await sb.rpc("list_my_conversations");
   unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
 
@@ -2022,10 +2101,11 @@ function updateAuthUI() {
       links.push({ label: "<i class='fa-solid fa-shield-halved'></i> Admin panel", action: "navigate('adminPanel')" });
       links.push({ label: "<i class='fa-solid fa-users-gear'></i> Manage admins", action: "navigate('adminUsers')" });
       links.push({ label: "<i class='fa-solid fa-sack-dollar'></i> Vendors &amp; transactions", action: "navigate('adminFinance')" });
+      links.push({ label: `<i class='fa-solid fa-comment-medical'></i> Feedback${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('adminFeedback')" });
     }
     links.push({ label: "<i class='fa-solid fa-route'></i> Take the tour", action: "showTour()" });
     if (profile.role !== "admin") links.push({ label: "<i class='fa-solid fa-comment-medical'></i> Send feedback", action: "showSuggestionModal('platform')" });
-    if (vendor) links.push({ label: "<i class='fa-solid fa-inbox'></i> Suggestions", action: "navigate('vendorSuggestionsInbox')" });
+    if (vendor) links.push({ label: `<i class='fa-solid fa-inbox'></i> Suggestions${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('vendorSuggestionsInbox')" });
 
     panel.innerHTML = `
       <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
@@ -2420,7 +2500,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
       case "vendorEarnings": app.innerHTML = await renderVendorEarnings(); break;
       case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
-      case "buyerOrders": app.innerHTML = await renderBuyerOrders(); break;
+      case "buyerOrders": app.innerHTML = await renderBuyerOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
       case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
       case "adminPanel": app.innerHTML = await renderAdminPanel(params.status); break;
       case "adminDisputes": app.innerHTML = await renderAdminDisputes(); break;
@@ -2591,12 +2671,23 @@ function submitHeroSearch() {
 async function fetchSearchSuggestions(term) {
   const box = byId("heroSearchSuggest");
   if (!box) return;
-  const [{ data: prods }, { data: vends }] = await Promise.all([
-    sb.from("products").select("id,name,vendor:vendors!inner(business_name,verification_status)")
-      .eq("status", "active").eq("vendor.verification_status", "verified").ilike("name", `%${term}%`).limit(5),
+  // Same word-by-word + typo-tolerant matching as the full browse search,
+  // so a product shows up here even if the buyer only typed a related
+  // keyword or category rather than the exact product name.
+  const [{ data: idRows }, { data: vends }] = await Promise.all([
+    sb.rpc("search_product_ids", { p_query: term }),
     sb.from("vendors").select("id,business_name").eq("verification_status", "verified").ilike("business_name", `%${term}%`).limit(3),
   ]);
   // still typing? don't flash a stale list
+  if (byId("heroSearch")?.value.trim() !== term) return;
+
+  const topIds = (idRows || []).slice(0, 5).map((r) => r.id);
+  let prods = [];
+  if (topIds.length) {
+    const { data } = await sb.from("products").select("id,name,vendor:vendors!inner(business_name,verification_status)")
+      .eq("status", "active").eq("vendor.verification_status", "verified").in("id", topIds);
+    prods = (data || []).sort((a, b) => topIds.indexOf(a.id) - topIds.indexOf(b.id));
+  }
   if (byId("heroSearch")?.value.trim() !== term) return;
 
   const items = [
@@ -2618,6 +2709,11 @@ async function filterHomeProducts() {
 
   let matchingIds = null;
   if (search) {
+    // search_product_ids does word-by-word + typo-tolerant matching (not
+    // just "the whole query as one substring"), so "blue traditional
+    // dress" can find a product named "Aso-Ebi Blue" filed under
+    // Traditional Wear — and it returns best-match-first, which the plain
+    // .order("created_at") below would otherwise throw away.
     const { data: idRows } = await sb.rpc("search_product_ids", { p_query: search });
     matchingIds = (idRows || []).map((r) => r.id);
     if (matchingIds.length === 0) {
@@ -2645,6 +2741,9 @@ async function filterHomeProducts() {
     grid.innerHTML = `<div class="empty-state">No products found. Vendors, start listing!</div>`;
     return;
   }
+  // Restore search relevance order (best match first) instead of the
+  // created_at order the query above applies by default.
+  if (matchingIds) products.sort((a, b) => matchingIds.indexOf(a.id) - matchingIds.indexOf(b.id));
   grid.innerHTML = products.map(productCardHtml).join("");
 }
 
@@ -3689,6 +3788,7 @@ async function renderVendorDashboard() {
   </div>`;
   html += `<div class="dash-actions">
     <button class="quick-action outline" onclick="navigate('vendorEarnings')"><span class="quick-action-icon"><i class='fa-solid fa-sack-dollar'></i></span><span>Earnings</span></button>
+    <button class="quick-action outline" onclick="navigate('vendorSuggestionsInbox')"><span class="quick-action-icon" style="position:relative;"><i class='fa-solid fa-inbox'></i>${unreadSuggestionCount > 0 ? `<span class="notif-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</span><span>Suggestions</span></button>
     <button class="quick-action outline" onclick="navigate('vendorEditProfile')"><span class="quick-action-icon"><i class='fa-solid fa-pen'></i></span><span>Edit profile</span></button>
   </div>`;
   html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
@@ -3761,18 +3861,18 @@ async function renderVendorEarnings() {
     .order("payout_released_at", { ascending: false });
   window.__vendorEarningsOrders = orders || [];
 
-  let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Earnings</h2>
-  <p class="muted">A running in-and-out ledger: when a buyer's payment came in, and when your cut actually went out to your bank — use this to check what Levromart has paid you against your own records.</p>`;
-  html += `<div class="flex" style="flex-wrap:wrap;margin-bottom:1rem;" id="vendorEarningsTabs">
-    ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="btn btn-sm ${p === "today" ? "" : "btn-outline"}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
+  let html = `<h2 style="text-align:center;"><i class="fa-solid fa-sack-dollar"></i> Earnings</h2>
+  <p class="muted" style="text-align:center;max-width:420px;margin:0 auto 1rem;">In and out, at a glance — check this against your own records.</p>`;
+  html += `<div class="segmented-tabs" id="vendorEarningsTabs">
+    ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="${p === "today" ? "active" : ""}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
   </div>`;
-  html += `<div id="vendorEarningsBody"></div>`;
+  html += `<div id="vendorEarningsBody" style="margin-top:1.2rem;"></div>`;
   setTimeout(renderVendorEarningsBody, 0);
   return html;
 }
 function switchVendorEarningsPeriod(period) {
   vendorEarningsPeriod = period;
-  document.querySelectorAll("#vendorEarningsTabs [data-earn-period]").forEach((btn) => btn.classList.toggle("btn-outline", btn.dataset.earnPeriod !== period));
+  document.querySelectorAll("#vendorEarningsTabs [data-earn-period]").forEach((btn) => btn.classList.toggle("active", btn.dataset.earnPeriod === period));
   renderVendorEarningsBody();
 }
 function renderVendorEarningsBody() {
@@ -3791,8 +3891,7 @@ function renderVendorEarningsBody() {
   if (!filtered.length) { body.innerHTML = `<div class="empty-state">No payouts in this period yet.</div>`; return; }
 
   const periodTotal = filtered.reduce((s, o) => s + vendorEarningsNet(o.total_amount, commissionPct), 0);
-  let html = `<div class="stat" style="max-width:280px;margin-bottom:1.2rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Estimated total paid to you (${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()})</div></div>`;
-  html += `<p class="muted" style="font-size:0.8rem;margin-top:-0.6rem;margin-bottom:1rem;">Grouped by Paystack's expected settlement date — the business day after the buyer paid (weekends roll to the following Monday), since Paystack doesn't tell us the exact date it lands.</p>`;
+  let html = `<div class="stat" style="max-width:280px;margin:0 auto 1.4rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Paid to you — ${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()}</div></div>`;
 
   const byDate = new Map();
   filtered.forEach((o) => {
@@ -3806,21 +3905,20 @@ function renderVendorEarningsBody() {
     html += `<div class="category-group-header flex" style="justify-content:space-between;">
       <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Order total</th><th><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Expected in your bank</th><th>Est. paid to you</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th style="text-align:center;"><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th style="text-align:center;"><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th style="text-align:center;">Amount</th></tr></thead><tbody>`;
     dayOrders.forEach((o) => {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
       html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
         <td>${items}</td>
-        <td>${naira(o.total_amount)}</td>
-        <td>${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">—</span>'}</td>
-        <td>${esc(o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }))}</td>
-        <td>${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
+        <td style="text-align:center;">${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">—</span>'}</td>
+        <td style="text-align:center;">${esc(o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }))}</td>
+        <td style="text-align:center;">${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
   });
 
-  html += `<p class="muted" style="font-size:0.82rem;margin-top:0.6rem;">"Est. paid to you" is your order total minus Levromart's ${commissionPct}% commission. It's an estimate — it doesn't subtract Paystack's own processing fee, so the amount that actually lands in your bank may be a little lower.</p>`;
+  html += `<p class="muted" style="font-size:0.76rem;text-align:center;margin-top:0.8rem;">Estimated amounts — after Levromart's ${commissionPct}% commission, before Paystack's own fee, so the actual amount may be a touch lower.</p>`;
   body.innerHTML = html;
 }
 function formatEarningsDateTime(dateStr) {
@@ -3837,6 +3935,7 @@ async function renderVendorEditProfile() {
   const commissionOwed = Number(owed || 0);
   const { data: billingPreview } = await sb.rpc("compute_monthly_billing_amount", { p_vendor_id: v.id });
   const bp = (billingPreview && billingPreview[0]) || { listing_count: 0, amount: 0 };
+  setTimeout(loadBankOptions, 0);
 
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
@@ -3883,7 +3982,7 @@ async function renderVendorEditProfile() {
       : `<div class="banner banner-warning" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Not set up yet.</strong> Until you add your bank, order payments go to Levromart and you'll be paid out manually.</div>`}
     <div id="bankFormWrap" class="${v.paystack_subaccount_code ? "hidden" : ""}" style="margin-top:0.8rem;">
       <label>Bank</label>
-      <select id="veBankCode">${NIGERIAN_BANKS.map((b) => `<option value="${b.code}" ${b.code === v.bank_code ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select>
+      <select id="veBankCode" data-current-bank="${esc(v.bank_code || "")}">${NIGERIAN_BANKS.map((b) => `<option value="${b.code}" ${b.code === v.bank_code ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select>
       <label>Account number</label>
       <input id="veAccountNumber" inputmode="numeric" maxlength="10" placeholder="10-digit account number" value="${esc(v.account_number || "")}" />
       <button class="btn btn-sm" style="margin-top:0.6rem;" id="saveBankBtn" onclick="saveVendorBankDetails()">Save payout details</button>
@@ -3907,6 +4006,10 @@ async function renderVendorEditProfile() {
   </div>`;
 }
 
+// Small hardcoded fallback for if the live Paystack bank list can't be
+// reached — loadBankOptions() below replaces this with Paystack's full,
+// current list (every bank, microfinance bank and fintech they support)
+// on every render of this page, so vendors aren't limited to this subset.
 const NIGERIAN_BANKS = [
   { name: "Access Bank", code: "044" }, { name: "Citibank Nigeria", code: "023" }, { name: "Ecobank Nigeria", code: "050" },
   { name: "Fidelity Bank", code: "070" }, { name: "First Bank of Nigeria", code: "011" }, { name: "First City Monument Bank", code: "214" },
@@ -3918,6 +4021,20 @@ const NIGERIAN_BANKS = [
   { name: "Union Bank of Nigeria", code: "032" }, { name: "United Bank For Africa", code: "033" }, { name: "Unity Bank", code: "215" },
   { name: "Wema Bank", code: "035" }, { name: "Zenith Bank", code: "057" },
 ];
+async function loadBankOptions() {
+  const select = byId("veBankCode");
+  if (!select) return;
+  const currentBank = select.dataset.currentBank || "";
+  try {
+    const res = await fetch("/api/vendor-payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list-banks" }) });
+    const json = await res.json();
+    if (!res.ok || !json.banks?.length) return;
+    select.innerHTML = json.banks.map((b) => `<option value="${esc(b.code)}" ${b.code === currentBank ? "selected" : ""}>${esc(b.name)}</option>`).join("");
+    if (select.dataset.msEnhanced) select.dispatchEvent(new Event("change", { bubbles: true }));
+  } catch (e) {
+    // Fine — the hardcoded NIGERIAN_BANKS list already rendered as a fallback.
+  }
+}
 
 async function saveVendorBankDetails() {
   const errorEl = byId("bankError");
@@ -4592,12 +4709,44 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   return html;
 }
 
-async function renderBuyerOrders() {
+async function renderBuyerOrders(status, type, payment, dateFrom, dateTo) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
-  const { data: orders } = await sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name)").eq("buyer_id", session.user.id).order("created_at", { ascending: false });
+  status = ORDER_TABS.includes(status) ? status : "all";
+  type = ORDER_TYPE_TABS.some((t) => t.value === type) ? type : "all";
+  payment = ["all", "paid", "unpaid"].includes(payment) ? payment : "all";
+  dateFrom = dateFrom || "";
+  dateTo = dateTo || "";
+
+  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name), items:order_items(product:products(is_service)), payments(payment_type, status)").eq("buyer_id", session.user.id);
+  if (status !== "all") query = query.eq("status", status);
+  if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
+  if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
+  const { data: allOrders } = await query.order("created_at", { ascending: false });
+  let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
+  if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
+
   let html = `<h2><i class='fa-solid fa-clipboard-list'></i> My Orders</h2>`;
+  html += `<div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
+    <select onchange="navigate('buyerOrders',{status:this.value,type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
+      ${ORDER_TABS.map((t) => `<option value="${t}" ${t === status ? "selected" : ""}>${t === "all" ? "All statuses" : esc(t.replace("_", " ").replace(/^./, (c) => c.toUpperCase()))}</option>`).join("")}
+    </select>
+    <select onchange="navigate('buyerOrders',{status:'${status}',type:this.value,payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
+      ${ORDER_TYPE_TABS.map((t) => `<option value="${t.value}" ${t.value === type ? "selected" : ""}>${t.value === "all" ? "All types" : esc(t.label)}</option>`).join("")}
+    </select>
+    <select onchange="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:this.value,dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
+      <option value="all" ${payment === "all" ? "selected" : ""}>All payments</option>
+      <option value="paid" ${payment === "paid" ? "selected" : ""}>Paid</option>
+      <option value="unpaid" ${payment === "unpaid" ? "selected" : ""}>Not paid yet</option>
+    </select>
+  </div>
+  <div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0 0 0.8rem;align-items:center;">
+    <label style="margin:0;font-size:0.78rem;font-weight:400;">From <input type="date" value="${esc(dateFrom)}" onchange="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:this.value,dateTo:'${dateTo}'})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
+    <label style="margin:0;font-size:0.78rem;font-weight:400;">To <input type="date" value="${esc(dateTo)}" onchange="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:this.value})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
+    ${dateFrom || dateTo ? `<a href="#" onclick="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:'${payment}'});return false;">Clear dates</a>` : ""}
+  </div>`;
   html += orderListHtml(sortOrdersForList(orders), true);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Continue shopping</button>`;
+  setTimeout(() => enhanceSelectsIn(byId("app")), 0);
   return html;
 }
 
@@ -4609,18 +4758,18 @@ function orderStatusBadgeClass(status) {
   return ""; // pending — plain accent color
 }
 
-// Pending orders need action, so they float to the top regardless of when
-// they came in; cancelled orders are done and don't need eyes on them, so
-// they sink to the bottom. Everything else stays newest-first in between.
-// Pending/disputed need eyes on them first, then anything still in
-// progress (confirmed/handed over/returned), then finished orders, with
-// cancelled sinking to the very bottom since there's nothing left to do.
+// Pending and confirmed orders need action right now, so they float to the
+// top regardless of when they came in. Handed-over/returned (still in
+// progress) sit next, then finished (completed) orders. Disputed sinks to
+// the bottom with cancelled — a dispute needs an admin's attention, not
+// day-to-day action from the vendor, so it doesn't need to compete for
+// top-of-list space. Everything stays newest-first within its own group.
 function sortOrdersForList(orders) {
   const rank = (o) => {
-    if (o.status === "pending" || o.status === "disputed") return 0;
-    if (o.status === "cancelled") return 3;
+    if (o.status === "pending" || o.status === "confirmed") return 0;
+    if (o.status === "handed_over" || o.status === "returned") return 1;
     if (o.status === "completed") return 2;
-    return 1; // confirmed, handed_over, returned
+    return 3; // disputed, cancelled
   };
   return [...(orders || [])].sort((a, b) => {
     const ra = rank(a), rb = rank(b);
@@ -5005,7 +5154,7 @@ function adminNavHtml(active) {
     ["adminUsers", "fa-user-shield", "Admins"],
     ["adminLog", "fa-clock-rotate-left", "Log"],
   ];
-  return `<div class="dash-actions">${items.map(([view, icon, label]) => `<button class="quick-action ${view === active ? "" : "outline"}" onclick="navigate('${view}')"><span class="quick-action-icon"><i class="fa-solid ${icon}"></i></span><span>${label}</span></button>`).join("")}</div>`;
+  return `<div class="dash-actions">${items.map(([view, icon, label]) => `<button class="quick-action ${view === active ? "" : "outline"}" onclick="navigate('${view}')"><span class="quick-action-icon" style="position:relative;"><i class="fa-solid ${icon}"></i>${view === "adminFeedback" && unreadSuggestionCount > 0 ? `<span class="notif-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</span><span>${label}</span></button>`).join("")}</div>`;
 }
 
 async function renderAdminPanel(status) {
