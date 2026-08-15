@@ -5,14 +5,15 @@
 // endpoints now share a file, picked by `action`).
 //
 // "create-subaccount" { bankCode, accountNumber } -> { account_name, subaccount_code }
-//   Verifies and saves the calling vendor's bank details. The Paystack
-//   subaccount created here is no longer used to auto-split payments at
-//   checkout — since escrow (order-payout-action.js), the platform holds
-//   the full charge and pays the vendor out separately via a Transfer
-//   Recipient built from these same saved bank details. Kept as-is
-//   because it's still the vendor-facing "link your bank account" flow
-//   and Paystack's bank-resolve step lives here; the subaccount_code
-//   itself just goes unused now.
+//   Verifies the vendor's bank details with Paystack (which resolves the
+//   real account holder name off the account number+bank code — that's
+//   how we know it's a real, existing account and not just typed text),
+//   then registers a Paystack "subaccount" tied to that account. The
+//   returned subaccount_code is what initiate-payment.js later passes to
+//   Paystack at checkout to auto-split each charge — Paystack itself
+//   holds the subaccount_code -> bank account mapping on its end, so our
+//   database only needs to remember the code, not re-send bank details
+//   on every order.
 //
 // "pay-commission" -> { authorization_url, reference }
 //   Lets a vendor settle commission owed on their offline (cash/transfer)
