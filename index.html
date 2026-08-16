@@ -778,6 +778,18 @@
   </div>
 </div>
 
+<div id="locationPromptModal" class="modal hidden">
+  <div class="modal-content install-modal-content">
+    <div class="install-modal-badge"><i class="fa-solid fa-location-dot" style="font-size:1.7rem;color:#fff;"></i></div>
+    <h3>Share your location</h3>
+    <p class="muted">See how far each vendor is and get results sorted nearest-first. Your browser will ask separately to confirm, this only stays on your device and is never stored on our servers.</p>
+    <div class="install-modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="resolveLocationPrompt(false)">Not now</button>
+      <button class="btn" onclick="resolveLocationPrompt(true)"><i class="fa-solid fa-location-crosshairs"></i> Share location</button>
+    </div>
+  </div>
+</div>
+
 <div id="tourModal" class="tour-spotlight-overlay hidden">
   <div class="tour-spotlight-hole centered" id="tourSpotlightHole"></div>
   <div class="install-modal-content tour-content tour-callout centered" id="tourCallout">
@@ -1505,6 +1517,32 @@ let buyerLocation = null; // { lat, lng } | null
 function getBuyerLocation() {
   if (buyerLocation) return Promise.resolve(buyerLocation);
   return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; return loc; });
+}
+// Shows our own explanatory modal BEFORE the browser's native permission
+// dialog, so buyers know why we're asking instead of being ambushed by an
+// OS-level popup out of nowhere (which tends to get reflexively blocked).
+// Only used for buyer-initiated distance features; a vendor tapping "Use my
+// current location" already knows exactly what that button does.
+let pendingLocationResolve = null;
+function showLocationPrompt() {
+  return new Promise((resolve) => {
+    pendingLocationResolve = resolve;
+    byId("locationPromptModal")?.classList.remove("hidden");
+    trackModalOpened("locationPromptModal");
+  });
+}
+function resolveLocationPrompt(granted) {
+  byId("locationPromptModal")?.classList.add("hidden");
+  if (dismissibleModalId === "locationPromptModal") dismissibleModalId = null;
+  const resolve = pendingLocationResolve;
+  pendingLocationResolve = null;
+  resolve?.(granted);
+}
+async function requestBuyerLocation() {
+  if (buyerLocation) return buyerLocation;
+  const wantsToShare = await showLocationPrompt();
+  if (!wantsToShare) throw new Error("Location sharing declined.");
+  return getBuyerLocation();
 }
 
 // ---------- SOUND EFFECTS ----------
@@ -3581,11 +3619,11 @@ async function showDistancesInVendorsList() {
   const btn = byId("vendorsShowDistanceBtn");
   if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating…`; }
   try {
-    await getBuyerLocation();
+    await requestBuyerLocation();
     filterVendorsDirectory();
     btn?.remove();
   } catch (err) {
-    showToast(err.message, "error");
+    if (err.message !== "Location sharing declined.") showToast(err.message, "error");
     if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> Show distances`; }
   }
 }
@@ -3615,9 +3653,9 @@ async function renderVendorsMap() {
 
   let center = [6.5244, 3.3792]; // Lagos, used until/unless we know better
   let zoom = 11;
-  if (statusEl) statusEl.textContent = "Locating you…";
+  if (!buyerLocation && statusEl) statusEl.textContent = "Share your location to see vendors near you.";
   try {
-    const loc = await getBuyerLocation();
+    const loc = await requestBuyerLocation();
     center = [loc.lat, loc.lng];
     zoom = 13;
     if (statusEl) statusEl.textContent = "Showing vendors near you, closest first.";
@@ -6984,6 +7022,7 @@ const DISMISSIBLE_MODAL_CLOSERS = {
   notifPromptModal: dismissNotifPrompt,
   tourModal: finishTour,
   suggestionModal: closeSuggestionModal,
+  locationPromptModal: () => resolveLocationPrompt(false),
 };
 function trackModalOpened(id) {
   dismissibleModalId = id;
