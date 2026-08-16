@@ -3710,7 +3710,7 @@ async function renderProductDetail(productId) {
     <div>
       <h2>${esc(product.name)}</h2>
       ${product.is_service ? `<span class="badge">Service</span>` : ""}
-      <p>${esc(product.description || "No description")}</p>
+      <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
       ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a></p>
       <div class="trust-badges">
