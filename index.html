@@ -1738,6 +1738,7 @@ function toggleLocationSetting() {
   if (!locationSharingEnabled) buyerLocation = null;
   renderLocationToggle();
   if (soundEnabled) playSound("click");
+  showToast(locationSharingEnabled ? "Location sharing turned on. You'll be asked to share your location the next time a feature needs it." : "Location sharing turned off.", "success");
 }
 function renderLocationToggle() {
   const el = byId("locationToggleOption");
@@ -4044,16 +4045,21 @@ async function renderStorefront(vendorId) {
     </div>
   </div>`;
   if (v.bio) html += `<p style="margin:0.6rem 0;">${esc(v.bio)}</p>`;
-  html += `<div class="trust-badges">
-    ${v.sector?.name ? `<span class="badge"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</span>` : ""}
-    ${v.cac_number ? `<span class="badge success"><i class='fa-solid fa-building-columns'></i> CAC verified</span>` : ""}
-    ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0} review${st.review_count === 1 ? "" : "s"})</span>` : ""}
-    ${st.completed_orders ? `<span class="badge">${st.completed_orders} completed order${st.completed_orders === 1 ? "" : "s"}</span>` : ""}
-    ${yearsSince(v.created_at) ? `<span class="badge">${yearsSince(v.created_at)}</span>` : ""}
-    ${v.opening_hours ? `<span class="badge"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</span>` : ""}
-  </div>`;
+  // Only the two badges a buyer actually decides on stay always visible —
+  // sector/CAC/years/hours are still there, just tucked into the "..."
+  // menu as plain lines instead of a wrapping wall of chips.
+  if (st.avg_rating || st.completed_orders) {
+    html += `<div class="trust-badges">
+      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0} review${st.review_count === 1 ? "" : "s"})</span>` : ""}
+      ${st.completed_orders ? `<span class="badge">${st.completed_orders} completed order${st.completed_orders === 1 ? "" : "s"}</span>` : ""}
+    </div>`;
+  }
   const storefrontMoreItems = [
     v.phone ? `<a class="ms-item" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : "",
+    v.sector?.name ? `<div class="ms-item"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</div>` : "",
+    v.cac_number ? `<div class="ms-item"><i class='fa-solid fa-building-columns'></i> CAC verified</div>` : "",
+    yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-cake-candles"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
+    v.opening_hours ? `<div class="ms-item"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</div>` : "",
     profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
   ].filter(Boolean).join("");
   html += `<div class="contact-actions">
@@ -5588,7 +5594,7 @@ function orderListHtml(orders, isBuyerView) {
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
         ${o.created_at ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-solid fa-calendar-days"></i> ${orderDateTimeStr(o.created_at)}</p>` : ""}
       </div>
-      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status}</span>
+      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
     </div>`).join("");
 }
 
@@ -7527,7 +7533,8 @@ async function sendAiChatMessage() {
     playSound("notify");
   } catch (err) {
     byId("aiChatTyping")?.remove();
-    appendAiChatMessage("assistant", `Sorry, I'm not available right now: ${err.message}`);
+    console.error("Levi chat error:", err);
+    appendAiChatMessage("assistant", "Levi is unavailable right now. Please try again in a moment.");
   }
 }
 
