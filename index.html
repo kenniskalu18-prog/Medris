@@ -3085,13 +3085,20 @@ async function renderHome() {
   if (activeSector) vendorQuery = vendorQuery.eq("category.sector_id", activeSector.id);
   let topVendorsQuery = sb.from("vendors").select("id, business_name, city, avg_rating, review_count, logo_url").eq("verification_status", "verified");
   if (activeSector) topVendorsQuery = topVendorsQuery.eq("sector_id", activeSector.id);
+  // The hero backdrop is just the 3 most recently listed products' photos --
+  // deliberately not the trending list below, so it stays fresh and never
+  // turns into a cluttered wall of every product photo on the site.
+  let recentPhotosQuery = sb.from("products").select("photos, created_at, vendor:vendors!inner(verification_status, is_active), category:categories(sector_id)")
+    .eq("status", "active").eq("vendor.verification_status", "verified").eq("vendor.is_active", true);
+  if (activeSector) recentPhotosQuery = recentPhotosQuery.eq("category.sector_id", activeSector.id);
 
-  const [{ data: trending }, { data: topVendors }] = await Promise.all([
+  const [{ data: trending }, { data: topVendors }, { data: recentProducts }] = await Promise.all([
     vendorQuery.order("view_count", { ascending: false }).limit(6),
     topVendorsQuery.order("avg_rating", { ascending: false }).limit(6),
+    recentPhotosQuery.order("created_at", { ascending: false }).limit(3),
   ]);
 
-  const heroPhotos = [...new Set((trending || []).map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 6);
+  const heroPhotos = [...new Set((recentProducts || []).map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 3);
 
   let html = `<div class="hero">
     ${heroPhotos.length >= 3 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy" />`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
