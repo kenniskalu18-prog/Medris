@@ -5076,6 +5076,7 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
     if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
   }
   if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
+  if (isBuyer && order.status === "confirmed") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
   if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
   // Only the buyer confirms completion — that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
@@ -5129,6 +5130,32 @@ async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
   navigate("orderDetail", { orderId });
+}
+
+// Self-serve cancel for a confirmed-but-not-yet-handed-over order. Safe to
+// automate because nothing's been handed over yet; if the buyer already
+// paid, this also triggers an immediate Paystack refund. Once the vendor
+// marks it handed over, cancelling requires a dispute instead.
+async function buyerCancelOrder(orderId, feePaid) {
+  const msg = feePaid
+    ? "Cancel this order? You already paid, so this refunds your payment in full back to your original payment method via Paystack."
+    : "Cancel this order? The vendor confirmed it but you haven't paid yet, so there's nothing to refund.";
+  if (!(await showConfirmDialog(msg, { title: "Cancel order", okLabel: "Cancel order", danger: true }))) return;
+  try {
+    const res = await fetch("/api/order-payout-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "buyer-cancel", orderId, accessToken: session.access_token }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Could not cancel this order.");
+    if (json.refundError) showToast("Order cancelled. There was a hiccup issuing your refund, our team will sort it out.", "info");
+    else if (json.refunded) showToast("Order cancelled and refunded.", "success");
+    else showToast("Order cancelled.", "success");
+    navigate("orderDetail", { orderId });
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 }
 
 let notReceivedOrderId = null;
@@ -6123,7 +6150,7 @@ function renderRefundPolicy() {
     <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5–10 business days, per Paystack's processing time).</p>
 
     <h3>2. After a vendor confirms your order</h3>
-    <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
+    <p>You can still cancel freely from your Orders page any time before the vendor marks your order as handed over, whether or not you've paid yet. Any payment already made online is refunded in full the same way. Once handed over, cancellations go through Levromart's dispute process instead. For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
 
     <h3>3. Refundable deposits</h3>
     <p>Rental deposits are meant to cover damage or non-return. If equipment is returned in its original condition, there's nothing further for you to do. If there's a disagreement about the equipment's condition or the deposit isn't returned, either side can raise a dispute for a Levromart admin to review, including a refund from Levromart where warranted.</p>
