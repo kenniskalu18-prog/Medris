@@ -5,6 +5,15 @@
 // to the *other* party in any past transaction. Instead: anonymize the
 // profile and permanently ban the login, which is the standard safe
 // pattern for this exact FK-cascade situation.
+//
+// Anything that's exclusively this user's own data, with no other party
+// depending on it, is actually deleted outright rather than anonymized:
+// wishlist, Levi chat history, their own notification inbox, and push
+// subscriptions. Orders/payments/reviews/messages/equipment requests stay
+// (anonymized where the schema allows it) because deleting those rows
+// would also destroy the other side's transaction or conversation record
+// — e.g. a request's offers cascade from the request itself, so wiping a
+// buyer's old request would silently erase a vendor's response to it too.
 const { readBody, env } = require("./_util");
 
 module.exports = async function handler(req, res) {
@@ -53,9 +62,22 @@ module.exports = async function handler(req, res) {
     if (vendorRow) {
       await fetch(`${SUPABASE_URL}/rest/v1/vendors?id=eq.${vendorRow.id}`, {
         method: "PATCH", headers: { ...svcHeaders, Prefer: "return=minimal" },
-        body: JSON.stringify({ is_active: false, bio: null, phone: null, whatsapp_number: null }),
+        body: JSON.stringify({
+          is_active: false, bio: null, phone: null, whatsapp_number: null,
+          logo_url: null, cac_number: null, lat: null, lng: null,
+          address: null, city: null, opening_hours: null,
+        }),
       });
     }
+
+    // Purely personal data with no other party attached to it -- safe to
+    // delete outright instead of just anonymizing.
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/favorites?buyer_id=eq.${me.id}`, { method: "DELETE", headers: svcAuth }),
+      fetch(`${SUPABASE_URL}/rest/v1/ai_conversations?user_id=eq.${me.id}`, { method: "DELETE", headers: svcAuth }),
+      fetch(`${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${me.id}`, { method: "DELETE", headers: svcAuth }),
+      fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${me.id}`, { method: "DELETE", headers: svcAuth }),
+    ]);
 
     // Permanently ban the login (no expiry we'd ever reasonably hit) rather
     // than deleting the auth row, since that delete would cascade.
