@@ -1502,6 +1502,20 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 function formatDistanceKm(km) {
   return km < 1 ? `${Math.round(km * 1000)} m away` : `${km.toFixed(1)} km away`;
 }
+// A rough delivery-time estimate from straight-line distance -- real
+// routing (actual roads, traffic right now) isn't available, so this is
+// deliberately conservative (city-traffic speed, not highway) and always
+// shown as a wide range rather than a single falsely-precise number, to
+// avoid setting an expectation Levromart can't actually promise.
+function estimateDeliveryRange(distanceKm) {
+  const prepMin = 20; // packing + dispatch buffer
+  const speedKmh = 15; // conservative urban delivery speed
+  const travelMin = (distanceKm / speedKmh) * 60;
+  const low = Math.max(15, Math.round(((prepMin + travelMin * 0.7) / 5)) * 5);
+  const high = Math.max(low + 10, Math.round(((prepMin + travelMin * 1.3) / 5)) * 5);
+  const fmt = (m) => (m >= 60 ? `${(m / 60).toFixed(m % 60 === 0 ? 0 : 1)} hr` : `${m} min`);
+  return `${fmt(low)}–${fmt(high)}`;
+}
 function getCurrentPositionOnce() {
   if (!("geolocation" in navigator)) return Promise.reject(new Error("Location isn't available on this device/browser."));
   return new Promise((resolve, reject) => {
@@ -3332,7 +3346,7 @@ async function sendChatMessage(conversationId) {
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
     .from("products")
-    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee), category:categories(name)")
+    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee, lat, lng), category:categories(name)")
     .eq("id", productId)
     .eq("status", "active")
     .eq("vendor.verification_status", "verified")
@@ -3391,7 +3405,7 @@ async function renderProductDetail(productId) {
         <input type="date" id="rentEnd" min="${today}" />
         <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
       </div>
-      ${deliveryFieldsHtml("rent", product.vendor.delivery_fee)}
+      ${deliveryFieldsHtml("rent", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng)}
       <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
       <p id="rentError" class="error-text hidden"></p>
     </div>`;
@@ -3406,7 +3420,7 @@ async function renderProductDetail(productId) {
           : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />`}
       </div>
       ${isTimedService ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
-      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee)}
+      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng)}
       <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
@@ -3440,22 +3454,65 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
-function deliveryFieldsHtml(prefix, deliveryFee) {
+function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng) {
   const fee = Number(deliveryFee) || 0;
+  const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex" style="margin-top:0.6rem;">
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
-    <div id="${prefix}DeliveryFields" class="hidden">
+    <div id="${prefix}DeliveryFields" class="hidden" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
       ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
+      ${hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;" id="${prefix}EtaLine"></p>` : ""}
       <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a>. It'll remember for next time.</p>
     </div>`;
 }
 function toggleDeliveryFields(prefix) {
   const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value;
   byId(`${prefix}DeliveryFields`)?.classList.toggle("hidden", method !== "delivery");
+  if (method === "delivery") updateDeliveryEta(prefix);
+}
+function updateDeliveryEta(prefix) {
+  const wrap = byId(`${prefix}DeliveryFields`);
+  const etaEl = byId(`${prefix}EtaLine`);
+  if (!wrap || !etaEl) return;
+  const vLat = parseFloat(wrap.dataset.vendorLat);
+  const vLng = parseFloat(wrap.dataset.vendorLng);
+  if (isNaN(vLat) || isNaN(vLng)) return;
+  if (!buyerLocation) {
+    etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time available once you <a href="#" onclick="requestDeliveryEta('${prefix}');return false;">share your location</a>.`;
+    return;
+  }
+  const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vLat, vLng);
+  etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
+}
+async function requestDeliveryEta(prefix) {
+  try {
+    await requestBuyerLocation();
+    updateDeliveryEta(prefix);
+  } catch (err) { /* declined, leave as-is */ }
+}
+// Same idea as updateDeliveryEta, but for an order that's already placed --
+// keyed off window.__orderEtaVendor since this fires from a setTimeout
+// outside the render closure that built the order detail page.
+function updateOrderDeliveryEta() {
+  const etaEl = byId("orderEtaLine");
+  const v = window.__orderEtaVendor;
+  if (!etaEl || !v) return;
+  if (!buyerLocation) {
+    etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> <a href="#" onclick="requestOrderEta();return false;">Share your location</a> to see an estimated delivery time.`;
+    return;
+  }
+  const km = haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng);
+  etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
+}
+async function requestOrderEta() {
+  try {
+    await requestBuyerLocation();
+    updateOrderDeliveryEta();
+  } catch (err) { /* declined, leave as-is */ }
 }
 function readDeliveryFields(prefix, errorEl) {
   const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value || "pickup";
@@ -5233,7 +5290,7 @@ async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
     .from("orders")
-    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
+    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id, lat, lng), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
     .eq("id", orderId)
     .maybeSingle();
   if (error || !order) return '<div class="empty-state">Order not found.</div>';
@@ -5284,7 +5341,12 @@ async function renderOrderDetail(orderId) {
       ${order.deposit_amount > 0 ? `<div><p class="muted" style="margin:0;">Refundable deposit</p><strong>${naira(order.deposit_amount)}</strong></div>` : ""}
       <div><p class="muted" style="margin:0;">Delivery</p><strong style="text-transform:capitalize;">${order.delivery_method}${order.delivery_address ? " · " + esc(order.delivery_address) : ""}</strong>${order.delivery_phone ? `<p class="muted" style="margin:0.2rem 0 0;"><i class="fa-solid fa-phone"></i> <a href="${telLink(order.delivery_phone)}">${esc(order.delivery_phone)}</a></p>` : ""}</div>
     </div>
+    ${order.delivery_method === "delivery" && order.vendor?.lat != null && order.vendor?.lng != null ? `<p class="muted" id="orderEtaLine" style="font-size:0.8rem;margin-top:0.6rem;"></p>` : ""}
   </div>`;
+  if (order.delivery_method === "delivery" && order.vendor?.lat != null && order.vendor?.lng != null) {
+    window.__orderEtaVendor = { lat: order.vendor.lat, lng: order.vendor.lng };
+    setTimeout(updateOrderDeliveryEta, 0);
+  }
 
   if (isVendor) {
     const { data: contact } = await sb.rpc("get_order_buyer_contact", { p_order_id: orderId });
@@ -6645,16 +6707,24 @@ document.addEventListener("click", (e) => {
 // Levi ends a reply with an invisible [[NAV:view|param=value]] tag when it
 // wants to offer taking the person somewhere — this splits that off from
 // the text that actually gets displayed/spoken/re-sent as history.
-const AI_NAV_TAG_RE = /\[\[NAV:([a-zA-Z]+)((?:\|[a-zA-Z]+=[^|\]]+)*)\]\]\s*$/;
+// Not anchored to the end of the string and tolerates stray backticks
+// around it — the model is told to emit this silently with nothing else,
+// but occasionally narrates it instead ("tag: `[[NAV:vendors]]` since...").
+// Finding it anywhere (not just as the literal last characters) and
+// stripping just the matched tag keeps that kind of slip from ever
+// surfacing as raw bracket syntax in the chat.
+const AI_NAV_TAG_RE = /`?\[\[NAV:([a-zA-Z]+)((?:\|[a-zA-Z]+=[^|\]]+)*)\]\]`?/;
 function parseAiNavTag(content) {
-  const m = AI_NAV_TAG_RE.exec(String(content || "").trim());
+  const str = String(content || "");
+  const m = AI_NAV_TAG_RE.exec(str);
   if (!m) return { text: content, nav: null };
   const params = {};
   (m[2] || "").split("|").filter(Boolean).forEach((pair) => {
     const eq = pair.indexOf("=");
     if (eq > 0) params[pair.slice(0, eq)] = pair.slice(eq + 1);
   });
-  return { text: content.slice(0, m.index).trim(), nav: { view: m[1], params } };
+  const text = (str.slice(0, m.index) + str.slice(m.index + m[0].length)).replace(/\s{2,}/g, " ").trim();
+  return { text: text || "Here, let me show you.", nav: { view: m[1], params } };
 }
 // [[DRAFTMSG vendorId=<id>]]message text[[/DRAFTMSG]] — a message drafted
 // for review, never auto-sent. Uses an open/close pair rather than the
