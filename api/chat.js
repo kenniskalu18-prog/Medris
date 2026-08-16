@@ -36,7 +36,7 @@ const NAV_PROMPT =
   "- buyerOrders (no params) — the buyer's own order history\n" +
   "- settings (no params) — opens the settings panel (theme, accent color, notifications)\n" +
   "Vendor-only, use ONLY if the YOUR STORE DATA block is present (i.e. you know this person is a vendor): vendorDashboard, vendorProducts, vendorOrders|status=all, vendorEditProfile, vendorRequests (none take other params).\n" +
-  "Only include a tag when it genuinely helps (someone asks to be taken somewhere, asks 'where do I do X', or you're recommending one specific real vendor/product) — most replies need no tag at all. Never mention the tag itself or its syntax to the person; it's invisible UI plumbing, not something to explain.";
+  "Only include a tag when it genuinely helps (someone asks to be taken somewhere, asks 'where do I do X', or you're recommending one specific real vendor/product) — most replies need no tag at all. The tag is invisible UI plumbing: write your actual reply as normal sentences, and if a tag belongs, put it as the literal last thing in the message with nothing before, after, or around it — no backticks, no quoting it, no explaining which tag you're using or why. Never use the words 'tag' or 'NAV' to a person, and never write out the [[ ]] syntax as something for them to read.";
 
 // Levi can draft a message for a buyer to send a vendor, but never sends
 // anything itself — the person always reviews and taps Send. Deliberately
