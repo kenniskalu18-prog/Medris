@@ -1275,6 +1275,7 @@ let session = null;   // supabase auth session
 let profile = null;   // row from public.users for the signed-in user
 let vendor = null;    // row from public.vendors for the signed-in user, if any
 let editingProductId = null;
+let currentProductDetail = null; // whatever renderProductDetail last loaded, reused by buyNow/confirmRental for the confirmation dialog
 let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
 let vendorPendingOrderCount = 0;
@@ -1423,6 +1424,16 @@ document.addEventListener("click", () => {
 // default while still putting the full explanation one tap away.
 function infoPopoverHtml(id, text) {
   return `<span class="info-popover-wrap"><button type="button" class="info-btn" onclick="toggleInfoPopover('${id}',event)">i</button><div class="info-popover hidden" id="${id}">${text}</div></span>`;
+}
+// Collapsed by default so a well-reviewed vendor's storefront doesn't open
+// with a long scroll of review cards before you even reach the products.
+function toggleReviewsList() {
+  const list = byId("reviewsList");
+  const chevron = byId("reviewsChevron");
+  if (!list) return;
+  const willOpen = list.classList.contains("hidden");
+  list.classList.toggle("hidden");
+  if (chevron) chevron.style.transform = willOpen ? "rotate(180deg)" : "rotate(0deg)";
 }
 function toggleInfoPopover(id, evt) {
   evt?.stopPropagation();
@@ -3228,6 +3239,7 @@ async function renderProductDetail(productId) {
     .maybeSingle();
 
   if (error || !product) return '<div class="empty-state">Product not found.</div>';
+  currentProductDetail = product;
 
   sb.rpc("increment_product_view", { p_product_id: productId }).then(() => {}).catch(() => {});
   const { data: stats } = await sb.rpc("get_vendor_stats", { p_vendor_id: product.vendor.id });
@@ -3368,6 +3380,11 @@ async function confirmRental(vendorId, productId) {
   const delivery = readDeliveryFields("rent", errorEl);
   if (!delivery) return;
 
+  const productName = currentProductDetail?.name || "this item";
+  const fmtDate = (d) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const confirmMsg = `Reserve ${qty > 1 ? qty + "× " : ""}${productName} from ${fmtDate(start)} to ${fmtDate(end)}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
+  if (!(await showConfirmDialog(confirmMsg, { title: "Confirm reservation", okLabel: "Reserve" }))) return;
+
   const { data: orderId, error } = await sb.rpc("create_rental_order", {
     p_vendor_id: vendorId,
     p_product_id: productId,
@@ -3395,6 +3412,13 @@ async function buyNow(vendorId, productId) {
   errorEl.classList.add("hidden");
   const delivery = readDeliveryFields("buy", errorEl);
   if (!delivery) return;
+
+  const productName = currentProductDetail?.name || "this item";
+  const verb = currentProductDetail?.is_service ? "Book" : "Buy";
+  const previewEl = byId("serviceTotalPreview");
+  const totalText = previewEl ? previewEl.textContent.replace(/^Total:\s*/, "") : (currentProductDetail?.sale_price != null ? naira(currentProductDetail.sale_price * qty) : "");
+  const confirmMsg = `${verb} ${qty > 1 && !previewEl ? qty + "× " : ""}${productName}${totalText ? ` for ${totalText}` : ""}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
+  if (!(await showConfirmDialog(confirmMsg, { title: `Confirm ${verb === "Book" ? "booking" : "purchase"}`, okLabel: `${verb} now` }))) return;
 
   const { data: orderId, error } = await sb.rpc("create_sale_order", {
     p_vendor_id: vendorId,
@@ -3539,21 +3563,26 @@ async function renderStorefront(vendorId) {
   storefrontViewMode = "grid";
   if (products && products.length > 0) setTimeout(filterStorefrontProducts, 0);
 
-  html += `<h3 style="margin-top:1.5rem;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3>`;
   if (reviews && reviews.length > 0) {
-    html += reviews.map((r) => `<div class="card review-card">
-      ${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}
-      <div>
-        <div class="flex" style="justify-content:space-between;gap:1rem;">
-          <strong>${esc(r.buyer_name || "A buyer")}</strong>
-          <span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
+    html += `<div class="flex" style="justify-content:space-between;cursor:pointer;margin-top:1.5rem;" onclick="toggleReviewsList()">
+      <h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3>
+      <i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i>
+    </div>
+    <div id="reviewsList" class="hidden">
+      ${reviews.map((r) => `<div class="card review-card">
+        ${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}
+        <div>
+          <div class="flex" style="justify-content:space-between;gap:1rem;">
+            <strong>${esc(r.buyer_name || "A buyer")}</strong>
+            <span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
+          </div>
+          ${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}
+          <p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p>
         </div>
-        ${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}
-        <p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p>
-      </div>
-    </div>`).join("");
+      </div>`).join("")}
+    </div>`;
   } else {
-    html += `<p class="muted">No reviews yet.</p>`;
+    html += `<h3 style="margin-top:1.5rem;">Reviews</h3><p class="muted">No reviews yet.</p>`;
   }
 
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Back to Marketplace</button>`;
