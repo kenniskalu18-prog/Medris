@@ -34,6 +34,7 @@ const NAV_PROMPT =
   "- wishlist (no params) — the buyer's saved items\n" +
   "- requestEquipment (no params) — post a request for something not found\n" +
   "- buyerOrders (no params) — the buyer's own order history\n" +
+  "- messages (no params, or messages|conversationId=<id> for one specific conversation) — the buyer's message threads with vendors\n" +
   "- settings (no params) — opens the settings panel (theme, accent color, notifications)\n" +
   "Vendor-only, use ONLY if the YOUR STORE DATA block is present (i.e. you know this person is a vendor): vendorDashboard, vendorProducts, vendorOrders|status=all, vendorEditProfile, vendorRequests (none take other params).\n" +
   "Only include a tag when it genuinely helps (someone asks to be taken somewhere, asks 'where do I do X', or you're recommending one specific real vendor/product) — most replies need no tag at all. The tag is invisible UI plumbing: write your actual reply as normal sentences, and if a tag belongs, put it as the literal last thing in the message with nothing before, after, or around it — no backticks, no quoting it, no explaining which tag you're using or why. Never use the words 'tag' or 'NAV' to a person, and never write out the [[ ]] syntax as something for them to read.";
@@ -45,13 +46,13 @@ const NAV_PROMPT =
 // has real money/logistics consequences, so that needs its own, more
 // careful design rather than piggybacking on this same mechanism.
 const DRAFT_MSG_PROMPT =
-  "If someone asks you to send a message to a specific vendor (e.g. \"ask this vendor if it's still available\", \"tell them I want two\"), you cannot send it yourself — draft it for their review instead. End your reply with this block, using a real vendor id from LIVE MARKETPLACE DATA above:\n" +
+  "If someone asks you to send a message to a specific vendor, or asks you to reply to/follow up on an unread conversation from the YOUR ACCOUNT block above, you cannot send it yourself — draft it for their review instead. End your reply with this block, using a real vendor id from LIVE MARKETPLACE DATA or YOUR ACCOUNT above:\n" +
   "[[DRAFTMSG vendorId=<id>]]the message, written in the buyer's own voice, short and natural[[/DRAFTMSG]]\n" +
   "They'll see it as an editable draft with a Send button — only use this when they clearly want a message sent to one specific vendor you have a real id for, never combine it with a NAV tag in the same reply, and never claim you've already sent anything.\n" +
   "You cannot place orders or cancel orders — if asked, say so and point them to the product page (to order) or My Orders (to cancel/manage an existing one).";
 
 const SYSTEM_PROMPT =
-  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. Each product entry may include its category in [brackets] and a short quote from its actual listing description; a listing can be a genuine match even when the product's own name doesn't contain the word someone searched for (a listing named 'Red Ankara' can still be the right answer to 'shoe' if its category or description says so). Use category and description, not just the name, to judge relevance, and name the specific matching item even if its name looks unrelated at a glance. If several close matches come from the same vendor, it's fine to point at that vendor's storefront instead of picking just one. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nWhen an entry includes a distance (e.g. \"2.3 km away\"), that means you know the buyer's real location and how far that vendor actually is — entries are already sorted nearest-first when this is available, so for questions like \"where can I get X\" or \"closest place for Y\", lead with the nearest matching vendor and mention the distance. If no entry has a distance, you don't know the buyer's location; don't guess or make one up, just answer without it (they can enable it from the Vendors page's map view or 'Show distances' button).\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
+  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. If a \"YOUR ACCOUNT\" block is present below, you have this person's own real order history and message threads with vendors — use it to answer things like \"how many orders do I have\", \"what's the status of my last order\", or \"do I have unread messages\" directly and specifically, never with a vague \"check My Orders\" deflection. Never reveal this data to anyone chatting about someone else's account, and never invent an order or message that isn't in that block. You still cannot place or cancel an order through chat. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. Each product entry may include its category in [brackets] and a short quote from its actual listing description; a listing can be a genuine match even when the product's own name doesn't contain the word someone searched for (a listing named 'Red Ankara' can still be the right answer to 'shoe' if its category or description says so). Use category and description, not just the name, to judge relevance, and name the specific matching item even if its name looks unrelated at a glance. If several close matches come from the same vendor, it's fine to point at that vendor's storefront instead of picking just one. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nWhen an entry includes a distance (e.g. \"2.3 km away\"), that means you know the buyer's real location and how far that vendor actually is — entries are already sorted nearest-first when this is available, so for questions like \"where can I get X\" or \"closest place for Y\", lead with the nearest matching vendor and mention the distance. If no entry has a distance, you don't know the buyer's location; don't guess or make one up, just answer without it (they can enable it from the Vendors page's map view or 'Show distances' button).\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
   NAV_PROMPT + "\n\n" + DRAFT_MSG_PROMPT;
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -137,6 +138,57 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage, 
   return `LIVE MARKETPLACE DATA (as of right now):\nTop-rated verified vendors:\n${vendorLines.join("\n") || "(none yet)"}\n\nProducts/services matching this question:\n${productLines.join("\n") || "(no direct keyword matches — only use the vendor list above, and say so if nothing fits)"}`;
 }
 
+// Everyone's own order history and message threads (as a buyer -- separate
+// from buildVendorContext, which is their own shop's numbers if they run
+// one). Pulled with the service-role key since this is private data, but
+// deliberately kept to what's needed to answer "how many orders do I have"
+// / "do I have unread messages" / drafting a reply -- delivery address,
+// phone number and payment details are never included here, even though
+// it's the person's own data, to keep what's sent to Gemini minimal.
+async function buildBuyerContext(SUPABASE_URL, svcServiceHeaders, userId) {
+  const [ordersRes, convRes] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/orders?buyer_id=eq.${userId}&select=status,order_type,total_amount,created_at,vendor:vendors(business_name),items:order_items(quantity,product:products(name))&order=created_at.desc&limit=30`,
+      { headers: svcServiceHeaders }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/conversations?buyer_id=eq.${userId}&select=id,vendor:vendors(id,business_name)`,
+      { headers: svcServiceHeaders }
+    ),
+  ]);
+  const orders = ordersRes.ok ? await ordersRes.json() : [];
+  const conversations = convRes.ok ? await convRes.json() : [];
+
+  const statusCounts = {};
+  (orders || []).forEach((o) => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+  const statusSummary = Object.entries(statusCounts).map(([s, n]) => `${n} ${s}`).join(", ") || "none yet";
+  const orderLines = (orders || []).slice(0, 8).map((o) => {
+    const items = (o.items || []).map((it) => `${it.product?.name || "item"} x${it.quantity}`).join(", ") || o.order_type;
+    return `- ${items}, from ${o.vendor?.business_name || "a vendor"}: ${o.status}, ₦${o.total_amount}`;
+  });
+
+  let messageLines = [];
+  if ((conversations || []).length) {
+    const convIds = conversations.map((c) => c.id);
+    const msgsRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${convIds.join(",")})&select=conversation_id,sender_id,body,created_at,read_at&order=created_at.desc`,
+      { headers: svcServiceHeaders }
+    );
+    const msgs = msgsRes.ok ? await msgsRes.json() : [];
+    const byConv = {};
+    (msgs || []).forEach((m) => { (byConv[m.conversation_id] ||= []).push(m); });
+    messageLines = conversations.map((c) => {
+      const convMsgs = byConv[c.id] || [];
+      if (!convMsgs.length) return null;
+      const unread = convMsgs.filter((m) => m.sender_id !== userId && !m.read_at).length;
+      const last = convMsgs[0];
+      return `- ${c.vendor?.business_name || "a vendor"} (vendor id: ${c.vendor?.id}, conversation id: ${c.id})${unread > 0 ? ` — ${unread} unread` : ""}: last message "${(last.body || "").slice(0, 100)}"`;
+    }).filter(Boolean);
+  }
+
+  return `\n\nYOUR ACCOUNT (private — this person's own orders and messages, not visible to anyone else, and never share it with anyone else who chats with you):\n- Orders: ${(orders || []).length} total (${statusSummary})\n${orderLines.join("\n") || "(no orders yet)"}\n- Message threads with vendors:\n${messageLines.join("\n") || "(no conversations yet)"}`;
+}
+
 // Only runs (and only reveals anything) when the person chatting is
 // themselves a vendor — pulled with the service-role key because orders,
 // view counts and commission status aren't public data, unlike the
@@ -220,13 +272,21 @@ module.exports = async function handler(req, res) {
       marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
     }
 
+    const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+    const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+
     let vendorContext = "";
     try {
-      const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-      const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
       vendorContext = await buildVendorContext(SUPABASE_URL, svcService, me.id);
     } catch (e) {
       vendorContext = "";
+    }
+
+    let buyerContext = "";
+    try {
+      buyerContext = await buildBuyerContext(SUPABASE_URL, svcService, me.id);
+    } catch (e) {
+      buyerContext = "";
     }
 
     const callGemini = (model) => fetch(
@@ -235,7 +295,7 @@ module.exports = async function handler(req, res) {
         method: "POST",
         headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${vendorContext}` }] },
+          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}` }] },
           contents,
           generationConfig: { maxOutputTokens: 400 },
         }),
