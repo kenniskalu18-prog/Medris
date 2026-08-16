@@ -4267,7 +4267,7 @@ async function renderVendorProducts() {
   if (vendorProductsView === "table") {
     const totalRevenue = Object.values(revenueByProduct).reduce((s, n) => s + n, 0);
     const totalUnits = products.reduce((s, p) => s + p.quantity_total, 0);
-    html += `<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:600px;margin-bottom:1rem;">
+    html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));max-width:600px;margin-bottom:1rem;">
       <div class="stat"><div class="n">${products.length}</div><div class="muted">Products</div></div>
       <div class="stat"><div class="n">${totalUnits}</div><div class="muted">Total units</div></div>
       <div class="stat"><div class="n">${naira(totalRevenue)}</div><div class="muted">Revenue (completed)</div></div>
@@ -5786,7 +5786,7 @@ function renderAdminFinanceRange() {
 
   const statsArea = byId("financeStatsArea");
   if (statsArea) {
-    statsArea.innerHTML = `<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:700px;margin:0.8rem 0;">
+    statsArea.innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));max-width:700px;margin:0.8rem 0;">
       <div class="stat"><div class="n">${paid.length}</div><div class="muted">Paid transactions</div></div>
       <div class="stat"><div class="n">${naira(volume)}</div><div class="muted">Gross volume</div></div>
       <div class="stat"><div class="n">${naira(commission)}</div><div class="muted">Commission earned</div></div>
@@ -6224,9 +6224,11 @@ function toggleAiChat() {
   if (!panel.classList.contains("hidden")) {
     playSound("open");
     if (aiChatMessages.length === 0) {
+      const firstName = (profile?.name || "").trim().split(/\s+/)[0] || "";
+      const greet = firstName ? `${greetingWord()}, ${firstName}! I'm Levi.` : "Hi, I'm Levi!";
       appendAiChatMessage("assistant", vendor
-        ? "Hi, I'm Levi! Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart."
-        : "Hi, I'm Levi! Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.");
+        ? `${greet} Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart.`
+        : `${greet} Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.`);
     }
     byId("aiChatInput").focus();
   }
