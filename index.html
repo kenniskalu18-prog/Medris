@@ -1458,9 +1458,22 @@ function toggleInfoPopover(id, evt) {
   const el = byId(id);
   if (!el) return;
   const willOpen = el.classList.contains("hidden");
-  document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
+  document.querySelectorAll(".info-popover").forEach((p) => { p.classList.add("hidden"); p.style.left = ""; });
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
-  if (willOpen) el.classList.remove("hidden");
+  if (willOpen) { el.classList.remove("hidden"); positionInfoPopover(el); }
+}
+// The popover normally hangs left-aligned under the "i" button, but that
+// button can sit anywhere on screen (including near the right edge of a
+// wide banner) -- so after showing it, nudge it back on-screen instead of
+// letting it run off the side.
+function positionInfoPopover(el) {
+  el.style.left = "0px";
+  const margin = 10;
+  const rect = el.getBoundingClientRect();
+  const overflowRight = rect.right - (window.innerWidth - margin);
+  if (overflowRight > 0) el.style.left = `-${overflowRight}px`;
+  const rect2 = el.getBoundingClientRect();
+  if (rect2.left < margin) el.style.left = `${parseFloat(el.style.left) + (margin - rect2.left)}px`;
 }
 function byId(id) { return document.getElementById(id); }
 
@@ -5387,7 +5400,12 @@ async function renderOrderDetail(orderId) {
     </div>`;
     if (!localStorage.getItem("medris-payonline-info-seen")) {
       localStorage.setItem("medris-payonline-info-seen", "1");
-      setTimeout(() => byId("payOnlineInfo")?.classList.remove("hidden"), 300);
+      setTimeout(() => {
+        const el = byId("payOnlineInfo");
+        if (!el) return;
+        el.classList.remove("hidden");
+        positionInfoPopover(el);
+      }, 300);
     }
   }
 
