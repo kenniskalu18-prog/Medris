@@ -1,1 +1,22 @@
+name: Order reminders
+
+# Vercel's own Cron (used for the daily job in vercel.json) is limited to
+# once a day on the Hobby plan. GitHub Actions' scheduler is free and has
+# no such limit, so it's used here instead to hit /api/order-reminders
+# every 30 minutes. GitHub notes scheduled runs can be delayed by a few
+# minutes during high load, and schedules are auto-disabled after 60 days
+# of zero repository activity (any push/commit resets that clock).
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call order-reminders endpoint
+        run: |
+          curl -sS -f -X POST "https://YOUR-DEPLOYED-DOMAIN/api/order-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
