@@ -557,7 +557,7 @@
      instead of the full home hero — built from that vendor's own products. */
   .storefront-hero { position: relative; min-height: 7rem; border-radius: 1.1rem; margin-bottom: 0.9rem; padding: 1rem; overflow: visible; }
   .storefront-hero-content { position: relative; z-index: 1; }
-  .hero-content { position: relative; z-index: 1; max-width: 640px; }
+  .hero-content { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
   .hero-content h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 1.2rem; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero-quick-actions { display: flex; justify-content: space-between; width: 100%; max-width: 380px; margin: 0 auto; }
   .quick-action { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; background: none; border: none; cursor: pointer; font-family: inherit; color: var(--text); font-size: 0.76rem; font-weight: 500; padding: 0; }
@@ -597,6 +597,11 @@
   .section-title-link { font-size: 0.82rem; font-weight: 500; color: var(--primary); text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem; }
   .section-title-link:hover { text-decoration: underline; }
   .cat-row { display: flex; gap: 0.9rem; overflow-x: auto; padding: 0.6rem 0.2rem 1rem; margin-bottom: 0.4rem; scrollbar-width: thin; scroll-snap-type: x proximity; scroll-behavior: smooth; }
+  /* On desktop the chip row rarely fills the full width -- left-stuck chips
+     read as misaligned next to the now-centered hero above. Only center on
+     wide viewports, where the row won't need to scroll in the first place;
+     narrower/mobile keeps the natural left-start scrollable behavior. */
+  @media (min-width: 900px) { .cat-row { justify-content: center; } }
   .cat-chip { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; background: var(--card); border: 1px solid var(--border); border-radius: 1.1rem; padding: 0.7rem 1rem; cursor: pointer; font-size: 0.78rem; font-weight: 500; color: var(--text); min-width: 76px; box-shadow: var(--shadow-float); scroll-snap-align: start; transition: border-color 0.15s, transform 0.2s ease, box-shadow 0.2s ease, background-color 0.15s, color 0.15s; }
   .cat-chip:hover { border-color: var(--primary); transform: translateY(-4px); }
   .cat-chip span { white-space: nowrap; }
