@@ -4997,10 +4997,12 @@ async function renderOrderDetail(orderId) {
     ${order.created_at ? `<p class="muted" style="font-size:0.8rem;margin-top:0.7rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
     ${ORDER_STATUS_HELP[order.status]
       ? order.status === "pending"
-        ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_HELP[order.status])}</div>`
-        : `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_HELP[order.status])}</p>`
+        ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
+        : `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</p>`
       : ""}
-    ${order.payout_status && order.payout_status !== "not_applicable" ? `<div class="banner ${order.payout_status === "held" ? "banner-warning" : order.payout_status === "released" ? "banner-success" : "banner-muted"}" style="margin-top:0.6rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status)}</div>` : ""}
+    ${order.payout_status && order.payout_status !== "not_applicable"
+      ? `<div class="banner ${order.payout_status === "held" ? "banner-warning" : order.payout_status === "released" ? "banner-success" : "banner-muted"}" style="margin-top:0.6rem;"><i class="fa-solid fa-shield-halved"></i> ${esc(PAYOUT_STATUS_SHORT_LABEL[order.payout_status] || (PAYOUT_STATUS_HELP[order.payout_status] ? PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : "") : order.payout_status))} ${PAYOUT_STATUS_SHORT_LABEL[order.payout_status] ? infoPopoverHtml("payoutStatusInfo", esc(PAYOUT_STATUS_HELP[order.payout_status](order.auto_release_at ? new Date(order.auto_release_at).toLocaleDateString() : ""))) : ""}</div>`
+      : ""}
   </div>`;
 
   html += `<div class="card">
@@ -5183,11 +5185,23 @@ const ORDER_STATUS_HELP = {
   cancelled: "This order was cancelled.",
   disputed: "An issue was reported on this order. An admin is reviewing it.",
 };
+// Short labels for the longer entries above -- the label shows inline, the
+// full explanation moves behind an "i" popover instead of sitting on the
+// page as a paragraph. Statuses not listed here are already short enough
+// to just show in full.
+const ORDER_STATUS_SHORT_LABEL = {
+  pending: "Waiting for vendor confirmation",
+  handed_over: "Item handed over",
+  returned: "Equipment back with vendor",
+};
 
 const PAYOUT_STATUS_HELP = {
   held: (date) => `Payment is being held by Levromart until you confirm receipt. It'll release automatically on ${date} even if you forget.`,
   released: () => `Payment has been released to the vendor.`,
   refunded: () => `This payment was refunded back to the buyer.`,
+};
+const PAYOUT_STATUS_SHORT_LABEL = {
+  held: "Payment held by Levromart",
 };
 
 async function updateOrderStatus(orderId, newStatus) {
