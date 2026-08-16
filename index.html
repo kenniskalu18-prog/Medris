@@ -1446,6 +1446,67 @@ function toggleInfoPopover(id, evt) {
 }
 function byId(id) { return document.getElementById(id); }
 
+// ---------- MAP (Leaflet + OpenStreetMap, loaded on demand) ----------
+// Free, no API key or billing -- pulled in lazily from a CDN only the first
+// time a map actually renders (vendor location picker or the vendors-near-me
+// view), so pages that never touch a map pay nothing for it.
+let leafletLoadPromise = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (leafletLoadPromise) return leafletLoadPromise;
+  leafletLoadPromise = new Promise((resolve, reject) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(link);
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    // The default marker icon is normally resolved relative to leaflet.js's
+    // own path via a bundler -- loaded standalone from a CDN like this, that
+    // resolution breaks and markers render as broken images unless the icon
+    // URLs are pointed at the CDN explicitly.
+    script.onload = () => {
+      window.L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+      resolve();
+    };
+    script.onerror = () => reject(new Error("Could not load the map. Check your connection and try again."));
+    document.head.appendChild(script);
+  });
+  return leafletLoadPromise;
+}
+// Straight-line distance in km -- fine at city scale, no need for real
+// routing/driving distance for "how far is this vendor" purposes.
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function formatDistanceKm(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m away` : `${km.toFixed(1)} km away`;
+}
+function getCurrentPositionOnce() {
+  if (!("geolocation" in navigator)) return Promise.reject(new Error("Location isn't available on this device/browser."));
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => reject(new Error(err.code === 1 ? "Location permission denied." : "Could not get your location.")),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+// Cached for the session once granted, so we don't re-prompt on every page.
+let buyerLocation = null; // { lat, lng } | null
+function getBuyerLocation() {
+  if (buyerLocation) return Promise.resolve(buyerLocation);
+  return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; return loc; });
+}
+
 // ---------- SOUND EFFECTS ----------
 let soundEnabled = true;
 let audioCtx = null;
@@ -2923,6 +2984,7 @@ function vendorCardHtml(v) {
     ${v.categories && v.categories.length ? `<p class="muted" style="margin:0 0 0.4rem;font-size:0.78rem;"><i class="fa-solid fa-tags"></i> ${v.categories.map(esc).join(", ")}</p>` : ""}
     <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
     ${v.avg_rating != null ? `<span class="badge ${ratingBadgeClass(v.avg_rating)}" style="margin-left:0.3rem;">★ ${Number(v.avg_rating).toFixed(1)}${v.review_count != null ? ` (${v.review_count})` : ""}</span>` : ""}
+    ${buyerLocation && v.lat != null && v.lng != null ? `<span class="badge" style="margin-left:0.3rem;"><i class="fa-solid fa-location-dot"></i> ${formatDistanceKm(haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng))}</span>` : ""}
   </div>`;
 }
 
@@ -3434,21 +3496,32 @@ async function buyNow(vendorId, productId) {
 
 // ---------- VENDORS DIRECTORY ----------
 function renderVendorsDirectory() {
-  let html = `<h2><i class="fa-solid fa-store"></i> All vendors</h2>`;
-  html += `<div class="flex" style="margin-bottom:1.2rem;flex-wrap:wrap;">
+  let html = `<div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+    <h2 style="margin:0;"><i class="fa-solid fa-store"></i> All vendors</h2>
+    <div class="flex" style="gap:0.5rem;">
+      <button class="btn btn-sm btn-outline active" id="vendorsViewListBtn" onclick="switchVendorsView('list')" title="List view"><i class="fa-solid fa-grip"></i></button>
+      <button class="btn btn-sm btn-outline" id="vendorsViewMapBtn" onclick="switchVendorsView('map')" title="Map view"><i class="fa-solid fa-map-location-dot"></i></button>
+    </div>
+  </div>`;
+  html += `<div class="flex" style="margin:1.2rem 0;flex-wrap:wrap;">
     <input type="text" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
     <select id="vendorSectorFilter" onchange="filterVendorsDirectory()"><option value="">All sectors</option></select>
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
     <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
+    ${!buyerLocation ? `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Show distances</button>` : ""}
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
+  html += `<div id="vendorsMapWrap" class="hidden">
+    <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;"></p>
+    <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);"></div>
+  </div>`;
   setTimeout(loadVendorsDirectory, 0);
   return html;
 }
 
 async function loadVendorsDirectory() {
   const [{ data: vendors }, { data: products }, { data: sectorsData }] = await Promise.all([
-    sb.from("vendors").select("id, business_name, city, avg_rating, review_count, sector_id, logo_url").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
+    sb.from("vendors").select("id, business_name, city, avg_rating, review_count, sector_id, logo_url, lat, lng").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
     sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
     sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
   ]);
@@ -3491,9 +3564,95 @@ function filterVendorsDirectory() {
   if (sectorId) list = list.filter((v) => v.sector_id === sectorId);
   if (city) list = list.filter((v) => v.city === city);
   if (category) list = list.filter((v) => v.categories.includes(category));
+  if (buyerLocation) {
+    list = [...list].sort((a, b) => {
+      const da = a.lat != null ? haversineKm(buyerLocation.lat, buyerLocation.lng, a.lat, a.lng) : Infinity;
+      const db = b.lat != null ? haversineKm(buyerLocation.lat, buyerLocation.lng, b.lat, b.lng) : Infinity;
+      return da - db;
+    });
+  }
+  window.__filteredVendors = list;
   const grid = byId("vendorsGrid");
-  if (!grid) return;
-  grid.innerHTML = list.length ? list.map(vendorCardHtml).join("") : '<div class="empty-state">No vendors match that search.</div>';
+  if (grid) grid.innerHTML = list.length ? list.map(vendorCardHtml).join("") : '<div class="empty-state">No vendors match that search.</div>';
+  if (vendorsViewMode === "map") renderVendorsMap();
+}
+
+async function showDistancesInVendorsList() {
+  const btn = byId("vendorsShowDistanceBtn");
+  if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating…`; }
+  try {
+    await getBuyerLocation();
+    filterVendorsDirectory();
+    btn?.remove();
+  } catch (err) {
+    showToast(err.message, "error");
+    if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> Show distances`; }
+  }
+}
+
+let vendorsViewMode = "list";
+let vendorsMap = null;
+let vendorsMapMarkers = [];
+function switchVendorsView(mode) {
+  vendorsViewMode = mode;
+  byId("vendorsViewListBtn")?.classList.toggle("active", mode === "list");
+  byId("vendorsViewMapBtn")?.classList.toggle("active", mode === "map");
+  byId("vendorsGrid")?.classList.toggle("hidden", mode !== "list");
+  byId("vendorsMapWrap")?.classList.toggle("hidden", mode !== "map");
+  if (mode === "map") renderVendorsMap();
+}
+
+async function renderVendorsMap() {
+  const mapEl = byId("vendorsMap");
+  const statusEl = byId("vendorsMapStatus");
+  if (!mapEl) return;
+  try {
+    await loadLeaflet();
+  } catch (err) {
+    mapEl.innerHTML = `<p class="muted" style="padding:1rem;">${esc(err.message)}</p>`;
+    return;
+  }
+
+  let center = [6.5244, 3.3792]; // Lagos, used until/unless we know better
+  let zoom = 11;
+  if (statusEl) statusEl.textContent = "Locating you…";
+  try {
+    const loc = await getBuyerLocation();
+    center = [loc.lat, loc.lng];
+    zoom = 13;
+    if (statusEl) statusEl.textContent = "Showing vendors near you, closest first.";
+  } catch (err) {
+    if (statusEl) statusEl.textContent = "Showing all vendors on the map. Enable location to see how far each one is.";
+  }
+
+  const list = (window.__filteredVendors || []).filter((v) => v.lat != null && v.lng != null);
+
+  if (!vendorsMap) {
+    vendorsMap = window.L.map("vendorsMap").setView(center, zoom);
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(vendorsMap);
+  } else {
+    vendorsMap.setView(center, zoom);
+    setTimeout(() => vendorsMap.invalidateSize(), 0);
+  }
+
+  vendorsMapMarkers.forEach((m) => vendorsMap.removeLayer(m));
+  vendorsMapMarkers = [];
+
+  if (buyerLocation) {
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#0e8f7f";
+    const me = window.L.circleMarker([buyerLocation.lat, buyerLocation.lng], { radius: 8, color: "#fff", weight: 2, fillColor: primaryColor, fillOpacity: 1 }).addTo(vendorsMap);
+    me.bindPopup("You are here");
+    vendorsMapMarkers.push(me);
+  }
+
+  list.forEach((v) => {
+    const dist = buyerLocation ? formatDistanceKm(haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng)) : "";
+    const marker = window.L.marker([v.lat, v.lng]).addTo(vendorsMap);
+    marker.bindPopup(`<strong>${esc(v.business_name)}</strong><br>${v.avg_rating ? `★ ${Number(v.avg_rating).toFixed(1)} (${v.review_count || 0})<br>` : ""}${dist ? `${dist}<br>` : ""}<a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">View storefront</a>`);
+    vendorsMapMarkers.push(marker);
+  });
+
+  if (statusEl && list.length === 0) statusEl.textContent = "None of the vendors matching your filters have set a shop location yet.";
 }
 
 // ---------- STOREFRONT (public vendor page) ----------
@@ -4106,6 +4265,7 @@ async function renderVendorEditProfile() {
   const { data: billingPreview } = await sb.rpc("compute_monthly_billing_amount", { p_vendor_id: v.id });
   const bp = (billingPreview && billingPreview[0]) || { listing_count: 0, amount: 0 };
   setTimeout(loadBankOptions, 0);
+  setTimeout(initVendorLocationMap, 0);
 
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
@@ -4139,6 +4299,18 @@ async function renderVendorEditProfile() {
     <div class="flex" style="margin-top:0.8rem;">
       <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
       <button class="btn btn-outline" onclick="navigate('vendorDashboard')">Cancel</button>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
+    <h2><i class="fa-solid fa-location-dot"></i> Shop location ${infoPopoverHtml("veLocationInfo", "This is what buyers see on the map and what Levi uses to point people to your nearest listing. Tap \"Use my current location\" while you're actually at the shop, then drag the pin to fine-tune if the GPS lands a little off.")}</h2>
+    ${v.lat != null ? `<p class="muted" style="font-size:0.82rem;"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Location set.</p>` : `<p class="muted" style="font-size:0.82rem;">Not set yet, buyers can't find you on the map until you set this.</p>`}
+    <div id="veLocationMap" style="height:220px;border-radius:0.8rem;overflow:hidden;background:var(--border);"></div>
+    <input type="hidden" id="veLat" value="${v.lat ?? ""}" />
+    <input type="hidden" id="veLng" value="${v.lng ?? ""}" />
+    <div class="flex" style="margin-top:0.8rem;">
+      <button class="btn btn-sm" id="veUseLocationBtn" onclick="useMyLocationForVendor()"><i class="fa-solid fa-location-crosshairs"></i> Use my current location</button>
+      <button class="btn btn-sm btn-outline" onclick="saveVendorLocation()">Save location</button>
     </div>
   </div>
 
@@ -4271,6 +4443,61 @@ async function uploadVendorLogo(event) {
   vendor.logo_url = url;
   navigate("vendorEditProfile");
   showToast("Business logo updated.", "success");
+}
+
+let veMap = null;
+let veMarker = null;
+async function initVendorLocationMap() {
+  const mapEl = byId("veLocationMap");
+  if (!mapEl || !vendor) return;
+  try {
+    await loadLeaflet();
+  } catch (err) {
+    mapEl.innerHTML = `<p class="muted" style="padding:1rem;">${esc(err.message)}</p>`;
+    return;
+  }
+  const hasLocation = vendor.lat != null && vendor.lng != null;
+  const startLat = hasLocation ? vendor.lat : 6.5244;
+  const startLng = hasLocation ? vendor.lng : 3.3792;
+  veMap = window.L.map("veLocationMap").setView([startLat, startLng], hasLocation ? 15 : 11);
+  window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(veMap);
+  veMarker = window.L.marker([startLat, startLng], { draggable: true }).addTo(veMap);
+  veMarker.on("dragend", () => {
+    const pos = veMarker.getLatLng();
+    byId("veLat").value = pos.lat;
+    byId("veLng").value = pos.lng;
+  });
+}
+async function useMyLocationForVendor() {
+  const btn = byId("veUseLocationBtn");
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating…`;
+  try {
+    const loc = await getCurrentPositionOnce();
+    byId("veLat").value = loc.lat;
+    byId("veLng").value = loc.lng;
+    if (veMap && veMarker) {
+      veMarker.setLatLng([loc.lat, loc.lng]);
+      veMap.setView([loc.lat, loc.lng], 16);
+    }
+    showToast("Location captured. Drag the pin to fine-tune, then save.", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+async function saveVendorLocation() {
+  const lat = parseFloat(byId("veLat").value);
+  const lng = parseFloat(byId("veLng").value);
+  if (isNaN(lat) || isNaN(lng)) { showToast("Set a location on the map first.", "error"); return; }
+  const { error } = await sb.from("vendors").update({ lat, lng }).eq("id", vendor.id);
+  if (error) { showToast(error.message, "error"); return; }
+  vendor.lat = lat;
+  vendor.lng = lng;
+  showToast("Shop location saved. Buyers can now find you on the map.", "success");
 }
 
 // ---------- VENDOR PRODUCTS ----------
@@ -6653,7 +6880,14 @@ async function sendAiChatMessage() {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: aiChatMessages.filter((m) => m.role !== "typing"), accessToken: session?.access_token }),
+      body: JSON.stringify({
+        messages: aiChatMessages.filter((m) => m.role !== "typing"),
+        accessToken: session?.access_token,
+        // Only sent if the buyer already granted location elsewhere in the
+        // app (map view, "Show distances") — Levi never triggers its own
+        // location prompt mid-conversation, that'd be jarring.
+        lat: buyerLocation?.lat, lng: buyerLocation?.lng,
+      }),
     });
     const json = await res.json();
     byId("aiChatTyping")?.remove();
