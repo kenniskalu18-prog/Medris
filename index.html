@@ -118,10 +118,10 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
   .brand-spinner-wrap { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
-  .brand-spinner { position: relative; width: 3.6rem; height: 3.6rem; }
-  .brand-spinner-logo { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); border-radius: 50%; object-fit: contain; }
+  .brand-spinner { position: relative; width: 7.5rem; height: 7.5rem; }
+  .brand-spinner-logo { position: absolute; inset: 14px; width: calc(100% - 28px); height: calc(100% - 28px); border-radius: 50%; object-fit: contain; }
   .brand-spinner-ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: brandSpinnerRotate 1.3s linear infinite; transform-origin: 50% 50%; }
-  .brand-spinner-arc { fill: none; stroke-width: 3; stroke-linecap: round; }
+  .brand-spinner-arc { fill: none; stroke-width: 2.5; stroke-linecap: round; }
   .brand-spinner-arc-1 { stroke: var(--primary); stroke-dasharray: 58 132; }
   .brand-spinner-arc-2 { stroke: color-mix(in srgb, var(--primary) 35%, transparent); stroke-dasharray: 58 132; stroke-dashoffset: 95; }
   @keyframes brandSpinnerRotate { to { transform: rotate(360deg); } }
@@ -434,6 +434,7 @@
   .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; padding: 0 0.9rem; }
   .accordion-section.open .accordion-body { max-height: 320px; padding: 0 0.9rem 0.9rem; }
   #orderStatsAccordion.open .accordion-body { max-height: 520px; }
+  #myRequestsAccordion.open .accordion-body { max-height: 3000px; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -883,7 +884,8 @@
 <div id="tourModal" class="tour-spotlight-overlay hidden">
   <div class="tour-spotlight-hole centered" id="tourSpotlightHole"></div>
   <div class="install-modal-content tour-content tour-callout centered" id="tourCallout">
-    <div class="install-modal-badge"><i id="tourIcon" class="fa-solid fa-hand-sparkles" style="font-size:1.8rem;color:#fff;"></i></div>
+    <div class="install-modal-badge"><img id="tourLeviLogo" alt="Levi" style="width:2.6rem;height:2.6rem;border-radius:50%;object-fit:contain;" /></div>
+    <p class="muted" style="margin:0 0 0.2rem;font-size:0.75rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;"><i id="tourIcon" class="fa-solid fa-hand-sparkles"></i> Levi says</p>
     <h3 id="tourTitle">Welcome to Levromart</h3>
     <p class="muted" id="tourBody"></p>
     <div class="tour-dots" id="tourDots"></div>
@@ -1176,6 +1178,7 @@ document.getElementById("splashCircle").src = LEVROMART_LOGO_CIRCLE;
 setLogoMask(document.getElementById("splashRight"), LEVROMART_LOGO_RIGHT);
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
+document.getElementById("tourLeviLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatHeaderLogo").src = MEDRIS_LOGO;
 document.getElementById("faviconLink").href = MEDRIS_LOGO;
 document.getElementById("installModalLogo").src = MEDRIS_LOGO;
@@ -1288,13 +1291,13 @@ async function enablePushNotifications() {
 // The tour navigates there with the actual navigate() function and points
 // at the actual DOM element — nothing here is a mockup or a slide.
 const LIVE_TOUR_STEPS = [
-  { icon: "fa-hand-sparkles", title: "Welcome to Levromart", body: "Let's take a real, quick walk through the app. Everything you're about to see is the actual site, not a slideshow.", selector: null, view: "home" },
-  { icon: "fa-house", title: "This is Home", body: "Tap the Levromart logo any time, from anywhere in the app, to jump straight back here.", selector: "header h1", view: "home" },
+  { icon: "fa-hand-sparkles", title: "Hi, I'm Levi", body: "I'll walk you through the app myself, live, on the actual site. Just follow me around.", selector: null, view: "home" },
+  { icon: "fa-house", title: "This is Home", body: "Tap the Levromart logo any time, from anywhere in the app, and I'll bring you straight back here.", selector: "header h1", view: "home" },
   { icon: "fa-rotate", title: "Rent, buy, sell, or request", body: "These quick actions take you straight into renting, buying, listing your own items, or requesting something you can't find.", selector: ".hero-quick-actions", view: "home" },
   { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector to narrow the marketplace down to just what's relevant to you: Healthcare, Food, Electronics, and more.", selector: ".sector-row", view: "home" },
   { icon: "fa-compass", title: "Get around from here", body: "The bottom bar is always one tap away, wherever you are on the site.", selector: "#bottomNav", view: "home" },
   { icon: "fa-store", title: "This is a vendor", body: "Every card like this is a real, verified vendor. Tap one any time to see their storefront, products, and reviews.", selector: ".vendor-card", view: "vendors" },
-  { icon: "fa-comments", title: "Meet Levi", body: "Tap here any time to talk to Levi. Ask what to buy, get pointed straight to a vendor, or ask how something works.", selector: "#aiChatFab", view: "home" },
+  { icon: "fa-comments", title: "That's me, right there", body: "Tap this any time to talk to me. Ask what to buy, and I'll point you straight to a vendor, or explain how anything on here works.", selector: "#aiChatFab", view: "home" },
   { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update, right on your device.", selector: "#notifWrap", view: "home" },
 ];
 let liveTourStep = 0;
@@ -1316,6 +1319,11 @@ async function showTour() {
 async function runTourStep() {
   const step = LIVE_TOUR_STEPS[liveTourStep];
   if (step.view && step.view !== currentView) await navigate(step.view, {});
+  // Levi "points" toward wherever the tour is about to highlight next --
+  // the same flourish used when Levi navigates you somewhere from chat,
+  // so it reads as Levi actually guiding the tour rather than a generic
+  // slideshow.
+  animateAiFabPointing();
 
   byId("tourIcon").className = `fa-solid ${step.icon}`;
   byId("tourTitle").textContent = step.title;
@@ -1394,6 +1402,18 @@ function finishTour() {
   byId("tourModal").classList.add("hidden");
   localStorage.setItem("levromart-tour-seen", "1");
   if (dismissibleModalId === "tourModal") dismissibleModalId = null;
+  // Levi was the one giving the tour, so ending it by opening his chat
+  // with his normal greeting is the natural handoff -- "that's me, and
+  // I'm right here if you need anything" -- instead of just vanishing.
+  if (session) {
+    const panel = byId("aiChatPanel");
+    if (panel && panel.classList.contains("hidden")) {
+      panel.classList.remove("hidden");
+      playSound("open");
+      if (aiChatMessages.length === 0) showAiChatGreeting();
+      byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation);
+    }
+  }
 }
 function skipTour() { finishTour(); }
 function maybeShowTour() {
@@ -4277,24 +4297,27 @@ async function renderRequestEquipment() {
       <label>More details</label><textarea id="reqDesc" rows="2" placeholder="Duration, specs, delivery preferences…"></textarea>
       <div class="flex">
         <div style="flex:1;"><label>Sector</label><select id="reqSector" onchange="updateRequestCategoryOptions()"><option value="">Any</option>${sectors.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
-        <div style="flex:1;"><label>Category</label><select id="reqCategory"><option value="">Any</option>${(window.__categories || []).filter((c) => c.parent_category_id).map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+        <div style="flex:1;"><label>Category *</label><select id="reqCategory"><option value="" disabled selected>Choose one…</option>${(window.__categories || []).filter((c) => c.parent_category_id).map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
       </div>
       <div class="flex">
         <div style="flex:1;"><label>City</label><input id="reqCity" value="Lagos" /></div>
       </div>
-      <div class="flex" id="reqDatesWrap">
-        <div style="flex:1;"><label>Needed from</label><input type="date" id="reqFrom" /></div>
-        <div style="flex:1;"><label>Needed to</label><input type="date" id="reqTo" /></div>
+      <div id="reqDatesWrap">
+        <label>Needed from</label><input type="date" id="reqFrom" style="width:100%;" />
+        <label>Needed to</label><input type="date" id="reqTo" style="width:100%;" />
       </div>
       <button class="btn" style="margin-top:0.6rem;" onclick="submitEquipmentRequest()">Post request</button>
     </div>
-    <h3 style="margin-top:1.5rem;">Your requests</h3>`;
+    <div class="accordion-section" id="myRequestsAccordion" style="margin-top:1.5rem;">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-list-check"></i> Your requests${myRequests?.length ? ` (${myRequests.length})` : ""}</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+      <div class="accordion-body">`;
 
   if (!myRequests || myRequests.length === 0) html += `<p class="muted">You haven't posted any requests yet.</p>`;
   (myRequests || []).forEach((r) => {
     const offers = r.offers || [];
     html += `<div class="card">
       <div class="flex" style="justify-content:space-between;"><strong>${esc(r.title)}</strong><div class="flex"><span class="badge">${r.request_type === "buy" ? "Buy" : "Rent"}</span><span class="badge ${r.status === "fulfilled" ? "success" : r.status === "cancelled" ? "danger" : ""}">${esc(r.status)}</span></div></div>
+      ${r.status === "open" ? `<button class="btn btn-sm btn-outline" style="margin-top:0.4rem;" onclick="cancelEquipmentRequest('${r.id}')"><i class="fa-solid fa-ban"></i> Cancel request</button>` : ""}
       ${r.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(r.description)}</p>` : ""}
       <p class="muted" style="font-size:0.8rem;">${[r.city, r.request_type !== "buy" && r.needed_from ? r.needed_from + " → " + (r.needed_to || "") : ""].filter(Boolean).map(esc).join(" · ")}</p>
       ${offers.length ? `<div style="margin-top:0.6rem;"><strong style="font-size:0.85rem;">${offers.length} offer${offers.length === 1 ? "" : "s"}:</strong>
@@ -4317,7 +4340,15 @@ async function renderRequestEquipment() {
       </div>` : `<p class="muted" style="margin-top:0.5rem;">No offers yet.</p>`}
     </div>`;
   });
+  html += `</div></div>`;
   return html;
+}
+async function cancelEquipmentRequest(id) {
+  if (!(await showConfirmDialog("Cancel this request? Vendors who were notified about it will be told it's cancelled.", { title: "Cancel request", okLabel: "Cancel request", danger: true }))) return;
+  const { error } = await sb.from("equipment_requests").update({ status: "cancelled" }).eq("id", id).eq("buyer_id", session.user.id);
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("requestEquipment");
+  showToast("Request cancelled.", "success");
 }
 
 function updateRequestFormFields() {
@@ -4330,7 +4361,7 @@ function updateRequestCategoryOptions() {
   const catSel = byId("reqCategory");
   if (!catSel) return;
   const opts = (window.__categories || []).filter((c) => c.parent_category_id && (!sectorId || c.sector_id === sectorId));
-  catSel.innerHTML = '<option value="">Any</option>' + opts.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  catSel.innerHTML = '<option value="" disabled selected>Choose one…</option>' + opts.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
 }
 
 async function submitEquipmentRequest() {
@@ -4338,13 +4369,15 @@ async function submitEquipmentRequest() {
   errorEl.classList.add("hidden");
   const title = byId("reqTitle").value.trim();
   if (!title) { errorEl.textContent = "Please describe what you need."; errorEl.classList.remove("hidden"); return; }
+  const categoryId = byId("reqCategory").value;
+  if (!categoryId) { errorEl.textContent = "Pick a category so this reaches the right vendors — not everyone on Levromart."; errorEl.classList.remove("hidden"); return; }
   const requestType = document.querySelector('input[name="reqType"]:checked')?.value || "rent";
   const { error } = await sb.from("equipment_requests").insert({
     buyer_id: session.user.id,
     title,
     request_type: requestType,
     description: byId("reqDesc").value.trim() || null,
-    category_id: byId("reqCategory").value || null,
+    category_id: categoryId,
     city: byId("reqCity").value.trim() || null,
     needed_from: requestType === "rent" ? (byId("reqFrom").value || null) : null,
     needed_to: requestType === "rent" ? (byId("reqTo").value || null) : null,
