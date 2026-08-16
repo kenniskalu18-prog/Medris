@@ -668,6 +668,12 @@
   .chat-input-row { display: flex; gap: 0.5rem; padding: 0.7rem; border-top: 1px solid var(--border); align-items: flex-end; }
   .chat-input-row textarea { margin: 0; flex: 1; resize: none; max-height: 7.5rem; overflow-y: auto; line-height: 1.35; }
   .chat-input-row .btn { flex-shrink: 0; }
+  .msg-attach-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: none; background: none; color: var(--text-muted); cursor: pointer; flex-shrink: 0; font-size: 1rem; }
+  .msg-attach-btn:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+  .msg-attachment { display: block; margin-bottom: 0.4rem; }
+  .msg-attachment-img { max-width: 100%; max-height: 220px; border-radius: 0.6rem; display: block; object-fit: cover; background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .msg-attachment-file { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; border-radius: 0.6rem; background: color-mix(in srgb, var(--text) 6%, transparent); color: inherit; text-decoration: none; margin-bottom: 0.4rem; font-size: 0.85rem; word-break: break-all; }
+  .msg-attachment-file i { flex-shrink: 0; }
 
   /* ---- mobile bottom nav (thumb-reach) ---- */
   .bottom-nav { display: none; }
@@ -1119,6 +1125,8 @@
     <button class="btn btn-sm" onclick="shareLocationFromChat()">Share</button>
   </div>
   <div class="ai-chat-input-row">
+    <input type="file" id="aiChatFileInput" class="hidden" onchange="handleAiFileSelected(event)" />
+    <button class="msg-attach-btn" onclick="byId('aiChatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
@@ -1405,7 +1413,11 @@ let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
 let vendorPendingOrderCount = 0;
 let buyerPendingOrderCount = 0;
-const NON_TERMINAL_ORDER_STATUSES = ["pending", "confirmed", "handed_over", "returned", "disputed"];
+// Only orders still awaiting the vendor's own action (accept, then hand
+// over) keep the nav badge lit -- once it's handed over/returned/disputed,
+// the ball is in the buyer's (or admin's) court, not something that needs
+// a vendor to keep seeing a red flag for.
+const NON_TERMINAL_ORDER_STATUSES = ["pending", "confirmed"];
 let unreadMessageCount = 0;
 let unreadSuggestionCount = 0;
 let notifTarget = null; // { view, params }
@@ -1719,8 +1731,16 @@ function resolveLocationPrompt(granted) {
 async function requestBuyerLocation() {
   if (!locationSharingEnabled) throw new Error("Location sharing is off. Turn it on in Settings to use this.");
   if (buyerLocation) return buyerLocation;
-  const wantsToShare = await showLocationPrompt();
-  if (!wantsToShare) throw new Error("Location sharing declined.");
+  // The explanatory pre-permission modal only needs to run once ever on a
+  // device -- the Settings toggle staying on IS the buyer's standing
+  // consent, so re-showing our own "do you want to share?" prompt on every
+  // fresh page load (on top of whatever the browser itself remembers)
+  // would just be repeat friction for no reason.
+  if (localStorage.getItem("medris-location-explained") !== "1") {
+    const wantsToShare = await showLocationPrompt();
+    localStorage.setItem("medris-location-explained", "1");
+    if (!wantsToShare) throw new Error("Location sharing declined.");
+  }
   return getBuyerLocation();
 }
 
@@ -3471,6 +3491,8 @@ async function renderMessages(conversationId) {
   html += `<div class="chat-thread">
     <div class="chat-messages" id="chatMessages">${(messages || []).map(chatBubbleHtml).join("")}</div>
     <div class="chat-input-row">
+      <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelected(event,'${conversationId}')" />
+      <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
       ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
       <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
       <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
@@ -3478,7 +3500,7 @@ async function renderMessages(conversationId) {
   </div>
   <p class="muted" style="font-size:0.78rem;margin-top:0.5rem;"><i class="fa-solid fa-shield-halved"></i> Messages here can't be edited or deleted once sent.</p>`;
 
-  setTimeout(() => scrollChatToBottom(), 0);
+  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); }, 0);
   subscribeToConversation(conversationId);
   return html;
 }
@@ -3493,6 +3515,37 @@ function messageTicksHtml(m) {
   return `<i class="fa-solid fa-check chat-tick"></i>`;
 }
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+function sanitizeFilename(name) {
+  return (name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
+}
+// The bucket is private (participant/owner-scoped RLS), so a stored
+// attachment_url is really just the storage path -- the actual viewable
+// URL has to be freshly signed each time it's displayed.
+async function resolveAttachmentUrl(path) {
+  const { data, error } = await sb.storage.from("chat-attachments").createSignedUrl(path, 3600);
+  if (error || !data) return null;
+  return data.signedUrl;
+}
+async function resolveVisibleAttachments(root) {
+  const els = (root || document).querySelectorAll("[data-attachment-path]:not([data-resolved])");
+  for (const el of els) {
+    el.setAttribute("data-resolved", "1");
+    const url = await resolveAttachmentUrl(el.dataset.attachmentPath);
+    if (!url) continue;
+    if (el.tagName === "A") el.href = url;
+    const img = el.tagName === "IMG" ? el : el.querySelector("img");
+    if (img) img.src = url;
+  }
+}
+function attachmentHtml(m) {
+  if (!m.attachment_url) return "";
+  const isImage = (m.attachment_type || "").startsWith("image/");
+  if (isImage) {
+    return `<a class="msg-attachment" href="#" target="_blank" rel="noopener" data-attachment-path="${esc(m.attachment_url)}"><img class="msg-attachment-img" alt="${esc(m.attachment_name || "")}" /></a>`;
+  }
+  return `<a class="msg-attachment-file" href="#" target="_blank" rel="noopener" data-attachment-path="${esc(m.attachment_url)}"><i class="fa-solid fa-file"></i> ${esc(m.attachment_name || "Attachment")}</a>`;
+}
 function reactionsRowHtml(m) {
   const reactions = m.reactions || {};
   const counts = {};
@@ -3505,7 +3558,7 @@ function chatBubbleHtml(m) {
   const speakBtn = "speechSynthesis" in window ? `<button class="msg-speak" title="Read aloud" onclick="speakMessageBubble(this)"><i class="fa-solid fa-volume-high"></i></button>` : "";
   const reactBtn = `<button class="msg-react" title="React" onclick="toggleReactionPicker(event,'${m.id}')"><i class="fa-regular fa-face-smile"></i></button>`;
   return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
-    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}"><span class="chat-bubble-text">${esc(m.body)}</span><span class="chat-time">${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
+    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
     <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
   </div>`;
 }
@@ -3549,6 +3602,7 @@ function subscribeToConversation(conversationId) {
       if (payload.new.sender_id !== session.user.id) {
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
+        resolveVisibleAttachments(el);
         sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
     })
@@ -3597,6 +3651,30 @@ async function sendChatMessage(conversationId) {
   if (error) { showToast(error.message, "error"); return; }
   byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
   scrollChatToBottom();
+}
+async function handleChatFileSelected(evt, conversationId) {
+  const file = evt.target.files[0];
+  evt.target.value = "";
+  if (!file) return;
+  if (file.size > MAX_ATTACHMENT_BYTES) { showToast("That file is over 10MB. Please pick a smaller one.", "error"); return; }
+  try {
+    const path = `conv/${conversationId}/${Date.now()}-${sanitizeFilename(file.name)}`;
+    const { error: upErr } = await sb.storage.from("chat-attachments").upload(path, file);
+    if (upErr) { showToast(upErr.message, "error"); return; }
+    const input = byId("chatInput");
+    const body = input.value.trim();
+    resetChatInput(input);
+    const { data, error } = await sb.from("messages").insert({
+      conversation_id: conversationId, sender_id: session.user.id, body,
+      attachment_url: path, attachment_name: file.name, attachment_type: file.type || "application/octet-stream", attachment_size: file.size,
+    }).select("*").single();
+    if (error) { showToast(error.message, "error"); return; }
+    byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
+    scrollChatToBottom();
+    resolveVisibleAttachments(byId("chatMessages"));
+  } catch (err) {
+    showToast(err.message || "Could not attach that file.", "error");
+  }
 }
 
 // ---------- PRODUCT DETAIL ----------
@@ -3715,11 +3793,11 @@ const RELATED_EQUIPMENT = {
 function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng) {
   const fee = Number(deliveryFee) || 0;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
-  return `<div class="flex" style="margin-top:0.6rem;">
+  return `<div class="flex" style="margin:0.6rem 0 0.9rem;">
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
-    <div id="${prefix}DeliveryFields" class="hidden" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}">
+    <div id="${prefix}DeliveryFields" class="hidden" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
       ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
@@ -4311,7 +4389,7 @@ async function renderVendorRequests() {
   window.__myProductsForOffers = myProducts || [];
 
   const deliveryFee = Number(vendor.delivery_fee) || 0;
-  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests</h2><p class="muted">Only requests matching what you sell reach you. Quote a price to win the order: pick one of your own listed products to price it instantly, or quote a custom price.</p>`;
+  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests ${infoPopoverHtml("vendorRequestsInfo", "Only requests matching what you sell reach you. Quote a price to win the order: pick one of your own listed products to price it instantly, or quote a custom price.")}</h2>`;
   if (!requests || requests.length === 0) html += `<p class="muted">No open requests right now.</p>`;
   (requests || []).forEach((r) => {
     const mine = (r.offers || []).find((o) => o.vendor_id === vendor.id);
@@ -4487,11 +4565,16 @@ async function renderVendorDashboard() {
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
     <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
-  html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
-    <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
-    <div class="stat"><div class="n">${naira(revenue)}</div><div class="muted">Revenue (completed)</div></div>
-    <div class="stat"><div class="n">${totalViews}</div><div class="muted">Product views</div></div>
-    <div class="stat"><div class="n">${totalFavorites}</div><div class="muted">Wishlist saves</div></div>
+  html += `<div class="accordion-section" style="max-width:700px;margin-bottom:1.4rem;">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> At a glance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+    <div class="accordion-body">
+      <table class="order-stats-table">
+        <tr><td>Total orders</td><td>${totalOrders}</td></tr>
+        <tr><td>Revenue (completed)</td><td>${naira(revenue)}</td></tr>
+        <tr><td>Product views</td><td>${totalViews}</td></tr>
+        <tr><td>Wishlist saves</td><td>${totalFavorites}</td></tr>
+      </table>
+    </div>
   </div>`;
   html += `<div id="vendorRevenueChartArea" style="max-width:700px;margin-top:0.4rem;"></div>`;
 
@@ -4908,10 +4991,15 @@ async function renderVendorProducts() {
   if (vendorProductsView === "table") {
     const totalRevenue = Object.values(revenueByProduct).reduce((s, n) => s + n, 0);
     const totalUnits = products.reduce((s, p) => s + p.quantity_total, 0);
-    html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));max-width:600px;margin-bottom:1rem;">
-      <div class="stat"><div class="n">${products.length}</div><div class="muted">Products</div></div>
-      <div class="stat"><div class="n">${totalUnits}</div><div class="muted">Total units</div></div>
-      <div class="stat"><div class="n">${naira(totalRevenue)}</div><div class="muted">Revenue (completed)</div></div>
+    html += `<div class="accordion-section" style="max-width:600px;margin-bottom:1rem;">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> Summary</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+      <div class="accordion-body">
+        <table class="order-stats-table">
+          <tr><td>Products</td><td>${products.length}</td></tr>
+          <tr><td>Total units</td><td>${totalUnits}</td></tr>
+          <tr><td>Revenue (completed)</td><td>${naira(totalRevenue)}</td></tr>
+        </table>
+      </div>
     </div>`;
     html += `<div class="table-wrap"><table class="data-table"><thead><tr>
       <th>Product</th><th>Category</th><th>Price</th><th>Qty avail / total</th><th>Views</th><th>Saved</th><th>Revenue</th><th>Status</th>
@@ -6240,11 +6328,16 @@ async function renderAdminPeople() {
 
   let html = `<h2><i class='fa-solid fa-users'></i> People on Levromart</h2>`;
   html += adminNavHtml("adminPeople");
-  html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));max-width:600px;margin-bottom:1.2rem;">
-    <div class="stat"><div class="n">${(people || []).length}</div><div class="muted">Total</div></div>
-    <div class="stat"><div class="n">${counts.buyer}</div><div class="muted">Buyers</div></div>
-    <div class="stat"><div class="n">${counts.vendor}</div><div class="muted">Vendors</div></div>
-    <div class="stat"><div class="n">${counts.admin}</div><div class="muted">Admins</div></div>
+  html += `<div class="accordion-section" style="max-width:600px;margin-bottom:1.2rem;">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> Summary</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+    <div class="accordion-body">
+      <table class="order-stats-table">
+        <tr><td>Total</td><td>${(people || []).length}</td></tr>
+        <tr><td>Buyers</td><td>${counts.buyer}</td></tr>
+        <tr><td>Vendors</td><td>${counts.vendor}</td></tr>
+        <tr><td>Admins</td><td>${counts.admin}</td></tr>
+      </table>
+    </div>
   </div>`;
   html += `<input type="text" id="adminPeopleSearch" placeholder="Search by name or email…" style="max-width:320px;margin-bottom:0.8rem;" oninput="filterAdminPeople()" />`;
   html += `<div class="table-wrap"><table class="data-table" id="adminPeopleTable"><thead><tr>
@@ -6362,7 +6455,7 @@ async function renderAdminLog() {
     reactivate_storefront: { text: "reactivated storefront", icon: "fa-play", cls: "success" },
   };
 
-  let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log</h2><p class="muted">Every reject, approve, pause and reactivate: who did it, and when. This trail can't be edited or deleted, even by admins.</p>`;
+  let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log ${infoPopoverHtml("adminActivityInfo", "Every reject, approve, pause and reactivate: who did it, and when. This trail can't be edited or deleted, even by admins.")}</h2>`;
   html += adminNavHtml("adminLog");
 
   if (!log || log.length === 0) { html += `<p class="muted">No admin actions logged yet.</p>`; return html; }
@@ -6761,7 +6854,7 @@ async function renderAdminDisputes() {
       <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}','released')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
       <div class="flex">
         <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
-        <select id="newstatus-${d.id}"><option value="">Leave order as-is</option><option value="completed">Set order: completed</option><option value="cancelled">Set order: cancelled</option></select>
+        <select id="newstatus-${d.id}"><option value="" disabled selected>Choose an outcome…</option><option value="completed">Complete (release to vendor)</option><option value="cancelled">Cancel (side with buyer)</option></select>
         <button class="btn btn-sm" onclick="resolveDispute('${d.id}','${d.order?.id}','${d.order?.payout_status}')">Mark resolved</button>
       </div>
     </div>`;
@@ -6773,6 +6866,14 @@ async function renderAdminDisputes() {
 async function resolveDispute(id, orderId, payoutStatus) {
   const notes = byId(`notes-${id}`).value.trim() || "Resolved.";
   const newStatus = byId(`newstatus-${id}`).value || undefined;
+  // Resolving a dispute has to always move the order out of "disputed" —
+  // leaving it there was the whole bug: the dispute itself would show as
+  // resolved, but the order stayed stuck showing "disputed" forever with
+  // no way to close it out afterward.
+  if (!newStatus) {
+    showToast("Choose an outcome (complete or cancel) before resolving.", "error");
+    return;
+  }
 
   if (newStatus === "cancelled" && (payoutStatus === "held" || payoutStatus === "released")) {
     showToast('This order was paid online, use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
@@ -7040,10 +7141,11 @@ function showAiChatGreeting() {
 async function resumeLastAiConversation() {
   const savedId = localStorage.getItem("medris-ai-last-conversation");
   if (!savedId) { showAiChatGreeting(); return; }
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", savedId).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, attachment_url, attachment_name, attachment_type").eq("conversation_id", savedId).order("created_at", { ascending: true });
   if (error || !msgs || msgs.length === 0) { localStorage.removeItem("medris-ai-last-conversation"); showAiChatGreeting(); return; }
   currentAiConversationId = savedId;
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.attachment_url ? { url: m.attachment_url, name: m.attachment_name, type: m.attachment_type } : null));
+  resolveVisibleAttachments(byId("aiChatMessages"));
 }
 function startNewAiChat() {
   currentAiConversationId = null;
@@ -7072,11 +7174,32 @@ async function ensureAiConversation(firstMessageText) {
   })();
   return aiConversationCreatePromise;
 }
-async function persistAiMessage(role, content) {
+async function persistAiMessage(role, content, attachment) {
   const convId = await ensureAiConversation(content);
   if (!convId) return null;
-  const { data } = await sb.from("ai_messages").insert({ conversation_id: convId, role, content }).select("id").single();
+  const row = { conversation_id: convId, role, content };
+  if (attachment) { row.attachment_url = attachment.url; row.attachment_name = attachment.name; row.attachment_type = attachment.type; row.attachment_size = attachment.size; }
+  const { data } = await sb.from("ai_messages").insert(row).select("id").single();
   return data?.id || null;
+}
+async function handleAiFileSelected(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = "";
+  if (!file) return;
+  if (!session) { showLogin(); return; }
+  if (file.size > MAX_ATTACHMENT_BYTES) { showToast("That file is over 10MB. Please pick a smaller one.", "error"); return; }
+  try {
+    const path = `ai/${session.user.id}/${Date.now()}-${sanitizeFilename(file.name)}`;
+    const { error: upErr } = await sb.storage.from("chat-attachments").upload(path, file);
+    if (upErr) { showToast(upErr.message, "error"); return; }
+    const attachment = { url: path, name: file.name, type: file.type || "application/octet-stream", size: file.size };
+    const caption = `[Attached: ${file.name}]`;
+    appendAiChatMessage("user", caption, false, false, null, null, attachment);
+    persistAiMessage("user", caption, attachment);
+    resolveVisibleAttachments(byId("aiChatMessages"));
+  } catch (err) {
+    showToast(err.message || "Could not attach that file.", "error");
+  }
 }
 function toggleAiChatHistory() {
   const panel = byId("aiChatPanel");
@@ -7122,14 +7245,15 @@ function searchAiChatHistory() {
   }, 250);
 }
 async function openAiConversation(id) {
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", id).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, attachment_url, attachment_name, attachment_type").eq("conversation_id", id).order("created_at", { ascending: true });
   if (error || !msgs) { showToast("Couldn't open that chat.", "error"); return; }
   currentAiConversationId = id;
   aiConversationCreatePromise = null;
   localStorage.setItem("medris-ai-last-conversation", id);
   aiChatMessages = [];
   byId("aiChatMessages").innerHTML = "";
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.attachment_url ? { url: m.attachment_url, name: m.attachment_name, type: m.attachment_type } : null));
+  resolveVisibleAttachments(byId("aiChatMessages"));
   exitAiChatHistoryMode();
 }
 async function deleteAiConversation(id, evt) {
@@ -7270,7 +7394,7 @@ function animateAiFabPointing() {
     }, 650);
   });
 }
-function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction) {
+function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction, attachment) {
   let displayText = content;
   let nav = null;
   let draft = null;
@@ -7292,6 +7416,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
   if (role === "typing") { el.id = "aiChatTyping"; el.innerHTML = `<i class="fa-solid fa-ellipsis" style="opacity:.6;"></i>`; }
   else {
     el.textContent = displayText;
+    if (attachment) el.insertAdjacentHTML("afterbegin", attachmentHtml({ attachment_url: attachment.url, attachment_name: attachment.name, attachment_type: attachment.type }));
     if (role === "assistant" && "speechSynthesis" in window) {
       const speakBtn = document.createElement("button");
       speakBtn.className = "ai-chat-msg-speak";
