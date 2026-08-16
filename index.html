@@ -6918,18 +6918,38 @@ document.addEventListener("click", (e) => {
 // Finding it anywhere (not just as the literal last characters) and
 // stripping just the matched tag keeps that kind of slip from ever
 // surfacing as raw bracket syntax in the chat.
-const AI_NAV_TAG_RE = /`?\[\[NAV:([a-zA-Z]+)((?:\|[a-zA-Z]+=[^|\]]+)*)\]\]`?/;
+// Matches just the outer [[NAV: ... ]] wrapper (plus optional stray
+// backticks) and leaves the inside as one blob to parse separately below --
+// deliberately loose, because the model doesn't always get the internal
+// format exactly right (extra "view|" prefix, wrong param order, etc.) and
+// a strict positional regex just fails closed, leaking the raw tag as
+// visible text. Parsing the pieces out by content instead of position
+// tolerates those slips.
+const AI_NAV_TAG_RE = /`?\[\[NAV:([^\]]*)\]\]`?/;
+const AI_NAV_ALLOWED_VIEWS = new Set([
+  "home", "vendors", "storefront", "productDetail", "wishlist", "requestEquipment", "buyerOrders", "settings",
+  "vendorDashboard", "vendorProducts", "vendorOrders", "vendorEditProfile", "vendorRequests",
+]);
 function parseAiNavTag(content) {
   const str = String(content || "");
   const m = AI_NAV_TAG_RE.exec(str);
   if (!m) return { text: content, nav: null };
   const params = {};
-  (m[2] || "").split("|").filter(Boolean).forEach((pair) => {
-    const eq = pair.indexOf("=");
-    if (eq > 0) params[pair.slice(0, eq)] = pair.slice(eq + 1);
+  let view = null;
+  (m[1] || "").split("|").map((s) => s.trim()).filter(Boolean).forEach((part) => {
+    const eq = part.indexOf("=");
+    if (eq > 0) {
+      const key = part.slice(0, eq).trim();
+      const val = part.slice(eq + 1).trim();
+      if (key.toLowerCase() === "view") view = val; // model wrote view=X instead of just X
+      else params[key] = val;
+    } else if (!view && AI_NAV_ALLOWED_VIEWS.has(part)) {
+      view = part;
+    }
   });
   const text = (str.slice(0, m.index) + str.slice(m.index + m[0].length)).replace(/\s{2,}/g, " ").trim();
-  return { text: text || "Here, let me show you.", nav: { view: m[1], params } };
+  if (!view || !AI_NAV_ALLOWED_VIEWS.has(view)) return { text: text || content, nav: null };
+  return { text: text || "Here, let me show you.", nav: { view, params } };
 }
 // [[DRAFTMSG vendorId=<id>]]message text[[/DRAFTMSG]] — a message drafted
 // for review, never auto-sent. Uses an open/close pair rather than the
