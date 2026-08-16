@@ -485,6 +485,15 @@
   }
   [data-theme="dark"] .hero-aurora, [data-theme="black"] .hero-aurora { opacity: 0.38; }
   @media (prefers-reduced-motion: reduce) { .hero-aurora { animation: none; } }
+  /* A soft strip of real product photos across the top of the hero, faded
+     into the page background — the same trick app-store banners use to
+     feel like a real, populated storefront instead of an empty template.
+     Built from whatever's actually trending, so it's never staged/fake and
+     naturally freshens as the catalog grows. */
+  .hero-photo-collage { position: absolute; left: 0; right: 0; top: 0; height: 62%; z-index: 0; overflow: hidden; border-radius: 1.6rem; opacity: 0.85; }
+  .hero-photo-row { display: flex; gap: 2px; width: 100%; height: 100%; }
+  .hero-photo-row img { flex: 1 1 0; min-width: 0; height: 100%; object-fit: cover; }
+  .hero-photo-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 12%, transparent) 0%, var(--bg) 90%), color-mix(in srgb, var(--primary) 14%, transparent); }
   .hero-content { position: relative; z-index: 1; max-width: 640px; }
   .hero-content h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 1.2rem; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero-quick-actions { display: flex; justify-content: space-between; width: 100%; max-width: 380px; margin: 0 auto; }
@@ -2654,7 +2663,10 @@ async function renderHome() {
     topVendorsQuery.order("avg_rating", { ascending: false }).limit(6),
   ]);
 
+  const heroPhotos = [...new Set((trending || []).map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 6);
+
   let html = `<div class="hero">
+    ${heroPhotos.length >= 3 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy" />`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
     <div class="hero-aurora"></div>
     <div class="hero-content">
       <div class="hero-search flex">
