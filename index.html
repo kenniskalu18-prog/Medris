@@ -1125,8 +1125,6 @@
     <button class="btn btn-sm" onclick="shareLocationFromChat()">Share</button>
   </div>
   <div class="ai-chat-input-row">
-    <input type="file" id="aiChatFileInput" class="hidden" onchange="handleAiFileSelected(event)" />
-    <button class="msg-attach-btn" onclick="byId('aiChatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
@@ -3713,16 +3711,10 @@ async function renderProductDetail(productId) {
       <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
       ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a></p>
-      <div class="trust-badges">
-        <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified vendor</span>
-        ${product.vendor.cac_number ? `<span class="badge success"><i class='fa-solid fa-building-columns'></i> CAC verified</span>` : ""}
-        ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
-        ${st.completed_orders ? `<span class="badge">${st.completed_orders} completed order${st.completed_orders === 1 ? "" : "s"}</span>` : ""}
-        ${yearsSince(product.vendor.created_at) ? `<span class="badge">${yearsSince(product.vendor.created_at)}</span>` : ""}
-      </div>
-      <div class="contact-actions">
+      <div class="contact-actions" style="align-items:center;">
         ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
+        ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
       </div>
       ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
       ${product.sale_price != null ? `<p><strong>${product.is_service ? "Price" : "Buy price"}:</strong> ${naira(product.sale_price)}${servicePriceSuffix(product)}</p>` : ""}
@@ -4123,25 +4115,21 @@ async function renderStorefront(vendorId) {
     </div>
   </div>`;
   if (v.bio) html += `<p style="margin:0.6rem 0;">${esc(v.bio)}</p>`;
-  // Only the two badges a buyer actually decides on stay always visible —
-  // sector/CAC/years/hours are still there, just tucked into the "..."
-  // menu as plain lines instead of a wrapping wall of chips.
-  if (st.avg_rating || st.completed_orders) {
-    html += `<div class="trust-badges">
-      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0} review${st.review_count === 1 ? "" : "s"})</span>` : ""}
-      ${st.completed_orders ? `<span class="badge">${st.completed_orders} completed order${st.completed_orders === 1 ? "" : "s"}</span>` : ""}
-    </div>`;
-  }
+  // Everything a buyer actually needs to decide "message this vendor" --
+  // message, call, and rating -- lives on one row now instead of a
+  // separate badges row above a separate buttons row. The rest (sector,
+  // CAC, years active, opening hours) is one tap away in "...".
   const storefrontMoreItems = [
-    v.phone ? `<a class="ms-item" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : "",
     v.sector?.name ? `<div class="ms-item"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</div>` : "",
     v.cac_number ? `<div class="ms-item"><i class='fa-solid fa-building-columns'></i> CAC verified</div>` : "",
     yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-cake-candles"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
     v.opening_hours ? `<div class="ms-item"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</div>` : "",
     profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
   ].filter(Boolean).join("");
-  html += `<div class="contact-actions">
+  html += `<div class="contact-actions" style="align-items:center;">
     ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-solid fa-comment-dots'></i> Message</button>` : ""}
+    ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
+    ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
     ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;">
       <button class="btn btn-sm btn-outline" type="button" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button>
       <div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:170px;">${storefrontMoreItems}</div>
@@ -7141,11 +7129,10 @@ function showAiChatGreeting() {
 async function resumeLastAiConversation() {
   const savedId = localStorage.getItem("medris-ai-last-conversation");
   if (!savedId) { showAiChatGreeting(); return; }
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, attachment_url, attachment_name, attachment_type").eq("conversation_id", savedId).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", savedId).order("created_at", { ascending: true });
   if (error || !msgs || msgs.length === 0) { localStorage.removeItem("medris-ai-last-conversation"); showAiChatGreeting(); return; }
   currentAiConversationId = savedId;
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.attachment_url ? { url: m.attachment_url, name: m.attachment_name, type: m.attachment_type } : null));
-  resolveVisibleAttachments(byId("aiChatMessages"));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
 }
 function startNewAiChat() {
   currentAiConversationId = null;
@@ -7174,32 +7161,11 @@ async function ensureAiConversation(firstMessageText) {
   })();
   return aiConversationCreatePromise;
 }
-async function persistAiMessage(role, content, attachment) {
+async function persistAiMessage(role, content) {
   const convId = await ensureAiConversation(content);
   if (!convId) return null;
-  const row = { conversation_id: convId, role, content };
-  if (attachment) { row.attachment_url = attachment.url; row.attachment_name = attachment.name; row.attachment_type = attachment.type; row.attachment_size = attachment.size; }
-  const { data } = await sb.from("ai_messages").insert(row).select("id").single();
+  const { data } = await sb.from("ai_messages").insert({ conversation_id: convId, role, content }).select("id").single();
   return data?.id || null;
-}
-async function handleAiFileSelected(evt) {
-  const file = evt.target.files[0];
-  evt.target.value = "";
-  if (!file) return;
-  if (!session) { showLogin(); return; }
-  if (file.size > MAX_ATTACHMENT_BYTES) { showToast("That file is over 10MB. Please pick a smaller one.", "error"); return; }
-  try {
-    const path = `ai/${session.user.id}/${Date.now()}-${sanitizeFilename(file.name)}`;
-    const { error: upErr } = await sb.storage.from("chat-attachments").upload(path, file);
-    if (upErr) { showToast(upErr.message, "error"); return; }
-    const attachment = { url: path, name: file.name, type: file.type || "application/octet-stream", size: file.size };
-    const caption = `[Attached: ${file.name}]`;
-    appendAiChatMessage("user", caption, false, false, null, null, attachment);
-    persistAiMessage("user", caption, attachment);
-    resolveVisibleAttachments(byId("aiChatMessages"));
-  } catch (err) {
-    showToast(err.message || "Could not attach that file.", "error");
-  }
 }
 function toggleAiChatHistory() {
   const panel = byId("aiChatPanel");
@@ -7245,15 +7211,14 @@ function searchAiChatHistory() {
   }, 250);
 }
 async function openAiConversation(id) {
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, attachment_url, attachment_name, attachment_type").eq("conversation_id", id).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", id).order("created_at", { ascending: true });
   if (error || !msgs) { showToast("Couldn't open that chat.", "error"); return; }
   currentAiConversationId = id;
   aiConversationCreatePromise = null;
   localStorage.setItem("medris-ai-last-conversation", id);
   aiChatMessages = [];
   byId("aiChatMessages").innerHTML = "";
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.attachment_url ? { url: m.attachment_url, name: m.attachment_name, type: m.attachment_type } : null));
-  resolveVisibleAttachments(byId("aiChatMessages"));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
   exitAiChatHistoryMode();
 }
 async function deleteAiConversation(id, evt) {
@@ -7394,7 +7359,7 @@ function animateAiFabPointing() {
     }, 650);
   });
 }
-function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction, attachment) {
+function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction) {
   let displayText = content;
   let nav = null;
   let draft = null;
@@ -7416,7 +7381,6 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
   if (role === "typing") { el.id = "aiChatTyping"; el.innerHTML = `<i class="fa-solid fa-ellipsis" style="opacity:.6;"></i>`; }
   else {
     el.textContent = displayText;
-    if (attachment) el.insertAdjacentHTML("afterbegin", attachmentHtml({ attachment_url: attachment.url, attachment_name: attachment.name, attachment_type: attachment.type }));
     if (role === "assistant" && "speechSynthesis" in window) {
       const speakBtn = document.createElement("button");
       speakBtn.className = "ai-chat-msg-speak";
