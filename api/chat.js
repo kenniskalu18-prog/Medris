@@ -51,8 +51,21 @@ const DRAFT_MSG_PROMPT =
   "You cannot place orders or cancel orders — if asked, say so and point them to the product page (to order) or My Orders (to cancel/manage an existing one).";
 
 const SYSTEM_PROMPT =
-  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
+  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. You cannot see the user's account, orders, or private data — if asked about a specific order, tell them to check 'My Orders'. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nWhen an entry includes a distance (e.g. \"2.3 km away\"), that means you know the buyer's real location and how far that vendor actually is — entries are already sorted nearest-first when this is available, so for questions like \"where can I get X\" or \"closest place for Y\", lead with the nearest matching vendor and mention the distance. If no entry has a distance, you don't know the buyer's location; don't guess or make one up, just answer without it (they can enable it from the Vendors page's map view or 'Show distances' button).\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
   NAV_PROMPT + "\n\n" + DRAFT_MSG_PROMPT;
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function distanceLabel(vLat, vLng, buyerLat, buyerLng) {
+  if (buyerLat == null || buyerLng == null || vLat == null || vLng == null) return "";
+  const km = haversineKm(buyerLat, buyerLng, vLat, vLng);
+  return ` — ${km < 1 ? Math.round(km * 1000) + " m away" : km.toFixed(1) + " km away"}`;
+}
 
 // Pulls a small, relevant slice of real marketplace data to ground the
 // model's answers in — without this it can only speak in generalities
@@ -60,8 +73,10 @@ const SYSTEM_PROMPT =
 // against the buyer's latest message first (so "who sells rice" surfaces
 // actual rice vendors), with a top-rated-vendors fallback list always
 // included too, so "who do you recommend" has something to work with even
-// when no keyword matches.
-async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) {
+// when no keyword matches. When the buyer's location is known, both lists
+// get a distance appended and are re-sorted nearest-first, so "where's the
+// closest place for X" can be answered with a real vendor and real distance.
+async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage, buyerLat, buyerLng) {
   const words = String(latestMessage || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
@@ -71,25 +86,39 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
 
   const [topVendorsRes, productsRes] = await Promise.all([
     fetch(
-      `${SUPABASE_URL}/rest/v1/vendors?verification_status=eq.verified&is_active=eq.true&select=id,business_name,city,avg_rating,review_count,sector:sectors(name)&order=avg_rating.desc&limit=15`,
+      `${SUPABASE_URL}/rest/v1/vendors?verification_status=eq.verified&is_active=eq.true&select=id,business_name,city,avg_rating,review_count,lat,lng,sector:sectors(name)&order=avg_rating.desc&limit=15`,
       { headers: svcHeaders }
     ),
     words.length
       ? fetch(
-          `${SUPABASE_URL}/rest/v1/products?status=eq.active&or=(${words.map((w) => `name.ilike.*${encodeURIComponent(w)}*`).join(",")})&select=id,name,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,vendor:vendors!inner(id,business_name,avg_rating,city,verification_status,is_active)&vendor.verification_status=eq.verified&vendor.is_active=eq.true&limit=15`,
+          `${SUPABASE_URL}/rest/v1/products?status=eq.active&or=(${words.map((w) => `name.ilike.*${encodeURIComponent(w)}*`).join(",")})&select=id,name,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,vendor:vendors!inner(id,business_name,avg_rating,city,lat,lng,verification_status,is_active)&vendor.verification_status=eq.verified&vendor.is_active=eq.true&limit=15`,
           { headers: svcHeaders }
         )
       : Promise.resolve(null),
   ]);
 
-  const topVendors = topVendorsRes.ok ? await topVendorsRes.json() : [];
-  const products = productsRes && productsRes.ok ? await productsRes.json() : [];
+  let topVendors = topVendorsRes.ok ? await topVendorsRes.json() : [];
+  let products = productsRes && productsRes.ok ? await productsRes.json() : [];
+
+  const haveLocation = buyerLat != null && buyerLng != null;
+  if (haveLocation) {
+    topVendors = [...(topVendors || [])].sort((a, b) => {
+      const da = a.lat != null ? haversineKm(buyerLat, buyerLng, a.lat, a.lng) : Infinity;
+      const db = b.lat != null ? haversineKm(buyerLat, buyerLng, b.lat, b.lng) : Infinity;
+      return da - db;
+    });
+    products = [...(products || [])].sort((a, b) => {
+      const da = a.vendor?.lat != null ? haversineKm(buyerLat, buyerLng, a.vendor.lat, a.vendor.lng) : Infinity;
+      const db = b.vendor?.lat != null ? haversineKm(buyerLat, buyerLng, b.vendor.lat, b.vendor.lng) : Infinity;
+      return da - db;
+    });
+  }
 
   // Vendor/product ids are included specifically so Levi can point someone
   // straight at a real listing with a [[NAV:...]] directive (see NAV_PROMPT)
   // instead of just describing it in words.
   const vendorLines = (topVendors || []).map(
-    (v) => `- ${v.business_name} (id: ${v.id}) — ${v.sector?.name || "general"}, ${v.city || "Lagos"} — ★${Number(v.avg_rating || 0).toFixed(1)} (${v.review_count || 0} reviews)`
+    (v) => `- ${v.business_name} (id: ${v.id}) — ${v.sector?.name || "general"}, ${v.city || "Lagos"} — ★${Number(v.avg_rating || 0).toFixed(1)} (${v.review_count || 0} reviews)${distanceLabel(v.lat, v.lng, buyerLat, buyerLng)}`
   );
   const productLines = (products || []).map((p) => {
     const price = p.is_service
@@ -99,7 +128,7 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage) 
         : p.rental_rate != null
           ? `₦${p.rental_rate}/${p.rental_rate_unit} to rent`
           : "price on request";
-    return `- ${p.name} (product id: ${p.id}) — ${price} — sold by ${p.vendor?.business_name || "a vendor"} (vendor id: ${p.vendor?.id || "unknown"}, ★${Number(p.vendor?.avg_rating || 0).toFixed(1)})`;
+    return `- ${p.name} (product id: ${p.id}) — ${price} — sold by ${p.vendor?.business_name || "a vendor"} (vendor id: ${p.vendor?.id || "unknown"}, ★${Number(p.vendor?.avg_rating || 0).toFixed(1)})${distanceLabel(p.vendor?.lat, p.vendor?.lng, buyerLat, buyerLng)}`;
   });
 
   return `LIVE MARKETPLACE DATA (as of right now):\nTop-rated verified vendors:\n${vendorLines.join("\n") || "(none yet)"}\n\nProducts/services matching this question:\n${productLines.join("\n") || "(no direct keyword matches — only use the vendor list above, and say so if nothing fits)"}`;
@@ -149,9 +178,11 @@ async function buildVendorContext(SUPABASE_URL, svcServiceHeaders, userId) {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   try {
-    const { messages, accessToken } = JSON.parse(await readBody(req));
+    const { messages, accessToken, lat, lng } = JSON.parse(await readBody(req));
     if (!Array.isArray(messages) || messages.length === 0) { res.status(400).json({ error: "messages array required" }); return; }
     if (!accessToken) { res.status(401).json({ error: "Please log in to use the assistant." }); return; }
+    const buyerLat = typeof lat === "number" ? lat : null;
+    const buyerLng = typeof lng === "number" ? lng : null;
 
     const SUPABASE_URL = env("SUPABASE_URL");
     const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
@@ -181,7 +212,7 @@ module.exports = async function handler(req, res) {
     const latestMessage = [...messages].reverse().find((m) => m.role !== "assistant")?.content || "";
     let marketplaceContext = "";
     try {
-      marketplaceContext = await buildMarketplaceContext(SUPABASE_URL, svcAuth, latestMessage);
+      marketplaceContext = await buildMarketplaceContext(SUPABASE_URL, svcAuth, latestMessage, buyerLat, buyerLng);
     } catch (e) {
       marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
     }
