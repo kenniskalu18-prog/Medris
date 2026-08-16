@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Levromart</title>
-<meta name="description" content="Rent or buy from verified vendors across Lagos — healthcare equipment, food, electronics, and more.">
+<meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0e8f7f">
@@ -490,7 +490,7 @@
      feel like a real, populated storefront instead of an empty template.
      Built from whatever's actually trending, so it's never staged/fake and
      naturally freshens as the catalog grows. */
-  .hero-photo-collage { position: absolute; left: 0; right: 0; top: 0; height: 100%; z-index: 0; overflow: hidden; border-radius: 1.6rem; opacity: 0.85; }
+  .hero-photo-collage { position: absolute; left: 0; right: 0; top: -0.6rem; height: calc(100% + 0.6rem); z-index: 0; overflow: hidden; border-radius: 1.8rem; opacity: 0.85; }
   .hero-photo-row { display: flex; gap: 2px; width: 100%; height: 100%; }
   .hero-photo-row img { flex: 1 1 0; min-width: 0; height: 100%; object-fit: cover; }
   .hero-photo-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 30%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 55%, var(--bg) 94%), color-mix(in srgb, var(--primary) 18%, transparent); }
@@ -511,6 +511,16 @@
      screen-width-dependent break (which is what put 5 on the first row
      and 2 on the second on wider phones). */
   .dash-actions.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; gap: 1.3rem 0.6rem; }
+  /* Dashboard quick-links as an actual tab bar instead of a wall of icon
+     circles — one scannable row, no per-item background/shadow to compete
+     with the page content below it. */
+  .dash-tabs { display: flex; gap: 1.6rem; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 0.8rem 0 1.3rem; padding-bottom: 0; scrollbar-width: none; }
+  .dash-tabs::-webkit-scrollbar { display: none; }
+  .dash-tab { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; flex-shrink: 0; background: none; border: none; cursor: pointer; font-family: inherit; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.1rem 0.65rem; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; position: relative; }
+  .dash-tab i { font-size: 1.1rem; }
+  .dash-tab:hover { color: var(--primary); }
+  .dash-tab.active { color: var(--primary); border-color: var(--primary); }
+  .dash-tab .dash-tab-dot { position: absolute; top: -0.1rem; right: -0.5rem; background: var(--danger); color: #fff; font-size: 0.6rem; font-weight: 700; min-width: 1rem; height: 1rem; border-radius: 1rem; display: flex; align-items: center; justify-content: center; padding: 0 0.2rem; }
   .verified-tick { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); font-size: 0.85rem; cursor: pointer; flex-shrink: 0; }
   .hero-search { position: relative; background: var(--glass-bg); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.2rem; box-shadow: var(--shadow-float); max-width: 460px; margin: 0 auto 1.4rem; }
   .hero-search-icon { position: absolute; left: 1.1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
@@ -693,7 +703,7 @@
   <div class="accordion-section hidden" id="voiceSettingsSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-volume-high'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
-      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device — quality depends on what your phone/browser offers.</p>
+      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device. Quality depends on what your phone/browser offers.</p>
       <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
       <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
     </div>
@@ -743,7 +753,7 @@
   <div class="modal-content install-modal-content">
     <div class="install-modal-badge"><img id="installModalLogo" alt="" /></div>
     <h3>Get the Levromart app</h3>
-    <p class="muted">Install it on your home screen for a faster, full-screen experience — even offline.</p>
+    <p class="muted">Install it on your home screen for a faster, full-screen experience, even offline.</p>
     <p id="installModalIosMsg" class="muted install-modal-ios hidden"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap the Share icon, then "Add to Home Screen".</p>
     <div class="install-modal-actions">
       <button class="btn btn-sm btn-outline" onclick="dismissInstallPrompt()">Not now</button>
@@ -756,7 +766,7 @@
   <div class="modal-content install-modal-content">
     <div class="install-modal-badge"><i class="fa-solid fa-bell" style="font-size:1.7rem;color:#fff;"></i></div>
     <h3>Turn on notifications</h3>
-    <p class="muted">Get notified instantly on this device for new orders, offers, and updates — on top of email.</p>
+    <p class="muted">Get notified instantly on this device for new orders, offers, and updates, on top of email.</p>
     <div class="install-modal-actions">
       <button class="btn btn-sm btn-outline" onclick="dismissNotifPrompt()">Not now</button>
       <button class="btn" onclick="enablePushNotifications()"><i class="fa-solid fa-bell"></i> Turn on</button>
@@ -848,13 +858,13 @@
 <div id="notReceivedModal" class="modal hidden">
   <div class="modal-content" style="max-width:380px;">
     <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Report not received</h3>
-    <p class="muted" style="font-size:0.85rem;">This tells Levromart you have not received this order and opens a dispute for an admin to review. Enter your password to confirm — this is a serious report, so please only submit it if the item genuinely never arrived.</p>
+    <p class="muted" style="font-size:0.85rem;">This tells Levromart you have not received this order and opens a dispute for an admin to review. Enter your password to confirm. This is a serious report, so please only submit it if the item genuinely never arrived.</p>
     <div id="notReceivedError" class="error-text hidden"></div>
     <label>Your password</label>
     <input type="password" id="notReceivedPassword" placeholder="Confirm it's really you" autocomplete="current-password" />
     <div class="flex" style="justify-content:flex-end;margin-top:0.8rem;">
       <button class="btn btn-sm btn-outline" onclick="closeNotReceivedModal()">Cancel</button>
-      <button class="btn btn-sm btn-danger" id="notReceivedSubmit" onclick="submitNotReceived()">Confirm — not received</button>
+      <button class="btn btn-sm btn-danger" id="notReceivedSubmit" onclick="submitNotReceived()">Confirm not received</button>
     </div>
   </div>
 </div>
@@ -1143,14 +1153,14 @@ async function enablePushNotifications() {
 // The tour navigates there with the actual navigate() function and points
 // at the actual DOM element — nothing here is a mockup or a slide.
 const LIVE_TOUR_STEPS = [
-  { icon: "fa-hand-sparkles", title: "Welcome to Levromart", body: "Let's take a real, quick walk through the app — everything you're about to see is the actual site, not a slideshow.", selector: null, view: "home" },
+  { icon: "fa-hand-sparkles", title: "Welcome to Levromart", body: "Let's take a real, quick walk through the app. Everything you're about to see is the actual site, not a slideshow.", selector: null, view: "home" },
   { icon: "fa-house", title: "This is Home", body: "Tap the Levromart logo any time, from anywhere in the app, to jump straight back here.", selector: "header h1", view: "home" },
   { icon: "fa-rotate", title: "Rent, buy, sell, or request", body: "These quick actions take you straight into renting, buying, listing your own items, or requesting something you can't find.", selector: ".hero-quick-actions", view: "home" },
-  { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector to narrow the marketplace down to just what's relevant to you — Healthcare, Food, Electronics, and more.", selector: ".sector-row", view: "home" },
+  { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector to narrow the marketplace down to just what's relevant to you: Healthcare, Food, Electronics, and more.", selector: ".sector-row", view: "home" },
   { icon: "fa-compass", title: "Get around from here", body: "The bottom bar is always one tap away, wherever you are on the site.", selector: "#bottomNav", view: "home" },
-  { icon: "fa-store", title: "This is a vendor", body: "Every card like this is a real, verified vendor — tap one any time to see their storefront, products, and reviews.", selector: ".vendor-card", view: "vendors" },
-  { icon: "fa-comments", title: "Meet Levi", body: "Tap here any time to talk to Levi — ask what to buy, get pointed straight to a vendor, or ask how something works.", selector: "#aiChatFab", view: "home" },
-  { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update — right on your device.", selector: "#notifWrap", view: "home" },
+  { icon: "fa-store", title: "This is a vendor", body: "Every card like this is a real, verified vendor. Tap one any time to see their storefront, products, and reviews.", selector: ".vendor-card", view: "vendors" },
+  { icon: "fa-comments", title: "Meet Levi", body: "Tap here any time to talk to Levi. Ask what to buy, get pointed straight to a vendor, or ask how something works.", selector: "#aiChatFab", view: "home" },
+  { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update, right on your device.", selector: "#notifWrap", view: "home" },
 ];
 let liveTourStep = 0;
 async function waitForTourTarget(selector, maxMs = 2000) {
@@ -1715,7 +1725,7 @@ function renderSettingsAppRows() {
     } else if (Notification.permission === "granted") {
       notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="badge success">On</span>`;
     } else if (Notification.permission === "denied") {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;text-align:right;">Blocked — enable in your browser's site settings</span>`;
+      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;text-align:right;">Blocked. Enable in your browser's site settings</span>`;
     } else {
       notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><button class="btn btn-sm" onclick="enablePushNotifications().then(renderSettingsAppRows)">Turn on</button>`;
     }
@@ -2230,7 +2240,7 @@ async function uploadAvatar(event) {
 function renderEditProfile() {
   if (!session || !profile) return '<div class="empty-state">Please log in.</div>';
   return `<h2><i class="fa-solid fa-id-card"></i> My details</h2>
-  <p class="muted">Keep this up to date — it's what fills in automatically at checkout, so a typo here won't follow you into every future order.</p>
+  <p class="muted">Keep this up to date. It's what fills in automatically at checkout, so a typo here won't follow you into every future order.</p>
   <div class="card" style="max-width:480px;">
     <div id="editProfileError" class="error-text hidden"></div>
     <label>Full name</label>
@@ -2973,7 +2983,7 @@ async function submitSuggestion() {
   btn.disabled = false;
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   closeSuggestionModal();
-  showToast("Thanks — sent.", "success");
+  showToast("Thanks, sent.", "success");
 }
 
 // Admin-only: jump to the (read-only) chat thread between the two parties
@@ -3060,7 +3070,7 @@ async function renderMessages(conversationId) {
     const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
     let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('adminDisputes')"><i class="fa-solid fa-arrow-left"></i> Back to disputes</button>`;
     html += `<h3><i class="fa-solid fa-comments"></i> ${esc(p.buyer_name || "Buyer")} &harr; ${esc(p.vendor_name || "Vendor")}</h3>
-      <p class="muted" style="font-size:0.85rem;">Viewing as admin — read only.</p>`;
+      <p class="muted" style="font-size:0.85rem;">Viewing as admin, read only.</p>`;
     html += `<div class="chat-thread"><div class="chat-messages">${(messages || []).map((m) => {
       const isBuyer = m.sender_id === p.buyer_id;
       const senderName = isBuyer ? (p.buyer_name || "Buyer") : (p.vendor_name || "Vendor");
@@ -3308,7 +3318,7 @@ function deliveryFieldsHtml(prefix, deliveryFee) {
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
       ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
-      <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a> — it'll remember for next time.</p>
+      <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a>. It'll remember for next time.</p>
     </div>`;
 }
 function toggleDeliveryFields(prefix) {
@@ -3614,7 +3624,7 @@ async function renderRequestEquipment() {
   ]);
 
   let html = `<h2><i class='fa-solid fa-hand'></i> Request an item</h2>
-    <p class="muted">Can't find what you need? Post it — nearby vendors will send you offers.</p>
+    <p class="muted">Can't find what you need? Post it and nearby vendors will send you offers.</p>
     <div class="card" style="max-width:520px;">
       <div id="reqError" class="error-text hidden"></div>
       <label>What do you need? *</label><input id="reqTitle" placeholder="e.g. Oxygen concentrator, jollof rice for 20…" />
@@ -3726,7 +3736,7 @@ async function renderVendorRequests() {
   window.__myProductsForOffers = myProducts || [];
 
   const deliveryFee = Number(vendor.delivery_fee) || 0;
-  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests</h2><p class="muted">Only requests matching what you sell reach you. Quote a price to win the order — pick one of your own listed products to price it instantly, or quote a custom price.</p>`;
+  let html = `<h2><i class='fa-solid fa-clipboard-list'></i> Buyer requests</h2><p class="muted">Only requests matching what you sell reach you. Quote a price to win the order: pick one of your own listed products to price it instantly, or quote a custom price.</p>`;
   if (!requests || requests.length === 0) html += `<p class="muted">No open requests right now.</p>`;
   (requests || []).forEach((r) => {
     const mine = (r.offers || []).find((o) => o.vendor_id === vendor.id);
@@ -3742,11 +3752,11 @@ async function renderVendorRequests() {
       ${r.description ? `<p class="muted" style="margin:0.5rem 0 0;">${esc(r.description)}</p>` : ""}
       <p class="muted" style="font-size:0.8rem;">${[r.city, r.request_type !== "buy" && r.needed_from ? r.needed_from + " → " + (r.needed_to || "") : ""].filter(Boolean).map(esc).join(" · ")}</p>
       ${mine
-        ? `<p class="muted" style="margin-top:0.5rem;">You offered — status: <strong>${esc(mine.status)}</strong></p>`
+        ? `<p class="muted" style="margin-top:0.5rem;">You offered. Status: <strong>${esc(mine.status)}</strong></p>`
         : `<div style="margin-top:0.5rem;">
              ${matches.length ? `<select id="offerProduct-${r.id}" onchange="applyOfferProductPrice('${r.id}','${r.request_type}')" style="margin-bottom:0.4rem;">
                <option value="">Quote a custom price…</option>
-               ${matches.map((p) => `<option value="${p.id}">Use my "${esc(p.name)}" — ${p.sale_price != null ? naira(p.sale_price) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</option>`).join("")}
+               ${matches.map((p) => `<option value="${p.id}">Use my "${esc(p.name)}": ${p.sale_price != null ? naira(p.sale_price) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</option>`).join("")}
              </select>` : ""}
              <div class="flex">
                <input type="number" id="offerPrice-${r.id}" placeholder="Price (₦)" style="width:140px;" />
@@ -3806,7 +3816,7 @@ async function renderVendorApply() {
     <label>WhatsApp number</label><input id="vaWhatsapp" type="tel" />
     <label>CAC number</label><input id="vaCac" />
     <label>CAC document (optional upload)</label><input id="vaDoc" type="file" accept="application/pdf,image/*" />
-    <label>About your business</label><textarea id="vaBio" rows="3" placeholder="If you're online-only, mention that here — how buyers reach you, delivery area, etc."></textarea>
+    <label>About your business</label><textarea id="vaBio" rows="3" placeholder="If you're online-only, mention that here: how buyers reach you, delivery area, etc."></textarea>
     <button class="btn" style="margin-top:0.8rem;" onclick="submitVendorApply()">Submit application</button>
   </div>`;
 }
@@ -3864,7 +3874,7 @@ async function renderVendorDashboard() {
   vendor = v;
 
   let statusBanner = "";
-  if (v.verification_status === "pending") statusBanner = `<div class="banner banner-warning"><strong><i class='fa-solid fa-hourglass-half'></i> Verification pending.</strong> Your shop is under review — once approved you can list products.</div>`;
+  if (v.verification_status === "pending") statusBanner = `<div class="banner banner-warning"><strong><i class='fa-solid fa-hourglass-half'></i> Verification pending.</strong> Your shop is under review. Once approved you can list products.</div>`;
   else if (v.verification_status === "rejected") statusBanner = `<div class="banner banner-danger"><strong>Application not approved.</strong> Contact support if this seems wrong.</div>`;
   else if (!v.is_active) statusBanner = `<div class="banner banner-muted"><strong><i class='fa-solid fa-pause'></i> Storefront paused.</strong> Buyers can't see your shop or products right now.</div>`;
   const verifiedTick = v.verification_status === "verified"
@@ -3887,22 +3897,20 @@ async function renderVendorDashboard() {
   if (commissionOwed > 0) {
     html += `<div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
       <h3 style="margin:0;"><i class="fa-solid fa-hand-holding-dollar"></i> Commission owed: ${naira(commissionOwed)}</h3>
-      <p class="muted" style="margin-top:0.4rem;">Levromart's ${Number(v.commission_pct ?? 3)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
+      <p class="muted" style="margin-top:0.4rem;">Levromart's ${Number(v.commission_pct ?? 3)}% cut on offline sales. Pay anytime via Paystack.</p>
       <div id="commissionError" class="error-text hidden"></div>
       <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
     </div>`;
   }
   html += statusBanner;
-  html += `<div class="dash-actions grid-4">
-    <button class="quick-action" onclick="navigate('vendorProducts')"><span class="quick-action-icon"><i class='fa-solid fa-box'></i></span><span>Products</span></button>
-    <button class="quick-action" onclick="navigate('vendorPackages')"><span class="quick-action-icon"><i class='fa-solid fa-boxes-packing'></i></span><span>Packages</span></button>
-    <button class="quick-action" onclick="navigate('vendorOrders',{status:'all'})"><span class="quick-action-icon"><i class='fa-solid fa-receipt'></i></span><span>Orders</span></button>
-    <button class="quick-action" onclick="navigate('vendorRequests')"><span class="quick-action-icon"><i class='fa-solid fa-clipboard-list'></i></span><span>Requests</span></button>
-  </div>`;
-  html += `<div class="flex" style="gap:0.5rem;flex-wrap:wrap;justify-content:center;margin:0.9rem 0 1.2rem;">
-    <button class="btn btn-sm btn-outline" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
-    <button class="btn btn-sm btn-outline" onclick="navigate('vendorSuggestionsInbox')" style="position:relative;"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
-    <button class="btn btn-sm btn-outline" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
+  html += `<div class="dash-tabs">
+    <button class="dash-tab" onclick="navigate('vendorProducts')"><i class="fa-solid fa-box"></i> Products</button>
+    <button class="dash-tab" onclick="navigate('vendorPackages')"><i class="fa-solid fa-boxes-packing"></i> Packages</button>
+    <button class="dash-tab" onclick="navigate('vendorOrders',{status:'all'})"><i class="fa-solid fa-receipt"></i> Orders</button>
+    <button class="dash-tab" onclick="navigate('vendorRequests')"><i class="fa-solid fa-clipboard-list"></i> Requests</button>
+    <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
+    <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
+    <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
   html += `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));max-width:700px;margin-bottom:1.4rem;">
     <div class="stat"><div class="n">${totalOrders}</div><div class="muted">Total orders</div></div>
@@ -3915,7 +3923,7 @@ async function renderVendorDashboard() {
   const recentCompleted = (orders || []).filter((o) => o.status === "completed");
   setTimeout(() => {
     const area = byId("vendorRevenueChartArea");
-    if (area) area.appendChild(buildRevenueChart(recentCompleted, "all", { field: "total_amount", label: "Revenue per day (last 14 days) — see at a glance if business is picking up or slowing down" }));
+    if (area) area.appendChild(buildRevenueChart(recentCompleted, "all", { field: "total_amount", label: "Revenue per day (last 14 days)" }));
   }, 0);
 
   return html;
@@ -3975,7 +3983,7 @@ async function renderVendorEarnings() {
   window.__vendorEarningsOrders = orders || [];
 
   let html = `<h2 style="text-align:center;"><i class="fa-solid fa-sack-dollar"></i> Earnings</h2>
-  <p class="muted" style="text-align:center;max-width:420px;margin:0 auto 1rem;">In and out, at a glance — check this against your own records.</p>`;
+  <p class="muted" style="text-align:center;max-width:420px;margin:0 auto 1rem;">In and out, at a glance. Check this against your own records.</p>`;
   html += `<div class="segmented-tabs" id="vendorEarningsTabs">
     ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="${p === "today" ? "active" : ""}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
   </div>`;
@@ -4004,7 +4012,7 @@ function renderVendorEarningsBody() {
   if (!filtered.length) { body.innerHTML = `<div class="empty-state">No payouts in this period yet.</div>`; return; }
 
   const periodTotal = filtered.reduce((s, o) => s + vendorEarningsNet(o.total_amount, commissionPct), 0);
-  let html = `<div class="stat" style="max-width:280px;margin:0 auto 1.4rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Paid to you — ${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()}</div></div>`;
+  let html = `<div class="stat" style="max-width:280px;margin:0 auto 1.4rem;"><div class="n">${naira(periodTotal)}</div><div class="muted">Paid to you · ${VENDOR_EARNINGS_PERIODS[vendorEarningsPeriod].toLowerCase()}</div></div>`;
 
   const byDate = new Map();
   filtered.forEach((o) => {
@@ -4031,7 +4039,7 @@ function renderVendorEarningsBody() {
     html += `</tbody></table></div>`;
   });
 
-  html += `<p class="muted" style="font-size:0.76rem;text-align:center;margin-top:0.8rem;">Estimated amounts — after Levromart's ${commissionPct}% commission, before Paystack's own fee, so the actual amount may be a touch lower.</p>`;
+  html += `<p class="muted" style="font-size:0.76rem;text-align:center;margin-top:0.8rem;">Estimated amounts, after Levromart's ${commissionPct}% commission, before Paystack's own fee, so the actual amount may be a touch lower.</p>`;
   body.innerHTML = html;
 }
 function formatEarningsDateTime(dateStr) {
@@ -4053,7 +4061,7 @@ async function renderVendorEditProfile() {
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
     <h3 style="margin:0;"><i class="fa-solid fa-hand-holding-dollar"></i> Commission owed: ${naira(commissionOwed)}</h3>
-    <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 3)}% cut on sales you recorded as cash/transfer instead of taking payment online. Settle it any time — Paystack, one tap.</p>
+    <p class="muted" style="margin-top:0.4rem;">This is Levromart's ${Number(v.commission_pct ?? 3)}% cut on offline sales. Pay anytime via Paystack.</p>
     <div id="commissionError" class="error-text hidden"></div>
     <button class="btn btn-sm" id="payCommissionBtn" onclick="payCommission()"><i class="fa-solid fa-credit-card"></i> Pay ${naira(commissionOwed)} now</button>
   </div>` : ""}
@@ -4076,7 +4084,7 @@ async function renderVendorEditProfile() {
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
     <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
     <label>Opening hours</label><input id="veHours" placeholder="e.g. Mon–Sat, 9am–6pm" value="${esc(v.opening_hours || "")}" />
-    <label>Delivery fee (₦) — charged when a buyer chooses delivery instead of pickup. Leave as 0 for free delivery.</label>
+    <label>Delivery fee (₦): charged when a buyer chooses delivery instead of pickup. Leave as 0 for free delivery.</label>
     <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
     <label>About your business</label><textarea id="veBio" rows="3">${esc(v.bio || "")}</textarea>
     <div class="flex" style="margin-top:0.8rem;">
@@ -4087,10 +4095,10 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details</h2>
-    <p class="muted">Set your bank account once — Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed. Funds typically land in your account the next business day after a sale.</p>
+    <p class="muted">Set your bank account once. Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed. Funds typically land in your account the next business day after a sale.</p>
     <div id="bankError" class="error-text hidden"></div>
     ${v.paystack_subaccount_code
-      ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} — ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
+      ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} · ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
        <button class="btn btn-sm btn-outline" onclick="byId('bankFormWrap').classList.toggle('hidden')">Change bank account</button>`
       : `<div class="banner banner-warning" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Not set up yet.</strong> Until you add your bank, order payments go to Levromart and you'll be paid out manually.</div>`}
     <div id="bankFormWrap" class="${v.paystack_subaccount_code ? "hidden" : ""}" style="margin-top:0.8rem;">
@@ -4104,7 +4112,7 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart</h2>
-    <p class="muted">Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card — better if your sales are hard to track (e.g. you take payment off-platform a lot).</p>
+    <p class="muted">Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card. Better if your sales are hard to track (e.g. you take payment off-platform a lot).</p>
     <div id="billingError" class="error-text hidden"></div>
     <div class="flex" style="gap:1.2rem;margin:0.6rem 0;">
       <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="commission" ${v.billing_model !== "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Commission-based</label>
@@ -4112,7 +4120,7 @@ async function renderVendorEditProfile() {
     </div>
     ${v.billing_model === "monthly" ? `
       ${v.monthly_billing_status === "active" ? `<div class="banner banner-success"><strong><i class="fa-solid fa-circle-check"></i> Monthly billing active.</strong> ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(bp.amount)}/month · next charge ${v.next_monthly_charge_at ? new Date(v.next_monthly_charge_at).toLocaleDateString() : "—"}</div>`
-      : v.monthly_billing_status === "past_due" ? `<div class="banner banner-danger"><strong><i class="fa-solid fa-triangle-exclamation"></i> Payment failed — storefront paused.</strong> Set up billing again to reactivate.</div>`
+      : v.monthly_billing_status === "past_due" ? `<div class="banner banner-danger"><strong><i class="fa-solid fa-triangle-exclamation"></i> Payment failed, storefront paused.</strong> Set up billing again to reactivate.</div>`
       : `<div class="banner banner-warning"><strong><i class="fa-solid fa-circle-info"></i> Card not set up yet.</strong> Currently: ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(Math.max(bp.amount, 1500))} due today to activate.</div>`}
       <button class="btn btn-sm" id="setupBillingBtn" onclick="setupMonthlyBilling()">${v.monthly_billing_status === "active" ? "Update card" : "Set up monthly billing"}</button>
     ` : ""}
@@ -4302,12 +4310,12 @@ async function renderVendorProducts() {
         <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
         <p class="muted">${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available · ${p.status}</p>
         <p class="muted" style="font-size:0.8rem;"><i class='fa-solid fa-eye'></i> ${p.view_count || 0} views · <i class='fa-solid fa-heart'></i> ${favCount} saved · <i class="fa-solid fa-sack-dollar"></i> ${naira(revenueByProduct[p.id] || 0)}</p>
-        ${hasPendingOrder ? `<p class="muted" style="font-size:0.8rem;color:var(--danger,#dc2626);"><i class="fa-solid fa-circle-exclamation"></i> Has a pending order — can't be removed until it's cleared</p>` : ""}
+        ${hasPendingOrder ? `<p class="muted" style="font-size:0.8rem;color:var(--danger,#dc2626);"><i class="fa-solid fa-circle-exclamation"></i> Has a pending order, can't be removed until it's cleared</p>` : ""}
         <div class="flex">
           <button class="btn btn-sm" onclick="openEditProductModal('${p.id}')"><i class='fa-solid fa-pen'></i> Edit</button>
           ${p.status === "active" ? `<button class="btn btn-sm" style="background:#6b7280;" onclick="setProductStatus('${p.id}','paused')">Pause</button>` : ""}
           ${p.status === "paused" ? `<button class="btn btn-sm" onclick="setProductStatus('${p.id}','active')">Activate</button>` : ""}
-          ${p.status !== "removed" ? `<button class="btn btn-sm btn-danger" ${hasPendingOrder ? "disabled title=\"Can't remove — this product has a pending order\"" : ""} onclick="removeProduct('${p.id}')"><i class='fa-solid fa-trash'></i> Remove</button>` : ""}
+          ${p.status !== "removed" ? `<button class="btn btn-sm btn-danger" ${hasPendingOrder ? "disabled title=\"Can't remove: this product has a pending order\"" : ""} onclick="removeProduct('${p.id}')"><i class='fa-solid fa-trash'></i> Remove</button>` : ""}
           ${p.status === "removed" ? `<button class="btn btn-sm btn-danger" onclick="deleteProductCompletely('${p.id}')"><i class='fa-solid fa-trash-can'></i> Delete completely</button>` : ""}
         </div>
       </div>`;
@@ -4594,20 +4602,20 @@ async function setProductStatus(id, status) {
 }
 async function removeProduct(id) {
   if ((window.__vendorPendingProductIds || new Set()).has(id)) {
-    showToast("This product has a pending order — it can't be removed until that order is cleared (completed, returned, or cancelled).", "error");
+    showToast("This product has a pending order. It can't be removed until that order is cleared (completed, returned, or cancelled).", "error");
     return;
   }
   if (await showConfirmDialog("Remove this listing? It will no longer be visible to buyers.", { title: "Remove listing", okLabel: "Remove", danger: true })) setProductStatus(id, "removed");
 }
 async function deleteProductCompletely(id) {
   if ((window.__vendorPendingProductIds || new Set()).has(id)) {
-    showToast("This product has a pending order — it can't be deleted until that order is cleared.", "error");
+    showToast("This product has a pending order. It can't be deleted until that order is cleared.", "error");
     return;
   }
   if (!(await showConfirmDialog("Delete this product completely? This can't be undone.", { title: "Delete completely", okLabel: "Delete", danger: true }))) return;
   const { error } = await sb.from("products").delete().eq("id", id).eq("vendor_id", vendor.id);
   if (error) {
-    showToast("Couldn't fully delete this — it has past order history on record, so it stays hidden as a removed listing instead.", "error");
+    showToast("Couldn't fully delete this. It has past order history on record, so it stays hidden as a removed listing instead.", "error");
     return;
   }
   showToast("Product deleted.", "success");
@@ -4684,7 +4692,7 @@ async function showPackageModal() {
         <span style="flex:1;">${esc(p.name)} <span class="muted">(${naira(p.sale_price)})</span></span>
         <input type="number" id="pkgQty-${p.id}" value="${selectedQty[p.id] || 1}" min="1" class="${selectedQty[p.id] ? "" : "hidden"}" />
       </div>`).join("")
-    : `<p class="muted" style="margin:0;">You don't have any sellable products yet — add one first from My Products.</p>`;
+    : `<p class="muted" style="margin:0;">You don't have any sellable products yet. Add one first from My Products.</p>`;
 
   byId("packageModal").classList.remove("hidden");
   trackModalOpened("packageModal");
@@ -4978,7 +4986,7 @@ async function renderOrderDetail(orderId) {
   if (order.delivery_method === "pickup" && isBuyer) {
     const addr = [order.vendor?.address, order.vendor?.city].filter(Boolean).map(esc).join(", ");
     html += `<div class="card"><h3><i class="fa-solid fa-location-dot"></i> Pickup location</h3>
-      ${addr ? `<p>${addr}</p>` : `<p class="muted">This vendor hasn't listed a pickup address yet — message them to confirm where to collect your order.</p>`}
+      ${addr ? `<p>${addr}</p>` : `<p class="muted">This vendor hasn't listed a pickup address yet. Message them to confirm where to collect your order.</p>`}
       ${order.vendor?.opening_hours ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-clock"></i> ${esc(order.vendor.opening_hours)}</p>` : ""}
       <button class="btn btn-sm" onclick="startConversationWithVendor('${order.vendor.id}')"><i class="fa-solid fa-comment-dots"></i> Message vendor to confirm pickup</button>
     </div>`;
@@ -4992,7 +5000,7 @@ async function renderOrderDetail(orderId) {
 
   if (canPayOnline) {
     html += `<div class="card"><h3><i class="fa-solid fa-credit-card"></i> Pay online</h3>
-      <p class="muted">Pay by card, bank transfer or USSD through Paystack — instant, and the vendor gets notified right away.</p>
+      <p class="muted">Pay by card, bank transfer or USSD through Paystack. Instant, and the vendor gets notified right away.</p>
       <p class="muted" style="font-size:0.78rem;"><i class="fa-solid fa-circle-info"></i> No card? Opay, Moniepoint, Kuda, PalmPay and other microfinance banks all give you a free virtual card that works fine here.</p>
       <div id="payOnlineError" class="error-text hidden"></div>
       <button class="btn btn-sm" id="payOnlineBtn" onclick="payOnline('${order.id}')"><i class="fa-solid fa-credit-card"></i> Pay ${naira(feePaid ? order.deposit_amount : order.total_amount)} now</button>
@@ -5001,7 +5009,7 @@ async function renderOrderDetail(orderId) {
 
   if (canRecordPayment) {
     html += `<div class="card"><h3><i class="fa-solid fa-hand-holding-dollar"></i> Paid outside Paystack?</h3>
-      <p class="muted" style="font-size:0.85rem;">Record cash or bank transfer payments here — it marks this order paid and adds your commission to what you owe Levromart.</p>
+      <p class="muted" style="font-size:0.85rem;">Record cash or bank transfer payments here. It marks this order paid and adds your commission to what you owe Levromart.</p>
       <div id="recordPaymentError" class="error-text hidden"></div>
       <label>Payment for</label>
       <select id="rpType"><option value="${feeType}">${feeType === "sale_price" ? "Sale price" : "Rental fee"}</option><option value="deposit">Deposit</option></select>
@@ -5102,17 +5110,17 @@ function notReceivedButtonHtml(order) {
 }
 
 const ORDER_STATUS_HELP = {
-  pending: "Waiting for the vendor to confirm your order — you haven't been charged yet. You'll be able to pay once they accept.",
-  confirmed: "The vendor has accepted — next they'll hand over the equipment.",
+  pending: "Waiting for the vendor to confirm your order. You haven't been charged yet, and you'll be able to pay once they accept.",
+  confirmed: "The vendor has accepted. Next, they'll hand over the equipment.",
   handed_over: "The equipment has physically been handed to the buyer (picked up or delivered). For rentals, either side can mark it \"returned\" once it's back with the vendor. For sales, the buyer confirms receipt to complete the order and release payment.",
-  returned: "The rented equipment is back with the vendor — the buyer confirms to complete the order and release payment.",
+  returned: "The rented equipment is back with the vendor. The buyer confirms to complete the order and release payment.",
   completed: "This order is finished.",
   cancelled: "This order was cancelled.",
-  disputed: "An issue was reported on this order — an admin is reviewing it.",
+  disputed: "An issue was reported on this order. An admin is reviewing it.",
 };
 
 const PAYOUT_STATUS_HELP = {
-  held: (date) => `Payment is being held by Levromart until you confirm receipt — it'll release automatically on ${date} even if you forget.`,
+  held: (date) => `Payment is being held by Levromart until you confirm receipt. It'll release automatically on ${date} even if you forget.`,
   released: () => `Payment has been released to the vendor.`,
   refunded: () => `This payment was refunded back to the buyer.`,
 };
@@ -5151,7 +5159,7 @@ async function submitNotReceived() {
     const { error } = await sb.rpc("raise_dispute", { p_order_id: notReceivedOrderId, p_reason: "Buyer reports this order was never received." });
     if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
     byId("notReceivedModal").classList.add("hidden");
-    showToast("Reported — an admin will review this.", "success");
+    showToast("Reported. An admin will review this.", "success");
     navigate("orderDetail", { orderId: notReceivedOrderId });
   } finally {
     btn.disabled = false;
@@ -5175,8 +5183,8 @@ async function confirmReceiveOrder(orderId) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not complete this order.");
-    if (json.transferred) showToast("Order completed — payment released to the vendor.", "success");
-    else if (json.payoutError) showToast("Order completed. There was a hiccup releasing payment — our team will sort it out.", "info");
+    if (json.transferred) showToast("Order completed. Payment released to the vendor.", "success");
+    else if (json.payoutError) showToast("Order completed. There was a hiccup releasing payment, our team will sort it out.", "info");
     else showToast("Order completed.", "success");
   } catch (err) {
     showToast(err.message, "error");
@@ -5323,7 +5331,7 @@ function adminNavHtml(active) {
     ["adminUsers", "fa-user-shield", "Admins"],
     ["adminLog", "fa-clock-rotate-left", "Log"],
   ];
-  return `<div class="flex" style="gap:0.4rem;flex-wrap:wrap;justify-content:center;margin:0.8rem 0 1rem;">${items.map(([view, icon, label]) => `<button class="btn btn-sm ${view === active ? "" : "btn-outline"}" onclick="navigate('${view}')" style="position:relative;"><i class="fa-solid ${icon}"></i> ${label}${view === "adminFeedback" && unreadSuggestionCount > 0 ? ` <span class="notif-dot" style="position:static;display:inline-flex;box-shadow:none;">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>`).join("")}</div>`;
+  return `<div class="dash-tabs">${items.map(([view, icon, label]) => `<button class="dash-tab ${view === active ? "active" : ""}" onclick="navigate('${view}')"><i class="fa-solid ${icon}"></i> ${label}${view === "adminFeedback" && unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>`).join("")}</div>`;
 }
 
 async function renderAdminPanel(status) {
@@ -5336,7 +5344,7 @@ async function renderAdminPanel(status) {
   if (status !== "all") q = q.eq("verification_status", status);
   const { data: vendors } = await q;
 
-  let html = `<h2><i class='fa-solid fa-gear'></i> Admin — Vendor applications</h2>`;
+  let html = `<h2><i class='fa-solid fa-gear'></i> Admin: Vendor applications</h2>`;
   html += adminNavHtml("adminPanel");
   html += `<div class="tabs">
       <a class="${status === "all" ? "active" : ""}" onclick="navigate('adminPanel',{status:'all'})">all</a>
@@ -5545,7 +5553,7 @@ async function renderVendorSuggestionsInbox() {
   if (!session || !vendor) return '<div class="empty-state">Access denied.</div>';
   const { data: suggestions, error } = await sb.rpc("get_vendor_suggestions");
   let html = `<h2><i class='fa-solid fa-comment-medical'></i> Suggestions</h2>
-  <p class="muted">Feedback buyers have sent about your shop — some may be anonymous.</p>`;
+  <p class="muted">Feedback buyers have sent about your shop. Some may be anonymous.</p>`;
   if (error) { html += `<div class="empty-state">Couldn't load suggestions: ${esc(error.message)}</div>`; return html; }
   html += (suggestions && suggestions.length)
     ? suggestions.map(suggestionRowHtml).join("")
@@ -5567,10 +5575,10 @@ async function renderAdminUsers() {
         <button class="btn btn-sm" onclick="promoteUserToAdmin()">Make admin</button>
       </div>
       <p id="promoteMsg" class="muted" style="margin-top:0.5rem;"></p>
-      <p class="muted" style="font-size:0.85rem;">The user must already have a Levromart account. Only promote people you trust — admins can approve vendors, resolve disputes, and manage other admins.</p>
+      <p class="muted" style="font-size:0.85rem;">The user must already have a Levromart account. Only promote people you trust. Admins can approve vendors, resolve disputes, and manage other admins.</p>
     </div>
     <h3 style="margin-top:1.2rem;">Current admins</h3>`;
-  html += (admins || []).map((a) => `<div class="card flex" style="justify-content:space-between;"><span>${esc(a.name || "")} — ${esc(a.email)}</span>${a.id !== session.user.id ? `<button class="btn btn-sm btn-outline" onclick="demoteAdmin('${esc(a.email)}')">Remove admin</button>` : `<span class="muted">(you)</span>`}</div>`).join("");
+  html += (admins || []).map((a) => `<div class="card flex" style="justify-content:space-between;"><span>${esc(a.name || "")} · ${esc(a.email)}</span>${a.id !== session.user.id ? `<button class="btn btn-sm btn-outline" onclick="demoteAdmin('${esc(a.email)}')">Remove admin</button>` : `<span class="muted">(you)</span>`}</div>`).join("");
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('adminPanel',{status:'pending'})"><i class='fa-solid fa-arrow-left'></i> Back to admin</button>`;
   return html;
 }
@@ -5604,7 +5612,7 @@ async function renderAdminLog() {
     reactivate_storefront: { text: "reactivated storefront", icon: "fa-play", cls: "success" },
   };
 
-  let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log</h2><p class="muted">Every reject, approve, pause and reactivate — who did it, and when. This trail can't be edited or deleted, even by admins.</p>`;
+  let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log</h2><p class="muted">Every reject, approve, pause and reactivate: who did it, and when. This trail can't be edited or deleted, even by admins.</p>`;
   html += adminNavHtml("adminLog");
 
   if (!log || log.length === 0) { html += `<p class="muted">No admin actions logged yet.</p>`; return html; }
@@ -5725,7 +5733,7 @@ async function adminRetryPayout(orderId, btn) {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Retry failed.");
     if (json.transferred) { showToast("Payout sent successfully.", "success"); navigate("adminFinance"); }
-    else { showToast(json.payoutError || "Still failing — check Paystack Dashboard → Transfers for why.", "error"); btn.disabled = false; btn.textContent = "Retry payout"; }
+    else { showToast(json.payoutError || "Still failing. Check Paystack Dashboard → Transfers for why.", "error"); btn.disabled = false; btn.textContent = "Retry payout"; }
   } catch (err) {
     showToast(err.message, "error");
     btn.disabled = false;
@@ -5914,7 +5922,7 @@ function exportFinancePdf() {
   const commission = paid.reduce((s, t) => s + Number(t.platform_cut), 0);
   const volume = paid.reduce((s, t) => s + Number(t.amount), 0);
   const w = window.open("", "_blank");
-  w.document.write(`<!doctype html><html><head><title>Levromart — Transactions (${rangeLabel(adminFinanceRange)})</title>
+  w.document.write(`<!doctype html><html><head><title>Levromart Transactions (${rangeLabel(adminFinanceRange)})</title>
     <style>
       body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0d201c;padding:2rem;}
       h1{color:#0e8f7f;margin-bottom:0.2rem;} .muted{color:#5c7269;margin-top:0;}
@@ -5924,7 +5932,7 @@ function exportFinancePdf() {
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
     </style></head><body>
-    <h1>Levromart — Transactions</h1>
+    <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
       <div class="stat"><b>${paid.length}</b>Paid transactions</div>
@@ -5954,9 +5962,9 @@ async function renderAdminDisputes() {
       <p style="margin:0.5rem 0;"><strong>Reason:</strong> ${esc(d.reason)}</p>
       ${d.vendor_response ? `<p style="margin:0.5rem 0;"><strong>Vendor says:</strong> ${esc(d.vendor_response)}</p>` : `<p class="muted" style="margin:0.5rem 0;">Vendor hasn't responded yet.</p>`}
       ${d.order?.buyer_id && d.order?.vendor_id ? `<button class="btn btn-sm btn-outline" onclick="openDisputeChat('${d.order.buyer_id}','${d.order.vendor_id}')"><i class="fa-solid fa-comment-dots"></i> View chat between buyer &amp; vendor</button>` : ""}
-      ${d.order?.payout_status === "held" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-shield-halved"></i> Payment on this order is still held by Levromart — the vendor hasn't been paid.</p>
+      ${d.order?.payout_status === "held" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-shield-halved"></i> Payment on this order is still held by Levromart. The vendor hasn't been paid.</p>
       <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}','held')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
-      ${d.order?.payout_status === "released" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-triangle-exclamation"></i> The vendor's share of this order has already been paid out (split payment) — a refund here comes out of Levromart's own balance.</p>
+      ${d.order?.payout_status === "released" ? `<p class="muted" style="font-size:0.82rem;margin-top:0.4rem;"><i class="fa-solid fa-triangle-exclamation"></i> The vendor's share of this order has already been paid out (split payment). A refund here comes out of Levromart's own balance.</p>
       <button class="btn btn-sm btn-danger" onclick="adminRefundOrder('${d.order.id}','released')"><i class="fa-solid fa-rotate-left"></i> Refund buyer in full</button>` : ""}
       <div class="flex">
         <textarea id="notes-${d.id}" rows="2" placeholder="Resolution notes" style="flex:1;"></textarea>
@@ -5974,7 +5982,7 @@ async function resolveDispute(id, orderId, payoutStatus) {
   const newStatus = byId(`newstatus-${id}`).value || undefined;
 
   if (newStatus === "cancelled" && (payoutStatus === "held" || payoutStatus === "released")) {
-    showToast('This order was paid online — use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
+    showToast('This order was paid online, use "Refund buyer in full" above instead, so the buyer actually gets their money back.', "error");
     return;
   }
 
@@ -6001,7 +6009,7 @@ async function resolveDispute(id, orderId, payoutStatus) {
 
 async function adminRefundOrder(orderId, payoutStatus) {
   const msg = payoutStatus === "released"
-    ? "Refund the buyer in full? The vendor's share has already been paid out (split payment), so this comes out of Levromart's own balance — you'll need to recover the vendor's cut from them separately, outside Paystack. This still cancels the order."
+    ? "Refund the buyer in full? The vendor's share has already been paid out (split payment), so this comes out of Levromart's own balance. You'll need to recover the vendor's cut from them separately, outside Paystack. This still cancels the order."
     : "Refund the buyer in full? This sends the held payment back to their card/account and cancels the order. The vendor was never paid, so there's nothing to claw back from them.";
   if (!(await showConfirmDialog(msg, { title: "Refund buyer", okLabel: "Refund", danger: true }))) return;
   try {
@@ -6036,10 +6044,10 @@ function renderTerms() {
   return `<div class="legal-page">
     <h2>Terms of Service</h2>
     <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-    <p>Levromart is an online marketplace that connects buyers with independent vendors across Lagos — including healthcare equipment, food, electronics, and other goods and services — for both rental and outright purchase. By creating an account or using Levromart, you agree to these terms.</p>
+    <p>Levromart is an online marketplace that connects buyers with independent vendors across Lagos, including healthcare equipment, food, electronics, and other goods and services, for both rental and outright purchase. By creating an account or using Levromart, you agree to these terms.</p>
 
     <h3>1. What Levromart is (and isn't)</h3>
-    <p>Levromart provides the platform, payment processing, and vendor verification. We are not the seller or renter of record — every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their goods, services, and descriptions.</p>
+    <p>Levromart provides the platform, payment processing, and vendor verification. We are not the seller or renter of record. Every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their goods, services, and descriptions.</p>
 
     <h3>2. Accounts</h3>
     <p>You must provide accurate information when registering. You're responsible for keeping your password secure and for all activity under your account. Vendor accounts additionally require identity/business verification before their storefront goes live.</p>
@@ -6047,17 +6055,17 @@ function renderTerms() {
     <h3>3. Orders, rentals &amp; payments</h3>
     <ul>
       <li>Payments are processed through Paystack. Levromart never stores your card details.</li>
-      <li>Vendors are paid automatically once a sale is confirmed — funds typically reach their bank account the next business day.</li>
+      <li>Vendors are paid automatically once a sale is confirmed. Funds typically reach their bank account the next business day.</li>
       <li>Rentals may require a refundable deposit. If there's a dispute over damage or non-return, Levromart's dispute resolution process decides how it's handled, including a refund from Levromart where warranted.</li>
       <li>Vendors set their own prices; Levromart deducts a commission on completed transactions, disclosed to vendors in their dashboard.</li>
-      <li>Some vendors accept offline payment (cash/transfer) on handover — Levromart still tracks commission owed on these orders.</li>
+      <li>Some vendors accept offline payment (cash/transfer) on handover. Levromart still tracks commission owed on these orders.</li>
     </ul>
 
     <h3>4. Cancellations &amp; disputes</h3>
     <p>See our <a href="#" onclick="navigate('refundPolicy');return false;">Refund &amp; Cancellation Policy</a> for cancellation windows. If something goes wrong with an order, either party can raise a dispute from the order page; Levromart admins review and resolve disputes in good faith, but are not a court of law.</p>
 
     <h3>5. Prohibited use</h3>
-    <p>No listing or sale of counterfeit, unsafe, expired, stolen, or unlicensed goods — including medical equipment that requires regulatory approval, food that doesn't meet basic safety standards, or any item Nigerian law restricts the sale of. No harassment of other users. No attempting to circumvent Levromart payments to avoid commission — this undermines the buyer protections (verified vendors, dispute resolution, payment records) that come with paying through the platform.</p>
+    <p>No listing or sale of counterfeit, unsafe, expired, stolen, or unlicensed goods, including medical equipment that requires regulatory approval, food that doesn't meet basic safety standards, or any item Nigerian law restricts the sale of. No harassment of other users. No attempting to circumvent Levromart payments to avoid commission. This undermines the buyer protections (verified vendors, dispute resolution, payment records) that come with paying through the platform.</p>
 
     <h3>6. Account suspension</h3>
     <p>Levromart may pause or suspend a vendor's storefront or a user's account for violations of these terms, fraud, or repeated disputes, with notice where practical.</p>
@@ -6079,7 +6087,7 @@ function renderPrivacy() {
     <h3>1. What we collect</h3>
     <ul>
       <li><strong>Account data:</strong> name, email, phone, city, and (for vendors) business details and verification documents.</li>
-      <li><strong>Order data:</strong> what you bought/rented, delivery address, order status, and payment status (not your card number — that's handled entirely by Paystack).</li>
+      <li><strong>Order data:</strong> what you bought/rented, delivery address, order status, and payment status (not your card number; that's handled entirely by Paystack).</li>
       <li><strong>Usage data:</strong> product views, wishlist saves, and searches, used to show relevant listings.</li>
       <li><strong>Photos:</strong> profile pictures and vendor product photos you choose to upload.</li>
     </ul>
@@ -6089,9 +6097,9 @@ function renderPrivacy() {
 
     <h3>3. Who it's shared with</h3>
     <ul>
-      <li><strong>Paystack</strong> — to process payments.</li>
-      <li><strong>Supabase</strong> — our database and file storage provider, which hosts the data described above.</li>
-      <li><strong>Google Gemini</strong> — powers the in-app AI assistant; only the text of your chat messages is sent, never your account or order data.</li>
+      <li><strong>Paystack:</strong> to process payments.</li>
+      <li><strong>Supabase:</strong> our database and file storage provider, which hosts the data described above.</li>
+      <li><strong>Google Gemini:</strong> powers the in-app AI assistant; only the text of your chat messages is sent, never your account or order data.</li>
       <li>The vendor or buyer on an order you're part of, so they can fulfill/receive it.</li>
     </ul>
 
@@ -6115,7 +6123,7 @@ function renderRefundPolicy() {
     <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5–10 business days, per Paystack's processing time).</p>
 
     <h3>2. After a vendor confirms your order</h3>
-    <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable — only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
+    <p>Cancellations are still possible but may be subject to the vendor's own cancellation terms (shown on the order). For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
 
     <h3>3. Refundable deposits</h3>
     <p>Rental deposits are meant to cover damage or non-return. If equipment is returned in its original condition, there's nothing further for you to do. If there's a disagreement about the equipment's condition or the deposit isn't returned, either side can raise a dispute for a Levromart admin to review, including a refund from Levromart where warranted.</p>
@@ -6218,7 +6226,7 @@ function toggleAiChat() {
     if (aiChatMessages.length === 0) {
       appendAiChatMessage("assistant", vendor
         ? "Hi, I'm Levi! Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart."
-        : "Hi, I'm Levi! Ask me what you're looking for — healthcare equipment, food, electronics, and more — how renting, buying or requesting works, or anything else about the marketplace.");
+        : "Hi, I'm Levi! Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.");
     }
     byId("aiChatInput").focus();
   }
@@ -6467,7 +6475,7 @@ function toggleAiChatMic() {
     if (transcript) { const el = byId("aiChatInput"); el.value = transcript; autoGrowChatInput(el); aiChatLastInputVoice = true; }
   };
   aiChatRecognizer.onerror = (e) => {
-    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that — try again.", "error");
+    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
   };
   aiChatRecognizer.onend = () => { aiChatListening = false; btn.classList.remove("listening"); };
   try { aiChatRecognizer.start(); } catch (e) { /* already running */ }
@@ -6495,7 +6503,7 @@ function toggleMsgMic() {
     if (transcript && input) { input.value = transcript; autoGrowChatInput(input); }
   };
   msgRecognizer.onerror = (e) => {
-    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that — try again.", "error");
+    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
   };
   msgRecognizer.onend = () => { msgListening = false; btn.classList.remove("listening"); };
   try { msgRecognizer.start(); } catch (e) { /* already running */ }
@@ -6523,7 +6531,7 @@ async function sendAiChatMessage() {
     playSound("notify");
   } catch (err) {
     byId("aiChatTyping")?.remove();
-    appendAiChatMessage("assistant", `Sorry, I'm not available right now — ${err.message}`);
+    appendAiChatMessage("assistant", `Sorry, I'm not available right now: ${err.message}`);
   }
 }
 
@@ -6650,7 +6658,7 @@ window.addEventListener("popstate", (e) => {
     try {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
-      if (json.status === "success") showToast("Payment received — thank you!", "success");
+      if (json.status === "success") showToast("Payment received, thank you!", "success");
       else showToast("We couldn't confirm that payment yet. It may still be processing.", "info");
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
@@ -6665,7 +6673,7 @@ window.addEventListener("popstate", (e) => {
     try {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
-      if (json.status === "success") showToast("Commission settled — thank you!", "success");
+      if (json.status === "success") showToast("Commission settled, thank you!", "success");
       else showToast("We couldn't confirm that payment yet. It may still be processing.", "info");
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
@@ -6681,7 +6689,7 @@ window.addEventListener("popstate", (e) => {
     try {
       const res = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}`);
       const json = await res.json();
-      if (json.status === "success") showToast("Monthly billing set up — your card is saved.", "success");
+      if (json.status === "success") showToast("Monthly billing set up. Your card is saved.", "success");
       else showToast("We couldn't confirm that payment yet. It may still be processing.", "info");
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
