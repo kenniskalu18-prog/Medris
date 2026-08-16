@@ -201,6 +201,7 @@
   .card { background: var(--card); padding: 1.4rem; border-radius: 1.1rem; box-shadow: var(--shadow); margin-bottom: 1rem; border: 1px solid var(--border); transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
   .flex { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
+  .flex + .btn, .flex + button.btn, p + .btn, p + button.btn { margin-top: 0.8rem; }
   .badge { padding: 0.2rem 0.8rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); text-transform: capitalize; }
   .badge.success { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
   .badge.warning { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
@@ -249,6 +250,9 @@
   .ms-search-wrap { position: sticky; top: 0; background: inherit; padding-bottom: 0.35rem; margin-bottom: 0.2rem; z-index: 1; }
   .ms-search { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 0.6rem; font-size: 0.85rem; font-family: inherit; background: var(--input-bg); color: var(--text); margin: 0; }
   .ms-empty { padding: 0.65rem 0.85rem; font-size: 0.85rem; color: var(--text-muted); }
+  .info-popover-wrap { position: relative; display: inline-flex; vertical-align: middle; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); font-size: 0.7rem; font-weight: 700; font-style: normal; border: none; cursor: pointer; flex-shrink: 0; padding: 0; }
+  .info-popover { position: absolute; top: calc(100% + 0.5rem); left: 0; z-index: 90; width: 230px; max-width: 72vw; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.8rem; box-shadow: var(--shadow-float); padding: 0.7rem 0.85rem; font-size: 0.78rem; font-weight: 400; line-height: 1.4; color: var(--text); text-transform: none; }
   .ms-list a.ms-item { display: block; color: inherit; text-decoration: none; }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
@@ -1412,7 +1416,23 @@ function toggleInlineMenu(id, evt) {
 document.addEventListener("click", () => {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
+  document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
 });
+// Small "i" button + floating bubble, for swapping a paragraph of helper
+// text out of the page flow and behind a tap — keeps cards short by
+// default while still putting the full explanation one tap away.
+function infoPopoverHtml(id, text) {
+  return `<span class="info-popover-wrap"><button type="button" class="info-btn" onclick="toggleInfoPopover('${id}',event)">i</button><div class="info-popover hidden" id="${id}">${text}</div></span>`;
+}
+function toggleInfoPopover(id, evt) {
+  evt?.stopPropagation();
+  const el = byId(id);
+  if (!el) return;
+  const willOpen = el.classList.contains("hidden");
+  document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
+  document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
+  if (willOpen) el.classList.remove("hidden");
+}
 function byId(id) { return document.getElementById(id); }
 
 // ---------- SOUND EFFECTS ----------
@@ -4094,8 +4114,7 @@ async function renderVendorEditProfile() {
   </div>
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
-    <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details</h2>
-    <p class="muted">Set your bank account once. Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed. Funds typically land in your account the next business day after a sale.</p>
+    <h2><i class="fa-solid fa-money-bill-transfer"></i> Payout details ${infoPopoverHtml("payoutInfo", `Set your bank account once. Levromart then pays you directly through Paystack on every order (minus the ${Number(v.commission_pct ?? 3)}% platform commission), no manual transfers needed. Funds typically land in your account the next business day after a sale.`)}</h2>
     <div id="bankError" class="error-text hidden"></div>
     ${v.paystack_subaccount_code
       ? `<div class="banner banner-success" style="margin-top:0.6rem;"><strong><i class="fa-solid fa-circle-check"></i> Payouts active.</strong> ${esc(v.account_name || "")} · ${esc(v.bank_name || "")} ${v.account_number ? "···" + esc(v.account_number.slice(-4)) : ""}</div>
@@ -4111,8 +4130,7 @@ async function renderVendorEditProfile() {
   </div>
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
-    <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart</h2>
-    <p class="muted">Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card. Better if your sales are hard to track (e.g. you take payment off-platform a lot).</p>
+    <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart ${infoPopoverHtml("billingInfo", `Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card. Better if your sales are hard to track (e.g. you take payment off-platform a lot).`)}</h2>
     <div id="billingError" class="error-text hidden"></div>
     <div class="flex" style="gap:1.2rem;margin:0.6rem 0;">
       <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="commission" ${v.billing_model !== "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Commission-based</label>
@@ -4999,12 +5017,14 @@ async function renderOrderDetail(orderId) {
   }
 
   if (canPayOnline) {
-    html += `<div class="card"><h3><i class="fa-solid fa-credit-card"></i> Pay online</h3>
-      <p class="muted">Pay by card, bank transfer or USSD through Paystack. Instant, and the vendor gets notified right away.</p>
-      <p class="muted" style="font-size:0.78rem;"><i class="fa-solid fa-circle-info"></i> No card? Opay, Moniepoint, Kuda, PalmPay and other microfinance banks all give you a free virtual card that works fine here.</p>
+    html += `<div class="card"><h3><i class="fa-solid fa-credit-card"></i> Pay online ${infoPopoverHtml("payOnlineInfo", "Pay by card, bank transfer or USSD through Paystack. Instant, and the vendor gets notified right away.<br><br>No debit card? Opay, Moniepoint, Kuda, PalmPay and other microfinance banks all give you a free virtual card that works fine here.")}</h3>
       <div id="payOnlineError" class="error-text hidden"></div>
       <button class="btn btn-sm" id="payOnlineBtn" onclick="payOnline('${order.id}')"><i class="fa-solid fa-credit-card"></i> Pay ${naira(feePaid ? order.deposit_amount : order.total_amount)} now</button>
     </div>`;
+    if (!localStorage.getItem("medris-payonline-info-seen")) {
+      localStorage.setItem("medris-payonline-info-seen", "1");
+      setTimeout(() => byId("payOnlineInfo")?.classList.remove("hidden"), 300);
+    }
   }
 
   if (canRecordPayment) {
@@ -5062,6 +5082,12 @@ async function renderOrderDetail(orderId) {
   return html;
 }
 
+// Self-serve cancel-with-refund is only offered within this many hours of
+// paying -- matches the server-side check in api/order-payout-action.js
+// (buyer-cancel), which is the one that actually enforces it. Past this
+// window the vendor may already be getting the order ready, so cancelling
+// needs a dispute instead.
+const BUYER_CANCEL_WINDOW_HOURS = 5;
 function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   const buttons = [];
   if (isVendor) {
@@ -5076,7 +5102,16 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
     if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
   }
   if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
-  if (isBuyer && order.status === "confirmed") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
+  if (isBuyer && order.status === "confirmed") {
+    const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
+    const paidRow = order.payments.find((p) => p.payment_type === feeType && p.status === "paid");
+    const hoursSincePaid = paidRow ? (Date.now() - new Date(paidRow.paid_at || paidRow.created_at).getTime()) / 3600000 : 0;
+    if (!paidRow || hoursSincePaid <= BUYER_CANCEL_WINDOW_HOURS) {
+      buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
+    } else {
+      buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-circle-info"></i> The ${BUYER_CANCEL_WINDOW_HOURS}-hour self-serve cancellation window has passed. Report an issue below if something's wrong.</p>`);
+    }
+  }
   if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
   // Only the buyer confirms completion — that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
@@ -5644,17 +5679,26 @@ async function renderAdminLog() {
 
   if (!log || log.length === 0) { html += `<p class="muted">No admin actions logged yet.</p>`; return html; }
 
-  html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Target</th></tr></thead><tbody>`;
+  const byDate = new Map();
   log.forEach((entry) => {
-    const meta = ACTION_LABEL[entry.action] || { text: entry.action, icon: "fa-circle-info", cls: "" };
-    html += `<tr>
-      <td>${new Date(entry.created_at).toLocaleString()}</td>
-      <td>${esc(entry.admin_name || "—")}</td>
-      <td><span class="badge ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${esc(meta.text)}</span></td>
-      <td>${esc(entry.target_label || entry.target_id || "—")}</td>
-    </tr>`;
+    const dateKey = new Date(entry.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey).push(entry);
   });
-  html += `</tbody></table></div>`;
+  byDate.forEach((dayEntries, dateKey) => {
+    html += `<div class="category-group-header">${esc(dateKey)}</div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th></tr></thead><tbody>`;
+    dayEntries.forEach((entry) => {
+      const meta = ACTION_LABEL[entry.action] || { text: entry.action, icon: "fa-circle-info", cls: "" };
+      html += `<tr>
+        <td>${new Date(entry.created_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" })}</td>
+        <td>${esc(entry.admin_name || "—")}</td>
+        <td><span class="badge ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${esc(meta.text)}</span></td>
+        <td>${esc(entry.target_label || entry.target_id || "—")}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
   return html;
 }
 
@@ -5823,18 +5867,33 @@ function renderAdminFinanceRange() {
 
   const tableArea = byId("financeTableArea");
   if (tableArea) {
-    tableArea.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>
-      <th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th>
-    </tr></thead><tbody>${filtered.map((t) => `<tr>
-      <td>${new Date(t.created_at).toLocaleDateString()}</td>
-      <td>${esc(t.buyer_name || "")}</td>
-      <td>${esc(t.vendor_name || "")}</td>
-      <td style="text-transform:capitalize;">${esc((t.payment_type || "").replace("_", " "))}</td>
-      <td>${naira(t.amount)}</td>
-      <td style="text-transform:capitalize;">${esc(t.method)}</td>
-      <td><span class="badge ${t.status === "paid" ? "success" : t.status === "refunded" ? "danger" : "warning"}">${esc(t.status)}</span></td>
-      <td>${naira(t.platform_cut)}</td>
-    </tr>`).join("")}</tbody></table></div>${filtered.length === 0 ? '<p class="muted">No transactions in this range.</p>' : ""}`;
+    if (!filtered.length) {
+      tableArea.innerHTML = '<p class="muted">No transactions in this range.</p>';
+      return;
+    }
+    const byDate = new Map();
+    filtered.forEach((t) => {
+      const dateKey = new Date(t.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+      if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+      byDate.get(dateKey).push(t);
+    });
+    let tableHtml = "";
+    byDate.forEach((dayTxns, dateKey) => {
+      tableHtml += `<div class="category-group-header">${esc(dateKey)}</div>
+        <div class="table-wrap"><table class="data-table"><thead><tr>
+          <th>Time</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th>
+        </tr></thead><tbody>${dayTxns.map((t) => `<tr>
+          <td>${new Date(t.created_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" })}</td>
+          <td>${esc(t.buyer_name || "")}</td>
+          <td>${esc(t.vendor_name || "")}</td>
+          <td style="text-transform:capitalize;">${esc((t.payment_type || "").replace("_", " "))}</td>
+          <td>${naira(t.amount)}</td>
+          <td style="text-transform:capitalize;">${esc(t.method)}</td>
+          <td><span class="badge ${t.status === "paid" ? "success" : t.status === "refunded" ? "danger" : "warning"}">${esc(t.status)}</span></td>
+          <td>${naira(t.platform_cut)}</td>
+        </tr>`).join("")}</tbody></table></div>`;
+    });
+    tableArea.innerHTML = tableHtml;
   }
 }
 
@@ -6150,7 +6209,7 @@ function renderRefundPolicy() {
     <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5–10 business days, per Paystack's processing time).</p>
 
     <h3>2. After a vendor confirms your order</h3>
-    <p>You can still cancel freely from your Orders page any time before the vendor marks your order as handed over, whether or not you've paid yet. Any payment already made online is refunded in full the same way. Once handed over, cancellations go through Levromart's dispute process instead. For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
+    <p>If you haven't paid yet, you can still cancel freely from your Orders page any time before the vendor marks your order as handed over. If you have paid, you can cancel and get a full refund yourself within 5 hours of paying. After that window (or once the order is handed over, whichever comes first), cancellations go through Levromart's dispute process instead. For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
 
     <h3>3. Refundable deposits</h3>
     <p>Rental deposits are meant to cover damage or non-return. If equipment is returned in its original condition, there's nothing further for you to do. If there's a disagreement about the equipment's condition or the deposit isn't returned, either side can raise a dispute for a Levromart admin to review, including a refund from Levromart where warranted.</p>
