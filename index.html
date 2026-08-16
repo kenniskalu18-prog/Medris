@@ -358,9 +358,11 @@
   .ai-chat-history-item-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
   .ai-chat-history-delete { flex-shrink: 0; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.3rem; font-size: 0.85rem; }
   .ai-chat-history-delete:hover { color: var(--danger); }
-  .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.87rem; line-height: 1.4; white-space: pre-wrap; }
+  .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.87rem; line-height: 1.4; white-space: pre-wrap; position: relative; }
   .ai-chat-msg.user { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.2rem; }
   .ai-chat-msg.assistant { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 0.2rem; }
+  .ai-chat-msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; margin-top: 0.4rem; margin-left: 0.3rem; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; opacity: 0.6; transition: opacity 0.15s ease; }
+  .ai-chat-msg-react:hover { opacity: 1; }
   .ai-chat-nav-btn { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; background: var(--primary-grad); color: #fff; border: none; border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent); transition: transform 0.15s ease; }
   .ai-chat-nav-btn:hover { transform: translateY(-1px); }
   .ai-chat-nav-hint { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; color: var(--primary); font-size: 0.78rem; font-weight: 600; opacity: 0.85; }
@@ -464,8 +466,8 @@
   .modern-chart-svg { width: 100%; height: 150px; margin: 0.7rem 0 0.3rem; overflow: visible; }
   .modern-chart-line { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent)); transition: stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1); }
   .modern-chart-area { opacity: 0; transition: opacity 0.8s ease 0.5s; }
-  .chart-dot { fill: var(--card); stroke: var(--primary); stroke-width: 0.9; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--primary) 50%, transparent)); cursor: pointer; opacity: 0; transition: opacity 0.4s ease, r 0.15s ease; }
-  .chart-dot:hover, .chart-dot.active { fill: var(--primary); r: 2.2; }
+  .chart-dot { fill: var(--card); stroke: var(--primary); stroke-width: 0.6; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--primary) 50%, transparent)); cursor: pointer; opacity: 0; transition: opacity 0.4s ease, r 0.15s ease; }
+  .chart-dot:hover, .chart-dot.active { fill: var(--primary); r: 1.4; }
   @media (prefers-reduced-motion: reduce) { .modern-chart-line, .modern-chart-area, .chart-dot { transition: none; opacity: 1; } }
   .modern-chart-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-muted); }
   .modern-chart-tooltip { font-size: 0.78rem; text-align: center; margin-top: 0.3rem; min-height: 1.1rem; color: var(--primary); font-weight: 600; }
@@ -610,6 +612,22 @@
   .chat-tick.read { color: #53bdeb; }
   .msg-speak { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; margin-right: 0.35rem; border: none; background: none; padding: 0; color: inherit; opacity: 0.65; cursor: pointer; font-size: 0.7rem; vertical-align: middle; }
   .msg-speak:hover, .msg-speak.speaking { opacity: 1; }
+  .msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; margin-right: 0.35rem; border: none; background: none; padding: 0; color: inherit; opacity: 0.65; cursor: pointer; font-size: 0.72rem; vertical-align: middle; }
+  .msg-react:hover { opacity: 1; }
+  .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 75%; position: relative; }
+  .chat-bubble-wrap.mine { align-self: flex-end; align-items: flex-end; }
+  .chat-bubble-wrap.theirs { align-self: flex-start; align-items: flex-start; }
+  .chat-bubble-wrap .chat-bubble { max-width: 100%; }
+  .msg-reactions-row:empty { display: none; }
+  .msg-reactions-row { display: flex; gap: 0.2rem; margin-top: 0.15rem; }
+  .msg-reaction-pill { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 0.05rem 0.4rem; font-size: 0.72rem; box-shadow: var(--shadow-float); }
+  .reaction-picker { position: absolute; bottom: calc(100% + 0.3rem); z-index: 20; display: flex; gap: 0.3rem; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.3rem 0.4rem; box-shadow: var(--shadow-float); }
+  .chat-bubble-wrap.mine .reaction-picker { right: 0; }
+  .chat-bubble-wrap.theirs .reaction-picker { left: 0; }
+  .reaction-picker button { border: none; background: none; padding: 0.1rem; font-size: 1.05rem; cursor: pointer; line-height: 1; transition: transform 0.1s ease; }
+  .reaction-picker button:hover { transform: scale(1.25); }
+  .ai-msg-reactions-row:empty { display: none; }
+  .ai-msg-reactions-row { display: flex; gap: 0.2rem; margin-top: 0.2rem; }
   .chat-input-row { display: flex; gap: 0.5rem; padding: 0.7rem; border-top: 1px solid var(--border); align-items: flex-end; }
   .chat-input-row textarea { margin: 0; flex: 1; resize: none; max-height: 7.5rem; overflow-y: auto; line-height: 1.35; }
   .chat-input-row .btn { flex-shrink: 0; }
@@ -662,6 +680,11 @@
   .toast-error i { color: var(--danger); }
   .toast-info i { color: var(--primary); }
   .toast-undo-btn { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; pointer-events: auto; font-family: inherit; }
+  .vendor-map-pin-inner { width: 32px; height: 32px; border-radius: 50% 50% 50% 0; background: var(--primary-grad); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.35); border: 2px solid #fff; }
+  .vendor-map-pin-inner i { transform: rotate(45deg); color: #fff; font-size: 0.85rem; }
+  .leaflet-control-attribution { background: color-mix(in srgb, var(--card) 85%, transparent) !important; color: var(--text-muted) !important; font-size: 0.62rem !important; padding: 0.1rem 0.4rem !important; border-radius: 0.4rem 0 0 0; }
+  .leaflet-control-attribution a { color: var(--text-muted) !important; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card) !important; color: var(--text) !important; }
 </style>
 </head>
 <body>
@@ -735,6 +758,7 @@
     </div>
   </div>
   <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
+  <div class="settings-row-card"><div class="theme-option" id="locationToggleOption" onclick="toggleLocationSetting()"></div></div>
   <div class="accordion-section hidden" id="changePasswordSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-key'></i> Security</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
@@ -1326,6 +1350,8 @@ let currentProductDetail = null; // whatever renderProductDetail last loaded, re
 let authMode = "login"; // 'login' | 'register'
 let notifCount = 0;
 let vendorPendingOrderCount = 0;
+let buyerPendingOrderCount = 0;
+const NON_TERMINAL_ORDER_STATUSES = ["pending", "confirmed", "handed_over", "returned", "disputed"];
 let unreadMessageCount = 0;
 let unreadSuggestionCount = 0;
 let notifTarget = null; // { view, params }
@@ -1465,6 +1491,7 @@ document.addEventListener("click", () => {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
   document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
 });
 // Small "i" button + floating bubble, for swapping a paragraph of helper
 // text out of the page flow and behind a tap — keeps cards short by
@@ -1543,6 +1570,36 @@ function loadLeaflet() {
   });
   return leafletLoadPromise;
 }
+// CARTO's free basemap tiles (built on the same OpenStreetMap data, just
+// styled) look far more modern than plain OSM raster tiles, and swapping
+// styles by theme means the map never clashes with light/dark/black mode.
+// Both styles still require the same OSM + CARTO attribution shown in the
+// map corner -- that can be made small and unobtrusive, but not removed,
+// since it's a condition of using the tiles for free.
+function mapTileConfig() {
+  const theme = document.documentElement.getAttribute("data-theme");
+  const dark = theme === "dark" || theme === "black";
+  return {
+    url: `https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "rastertiles/voyager"}/{z}/{x}/{y}{r}.png`,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
+    maxZoom: 20,
+  };
+}
+function addBasemapTileLayer(map) {
+  const cfg = mapTileConfig();
+  return window.L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: cfg.maxZoom, subdomains: "abcd" }).addTo(map);
+}
+// A rounded teardrop pin in the site's own accent color with a shop icon,
+// instead of Leaflet's default generic blue marker.
+function vendorMapIcon() {
+  return window.L.divIcon({
+    className: "vendor-map-pin",
+    html: `<div class="vendor-map-pin-inner"><i class="fa-solid fa-shop"></i></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -28],
+  });
+}
 // Straight-line distance in km -- fine at city scale, no need for real
 // routing/driving distance for "how far is this vendor" purposes.
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -1606,10 +1663,32 @@ function resolveLocationPrompt(granted) {
   resolve?.(granted);
 }
 async function requestBuyerLocation() {
+  if (!locationSharingEnabled) throw new Error("Location sharing is off. Turn it on in Settings to use this.");
   if (buyerLocation) return buyerLocation;
   const wantsToShare = await showLocationPrompt();
   if (!wantsToShare) throw new Error("Location sharing declined.");
   return getBuyerLocation();
+}
+
+// Settings-level kill switch, separate from per-request browser permission —
+// lets a buyer turn location features off entirely without having to keep
+// declining the browser's own prompt every time.
+let locationSharingEnabled = true;
+function initLocationSetting() {
+  locationSharingEnabled = localStorage.getItem("medris-location-enabled") !== "0";
+  renderLocationToggle();
+}
+function toggleLocationSetting() {
+  locationSharingEnabled = !locationSharingEnabled;
+  localStorage.setItem("medris-location-enabled", locationSharingEnabled ? "1" : "0");
+  if (!locationSharingEnabled) buyerLocation = null;
+  renderLocationToggle();
+  if (soundEnabled) playSound("click");
+}
+function renderLocationToggle() {
+  const el = byId("locationToggleOption");
+  if (!el) return;
+  el.innerHTML = `<i class='fa-solid ${locationSharingEnabled ? "fa-location-dot" : "fa-location-crosshairs"}'></i> Location sharing: ${locationSharingEnabled ? "On" : "Off"}`;
 }
 
 // ---------- SOUND EFFECTS ----------
@@ -1944,7 +2023,7 @@ async function setAiDataConsent(value) {
   renderAiConsentRow();
   showToast(value ? "Thanks, your chats may now be reviewed to improve Levi." : "Turned off. Your chats stay private again.", "success");
 }
-function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); markNotificationsRead(); }
+function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); }
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) {
@@ -2063,10 +2142,17 @@ async function refreshNotifications() {
   }
 
   if (vendor) {
-    const { count } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("vendor_id", vendor.id).eq("status", "pending");
+    const { count } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("vendor_id", vendor.id).in("status", NON_TERMINAL_ORDER_STATUSES);
     vendorPendingOrderCount = count || 0;
   } else {
     vendorPendingOrderCount = 0;
+  }
+
+  if (session && profile) {
+    const { count: buyerCount } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id).in("status", NON_TERMINAL_ORDER_STATUSES);
+    buyerPendingOrderCount = buyerCount || 0;
+  } else {
+    buyerPendingOrderCount = 0;
   }
 
   // No lightweight count RPC exists for suggestions, and the table's tiny,
@@ -2211,7 +2297,7 @@ function setupNotifItemGestures(panel) {
         setTimeout(() => { if (item) item.style.transition = ""; }, 220);
       } else if (!longPressFired && !scrolling) {
         if (notifSelectMode) toggleNotifSelect(id);
-        else { closeAllPanels(); navigate(item.dataset.view || "home", JSON.parse(item.dataset.params || "{}")); }
+        else { markSingleNotifRead(id); closeAllPanels(); navigate(item.dataset.view || "home", JSON.parse(item.dataset.params || "{}")); }
       }
       dragging = false; scrolling = false;
     };
@@ -2331,11 +2417,18 @@ function showUndoToast(message, undoFn) {
   setTimeout(dismiss, 5000);
 }
 
-async function markNotificationsRead() {
+async function markSingleNotifRead(id) {
   if (!session) return;
-  byId("notifDot")?.classList.add("hidden");
-  document.querySelectorAll("#notifPanel .notif-item.unread").forEach((el) => el.classList.remove("unread"));
-  await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false);
+  const el = document.querySelector(`.notif-item[data-id="${id}"]`);
+  if (!el || !el.classList.contains("unread")) return;
+  el.classList.remove("unread");
+  await sb.from("notifications").update({ read: true }).eq("id", id);
+  notifCount = Math.max(0, notifCount - 1);
+  const dot = byId("notifDot");
+  if (dot) {
+    if (notifCount > 0) { dot.textContent = notifCount > 9 ? "9+" : notifCount; }
+    else { dot.classList.add("hidden"); }
+  }
 }
 
 function subscribeNotifications() {
@@ -2515,7 +2608,7 @@ function renderBottomNav() {
       items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "navigate('requestEquipment')", view: "requestEquipment" });
       items.push(homeTab);
       items.push(messagesTab);
-      items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders" });
+      items.push({ icon: "<i class='fa-solid fa-receipt'></i>", label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders", badge: buyerPendingOrderCount });
     }
   } else {
     items.push(vendorsTab);
@@ -3340,15 +3433,47 @@ function messageTicksHtml(m) {
   if (m.delivered_at) return `<i class="fa-solid fa-check-double chat-tick"></i>`;
   return `<i class="fa-solid fa-check chat-tick"></i>`;
 }
+const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+function reactionsRowHtml(m) {
+  const reactions = m.reactions || {};
+  const counts = {};
+  Object.values(reactions).forEach((emoji) => { counts[emoji] = (counts[emoji] || 0) + 1; });
+  return Object.entries(counts).map(([emoji, n]) => `<span class="msg-reaction-pill">${emoji}${n > 1 ? ` ${n}` : ""}</span>`).join("");
+}
 function chatBubbleHtml(m) {
   const mine = m.sender_id === session.user.id;
   const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const speakBtn = "speechSynthesis" in window ? `<button class="msg-speak" title="Read aloud" onclick="speakMessageBubble(this)"><i class="fa-solid fa-volume-high"></i></button>` : "";
-  return `<div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}"><span class="chat-bubble-text">${esc(m.body)}</span><span class="chat-time">${speakBtn}${time}${mine ? messageTicksHtml(m) : ""}</span></div>`;
+  const reactBtn = `<button class="msg-react" title="React" onclick="toggleReactionPicker(event,'${m.id}')"><i class="fa-regular fa-face-smile"></i></button>`;
+  return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
+    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}"><span class="chat-bubble-text">${esc(m.body)}</span><span class="chat-time">${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
+    <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
+  </div>`;
 }
 function speakMessageBubble(btn) {
   const text = btn.closest(".chat-bubble")?.querySelector(".chat-bubble-text")?.textContent || "";
   speakAiChatMessage(text, btn);
+}
+function toggleReactionPicker(evt, msgId) {
+  evt.stopPropagation();
+  const existing = document.querySelector(`.reaction-picker[data-for="${msgId}"]`);
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
+  if (existing) return; // was already open for this message — just close it
+  const wrap = evt.target.closest(".chat-bubble-wrap");
+  if (!wrap) return;
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+  picker.dataset.for = msgId;
+  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" onclick="reactToMessage(event,'${msgId}','${e}')">${e}</button>`).join("");
+  wrap.appendChild(picker);
+}
+async function reactToMessage(evt, msgId, emoji) {
+  evt.stopPropagation();
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
+  const { data, error } = await sb.rpc("toggle_message_reaction", { p_message_id: msgId, p_emoji: emoji });
+  if (error) { showToast(error.message, "error"); return; }
+  const row = document.querySelector(`.msg-reactions-row[data-reactions-for="${msgId}"]`);
+  if (row) row.innerHTML = reactionsRowHtml({ reactions: data });
 }
 
 function scrollChatToBottom() {
@@ -3372,9 +3497,13 @@ function subscribeToConversation(conversationId) {
     // conversation — I don't have to leave and come back to see the other
     // person's double-check turn blue.
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
-      if (activeConversationId !== conversationId || payload.new.sender_id !== session.user.id) return;
-      const bubble = document.querySelector(`.chat-bubble[data-msg-id="${payload.new.id}"] .chat-time`);
-      if (bubble) bubble.innerHTML = `${new Date(payload.new.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${messageTicksHtml(payload.new)}`;
+      if (activeConversationId !== conversationId) return;
+      if (payload.new.sender_id === session.user.id) {
+        const timeText = document.querySelector(`.chat-bubble[data-msg-id="${payload.new.id}"] .chat-time-text`);
+        if (timeText) timeText.innerHTML = `${new Date(payload.new.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${messageTicksHtml(payload.new)}`;
+      }
+      const reactRow = document.querySelector(`.msg-reactions-row[data-reactions-for="${payload.new.id}"]`);
+      if (reactRow) reactRow.innerHTML = reactionsRowHtml(payload.new);
     })
     .subscribe();
 }
@@ -3668,7 +3797,7 @@ function renderVendorsDirectory() {
     </div>
   </div>`;
   html += `<div class="flex" style="margin:1.2rem 0;flex-wrap:wrap;">
-    <input type="text" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
+    <input type="text" id="vendorSearchInput" placeholder="Search vendors or products…" oninput="filterVendorsDirectory()" style="max-width:280px;" />
     <select id="vendorSectorFilter" onchange="filterVendorsDirectory()"><option value="">All sectors</option></select>
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
     <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
@@ -3677,7 +3806,7 @@ function renderVendorsDirectory() {
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   html += `<div id="vendorsMapWrap" class="hidden">
     <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;"></p>
-    <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);"></div>
+    <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);position:relative;isolation:isolate;z-index:0;"></div>
   </div>`;
   setTimeout(loadVendorsDirectory, 0);
   return html;
@@ -3686,19 +3815,27 @@ function renderVendorsDirectory() {
 async function loadVendorsDirectory() {
   const [{ data: vendors }, { data: products }, { data: sectorsData }] = await Promise.all([
     sb.from("vendors").select("id, business_name, city, avg_rating, review_count, sector_id, logo_url, lat, lng").eq("verification_status", "verified").eq("is_active", true).order("business_name"),
-    sb.from("products").select("vendor_id, category:categories(name)").eq("status", "active"),
+    sb.from("products").select("vendor_id, name, description, category:categories(name)").eq("status", "active"),
     sectors.length ? Promise.resolve({ data: sectors }) : sb.from("sectors").select("*").order("sort_order"),
   ]);
   if (!sectors.length) sectors = sectorsData || [];
 
   const catsByVendor = {};
+  const productTextByVendor = {};
   (products || []).forEach((p) => {
     const name = p.category?.name;
-    if (!name) return;
-    (catsByVendor[p.vendor_id] ||= new Set()).add(name);
+    if (name) (catsByVendor[p.vendor_id] ||= new Set()).add(name);
+    (productTextByVendor[p.vendor_id] ||= []).push(p.name, p.description, name);
   });
 
-  window.__allVendors = (vendors || []).map((v) => ({ ...v, categories: [...(catsByVendor[v.id] || [])] }));
+  // Lets the vendor search box double as a product search — typing "paracetamol"
+  // or "iron" surfaces any vendor who lists a matching product, not just a
+  // vendor whose own business name happens to match.
+  window.__allVendors = (vendors || []).map((v) => ({
+    ...v,
+    categories: [...(catsByVendor[v.id] || [])],
+    searchText: [v.business_name, ...(productTextByVendor[v.id] || [])].filter(Boolean).join(" ").toLowerCase(),
+  }));
 
   const sectorSel = byId("vendorSectorFilter");
   if (sectorSel) {
@@ -3724,7 +3861,7 @@ function filterVendorsDirectory() {
   const city = byId("vendorCityFilter")?.value || "";
   const category = byId("vendorCategoryFilter")?.value || "";
   let list = window.__allVendors || [];
-  if (search) list = list.filter((v) => (v.business_name || "").toLowerCase().includes(search));
+  if (search) list = list.filter((v) => (v.searchText || "").includes(search));
   if (sectorId) list = list.filter((v) => v.sector_id === sectorId);
   if (city) list = list.filter((v) => v.city === city);
   if (category) list = list.filter((v) => v.categories.includes(category));
@@ -3793,7 +3930,7 @@ async function renderVendorsMap() {
 
   if (!vendorsMap) {
     vendorsMap = window.L.map("vendorsMap").setView(center, zoom);
-    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(vendorsMap);
+    addBasemapTileLayer(vendorsMap);
   } else {
     vendorsMap.setView(center, zoom);
     setTimeout(() => vendorsMap.invalidateSize(), 0);
@@ -3811,7 +3948,7 @@ async function renderVendorsMap() {
 
   list.forEach((v) => {
     const dist = buyerLocation ? formatDistanceKm(haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng)) : "";
-    const marker = window.L.marker([v.lat, v.lng]).addTo(vendorsMap);
+    const marker = window.L.marker([v.lat, v.lng], { icon: vendorMapIcon() }).addTo(vendorsMap);
     marker.bindPopup(`<strong>${esc(v.business_name)}</strong><br>${v.avg_rating ? `★ ${Number(v.avg_rating).toFixed(1)} (${v.review_count || 0})<br>` : ""}${dist ? `${dist}<br>` : ""}<a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">View storefront</a>`);
     vendorsMapMarkers.push(marker);
   });
@@ -4469,7 +4606,7 @@ async function renderVendorEditProfile() {
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-location-dot"></i> Shop location ${infoPopoverHtml("veLocationInfo", "This is what buyers see on the map and what Levi uses to point people to your nearest listing. Tap \"Use my current location\" while you're actually at the shop, then drag the pin to fine-tune if the GPS lands a little off.")}</h2>
     ${v.lat != null ? `<p class="muted" style="font-size:0.82rem;"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Location set.</p>` : `<p class="muted" style="font-size:0.82rem;">Not set yet, buyers can't find you on the map until you set this.</p>`}
-    <div id="veLocationMap" style="height:220px;border-radius:0.8rem;overflow:hidden;background:var(--border);"></div>
+    <div id="veLocationMap" style="height:220px;border-radius:0.8rem;overflow:hidden;background:var(--border);position:relative;isolation:isolate;z-index:0;"></div>
     <input type="hidden" id="veLat" value="${v.lat ?? ""}" />
     <input type="hidden" id="veLng" value="${v.lng ?? ""}" />
     <div class="flex" style="margin-top:0.8rem;">
@@ -4624,8 +4761,8 @@ async function initVendorLocationMap() {
   const startLat = hasLocation ? vendor.lat : 6.5244;
   const startLng = hasLocation ? vendor.lng : 3.3792;
   veMap = window.L.map("veLocationMap").setView([startLat, startLng], hasLocation ? 15 : 11);
-  window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(veMap);
-  veMarker = window.L.marker([startLat, startLng], { draggable: true }).addTo(veMap);
+  addBasemapTileLayer(veMap);
+  veMarker = window.L.marker([startLat, startLng], { draggable: true, icon: vendorMapIcon() }).addTo(veMap);
   veMarker.on("dragend", () => {
     const pos = veMarker.getLatLng();
     byId("veLat").value = pos.lat;
@@ -5222,6 +5359,40 @@ function isOrderPaid(o) {
   return (o.payments || []).some((p) => (p.payment_type === "sale_price" || p.payment_type === "rental_fee") && p.status === "paid");
 }
 
+// ---------- ORDER STATS (today/week/month/all-time counts by status) ----------
+const ORDER_STATS_PERIODS = { today: "Today", week: "This week", month: "This month", all: "All time" };
+const ORDER_STATS_STATUS_LABELS = { pending: "Pending", confirmed: "Confirmed", handed_over: "Handed over", returned: "Returned", completed: "Completed", cancelled: "Cancelled", disputed: "Disputed" };
+let vendorOrderStatsPeriod = "today";
+function computeOrderStatusCounts(orders, period) {
+  const inPeriod = period === "all" ? orders : (orders || []).filter((o) => vendorEarningsInPeriod(o.created_at, period));
+  const counts = { pending: 0, confirmed: 0, handed_over: 0, returned: 0, completed: 0, cancelled: 0, disputed: 0 };
+  inPeriod.forEach((o) => { if (counts[o.status] != null) counts[o.status]++; });
+  return { total: inPeriod.length, counts };
+}
+function orderStatsHtml(orders) {
+  return `<div class="card" style="margin-bottom:1rem;">
+    <h3 style="margin:0 0 0.7rem;font-size:0.95rem;"><i class="fa-solid fa-chart-simple"></i> Order stats</h3>
+    <div class="segmented-tabs" id="orderStatsTabs" style="max-width:none;">
+      ${Object.entries(ORDER_STATS_PERIODS).map(([p, label]) => `<button class="${p === vendorOrderStatsPeriod ? "active" : ""}" data-stats-period="${p}" onclick="switchOrderStatsPeriod('${p}')">${label}</button>`).join("")}
+    </div>
+    <div id="orderStatsBody" style="margin-top:0.9rem;"></div>
+  </div>`;
+}
+function renderOrderStatsBody() {
+  const el = byId("orderStatsBody");
+  if (!el) return;
+  const { total, counts } = computeOrderStatusCounts(window.__orderStatsOrders || [], vendorOrderStatsPeriod);
+  el.innerHTML = `<div class="stat" style="margin-bottom:0.6rem;"><div class="n">${total}</div><div class="muted">Total orders</div></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.5rem;">
+      ${Object.entries(ORDER_STATS_STATUS_LABELS).map(([k, label]) => `<div class="stat" style="padding:0.6rem;"><div class="n" style="font-size:1.2rem;">${counts[k]}</div><div class="muted" style="font-size:0.72rem;">${label}</div></div>`).join("")}
+    </div>`;
+}
+function switchOrderStatsPeriod(period) {
+  vendorOrderStatsPeriod = period;
+  document.querySelectorAll("#orderStatsTabs [data-stats-period]").forEach((btn) => btn.classList.toggle("active", btn.dataset.statsPeriod === period));
+  renderOrderStatsBody();
+}
+
 async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
   if (!vendor) { const { data: v } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle(); vendor = v; }
@@ -5231,6 +5402,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   payment = ["all", "paid", "unpaid"].includes(payment) ? payment : "all";
   dateFrom = dateFrom || "";
   dateTo = dateTo || "";
+  vendorOrderStatsPeriod = "today";
 
   let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(product:products(is_service)), payments(payment_type, status)").eq("vendor_id", vendor.id);
   if (status !== "all") query = query.eq("status", status);
@@ -5240,11 +5412,17 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
   if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
 
+  // Stats always reflect the vendor's full order history, not whatever
+  // status/type/payment/date filters the list above happens to be set to.
+  const { data: statsOrders } = await sb.from("orders").select("status, created_at").eq("vendor_id", vendor.id);
+  window.__orderStatsOrders = statsOrders || [];
+
   // Three rows of tab pills used to wrap into an unreadable jumble on
   // narrow screens — compact dropdowns plus a date range say the same
   // thing in a fraction of the space.
-  let html = `<h2>Orders</h2>
-  <div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
+  let html = `<h2>Orders</h2>`;
+  html += orderStatsHtml(statsOrders || []);
+  html += `<div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
     <select onchange="navigate('vendorOrders',{status:this.value,type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
       ${ORDER_TABS.map((t) => `<option value="${t}" ${t === status ? "selected" : ""}>${t === "all" ? "All statuses" : esc(t.replace("_", " ").replace(/^./, (c) => c.toUpperCase()))}</option>`).join("")}
     </select>
@@ -5264,7 +5442,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   </div>`;
   html += orderListHtml(sortOrdersForList(orders), false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
-  setTimeout(() => enhanceSelectsIn(byId("app")), 0);
+  setTimeout(() => { enhanceSelectsIn(byId("app")); renderOrderStatsBody(); }, 0);
   return html;
 }
 
@@ -6377,7 +6555,7 @@ function buildRevenueChart(paidTxns, range, opts) {
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
   const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(2)},${H} L${points[0].x.toFixed(2)},${H} Z`;
   const gradId = `chartFill${Math.random().toString(36).slice(2, 8)}`;
-  const dotsSvg = points.map((p, i) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.1" class="chart-dot" data-i="${i}" style="transition-delay:${(0.5 + i * 0.04).toFixed(2)}s;"></circle>`).join("");
+  const dotsSvg = points.map((p, i) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="0.6" class="chart-dot" data-i="${i}" style="transition-delay:${(0.5 + i * 0.04).toFixed(2)}s;"></circle>`).join("");
 
   wrap.innerHTML = `<div class="modern-chart-card">
     <div class="flex" style="justify-content:space-between;align-items:flex-start;">
@@ -6413,16 +6591,35 @@ function buildRevenueChart(paidTxns, range, opts) {
   // Draw the line in from left to right, then fade in the area fill and
   // dots behind it, instead of everything just appearing at once.
   const lineEl = wrap.querySelector(".modern-chart-line");
-  if (lineEl) {
+  const drawIn = () => {
+    if (!lineEl) return;
     const len = lineEl.getTotalLength();
+    lineEl.style.transition = "none";
     lineEl.style.strokeDasharray = `${len}`;
     lineEl.style.strokeDashoffset = `${len}`;
-    requestAnimationFrame(() => requestAnimationFrame(() => { lineEl.style.strokeDashoffset = "0"; }));
-  }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      lineEl.style.transition = "";
+      lineEl.style.strokeDashoffset = "0";
+    }));
+  };
+  drawIn();
   requestAnimationFrame(() => requestAnimationFrame(() => {
     wrap.querySelector(".modern-chart-area")?.style.setProperty("opacity", "1");
     wrap.querySelectorAll(".chart-dot").forEach((d) => { d.style.opacity = "1"; });
   }));
+  // A subtle "still alive" pulse -- periodically redraws the line rather
+  // than leaving it static forever. Purely cosmetic, not a data refresh;
+  // skipped entirely under reduced-motion.
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const loopId = setInterval(drawIn, 9000);
+    // Charts get replaced wholesale on every range switch/re-render rather
+    // than updated in place, so the old wrap element is simply discarded —
+    // stop its interval once it's no longer in the document to avoid
+    // leaking timers into elements nobody can see anymore.
+    const stopIfDetached = setInterval(() => {
+      if (!document.body.contains(wrap)) { clearInterval(loopId); clearInterval(stopIfDetached); }
+    }, 4000);
+  }
   return wrap;
 }
 
@@ -6777,10 +6974,10 @@ function showAiChatGreeting() {
 async function resumeLastAiConversation() {
   const savedId = localStorage.getItem("medris-ai-last-conversation");
   if (!savedId) { showAiChatGreeting(); return; }
-  const { data: msgs, error } = await sb.from("ai_messages").select("role, content").eq("conversation_id", savedId).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", savedId).order("created_at", { ascending: true });
   if (error || !msgs || msgs.length === 0) { localStorage.removeItem("medris-ai-last-conversation"); showAiChatGreeting(); return; }
   currentAiConversationId = savedId;
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
 }
 function startNewAiChat() {
   currentAiConversationId = null;
@@ -6811,8 +7008,9 @@ async function ensureAiConversation(firstMessageText) {
 }
 async function persistAiMessage(role, content) {
   const convId = await ensureAiConversation(content);
-  if (!convId) return;
-  await sb.from("ai_messages").insert({ conversation_id: convId, role, content });
+  if (!convId) return null;
+  const { data } = await sb.from("ai_messages").insert({ conversation_id: convId, role, content }).select("id").single();
+  return data?.id || null;
 }
 function toggleAiChatHistory() {
   const panel = byId("aiChatPanel");
@@ -6858,14 +7056,14 @@ function searchAiChatHistory() {
   }, 250);
 }
 async function openAiConversation(id) {
-  const { data: msgs, error } = await sb.from("ai_messages").select("role, content").eq("conversation_id", id).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", id).order("created_at", { ascending: true });
   if (error || !msgs) { showToast("Couldn't open that chat.", "error"); return; }
   currentAiConversationId = id;
   aiConversationCreatePromise = null;
   localStorage.setItem("medris-ai-last-conversation", id);
   aiChatMessages = [];
   byId("aiChatMessages").innerHTML = "";
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
   exitAiChatHistoryMode();
 }
 async function deleteAiConversation(id, evt) {
@@ -7006,7 +7204,7 @@ function animateAiFabPointing() {
     }, 650);
   });
 }
-function appendAiChatMessage(role, content, autoSpeak, isReplay) {
+function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction) {
   let displayText = content;
   let nav = null;
   let draft = null;
@@ -7024,6 +7222,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay) {
   const wrap = byId("aiChatMessages");
   const el = document.createElement("div");
   el.className = `ai-chat-msg ${role === "typing" ? "assistant" : role}`;
+  if (msgId) el.dataset.msgId = msgId;
   if (role === "typing") { el.id = "aiChatTyping"; el.innerHTML = `<i class="fa-solid fa-ellipsis" style="opacity:.6;"></i>`; }
   else {
     el.textContent = displayText;
@@ -7036,6 +7235,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay) {
       el.appendChild(speakBtn);
       if (autoSpeak) speakAiChatMessage(displayText, speakBtn);
     }
+    if (role === "assistant" && msgId) attachAiReactionUI(el, msgId, existingReaction);
     if (nav) {
       // Auto-navigates rather than waiting for a tap — a beat to actually
       // read the reply first, then Levi points the way and takes you there.
@@ -7063,6 +7263,37 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay) {
   }
   wrap.appendChild(el);
   wrap.scrollTop = wrap.scrollHeight;
+  return el;
+}
+// A single-user conversation only ever needs one reaction per message
+// (no need to aggregate across people, unlike buyer/vendor chat), so this
+// is just a react button plus, once picked, a small pill showing the choice.
+function attachAiReactionUI(el, msgId, existingReaction) {
+  const reactBtn = document.createElement("button");
+  reactBtn.className = "ai-chat-msg-react";
+  reactBtn.title = "React";
+  reactBtn.innerHTML = existingReaction ? existingReaction : `<i class="fa-regular fa-face-smile"></i>`;
+  reactBtn.onclick = (evt) => toggleAiReactionPicker(evt, msgId, el);
+  el.appendChild(reactBtn);
+}
+async function toggleAiReactionPicker(evt, msgId, el) {
+  evt.stopPropagation();
+  const existing = el.querySelector(".reaction-picker");
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
+  if (existing) return;
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+  picker.style.right = "0";
+  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" onclick="reactToAiMessage(event,'${msgId}','${e}')">${e}</button>`).join("");
+  el.appendChild(picker);
+}
+async function reactToAiMessage(evt, msgId, emoji) {
+  evt.stopPropagation();
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
+  const { data, error } = await sb.rpc("toggle_ai_message_reaction", { p_message_id: msgId, p_emoji: emoji });
+  if (error) { showToast(error.message, "error"); return; }
+  const btn = document.querySelector(`.ai-chat-msg[data-msg-id="${msgId}"] .ai-chat-msg-react`);
+  if (btn) btn.innerHTML = data ? data : `<i class="fa-regular fa-face-smile"></i>`;
 }
 // ---------- LEVI VOICE ----------
 let aiVoices = []; // browser speechSynthesis voices
@@ -7229,8 +7460,10 @@ async function sendAiChatMessage() {
     const json = await res.json();
     byId("aiChatTyping")?.remove();
     if (!res.ok) throw new Error(json.error || "AI service unavailable.");
-    appendAiChatMessage("assistant", json.reply, wasVoice);
-    persistAiMessage("assistant", json.reply);
+    const assistantEl = appendAiChatMessage("assistant", json.reply, wasVoice);
+    persistAiMessage("assistant", json.reply).then((id) => {
+      if (id && assistantEl) { assistantEl.dataset.msgId = id; attachAiReactionUI(assistantEl, id, null); }
+    });
     playSound("notify");
   } catch (err) {
     byId("aiChatTyping")?.remove();
@@ -7347,6 +7580,7 @@ window.addEventListener("popstate", (e) => {
   initTheme();
   initAccent();
   initSound();
+  initLocationSetting();
   initAiChatMic();
   setTimeout(hideSplashScreen, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1900);
   byId("footerYear").textContent = new Date().getFullYear();
