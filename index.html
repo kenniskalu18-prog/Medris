@@ -253,6 +253,7 @@
   .info-popover-wrap { position: relative; display: inline-block; vertical-align: middle; }
   .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); font-size: 0.7rem; font-weight: 700; font-style: normal; border: none; cursor: pointer; flex-shrink: 0; padding: 0; }
   .info-popover { position: absolute; top: calc(100% + 0.5rem); left: 0; z-index: 90; width: 230px; max-width: 72vw; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.8rem; box-shadow: var(--shadow-float); padding: 0.7rem 0.85rem; font-size: 0.78rem; font-weight: 400; line-height: 1.4; color: var(--text); text-transform: none; }
+  .info-popover.info-popover-above { top: auto; bottom: calc(100% + 0.5rem); }
   .ms-list a.ms-item { display: block; color: inherit; text-decoration: none; }
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
@@ -345,6 +346,18 @@
   }
   .ai-chat-panel.hidden { display: none; }
   .ai-chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; margin: 0.5rem 0; }
+  #aiChatHistorySearch, .ai-chat-history-panel { display: none; }
+  .ai-chat-panel.history-mode #aiChatHistorySearch { display: block; margin: 0 0 0.5rem; }
+  .ai-chat-panel.history-mode .ai-chat-history-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+  .ai-chat-panel.history-mode .ai-chat-messages, .ai-chat-panel.history-mode .ai-chat-location-row, .ai-chat-panel.history-mode .ai-chat-input-row { display: none; }
+  #aiChatHistoryToggleBtn.active { color: var(--primary); }
+  .ai-chat-history-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.75rem; border-radius: 0.7rem; background: var(--card); border: 1px solid var(--border); cursor: pointer; transition: border-color 0.15s ease; }
+  .ai-chat-history-item:hover { border-color: var(--primary); }
+  .ai-chat-history-item-main { flex: 1; min-width: 0; }
+  .ai-chat-history-item-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ai-chat-history-item-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+  .ai-chat-history-delete { flex-shrink: 0; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.3rem; font-size: 0.85rem; }
+  .ai-chat-history-delete:hover { color: var(--danger); }
   .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.87rem; line-height: 1.4; white-space: pre-wrap; }
   .ai-chat-msg.user { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.2rem; }
   .ai-chat-msg.assistant { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 0.2rem; }
@@ -706,6 +719,13 @@
       <div id="settingsNotifRow" class="flex" style="justify-content:space-between;"></div>
     </div>
   </div>
+  <div class="accordion-section">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-robot'></i> Levi &amp; your data</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
+    <div class="accordion-body">
+      <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Your chats with Levi are saved to your account so they're there when you come back, and are never shared with other users or vendors. With your permission, our team may also review chat transcripts to improve Levi's answers over time.</p>
+      <div id="settingsAiConsentRow" class="flex" style="justify-content:space-between;"></div>
+    </div>
+  </div>
   <div class="accordion-section hidden" id="voiceSettingsSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-volume-high'></i> Levi's voice</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
@@ -1021,7 +1041,16 @@
 <!-- Floating, draggable AI chat -->
 <div id="aiChatFab" class="ai-chat-fab" title="Chat with Levi"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
 <div id="aiChatPanel" class="ai-chat-panel hidden">
-  <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="drawer-header">
+    <h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4>
+    <div class="flex" style="gap:0.3rem;">
+      <button class="icon-btn" onclick="startNewAiChat()" title="New chat"><i class="fa-solid fa-plus"></i></button>
+      <button class="icon-btn" id="aiChatHistoryToggleBtn" onclick="toggleAiChatHistory()" title="Recent chats"><i class="fa-solid fa-clock-rotate-left"></i></button>
+      <button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <input type="text" id="aiChatHistorySearch" placeholder="Search chats…" oninput="searchAiChatHistory()" />
+  <div id="aiChatHistoryList" class="ai-chat-history-panel"></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
   <div class="ai-chat-location-row hidden" id="aiChatLocationRow">
     <span><i class="fa-solid fa-location-dot"></i> Share your location so I can tell you distances</span>
@@ -1464,16 +1493,21 @@ function toggleInfoPopover(id, evt) {
 }
 // The popover normally hangs left-aligned under the "i" button, but that
 // button can sit anywhere on screen (including near the right edge of a
-// wide banner) -- so after showing it, nudge it back on-screen instead of
-// letting it run off the side.
+// wide banner, or low enough on the page that there's no room below it) --
+// so after showing it, nudge it back on-screen instead of letting it run
+// off either side or the bottom.
 function positionInfoPopover(el) {
   el.style.left = "0px";
+  el.classList.remove("info-popover-above");
   const margin = 10;
   const rect = el.getBoundingClientRect();
   const overflowRight = rect.right - (window.innerWidth - margin);
   if (overflowRight > 0) el.style.left = `-${overflowRight}px`;
   const rect2 = el.getBoundingClientRect();
   if (rect2.left < margin) el.style.left = `${parseFloat(el.style.left) + (margin - rect2.left)}px`;
+
+  const rect3 = el.getBoundingClientRect();
+  if (rect3.bottom > window.innerHeight - margin) el.classList.add("info-popover-above");
 }
 function byId(id) { return document.getElementById(id); }
 
@@ -1893,6 +1927,22 @@ function renderSettingsAppRows() {
       notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><button class="btn btn-sm" onclick="enablePushNotifications().then(renderSettingsAppRows)">Turn on</button>`;
     }
   }
+  renderAiConsentRow();
+}
+function renderAiConsentRow() {
+  const row = byId("settingsAiConsentRow");
+  if (!row || !profile) return;
+  const on = !!profile.ai_data_consent;
+  row.innerHTML = on
+    ? `<span><i class="fa-solid fa-robot"></i> Help improve Levi</span><button class="btn btn-sm btn-outline" onclick="setAiDataConsent(false)"><i class="fa-solid fa-check"></i> On</button>`
+    : `<span><i class="fa-solid fa-robot"></i> Help improve Levi</span><button class="btn btn-sm" onclick="setAiDataConsent(true)">Turn on</button>`;
+}
+async function setAiDataConsent(value) {
+  const { error } = await sb.from("users").update({ ai_data_consent: value }).eq("id", session.user.id);
+  if (error) { showToast(error.message, "error"); return; }
+  profile.ai_data_consent = value;
+  renderAiConsentRow();
+  showToast(value ? "Thanks, your chats may now be reviewed to improve Levi." : "Turned off. Your chats stay private again.", "success");
 }
 function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); markNotificationsRead(); }
 function toggleProfilePanel() { openDrawer("profilePanel"); }
@@ -6582,6 +6632,7 @@ function renderPrivacy() {
       <li><strong>Google Gemini:</strong> powers the in-app AI assistant; only the text of your chat messages is sent, never your account or order data.</li>
       <li>The vendor or buyer on an order you're part of, so they can fulfill/receive it.</li>
     </ul>
+    <p>Your conversations with Levi are saved to your account so they're there when you come back, and are visible only to you: searchable, and deletable any time from the chat panel. Levromart's team does not read them unless you turn on "Help improve Levi" in Settings, which is off by default.</p>
 
     <h3>4. Your choices</h3>
     <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Levromart admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
@@ -6697,6 +6748,8 @@ async function submitNewPassword() {
 // instead of leaving the page.
 // ---------- FLOATING AI CHAT (draggable) ----------
 let aiChatMessages = [];
+let currentAiConversationId = null;
+let aiChatResumeAttempted = false;
 function toggleAiChat() {
   if (!session) { showLogin(); return; }
   const panel = byId("aiChatPanel");
@@ -6704,15 +6757,131 @@ function toggleAiChat() {
   if (!panel.classList.contains("hidden")) {
     playSound("open");
     if (aiChatMessages.length === 0) {
-      const firstName = (profile?.name || "").trim().split(/\s+/)[0] || "";
-      const greet = firstName ? `${greetingWord()}, ${firstName}! I'm Levi.` : "Hi, I'm Levi!";
-      appendAiChatMessage("assistant", vendor
-        ? `${greet} Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart.`
-        : `${greet} Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.`);
+      if (!aiChatResumeAttempted) { aiChatResumeAttempted = true; resumeLastAiConversation(); }
+      else showAiChatGreeting();
     }
     byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation);
     byId("aiChatInput").focus();
   }
+}
+function showAiChatGreeting() {
+  const firstName = (profile?.name || "").trim().split(/\s+/)[0] || "";
+  const greet = firstName ? `${greetingWord()}, ${firstName}! I'm Levi.` : "Hi, I'm Levi!";
+  appendAiChatMessage("assistant", vendor
+    ? `${greet} Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart.`
+    : `${greet} Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.`);
+}
+// Chats persist across sessions: reopening the app resumes wherever you
+// left off, same as the last conversation being one continuous thread.
+// Starting a genuinely new chat (the + button) is what actually clears it.
+async function resumeLastAiConversation() {
+  const savedId = localStorage.getItem("medris-ai-last-conversation");
+  if (!savedId) { showAiChatGreeting(); return; }
+  const { data: msgs, error } = await sb.from("ai_messages").select("role, content").eq("conversation_id", savedId).order("created_at", { ascending: true });
+  if (error || !msgs || msgs.length === 0) { localStorage.removeItem("medris-ai-last-conversation"); showAiChatGreeting(); return; }
+  currentAiConversationId = savedId;
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true));
+}
+function startNewAiChat() {
+  currentAiConversationId = null;
+  aiConversationCreatePromise = null;
+  localStorage.removeItem("medris-ai-last-conversation");
+  aiChatMessages = [];
+  byId("aiChatMessages").innerHTML = "";
+  exitAiChatHistoryMode();
+  showAiChatGreeting();
+}
+// Guarded against firing twice for the same conversation -- two messages
+// sent in quick succession (before the first insert resolves) would
+// otherwise each see currentAiConversationId still null and create two
+// separate conversation rows for what should be one thread.
+let aiConversationCreatePromise = null;
+async function ensureAiConversation(firstMessageText) {
+  if (currentAiConversationId) return currentAiConversationId;
+  if (aiConversationCreatePromise) return aiConversationCreatePromise;
+  aiConversationCreatePromise = (async () => {
+    const title = firstMessageText.length > 60 ? firstMessageText.slice(0, 57) + "…" : firstMessageText;
+    const { data, error } = await sb.from("ai_conversations").insert({ user_id: session.user.id, title }).select("id").single();
+    if (error || !data) { aiConversationCreatePromise = null; return null; }
+    currentAiConversationId = data.id;
+    localStorage.setItem("medris-ai-last-conversation", data.id);
+    return data.id;
+  })();
+  return aiConversationCreatePromise;
+}
+async function persistAiMessage(role, content) {
+  const convId = await ensureAiConversation(content);
+  if (!convId) return;
+  await sb.from("ai_messages").insert({ conversation_id: convId, role, content });
+}
+function toggleAiChatHistory() {
+  const panel = byId("aiChatPanel");
+  const entering = !panel.classList.contains("history-mode");
+  panel.classList.toggle("history-mode", entering);
+  byId("aiChatHistoryToggleBtn")?.classList.toggle("active", entering);
+  if (entering) {
+    byId("aiChatHistorySearch").value = "";
+    loadAiChatHistoryList();
+  }
+}
+function exitAiChatHistoryMode() {
+  byId("aiChatPanel")?.classList.remove("history-mode");
+  byId("aiChatHistoryToggleBtn")?.classList.remove("active");
+}
+async function loadAiChatHistoryList() {
+  const listEl = byId("aiChatHistoryList");
+  listEl.innerHTML = `<p class="muted" style="font-size:0.82rem;">Loading…</p>`;
+  const { data, error } = await sb.from("ai_conversations").select("id, title, updated_at").order("updated_at", { ascending: false }).limit(50);
+  if (error) { listEl.innerHTML = `<p class="muted" style="font-size:0.82rem;">Couldn't load your chats.</p>`; return; }
+  renderAiChatHistoryList(data || []);
+}
+function renderAiChatHistoryList(convos) {
+  const listEl = byId("aiChatHistoryList");
+  if (!convos.length) { listEl.innerHTML = `<p class="muted" style="font-size:0.82rem;">No past chats yet.</p>`; return; }
+  listEl.innerHTML = convos.map((c) => `<div class="ai-chat-history-item" onclick="openAiConversation('${c.id}')">
+    <div class="ai-chat-history-item-main">
+      <div class="ai-chat-history-item-title">${esc(c.title || "Chat")}</div>
+      <div class="ai-chat-history-item-date">${new Date(c.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</div>
+    </div>
+    <button class="ai-chat-history-delete" onclick="deleteAiConversation('${c.id}', event)" title="Delete"><i class="fa-solid fa-trash"></i></button>
+  </div>`).join("");
+}
+let aiChatSearchTimer = null;
+function searchAiChatHistory() {
+  clearTimeout(aiChatSearchTimer);
+  aiChatSearchTimer = setTimeout(async () => {
+    const q = byId("aiChatHistorySearch").value.trim();
+    if (!q) { loadAiChatHistoryList(); return; }
+    const { data, error } = await sb.rpc("search_ai_conversations", { p_query: q });
+    if (error) return;
+    renderAiChatHistoryList(data || []);
+  }, 250);
+}
+async function openAiConversation(id) {
+  const { data: msgs, error } = await sb.from("ai_messages").select("role, content").eq("conversation_id", id).order("created_at", { ascending: true });
+  if (error || !msgs) { showToast("Couldn't open that chat.", "error"); return; }
+  currentAiConversationId = id;
+  aiConversationCreatePromise = null;
+  localStorage.setItem("medris-ai-last-conversation", id);
+  aiChatMessages = [];
+  byId("aiChatMessages").innerHTML = "";
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true));
+  exitAiChatHistoryMode();
+}
+async function deleteAiConversation(id, evt) {
+  evt.stopPropagation();
+  if (!(await showConfirmDialog("Delete this chat? This can't be undone.", { title: "Delete chat", okLabel: "Delete", danger: true }))) return;
+  const { error } = await sb.from("ai_conversations").delete().eq("id", id);
+  if (error) { showToast(error.message, "error"); return; }
+  if (currentAiConversationId === id) {
+    currentAiConversationId = null;
+    aiConversationCreatePromise = null;
+    localStorage.removeItem("medris-ai-last-conversation");
+    aiChatMessages = [];
+    byId("aiChatMessages").innerHTML = "";
+    showAiChatGreeting();
+  }
+  loadAiChatHistoryList();
 }
 async function shareLocationFromChat() {
   const row = byId("aiChatLocationRow");
@@ -6817,7 +6986,7 @@ function animateAiFabPointing() {
     }, 650);
   });
 }
-function appendAiChatMessage(role, content, autoSpeak) {
+function appendAiChatMessage(role, content, autoSpeak, isReplay) {
   let displayText = content;
   let nav = null;
   let draft = null;
@@ -6825,7 +6994,10 @@ function appendAiChatMessage(role, content, autoSpeak) {
     const parsedNav = parseAiNavTag(content);
     const parsedDraft = parseAiDraftMsgTag(parsedNav.text);
     displayText = parsedDraft.text;
-    nav = parsedNav.nav;
+    // Re-showing a past conversation shouldn't replay its side effects --
+    // an old "take you there" tag firing again would yank someone away
+    // from the history list they just opened.
+    nav = isReplay ? null : parsedNav.nav;
     draft = parsedDraft.draft;
   }
   if (role !== "typing") aiChatMessages.push({ role, content: displayText });
@@ -7019,6 +7191,7 @@ async function sendAiChatMessage() {
   if (aiChatListening) aiChatRecognizer?.stop(); // still-listening mic can otherwise refill the box right after this clears it
   resetChatInput(input);
   appendAiChatMessage("user", text);
+  persistAiMessage("user", text);
   appendAiChatMessage("typing", "");
   try {
     const res = await fetch("/api/chat", {
@@ -7037,6 +7210,7 @@ async function sendAiChatMessage() {
     byId("aiChatTyping")?.remove();
     if (!res.ok) throw new Error(json.error || "AI service unavailable.");
     appendAiChatMessage("assistant", json.reply, wasVoice);
+    persistAiMessage("assistant", json.reply);
     playSound("notify");
   } catch (err) {
     byId("aiChatTyping")?.remove();
