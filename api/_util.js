@@ -71,7 +71,7 @@ async function settleReference(reference, txData) {
   } else {
     await fetch(`${SUPABASE_URL}/rest/v1/payments?provider_reference=eq.${encodeURIComponent(reference)}`, {
       method: "PATCH", headers,
-      body: JSON.stringify({ status: "paid" }),
+      body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }),
     });
   }
 }

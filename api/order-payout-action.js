@@ -25,9 +25,13 @@
 // anything over, so there's no inventory or delivery cost to unwind on the
 // vendor's side. Cancels the order (restoring stock / freeing the rental
 // booking, same as any other cancellation) and, if the buyer had already
-// paid, refunds them in full straight away. Once an order is handed over,
-// cancelling requires a dispute instead.
+// paid, refunds them in full straight away -- but only within
+// BUYER_CANCEL_WINDOW_HOURS of paying; past that, the vendor may already be
+// getting the order ready, so cancelling requires a dispute instead. Once
+// an order is handed over, cancelling always requires a dispute regardless.
 const { readBody, env, releaseOrderPayout, refundOrderPayout } = require("./_util");
+
+const BUYER_CANCEL_WINDOW_HOURS = 5;
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
@@ -164,6 +168,26 @@ async function buyerCancel({ orderId, accessToken }, res) {
   if (order.buyer_id !== me.id) { res.status(403).json({ error: "Only the buyer can cancel this order." }); return; }
   if (order.status !== "confirmed") { res.status(400).json({ error: "This order can't be cancelled here anymore, the vendor has already handed it over." }); return; }
 
+  // Check for an existing paid fee (and how long ago it was paid) BEFORE
+  // touching the order's status -- if it's outside the self-serve refund
+  // window, the order must stay exactly as it is and the buyer needs to
+  // raise a dispute instead. Cancelling first and only then discovering the
+  // refund isn't allowed would leave a cancelled order with the buyer's
+  // money stuck, which is worse than not cancelling at all.
+  const paymentsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&payment_type=in.(sale_price,rental_fee)&status=eq.paid&limit=1`,
+    { headers: svcAuth }
+  );
+  const [paidPayment] = await paymentsRes.json();
+  if (paidPayment) {
+    const paidAt = new Date(paidPayment.paid_at || paidPayment.created_at).getTime();
+    const hoursSincePaid = (Date.now() - paidAt) / 3600000;
+    if (hoursSincePaid > BUYER_CANCEL_WINDOW_HOURS) {
+      res.status(400).json({ error: "The 5-hour self-serve cancellation window has passed. Report an issue from the order page instead." });
+      return;
+    }
+  }
+
   const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/transition_order_status`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
@@ -175,11 +199,6 @@ async function buyerCancel({ orderId, accessToken }, res) {
     return;
   }
 
-  const paymentsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&payment_type=in.(sale_price,rental_fee)&status=eq.paid&limit=1`,
-    { headers: svcAuth }
-  );
-  const [paidPayment] = await paymentsRes.json();
   if (!paidPayment) { res.status(200).json({ cancelled: true, refunded: false }); return; }
 
   // The order's already cancelled at this point either way -- if the actual
