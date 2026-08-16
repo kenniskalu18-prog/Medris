@@ -909,6 +909,11 @@
     <h3 id="authModalTitle"><i class='fa-solid fa-right-to-bracket'></i> Welcome to Levromart</h3>
     <div id="authError" class="error-text hidden"></div>
 
+    <div id="googleAuthWrap">
+      <button type="button" class="btn btn-sm btn-outline" id="googleAuthBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;"><i class="fa-brands fa-google"></i> Continue with Google</button>
+      <div class="flex" style="align-items:center;gap:0.6rem;margin:0.9rem 0;"><div style="flex:1;height:1px;background:var(--border);"></div><span class="muted" style="font-size:0.78rem;">or</span><div style="flex:1;height:1px;background:var(--border);"></div></div>
+    </div>
+
     <div id="signupExtraFields" class="hidden">
       <label>Full name</label>
       <input type="text" id="loginName" placeholder="Full name" />
@@ -2752,6 +2757,7 @@ function applyAuthMode() {
     ? "<i class='fa-solid fa-key'></i> Reset your password"
     : isRegister ? "<i class='fa-solid fa-user-plus'></i> Create your Levromart account" : "<i class='fa-solid fa-right-to-bracket'></i> Welcome back to Levromart";
   byId("signupExtraFields").classList.toggle("hidden", !isRegister);
+  byId("googleAuthWrap").classList.toggle("hidden", isForgot);
   byId("loginPasswordWrap").classList.toggle("hidden", isForgot);
   byId("confirmPasswordWrap").classList.toggle("hidden", !isRegister);
   byId("forgotPasswordMsg").classList.toggle("hidden", !isForgot);
@@ -2773,6 +2779,21 @@ async function enforceSingleSession() {
   try { await sb.auth.signOut({ scope: "others" }); } catch (e) {}
 }
 
+// Redirects away to Google and back -- Supabase picks the returned session
+// up automatically (detectSessionInUrl is on by default), which fires the
+// same onAuthStateChange listener as any other login, so no separate
+// "handle the OAuth callback" code is needed here. First-time Google
+// sign-ins default to the buyer role via the handle_new_user trigger,
+// same as leaving "I am a…" on its default during a normal signup --
+// anyone who actually wants to sell can still apply as a vendor
+// afterward, same as always.
+async function signInWithGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) showToast(error.message, "error");
+}
 async function submitAuth() {
   const email = byId("loginEmail").value.trim();
   const password = byId("loginPassword").value;
@@ -7081,6 +7102,12 @@ sb.auth.onAuthStateChange((_event) => {
   if (_event === "SIGNED_OUT" && session && !manualLogout) {
     showToast("You've been signed out because your account was used on another device.", "error");
   }
+  // Covers Google sign-in too -- that flow is a full-page redirect away and
+  // back, so it never runs through submitAuth()'s own explicit call. SIGNED_IN
+  // only fires for an actual new authentication (password, OAuth, magic
+  // link), never for a plain page reload restoring an existing session
+  // (that's INITIAL_SESSION), so this can't log someone out of their own tab.
+  if (_event === "SIGNED_IN") enforceSingleSession();
   manualLogout = false;
   refreshAuthStateOnce();
 });
