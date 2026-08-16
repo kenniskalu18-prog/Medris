@@ -1,4 +1,4 @@
-// POST { action: "release" | "refund" | "mark-manual", orderId, accessToken } -> varies by action
+// POST { action: "release" | "refund" | "mark-manual" | "buyer-cancel", orderId, accessToken } -> varies by action
 // Merged from the old separate release-payout.js / refund-payout.js
 // (Vercel's Hobby plan caps deployments at 12 serverless functions, so
 // these payout actions on an order now share a file).
@@ -16,9 +16,17 @@
 //
 // "mark-manual": admin-only escape hatch for accounts that can't use
 // Paystack Transfers yet (e.g. still on Starter Business, not Registered
-// Business) — the admin pays the vendor themselves outside Paystack (bank
+// Business) -- the admin pays the vendor themselves outside Paystack (bank
 // transfer, cash, whatever) and this just records the order as settled
 // without ever calling Paystack. Only for orders already stuck in "held".
+//
+// "buyer-cancel": self-serve, the buyer's own action. Only allowed while an
+// order is still "confirmed" -- before the vendor has physically handed
+// anything over, so there's no inventory or delivery cost to unwind on the
+// vendor's side. Cancels the order (restoring stock / freeing the rental
+// booking, same as any other cancellation) and, if the buyer had already
+// paid, refunds them in full straight away. Once an order is handed over,
+// cancelling requires a dispute instead.
 const { readBody, env, releaseOrderPayout, refundOrderPayout } = require("./_util");
 
 module.exports = async function handler(req, res) {
@@ -27,6 +35,7 @@ module.exports = async function handler(req, res) {
     const body = JSON.parse(await readBody(req));
     if (body.action === "refund") return refund(body, res);
     if (body.action === "mark-manual") return markManual(body, res);
+    if (body.action === "buyer-cancel") return buyerCancel(body, res);
     return release(body, res);
   } catch (err) {
     res.status(500).json({ error: err.message || "Server error" });
@@ -130,16 +139,57 @@ async function markManual({ orderId, accessToken }, res) {
   const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,payout_status`, { headers: svcAuth });
   const [order] = await orderRes.json();
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
-  if (order.payout_status !== "held") { res.status(400).json({ error: `Payout status is "${order.payout_status}", not held — nothing to mark.` }); return; }
-
-  await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
-    method: "PATCH", headers: svcHeaders,
-    body: JSON.stringify({
-      payout_status: "released",
-      payout_released_at: new Date().toISOString(),
-      payout_transfer_code: "manual",
-    }),
-  });
+  if (order.payout_status !== "held") { res.status(400).json({ error: `Payout status is "${order.payout_status}", not held, nothing to mark.` }); return; }
 
   res.status(200).json({ marked: true });
+}
+
+async function buyerCancel({ orderId, accessToken }, res) {
+  if (!orderId || !accessToken) { res.status(400).json({ error: "orderId and accessToken are required" }); return; }
+
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+  const svcAuth = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+
+  const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+  });
+  const me = await meRes.json();
+  if (!meRes.ok || !me?.id) { res.status(401).json({ error: "Invalid session" }); return; }
+
+  const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,status,buyer_id`, { headers: svcAuth });
+  const [order] = await orderRes.json();
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (order.buyer_id !== me.id) { res.status(403).json({ error: "Only the buyer can cancel this order." }); return; }
+  if (order.status !== "confirmed") { res.status(400).json({ error: "This order can't be cancelled here anymore, the vendor has already handed it over." }); return; }
+
+  const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/transition_order_status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ p_order_id: orderId, p_new_status: "cancelled" }),
+  });
+  if (!rpcRes.ok) {
+    const rpcJson = await rpcRes.json().catch(() => ({}));
+    res.status(400).json({ error: rpcJson.message || "Could not cancel this order." });
+    return;
+  }
+
+  const paymentsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&payment_type=in.(sale_price,rental_fee)&status=eq.paid&limit=1`,
+    { headers: svcAuth }
+  );
+  const [paidPayment] = await paymentsRes.json();
+  if (!paidPayment) { res.status(200).json({ cancelled: true, refunded: false }); return; }
+
+  // The order's already cancelled at this point either way -- if the actual
+  // Paystack refund call fails, don't turn that into a scary error for the
+  // buyer; surface it as a payout problem an admin needs to chase, same
+  // pattern as a failed payout release.
+  try {
+    const result = await refundOrderPayout(orderId);
+    res.status(200).json({ cancelled: true, ...result });
+  } catch (refundErr) {
+    res.status(200).json({ cancelled: true, refunded: false, refundError: refundErr.message });
+  }
 }

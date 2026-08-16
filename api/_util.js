@@ -197,7 +197,12 @@ async function refundOrderPayout(orderId) {
   const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=id,payout_status`, { headers: svcAuth });
   const [order] = await orderRes.json();
   if (!order) throw new Error("order not found");
-  if (!["held", "released"].includes(order.payout_status)) throw new Error(`Can't refund — payout status is "${order.payout_status}".`);
+  // payout_status is only set once the order reaches "handed_over" (held or
+  // released, per transition_order_status); for an order cancelled before
+  // that, it's still null here -- that's fine, there's just nothing to claw
+  // back from the vendor's side yet. Only block re-refunding an order that's
+  // already been refunded.
+  if (order.payout_status === "refunded") throw new Error(`Can't refund, this order was already refunded.`);
 
   const paymentsRes = await fetch(`${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&status=eq.paid&select=provider_reference&limit=1`, { headers: svcAuth });
   const [payment] = await paymentsRes.json();
