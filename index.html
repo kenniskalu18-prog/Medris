@@ -360,6 +360,8 @@
   .ai-chat-draft-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .ai-chat-msg-speak { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; margin-top: 0.4rem; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; opacity: 0.6; transition: opacity 0.15s ease, color 0.15s ease; }
   .ai-chat-msg-speak:hover, .ai-chat-msg-speak.speaking { opacity: 1; color: var(--primary); }
+  .ai-chat-location-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; border-radius: 0.8rem; background: color-mix(in srgb, var(--primary) 10%, transparent); font-size: 0.78rem; color: var(--text-muted); }
+  .ai-chat-location-row .btn { padding: 0.35rem 0.9rem; font-size: 0.78rem; flex-shrink: 0; }
   .ai-chat-input-row { display: flex; gap: 0.5rem; align-items: flex-end; }
   .ai-chat-input-row textarea { margin: 0; resize: none; max-height: 7.5rem; overflow-y: auto; line-height: 1.35; }
   .ai-chat-mic-btn { flex-shrink: 0; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1.5px solid var(--border); background: var(--card); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
@@ -1021,6 +1023,10 @@
 <div id="aiChatPanel" class="ai-chat-panel hidden">
   <div class="drawer-header"><h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4><button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
+  <div class="ai-chat-location-row hidden" id="aiChatLocationRow">
+    <span><i class="fa-solid fa-location-dot"></i> Share your location so I can tell you distances</span>
+    <button class="btn btn-sm" onclick="shareLocationFromChat()">Share</button>
+  </div>
   <div class="ai-chat-input-row">
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
@@ -6686,7 +6692,19 @@ function toggleAiChat() {
         ? `${greet} Ask me what buyers are searching for, how your store's visibility compares to other vendors, or anything about running your shop on Levromart.`
         : `${greet} Ask me what you're looking for (healthcare equipment, food, electronics, and more), how renting, buying or requesting works, or anything else about the marketplace.`);
     }
+    byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation);
     byId("aiChatInput").focus();
+  }
+}
+async function shareLocationFromChat() {
+  const row = byId("aiChatLocationRow");
+  try {
+    await requestBuyerLocation();
+    row?.classList.add("hidden");
+    showToast("Location shared. Ask me again and I'll include distances.", "success");
+  } catch (err) {
+    if (err.message !== "Location sharing declined.") showToast(err.message, "error");
+    row?.classList.add("hidden");
   }
 }
 document.addEventListener("click", (e) => {
