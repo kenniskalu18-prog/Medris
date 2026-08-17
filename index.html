@@ -3218,6 +3218,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   app.innerHTML = html;
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
+  initDeliveryFieldsOnPage();
   window.scrollTo(0, 0);
 }
 
@@ -4365,40 +4366,72 @@ function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, 
   const isDistance = feeMode === "distance" && Number(perKm) > 0 && vendorLat != null && vendorLng != null;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex" style="margin:0.6rem 0 0.9rem;">
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
-    <div id="${prefix}DeliveryFields" class="hidden" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
+    <div id="${prefix}DeliveryFields" class="dyn-delivery-fields" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
       ${!isDistance && fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.35rem 0 0;"><i class="fa-solid fa-truck"></i> ${naira(fee)} delivery fee.</p>` : ""}
-      ${isDistance || hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.35rem 0 0;" id="${prefix}FeeLine"></p>` : ""}
+      ${isDistance || hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.35rem 0 0;" id="${prefix}FeeLine">${deliveryInfoLineHtml(prefix, isDistance, hasVendorLoc, vendorLat, vendorLng, perKm)}</p>` : ""}
       <p class="muted" style="font-size:0.76rem;margin-top:0.25rem;">Wrong? <a href="#" onclick="navigate('editProfile');return false;">Fix in profile</a>.</p>
     </div>`;
 }
+// Delivery defaults ON (most buyers want it) -- this renders that default
+// info line synchronously from data already known at render time, so it's
+// correct on first paint without waiting for a JS pass after insertion.
+function deliveryInfoLineHtml(prefix, isDistance, hasVendorLoc, vendorLat, vendorLng, perKm) {
+  if (!isDistance && !hasVendorLoc) return "";
+  if (!buyerLocation) return `<i class="fa-solid fa-location-crosshairs"></i> <a href="#" onclick="requestDeliveryEta('${prefix}');return false;">Share location</a> for ${isDistance ? "the fee + ETA" : "an ETA"}.`;
+  const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vendorLat, vendorLng);
+  const eta = estimateDeliveryRange(km);
+  if (isDistance) {
+    const fee = Math.round((Number(perKm) * km) / 50) * 50;
+    return `<i class="fa-solid fa-truck"></i> ${naira(fee)} · ${formatDistanceKm(km)} · ~${eta}`;
+  }
+  return `<i class="fa-solid fa-clock"></i> ~${eta} estimated`;
+}
 // Distance-priced delivery only ever gets a real, accurate fee once we know
-// where the buyer actually is -- so for that mode, picking "Delivery"
-// compulsorily asks for location right away instead of letting them
-// proceed and only finding out (or worse, getting a wrong flat-rate fee)
-// at checkout.
-async function toggleDeliveryFields(prefix) {
-  const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value;
-  byId(`${prefix}DeliveryFields`)?.classList.toggle("hidden", method !== "delivery");
-  if (method !== "delivery") return;
+// where the buyer actually is -- so for that mode, being on "Delivery"
+// (the default) compulsorily asks for location right away instead of
+// letting someone proceed and only finding out (or worse, getting a wrong
+// flat-rate fee) at checkout. Runs both on the delivery/pickup radio
+// changing AND once automatically per page load (see initDeliveryFieldsOnPage)
+// since delivery now starts pre-selected, not something someone has to
+// actively switch to.
+async function ensureDeliveryLocation(prefix) {
   const wrap = byId(`${prefix}DeliveryFields`);
-  const isDistance = wrap?.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0 && wrap.dataset.vendorLat && wrap.dataset.vendorLng;
+  if (!wrap) return;
+  const isDistance = wrap.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0 && wrap.dataset.vendorLat && wrap.dataset.vendorLng;
   if (isDistance && !buyerLocation) {
     try {
       await requestBuyerLocation();
     } catch (err) {
-      showToast("Delivery for this vendor is priced by distance, so it needs your location. Switched back to pickup.", "info");
+      showToast("Delivery for this vendor is priced by distance, so it needs your location. Switched to pickup.", "info");
       const pickupRadio = document.querySelector(`input[name="${prefix}DeliveryMethod"][value="pickup"]`);
       if (pickupRadio) pickupRadio.checked = true;
-      byId(`${prefix}DeliveryFields`)?.classList.add("hidden");
+      wrap.classList.add("hidden");
       return;
     }
   }
   updateDeliveryEta(prefix);
+}
+async function toggleDeliveryFields(prefix) {
+  const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value;
+  byId(`${prefix}DeliveryFields`)?.classList.toggle("hidden", method !== "delivery");
+  if (method !== "delivery") return;
+  ensureDeliveryLocation(prefix);
+}
+// Every page that renders deliveryFieldsHtml (product page, cart, packages)
+// starts with Delivery pre-selected, so this scans for all of them after
+// each render and runs the same compulsory-location + fee/ETA check a
+// manual toggle would have triggered -- one shared hook instead of wiring
+// a setTimeout into every call site.
+function initDeliveryFieldsOnPage() {
+  document.querySelectorAll(".dyn-delivery-fields").forEach((wrap) => {
+    const prefix = wrap.id.replace(/DeliveryFields$/, "");
+    ensureDeliveryLocation(prefix);
+  });
 }
 function updateDeliveryEta(prefix) {
   const wrap = byId(`${prefix}DeliveryFields`);
@@ -4408,22 +4441,7 @@ function updateDeliveryEta(prefix) {
   const vLng = parseFloat(wrap.dataset.vendorLng);
   if (isNaN(vLat) || isNaN(vLng)) return;
   const isDistance = wrap.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0;
-  if (!buyerLocation) {
-    feeEl.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> <a href="#" onclick="requestDeliveryEta('${prefix}');return false;">Share location</a> for ${isDistance ? "the fee + ETA" : "an ETA"}.`;
-    return;
-  }
-  const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vLat, vLng);
-  const eta = estimateDeliveryRange(km);
-  if (isDistance) {
-    // Pure rate × distance, matching compute_delivery_fee server-side --
-    // no separate flat base stacked underneath, so this preview and the
-    // actual charge never disagree.
-    const perKm = Number(wrap.dataset.perKm) || 0;
-    const fee = Math.round((perKm * km) / 50) * 50;
-    feeEl.innerHTML = `<i class="fa-solid fa-truck"></i> ${naira(fee)} · ${formatDistanceKm(km)} · ~${eta}`;
-  } else {
-    feeEl.innerHTML = `<i class="fa-solid fa-clock"></i> ~${eta} estimated`;
-  }
+  feeEl.innerHTML = deliveryInfoLineHtml(prefix, isDistance, true, vLat, vLng, wrap.dataset.perKm);
 }
 async function requestDeliveryEta(prefix) {
   try {
@@ -5517,7 +5535,7 @@ async function renderVendorEditProfile() {
     </div>
     <div class="switch-row">
       <span class="switch-label-text">Let buyers message or call you outside these hours ${infoPopoverHtml("veAfterHoursInfo", "Off: the Message and Call buttons show your working hours instead of reaching you while you're closed. On: buyers can contact you any time.")}</span>
-      <label class="switch-toggle"><input type="checkbox" id="veAllowAfterHours" ${v.allow_after_hours_messages !== false ? "checked" : ""} /><span class="switch-toggle-track"></span></label>
+      <label class="switch-toggle"><input type="checkbox" id="veAllowAfterHours" ${v.allow_after_hours_messages !== false ? "checked" : ""} onchange="toggleVendorAfterHours()" /><span class="switch-toggle-track"></span></label>
     </div>
     <div class="flex" style="margin-top:1rem;">
       <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
@@ -5645,6 +5663,19 @@ function updateVeDeliveryPerKmExample() {
   if (rate <= 0) { el.textContent = ""; return; }
   const at = (km) => naira(Math.round((rate * km) / 50) * 50);
   el.textContent = `Example: ${at(1)} at 1km, ${at(3)} at 3km, ${at(5)} at 5km.`;
+}
+// Every other switch on this page (location sharing, Levi, sound) saves the
+// instant you flip it -- this one used to be bundled into the "Save
+// changes" button below with the text fields instead, so flipping it and
+// refreshing before pressing that separate button looked exactly like the
+// toggle "not sticking". Now it saves itself immediately, same as the rest.
+async function toggleVendorAfterHours() {
+  const checkbox = byId("veAllowAfterHours");
+  const checked = checkbox.checked;
+  const { error } = await sb.from("vendors").update({ allow_after_hours_messages: checked }).eq("id", vendor.id);
+  if (error) { showToast(error.message, "error"); checkbox.checked = !checked; return; }
+  vendor.allow_after_hours_messages = checked;
+  showToast(checked ? "Buyers can now message or call you outside working hours." : "After-hours contact turned off.", "success");
 }
 async function submitVendorEditProfile() {
   const errorEl = byId("vendorEditError");
