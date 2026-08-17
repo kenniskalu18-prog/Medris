@@ -457,6 +457,9 @@
   #myRequestsAccordion.open .accordion-body { max-height: 3000px; }
   #veHoursAccordion.open .accordion-body { max-height: 640px; }
   #appealsAccordion.open .accordion-body { max-height: 2000px; overflow-y: auto; }
+  /* Order history can run to dozens/hundreds of orders over time — scroll
+     inside a capped height instead of clipping content past 320px. */
+  #orderHistoryAccordion.open .accordion-body { max-height: 60vh; overflow-y: auto; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -1139,6 +1142,17 @@
   </div>
 </div>
 
+<div id="chatListPickerModal" class="modal hidden">
+  <div class="modal-content" style="max-width:380px;">
+    <h3><i class="fa-solid fa-layer-group"></i> Add to a list</h3>
+    <p class="muted" style="margin:0.4rem 0 0.2rem;font-size:0.85rem;">Check the lists this chat belongs to.</p>
+    <div id="chatListPickerBody"></div>
+    <div class="flex" style="justify-content:flex-end;margin-top:0.6rem;">
+      <button class="btn btn-sm" id="chatListPickerClose">Done</button>
+    </div>
+  </div>
+</div>
+
 <div id="roleSelectModal" class="modal hidden">
   <div class="modal-content" style="max-width:400px;">
     <h3><i class="fa-solid fa-user-check"></i> One more step</h3>
@@ -1373,7 +1387,7 @@ const LIVE_TOUR_STEPS = [
   { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update, right on your device.", selector: "#notifWrap", view: "home" },
 ];
 let liveTourStep = 0;
-async function waitForTourTarget(selector, maxMs = 2000) {
+async function waitForTourTarget(selector, maxMs = 4500) {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
     const el = document.querySelector(selector);
@@ -1384,13 +1398,27 @@ async function waitForTourTarget(selector, maxMs = 2000) {
 }
 async function showTour() {
   liveTourStep = 0;
+  // Always start from a clean, freshly-rendered Home, no matter what panel
+  // or page was open when "Take the tour" was tapped — otherwise a
+  // still-settling drawer/overlay behind the spotlight was part of what
+  // made steps feel like they were skipping or landing in the wrong spot.
+  closeAllPanels();
+  await navigate("home", {});
   byId("tourModal").classList.remove("hidden");
   trackModalOpened("tourModal");
   await runTourStep();
 }
 async function runTourStep() {
   const step = LIVE_TOUR_STEPS[liveTourStep];
-  if (step.view && step.view !== currentView) await navigate(step.view, {});
+  if (step.view && step.view !== currentView) {
+    await navigate(step.view, {});
+    // Give the new view's own data fetch (e.g. the vendor directory) a beat
+    // to kick off before polling for its target element below — without
+    // this, a step could start racing waitForTourTarget against a render
+    // that's about to replace the DOM entirely, which read as a step
+    // randomly skipping on a slower connection.
+    await new Promise((r) => setTimeout(r, 200));
+  }
   // Levi "points" toward wherever the tour is about to highlight next --
   // the same flourish used when Levi navigates you somewhere from chat,
   // so it reads as Levi actually guiding the tour rather than a generic
@@ -1412,9 +1440,14 @@ async function runTourStep() {
     const el = await waitForTourTarget(step.selector);
     if (!el) {
       // Genuinely not there right now (logged out, no vendors yet, etc) —
-      // skip straight past it instead of spotlighting empty space.
-      if (liveTourStep < LIVE_TOUR_STEPS.length - 1) { liveTourStep++; return runTourStep(); }
-      finishTour();
+      // still show this step's message centered, same as a selector-less
+      // step, instead of silently vanishing it. A step that's merely slow
+      // to appear no longer looks like a skipped/broken tour.
+      positionTourSpotlight(null);
+      const content = byId("tourCallout");
+      content.classList.remove("tour-content");
+      void content.offsetWidth;
+      content.classList.add("tour-content");
       return;
     }
     el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -3171,13 +3204,19 @@ async function confirmDeleteAccount() {
   const btn = byId("deleteAccountConfirmBtn");
   btn.disabled = true;
   try {
-    const { error: pwError } = await sb.auth.signInWithPassword({ email: profile.email, password });
+    // Re-authenticating here rotates the client's session -- read the
+    // fresh access token straight off this response instead of the global
+    // `session` variable, which only catches up once the auth-state-change
+    // listener fires. Using the stale one was throwing a false "Invalid
+    // session" from the API below even with the right password and phrase.
+    const { data: authData, error: pwError } = await sb.auth.signInWithPassword({ email: profile.email, password });
     if (pwError) throw new Error("Incorrect password.");
+    const freshAccessToken = authData?.session?.access_token || session.access_token;
 
     const res = await fetch("/api/delete-account", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: session.access_token }),
+      body: JSON.stringify({ accessToken: freshAccessToken }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not delete account.");
@@ -3872,7 +3911,8 @@ async function openDisputeChat(buyerId, vendorId) {
   navigate("messages", { conversationId });
 }
 
-let msgListFilter = "all"; // 'all' | 'unread'
+let msgListFilter = "all"; // 'all' | 'unread' | 'list:<listId>'
+let myChatLists = []; // [{id, name, conversation_ids}]
 
 function convRowHtml(c) {
   const name = c.other_name || "User";
@@ -3886,6 +3926,7 @@ function convRowHtml(c) {
         <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
       </div>
       ${isUnread ? `<span class="conv-unread-badge" title="${c.unread_count} unread">${c.unread_count > 99 ? "99+" : c.unread_count}</span>` : ""}
+      <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
       <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
     </div>
   </div>`;
@@ -3960,10 +4001,85 @@ function filterMsgList() {
   if (!wrap) return;
   const convs = window.__conversations || [];
   const q = (byId("msgSearchInput")?.value || "").trim().toLowerCase();
-  let shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
+  let shown = convs;
+  let emptyReason = "No conversations yet.";
+  if (msgListFilter === "unread") {
+    shown = convs.filter((c) => c.unread_count > 0);
+    emptyReason = "Nothing unread.";
+  } else if (msgListFilter.startsWith("list:")) {
+    const listId = msgListFilter.slice(5);
+    const list = myChatLists.find((l) => l.id === listId);
+    shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id)) : [];
+    emptyReason = `No chats in "${list?.name || "this list"}" yet — tap the list icon on a chat to add it.`;
+  }
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
-  wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
+  wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : emptyReason}</div>`;
   setupConvSwipe(wrap);
+}
+
+// ---------- CUSTOM CHAT LISTS (WhatsApp-style user-made lists) ----------
+async function refreshChatLists() {
+  // A hiccup loading lists is a secondary-feature failure, not a reason to
+  // take the whole Messages page down with a full-page error -- fail
+  // quietly to "no lists yet" and let the actual conversation list render.
+  try {
+    const { data, error } = await sb.rpc("list_my_chat_lists");
+    if (error) throw error;
+    myChatLists = (data || []).map((l) => ({ ...l, conversation_ids: l.conversation_ids || [] }));
+  } catch (e) {
+    console.error("Could not load chat lists:", e);
+    myChatLists = [];
+  }
+}
+function chatListTabsHtml() {
+  const listTabs = myChatLists.map((l) => `<a class="${msgListFilter === "list:" + l.id ? "active" : ""}" onclick="setMsgListFilter('list:${l.id}')">${esc(l.name)}</a>`).join("");
+  return `<div class="tabs" style="overflow-x:auto;flex-wrap:nowrap;">
+      <a class="${msgListFilter === "all" ? "active" : ""}" onclick="setMsgListFilter('all')">all</a>
+      <a class="${msgListFilter === "unread" ? "active" : ""}" onclick="setMsgListFilter('unread')">unread</a>
+      ${listTabs}
+      <a onclick="createChatListPrompt()" title="Create a new list"><i class="fa-solid fa-plus"></i> New list</a>
+      ${msgListFilter.startsWith("list:") ? `<a onclick="deleteChatListPrompt('${msgListFilter.slice(5)}')" title="Delete this list" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></a>` : ""}
+    </div>`;
+}
+async function createChatListPrompt() {
+  const name = await showTextPromptDialog("New chat list", "Name this list (like WhatsApp's Favorites or Groups) to organize your own chats.", { placeholder: "e.g. Regular vendors", okLabel: "Create" });
+  if (!name || !name.trim()) return;
+  const { data: newId, error } = await sb.rpc("create_chat_list", { p_name: name.trim() });
+  if (error) { showToast(error.message, "error"); return; }
+  await refreshChatLists();
+  msgListFilter = "list:" + newId;
+  navigate("messages", {}, false);
+}
+async function deleteChatListPrompt(listId) {
+  const list = myChatLists.find((l) => l.id === listId);
+  if (!(await showConfirmDialog(`Delete the list "${list?.name || ""}"? Your chats themselves aren't affected.`, { title: "Delete list", okLabel: "Delete", danger: true }))) return;
+  const { error } = await sb.rpc("delete_chat_list", { p_list_id: listId });
+  if (error) { showToast(error.message, "error"); return; }
+  msgListFilter = "all";
+  await refreshChatLists();
+  navigate("messages", {}, false);
+}
+async function openChatListPicker(conversationId) {
+  if (!myChatLists.length) {
+    const create = await showConfirmDialog("You don't have any lists yet. Create one now?", { title: "No lists yet", okLabel: "Create a list" });
+    if (create) await createChatListPrompt();
+    return;
+  }
+  const modal = byId("chatListPickerModal");
+  byId("chatListPickerBody").innerHTML = myChatLists.map((l) => `<label class="flex" style="gap:0.6rem;padding:0.5rem 0;align-items:center;">
+    <input type="checkbox" style="width:auto;" ${l.conversation_ids.includes(conversationId) ? "checked" : ""} onchange="toggleConversationInList('${l.id}','${conversationId}',this)" />
+    ${esc(l.name)}
+  </label>`).join("");
+  modal.classList.remove("hidden");
+  byId("chatListPickerClose").onclick = () => modal.classList.add("hidden");
+}
+async function toggleConversationInList(listId, conversationId, checkbox) {
+  checkbox.disabled = true;
+  const { error } = await sb.rpc("toggle_conversation_in_list", { p_list_id: listId, p_conversation_id: conversationId });
+  checkbox.disabled = false;
+  if (error) { showToast(error.message, "error"); checkbox.checked = !checkbox.checked; return; }
+  await refreshChatLists();
+  filterMsgList();
 }
 
 async function togglePinConversation(conversationId) {
@@ -3987,12 +4103,10 @@ async function renderMessages(conversationId) {
     }
 
     window.__conversations = convs;
+    await refreshChatLists();
 
     let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2>`;
-    html += `<div class="tabs">
-      <a class="${msgListFilter === "all" ? "active" : ""}" onclick="setMsgListFilter('all')">all</a>
-      <a class="${msgListFilter === "unread" ? "active" : ""}" onclick="setMsgListFilter('unread')">unread</a>
-    </div>`;
+    html += chatListTabsHtml();
     html += `<input type="text" id="msgSearchInput" placeholder="Search conversations…" oninput="filterMsgList()" style="margin:0.2rem 0 0.8rem;max-width:340px;" />`;
     html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap"></div>`;
     setTimeout(filterMsgList, 0);
@@ -6663,7 +6777,7 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
     </div>`).join("");
   });
-  return `<div class="accordion-section" style="margin-top:1.2rem;">
+  return `<div class="accordion-section" id="orderHistoryAccordion" style="margin-top:1.2rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-clock-rotate-left"></i> Order history (${historyOrders.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
     <div class="accordion-body">${inner}</div>
   </div>`;
@@ -8908,9 +9022,14 @@ function setupDraggableFab(fab, storageKey, onTap) {
 
   function clamp(x, y) {
     const margin = 8;
+    // Never let a dragged FAB rest above the header — that's the status
+    // bar / notch safe-area on a phone, where it's both hidden behind
+    // system chrome and untappable.
+    const header = document.querySelector("header");
+    const minY = Math.max(margin, (header?.getBoundingClientRect().bottom || 0) + margin);
     const maxX = window.innerWidth - fab.offsetWidth - margin;
     const maxY = window.innerHeight - fab.offsetHeight - margin;
-    return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
+    return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, minY), maxY) };
   }
   function applyPosition(x, y) {
     fab.style.left = `${x}px`;
