@@ -348,6 +348,18 @@
   @keyframes fabPoint { 0% { transform: scale(1) rotate(0); } 35% { transform: scale(1.25) rotate(-14deg); } 65% { transform: scale(1.15) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
   .ai-chat-fab-hand { font-size: 1.5rem; animation: fabPoint 0.65s cubic-bezier(.34,1.56,.64,1); }
   @media (prefers-reduced-motion: reduce) { .ai-chat-fab.directing, .ai-chat-fab-hand { animation: none; } }
+  /* ---- floating cart button, docked just above Levi's FAB ---- */
+  .cart-fab {
+    position: fixed; right: 1.35rem; bottom: calc(5.1rem + env(safe-area-inset-bottom, 0px));
+    width: 3rem; height: 3rem; border-radius: 50%;
+    background: var(--card); color: var(--primary); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    box-shadow: var(--shadow-float); cursor: pointer; z-index: 149;
+  }
+  .cart-fab.hidden { display: none; }
+  @media (max-width: 720px) { .cart-fab { bottom: calc(9.2rem + env(safe-area-inset-bottom, 0px)); } }
+  .cart-fab-badge { position: absolute; top: -0.25rem; right: -0.25rem; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; border-radius: 999px; min-width: 1.15rem; height: 1.15rem; display: flex; align-items: center; justify-content: center; padding: 0 0.28rem; }
+  .cart-fab-badge.hidden { display: none; }
   .ai-chat-panel {
     position: fixed; right: 1.2rem; bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); width: min(360px, 90vw); height: min(500px, 68vh);
     background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -1156,6 +1168,7 @@
 <div id="toastStack" class="toast-stack"></div>
 
 <!-- Floating, draggable AI chat -->
+<div id="cartFab" class="cart-fab hidden" title="Your cart" onclick="navigate('cart')"><i class="fa-solid fa-cart-shopping"></i><span id="cartFabBadge" class="cart-fab-badge hidden">0</span></div>
 <div id="aiChatFab" class="ai-chat-fab" title="Chat with Levi"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
 <div id="aiChatPanel" class="ai-chat-panel hidden">
   <div class="drawer-header">
@@ -1483,6 +1496,7 @@ let buyerPendingOrderCount = 0;
 const NON_TERMINAL_ORDER_STATUSES = ["pending", "confirmed"];
 let unreadMessageCount = 0;
 let unreadSuggestionCount = 0;
+let buyerCartCount = 0;
 let notifTarget = null; // { view, params }
 let favoriteIds = new Set();
 
@@ -2302,6 +2316,14 @@ async function refreshNotifications() {
   const { data: convs } = await sb.rpc("list_my_conversations");
   unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
 
+  if (session && profile?.role === "buyer" && !vendor) {
+    const { count: cartCount } = await sb.from("cart_items").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id);
+    buyerCartCount = cartCount || 0;
+  } else {
+    buyerCartCount = 0;
+  }
+  updateCartFab();
+
   // Every message sent to me that I haven't already "received" (i.e. my
   // client has now synced it, whether or not I've actually opened that
   // conversation) flips from single check to double check for the sender —
@@ -2786,6 +2808,20 @@ function renderBottomNav() {
     nav.innerHTML = items.map(itemHtml).join("");
   }
 }
+// A floating cart button, docked near Levi's FAB, is easier to notice
+// than a nav-tab would be without adding a 6th cramped item to the
+// already-full buyer bottom nav.
+function updateCartFab() {
+  const fab = byId("cartFab");
+  if (!fab) return;
+  const show = session && profile?.role === "buyer" && !vendor;
+  fab.classList.toggle("hidden", !show);
+  const badge = byId("cartFabBadge");
+  if (badge) {
+    badge.textContent = buyerCartCount > 9 ? "9+" : buyerCartCount;
+    badge.classList.toggle("hidden", buyerCartCount === 0);
+  }
+}
 function requireLoginThen(view) {
   if (!session) { showLogin(); return; }
   navigate(view);
@@ -3130,6 +3166,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "adminFinance": html = await renderAdminFinance(); break;
       case "adminLog": html = await renderAdminLog(); break;
       case "wishlist": html = await renderWishlist(); break;
+      case "cart": html = await renderCart(); break;
       case "messages": html = await renderMessages(params.conversationId); break;
       case "requestEquipment": html = await renderRequestEquipment(); break;
       case "vendorRequests": html = await renderVendorRequests(); break;
@@ -3460,6 +3497,131 @@ async function renderWishlist() {
   return html;
 }
 
+// ---------- CART (buy-and-sale items only, grouped by vendor -- each
+// vendor group checks out as its own order, same reasoning as the
+// single-vendor-per-checkout recommendation: one Paystack charge per
+// vendor keeps the existing per-order payment/payout machinery untouched
+// instead of inventing a split-charge system) ----------
+function cartItemRowHtml(it) {
+  const p = it.product;
+  const img = p.photos && p.photos[0];
+  return `<div class="flex" style="justify-content:space-between;align-items:center;gap:0.6rem;padding:0.5rem 0;border-top:1px solid var(--border);">
+    <div class="flex" style="gap:0.6rem;align-items:center;min-width:0;">
+      ${img ? `<img src="${esc(img)}" style="width:2.6rem;height:2.6rem;border-radius:0.5rem;object-fit:cover;flex-shrink:0;" />` : `<div class="avatar-circle" style="flex-shrink:0;"><i class="fa-solid fa-box"></i></div>`}
+      <div style="min-width:0;">
+        <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11rem;">${esc(p.name)}</strong>
+        <span class="muted" style="font-size:0.82rem;">${naira(p.sale_price)} each</span>
+      </div>
+    </div>
+    <div class="flex" style="align-items:center;gap:0.4rem;flex-shrink:0;">
+      <button class="icon-btn" onclick="updateCartQty('${it.id}',${it.quantity - 1})" ${it.quantity <= 1 ? "disabled" : ""}><i class="fa-solid fa-minus"></i></button>
+      <span style="min-width:1.4rem;text-align:center;">${it.quantity}</span>
+      <button class="icon-btn" onclick="updateCartQty('${it.id}',${it.quantity + 1})" ${it.quantity >= p.quantity_available ? "disabled" : ""}><i class="fa-solid fa-plus"></i></button>
+      <button class="icon-btn" title="Remove" onclick="removeFromCart('${it.id}')"><i class="fa-solid fa-trash" style="color:var(--danger);"></i></button>
+    </div>
+  </div>`;
+}
+async function renderCart() {
+  if (!session) return '<div class="empty-state">Log in to see your cart.</div>';
+  if (profile?.role !== "buyer" || vendor) return '<div class="empty-state">Cart is for buyer accounts.</div>';
+
+  const { data: items, error } = await sb.from("cart_items")
+    .select("id, quantity, created_at, product:products(id, name, sale_price, photos, quantity_available, status, vendor:vendors(id, business_name, previous_business_name, name_changed_at, is_active, verification_status, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng))")
+    .eq("buyer_id", session.user.id)
+    .order("created_at", { ascending: true });
+  if (error) return `<div class="empty-state">Couldn't load your cart: ${esc(error.message)}</div>`;
+
+  let html = `<h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>`;
+  if (!items || items.length === 0) {
+    return html + `<div class="empty-state">Your cart is empty. Add items from any product page, or tell Levi what you want and it'll add them for you.</div>`;
+  }
+
+  const valid = items.filter((it) => it.product && it.product.status === "active" && it.product.vendor?.verification_status === "verified" && it.product.vendor?.is_active);
+  const stale = items.filter((it) => !valid.includes(it));
+
+  const byVendor = new Map();
+  valid.forEach((it) => {
+    const vId = it.product.vendor.id;
+    if (!byVendor.has(vId)) byVendor.set(vId, { vendor: it.product.vendor, items: [] });
+    byVendor.get(vId).items.push(it);
+  });
+  window.__cartByVendor = byVendor;
+
+  [...byVendor.values()].forEach(({ vendor: v, items: vItems }) => {
+    const subtotal = vItems.reduce((s, it) => s + Number(it.product.sale_price || 0) * it.quantity, 0);
+    html += `<div class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-top:0;"><a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">${vendorNameWithFormerly(v)}</a></h3>
+      ${vItems.map(cartItemRowHtml).join("")}
+      <div class="divider"></div>
+      <p class="flex" style="justify-content:space-between;margin:0 0 0.6rem;"><span class="muted">Subtotal</span><strong>${naira(subtotal)}</strong></p>
+      ${deliveryFieldsHtml(`cart-${v.id}`, v.delivery_fee, v.lat, v.lng, v.delivery_fee_mode, v.delivery_fee_per_km)}
+      <button class="btn" style="width:100%;" onclick="checkoutCartVendor('${v.id}')"><i class="fa-solid fa-bag-shopping"></i> Checkout · ${esc(v.business_name)}</button>
+      <p id="cartError-${v.id}" class="error-text hidden"></p>
+    </div>`;
+  });
+
+  if (stale.length) {
+    window.__staleCartIds = stale.map((it) => it.id);
+    html += `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-circle-info"></i> ${stale.length} item${stale.length === 1 ? "" : "s"} in your cart ${stale.length === 1 ? "is" : "are"} no longer available and won't be included at checkout. <a href="#" onclick="clearStaleCartItems();return false;">Remove ${stale.length === 1 ? "it" : "them"}</a>.</p>`;
+  }
+  return html;
+}
+async function addToCart(productId, qty) {
+  if (!session) { showLogin(); return; }
+  const { error } = await sb.rpc("add_to_cart", { p_product_id: productId, p_quantity: qty || 1 });
+  if (error) { showToast(error.message, "error"); return; }
+  showToast("Added to cart.", "success");
+  refreshNotifications();
+}
+async function updateCartQty(cartItemId, newQty) {
+  if (newQty < 1) return;
+  const { error } = await sb.from("cart_items").update({ quantity: newQty }).eq("id", cartItemId);
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("cart", {}, false);
+  refreshNotifications();
+}
+async function removeFromCart(cartItemId) {
+  const { error } = await sb.from("cart_items").delete().eq("id", cartItemId);
+  if (error) { showToast(error.message, "error"); return; }
+  navigate("cart", {}, false);
+  refreshNotifications();
+}
+async function clearStaleCartItems() {
+  const ids = window.__staleCartIds || [];
+  if (!ids.length) return;
+  await sb.from("cart_items").delete().in("id", ids);
+  navigate("cart", {}, false);
+}
+async function checkoutCartVendor(vendorId) {
+  const group = window.__cartByVendor?.get(vendorId);
+  const errorEl = byId(`cartError-${vendorId}`);
+  if (!group) return;
+  errorEl?.classList.add("hidden");
+  const delivery = readDeliveryFields(`cart-${vendorId}`, errorEl);
+  if (!delivery) return;
+
+  const items = group.items.map((it) => ({ product_id: it.product.id, quantity: it.quantity }));
+  const confirmMsg = `Check out ${items.length} item${items.length === 1 ? "" : "s"} from ${group.vendor.business_name}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
+  if (!(await showConfirmDialog(confirmMsg, { title: "Confirm checkout", okLabel: "Checkout" }))) return;
+
+  const { data: orderId, error } = await sb.rpc("create_cart_order", {
+    p_vendor_id: vendorId,
+    p_items: items,
+    p_delivery_method: delivery.method,
+    p_delivery_address: delivery.address,
+    p_delivery_phone: delivery.phone,
+    p_buyer_lat: buyerLocation?.lat ?? null,
+    p_buyer_lng: buyerLocation?.lng ?? null,
+  });
+  if (error) {
+    if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); }
+    return;
+  }
+  await sb.from("cart_items").delete().in("id", group.items.map((it) => it.id));
+  refreshNotifications();
+  navigate("orderDetail", { orderId });
+}
+
 // ---------- IN-APP MESSAGING ----------
 // One continuous text thread per (buyer, vendor) pair — replaces direct
 // WhatsApp contact so conversations stay evidence-grade for disputes
@@ -3556,8 +3718,8 @@ function convRowHtml(c) {
   const name = c.other_name || "User";
   const isUnread = c.unread_count > 0;
   return `<div class="conv-swipe-wrap">
-    <div class="conv-swipe-action" onclick="handleSwipeMarkUnread(event,'${c.conversation_id}')"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Read" : "Unread"}</span></div>
-    <div class="conv-list-item" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+    <div class="conv-swipe-action"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Read" : "Unread"}</span></div>
+    <div class="conv-list-item" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
       ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
       <div class="conv-meta">
         <strong>${esc(name)}</strong>
@@ -3570,8 +3732,9 @@ function convRowHtml(c) {
 }
 
 // ---------- SWIPE-TO-MARK-UNREAD (conversation list rows) ----------
+// One-step gesture: swiping a row left past the threshold fires the
+// mark-read/unread toggle immediately on release, no second tap needed.
 let convSwipeState = null;
-let convSwipeOpenItem = null;
 
 function setupConvSwipe(root) {
   (root || document).querySelectorAll(".conv-list-item").forEach((item) => {
@@ -3595,7 +3758,6 @@ function onConvSwipeMove(e) {
     if (Math.abs(dy) > Math.abs(dx)) { convSwipeState = null; return; }
     convSwipeState.dragging = true;
     convSwipeState.item.setPointerCapture(convSwipeState.pointerId);
-    if (convSwipeOpenItem && convSwipeOpenItem !== convSwipeState.item) closeConvSwipe(convSwipeOpenItem);
   }
   convSwipeState.dx = Math.min(0, Math.max(dx, -84));
   convSwipeState.item.style.transform = `translateX(${convSwipeState.dx}px)`;
@@ -3608,23 +3770,20 @@ function onConvSwipeEnd(e) {
   item.removeEventListener("pointercancel", onConvSwipeEnd);
   if (dragging) {
     item.dataset.wasSwiped = "1";
-    if (dx < -40) { item.style.transform = "translateX(-84px)"; convSwipeOpenItem = item; }
-    else { item.style.transform = "translateX(0)"; if (convSwipeOpenItem === item) convSwipeOpenItem = null; }
+    item.style.transform = "translateX(0)";
+    if (dx < -50) {
+      if (navigator.vibrate) navigator.vibrate(12);
+      handleSwipeMarkUnread(item.dataset.conversationId);
+    }
   }
   convSwipeState = null;
-}
-function closeConvSwipe(item) {
-  if (item) item.style.transform = "translateX(0)";
-  if (convSwipeOpenItem === item) convSwipeOpenItem = null;
 }
 function handleConvRowClick(event, conversationId) {
   const item = event.currentTarget;
   if (item.dataset.wasSwiped === "1") { item.dataset.wasSwiped = ""; return; }
-  if (convSwipeOpenItem) { closeConvSwipe(convSwipeOpenItem); return; }
   navigate("messages", { conversationId });
 }
-async function handleSwipeMarkUnread(event, conversationId) {
-  event.stopPropagation();
+async function handleSwipeMarkUnread(conversationId) {
   const { error } = await sb.rpc("toggle_conversation_unread", { p_conversation_id: conversationId });
   if (error) { showToast(error.message, "error"); return; }
   refreshNotifications();
@@ -3644,7 +3803,6 @@ function filterMsgList() {
   let shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
   wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
-  convSwipeOpenItem = null;
   setupConvSwipe(wrap);
 }
 
@@ -4079,7 +4237,10 @@ async function renderProductDetail(productId) {
       </div>
       ${product.sale_price != null ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
-      <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
+      <div class="flex">
+        <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
+        ${!product.is_service ? `<button class="btn btn-outline" onclick="addToCart('${product.id}', parseInt(byId('buyQty').value)||1)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>` : ""}
+      </div>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
   }
@@ -7083,6 +7244,8 @@ async function renderAdminLog() {
     reject_vendor: { text: "rejected vendor", icon: "fa-circle-xmark", cls: "danger" },
     pause_storefront: { text: "paused storefront", icon: "fa-pause", cls: "warning" },
     reactivate_storefront: { text: "reactivated storefront", icon: "fa-play", cls: "success" },
+    suspend_user: { text: "suspended account", icon: "fa-user-slash", cls: "danger" },
+    unsuspend_user: { text: "reinstated account", icon: "fa-user-check", cls: "success" },
   };
 
   let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log ${infoPopoverHtml("adminActivityInfo", "Every reject, approve, pause and reactivate: who did it, and when. This trail can't be edited or deleted, even by admins.")}</h2>`;
@@ -7149,7 +7312,7 @@ async function renderAdminFinance() {
   // will resolve itself once the buyer confirms or the 5-day window passes.
   const stuckPayouts = (heldOrders || []).filter((o) => o.status === "completed");
   if (stuckPayouts.length > 0) {
-    html += `<div class="banner banner-danger" style="max-width:700px;">
+    html += `<div class="banner banner-warning" style="max-width:700px;">
       <h3 style="margin:0;"><i class="fa-solid fa-triangle-exclamation"></i> ${stuckPayouts.length} payout${stuckPayouts.length === 1 ? "" : "s"} stuck</h3>
       <p class="muted" style="margin-top:0.3rem;">These orders were confirmed received, but the transfer to the vendor's bank account failed and needs a retry. If it keeps failing, check Paystack Dashboard → Transfers for the reason (often an OTP approval needed on new live accounts, or Transfers being blocked entirely until your business type is upgraded from Starter to Registered). If you've paid the vendor yourself outside Paystack in the meantime, use "Mark paid manually" instead of retrying.</p>
       ${stuckPayouts.map((o) => `<div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem;">
@@ -7901,7 +8064,7 @@ async function renderSharedAiChat(token) {
   }
   let html = `<div class="flex" style="align-items:center;gap:0.6rem;margin-bottom:0.3rem;"><img src="${MEDRIS_LOGO}" alt="" style="width:2.2rem;height:2.2rem;border-radius:50%;" /><div><strong>${esc(rows[0].title || "Shared chat")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">Shared conversation with Levi &middot; read-only</p></div></div>`;
   html += `<div class="card shared-ai-chat">${chatMessagesWithDatesHtml(rows, (m) => {
-    const clean = m.role === "assistant" ? parseAiDraftMsgTag(parseAiNavTag(m.content).text).text : m.content;
+    const clean = m.role === "assistant" ? parseAiAddCartTags(parseAiDraftMsgTag(parseAiNavTag(m.content).text).text).text : m.content;
     return `<div class="ai-chat-msg ${m.role === "user" ? "user" : "assistant"}" style="align-self:${m.role === "user" ? "flex-end" : "flex-start"};">${esc(clean)}</div>`;
   })}</div>`;
   html += `<div style="text-align:center;margin-top:1rem;"><button class="btn btn-sm" onclick="navigate('home')"><i class="fa-solid fa-arrow-right"></i> Try Levromart</button></div>`;
@@ -7963,7 +8126,7 @@ document.addEventListener("click", (e) => {
 // tolerates those slips.
 const AI_NAV_TAG_RE = /`?\[\[NAV:([^\]]*)\]\]`?/;
 const AI_NAV_ALLOWED_VIEWS = new Set([
-  "home", "vendors", "storefront", "productDetail", "wishlist", "requestEquipment", "buyerOrders", "messages", "settings",
+  "home", "vendors", "storefront", "productDetail", "wishlist", "cart", "requestEquipment", "buyerOrders", "messages", "settings",
   "vendorDashboard", "vendorProducts", "vendorOrders", "vendorEditProfile", "vendorRequests",
 ]);
 function parseAiNavTag(content) {
@@ -7997,6 +8160,29 @@ function parseAiDraftMsgTag(content) {
   if (!m) return { text: content, draft: null };
   const text = (content.slice(0, m.index) + content.slice(m.index + m[0].length)).trim();
   return { text, draft: { vendorId: m[1], message: m[2].trim() } };
+}
+// [[ADDCART productId=<id> quantity=<n>]] -- self-closing, can repeat for
+// several products in one reply. Executed right away rather than staged
+// for a confirm tap like DRAFTMSG -- adding a cart line is low-stakes and
+// trivially undone (just remove it), unlike sending a message to someone.
+const AI_ADDCART_TAG_RE = /\[\[ADDCART productId=([a-zA-Z0-9-]+)(?:\s+quantity=(\d+))?\]\]/g;
+function parseAiAddCartTags(content) {
+  const str = String(content || "");
+  const items = [];
+  let m;
+  AI_ADDCART_TAG_RE.lastIndex = 0;
+  while ((m = AI_ADDCART_TAG_RE.exec(str))) items.push({ productId: m[1], quantity: m[2] ? parseInt(m[2]) : 1 });
+  const text = str.replace(AI_ADDCART_TAG_RE, "").replace(/\s{2,}/g, " ").trim();
+  return { text: text || content, items };
+}
+async function applyAiAddCartItems(items) {
+  let added = 0, failed = 0;
+  for (const it of items) {
+    const { error } = await sb.rpc("add_to_cart", { p_product_id: it.productId, p_quantity: it.quantity });
+    if (error) failed++; else added++;
+  }
+  if (added) refreshNotifications();
+  return { added, failed };
 }
 async function sendAiDraftMessage(vendorId, btn) {
   const card = btn.closest(".ai-chat-draft-card");
@@ -8053,15 +8239,19 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
   let displayText = content;
   let nav = null;
   let draft = null;
+  let cartItems = null;
   if (role === "assistant") {
     const parsedNav = parseAiNavTag(content);
     const parsedDraft = parseAiDraftMsgTag(parsedNav.text);
-    displayText = parsedDraft.text;
+    const parsedCart = parseAiAddCartTags(parsedDraft.text);
+    displayText = parsedCart.text;
     // Re-showing a past conversation shouldn't replay its side effects --
-    // an old "take you there" tag firing again would yank someone away
-    // from the history list they just opened.
+    // an old "take you there" tag (or an old cart-add) firing again would
+    // yank someone away, or re-add items, from a conversation they're just
+    // re-reading.
     nav = isReplay ? null : parsedNav.nav;
     draft = parsedDraft.draft;
+    cartItems = isReplay ? [] : parsedCart.items;
   }
   if (role !== "typing") aiChatMessages.push({ role, content: displayText });
   const wrap = byId("aiChatMessages");
@@ -8114,6 +8304,16 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
       sb.from("vendors").select("business_name").eq("id", draft.vendorId).maybeSingle().then(({ data }) => {
         const span = card.querySelector(".ai-chat-draft-vendor");
         if (span && data?.business_name) span.textContent = data.business_name;
+      });
+    }
+    if (cartItems && cartItems.length) {
+      const card = document.createElement("div");
+      card.className = "ai-chat-draft-card";
+      card.innerHTML = `<div class="ai-chat-draft-label"><i class="fa-solid fa-cart-plus"></i> Adding to your cart…</div>`;
+      el.appendChild(card);
+      applyAiAddCartItems(cartItems).then(({ added, failed }) => {
+        card.innerHTML = `<div class="ai-chat-draft-label"><i class="fa-solid fa-cart-plus"></i> ${added} item${added === 1 ? "" : "s"} added to your cart${failed ? `, ${failed} couldn't be added` : ""}</div>
+          <div class="ai-chat-draft-actions"><button class="btn btn-sm" onclick="toggleAiChat();navigate('cart')"><i class="fa-solid fa-cart-shopping"></i> View cart</button></div>`;
       });
     }
   }
