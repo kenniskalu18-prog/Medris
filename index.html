@@ -222,6 +222,21 @@
   .banner-danger { background: color-mix(in srgb, var(--danger) 16%, var(--card)); border-color: color-mix(in srgb, var(--danger) 35%, var(--card)); }
   .banner-muted { background: var(--card); border-color: var(--border); }
   label { display: block; font-size: 0.85rem; font-weight: 500; margin-top: 0.6rem; }
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; }
+  .switch-row .switch-label-text { font-size: 0.85rem; font-weight: 500; }
+  .switch-toggle { position: relative; display: inline-block; width: 2.6rem; height: 1.5rem; flex-shrink: 0; }
+  .switch-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch-toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: background-color 0.2s ease; pointer-events: none; }
+  .switch-toggle-track::before { content: ""; position: absolute; width: 1.15rem; height: 1.15rem; left: 0.18rem; top: 0.18rem; background: #fff; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .switch-toggle input:checked + .switch-toggle-track { background: var(--primary); }
+  .switch-toggle input:checked + .switch-toggle-track::before { transform: translateX(1.1rem); }
+  .hours-day-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+  .hours-day-row:last-child { border-bottom: none; }
+  .hours-day-row .hours-day-check { display: flex; align-items: center; gap: 0.45rem; width: 6rem; flex-shrink: 0; font-size: 0.85rem; font-weight: 500; }
+  .hours-day-row .hours-day-check input { width: auto; margin: 0; }
+  .hours-day-row .hours-day-times { display: flex; align-items: center; gap: 0.4rem; flex: 1; }
+  .hours-day-row .hours-day-times input[type="time"] { margin: 0; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+  .hours-day-row .hours-day-closed-label { color: var(--text-muted); font-size: 0.82rem; }
   input, select, textarea, .ms-btn { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 0.7rem; margin: 0.3rem 0 0.5rem; font-size: 1rem; font-family: inherit; background: var(--input-bg); color: var(--text); transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
   .ms-btn { text-align: left; }
@@ -3350,6 +3365,12 @@ let activeConversationId = null;
 
 async function startConversationWithVendor(vendorId) {
   if (!session) { showLogin(); return; }
+  const { data: v } = await sb.from("vendors").select("business_name, business_hours, allow_after_hours_messages").eq("id", vendorId).maybeSingle();
+  if (v && !canMessageVendorNow(v)) {
+    const status = vendorHoursStatus(v);
+    showToast(`${v.business_name || "This vendor"} is outside working hours right now${status.todayText ? ` (${status.todayLabel}: ${status.todayText})` : ""}. Try again during their working hours.`, "info");
+    return;
+  }
   const { data: conversationId, error } = await sb.rpc("get_or_create_conversation", { p_vendor_id: vendorId });
   if (error) { showToast(error.message, "error"); return; }
   navigate("messages", { conversationId });
@@ -4663,8 +4684,10 @@ async function renderVendorDashboard() {
   const totalOrders = orders?.length ?? 0;
   const revenue = orders?.filter((o) => o.status === "completed").reduce((s, o) => s + o.total_amount, 0) ?? 0;
   const totalViews = (products || []).reduce((s, p) => s + (p.view_count || 0), 0);
-  const favCounts = await Promise.all((products || []).map((p) => sb.rpc("get_favorite_count", { p_product_id: p.id })));
-  const totalFavorites = favCounts.reduce((s, r) => s + (r?.data ?? 0), 0);
+  const { data: favCounts } = (products || []).length
+    ? await sb.rpc("get_favorite_counts", { p_product_ids: products.map((p) => p.id) })
+    : { data: [] };
+  const totalFavorites = (favCounts || []).reduce((s, r) => s + r.count, 0);
   const commissionOwed = Number(owed || 0);
 
   let html = `<h2 style="display:flex;align-items:center;gap:0.5rem;"><i class='fa-solid fa-box'></i> ${esc(v.business_name)} ${verifiedTick}</h2>`;
@@ -4825,6 +4848,109 @@ function formatEarningsDateTime(dateStr) {
   return new Date(dateStr).toLocaleString("en-NG", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+// ---------- VENDOR WORKING HOURS (structured, replaces free-text opening_hours) ----------
+const HOURS_DAYS = [
+  { key: "mon", label: "Mon" }, { key: "tue", label: "Tue" }, { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" }, { key: "fri", label: "Fri" }, { key: "sat", label: "Sat" }, { key: "sun", label: "Sun" },
+];
+const HOURS_DAY_FULL_LABEL = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+function formatTime12(hhmm) {
+  const [h, m] = (hhmm || "00:00").split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+function hoursDayRowHtml(key, label, day) {
+  const isOpen = !!(day && !day.closed);
+  const open = day?.open || "09:00";
+  const close = day?.close || "18:00";
+  return `<div class="hours-day-row" data-day="${key}">
+    <label class="hours-day-check"><input type="checkbox" class="hours-day-toggle" ${isOpen ? "checked" : ""} onchange="onHoursDayToggle(this)" /> ${label}</label>
+    <div class="hours-day-times" style="${isOpen ? "" : "display:none;"}">
+      <input type="time" class="hours-day-from" value="${esc(open)}" />
+      <span class="muted">to</span>
+      <input type="time" class="hours-day-to" value="${esc(close)}" />
+    </div>
+    <span class="hours-day-closed-label" style="${isOpen ? "display:none;" : ""}">Closed</span>
+  </div>`;
+}
+function onHoursDayToggle(checkbox) {
+  const row = checkbox.closest(".hours-day-row");
+  const isOpen = checkbox.checked;
+  row.querySelector(".hours-day-times").style.display = isOpen ? "" : "none";
+  row.querySelector(".hours-day-closed-label").style.display = isOpen ? "none" : "";
+}
+function copyMondayHoursToAll() {
+  const monRow = document.querySelector('.hours-day-row[data-day="mon"]');
+  if (!monRow) return;
+  const monOpen = monRow.querySelector(".hours-day-toggle").checked;
+  const monFrom = monRow.querySelector(".hours-day-from").value;
+  const monTo = monRow.querySelector(".hours-day-to").value;
+  document.querySelectorAll(".hours-day-row").forEach((row) => {
+    if (row.dataset.day === "mon") return;
+    row.querySelector(".hours-day-toggle").checked = monOpen;
+    row.querySelector(".hours-day-from").value = monFrom;
+    row.querySelector(".hours-day-to").value = monTo;
+    onHoursDayToggle(row.querySelector(".hours-day-toggle"));
+  });
+  showToast("Applied Monday's hours to every day.", "success");
+}
+function collectBusinessHoursFromForm() {
+  const hours = {};
+  document.querySelectorAll(".hours-day-row").forEach((row) => {
+    const key = row.dataset.day;
+    const isOpen = row.querySelector(".hours-day-toggle").checked;
+    hours[key] = isOpen
+      ? { closed: false, open: row.querySelector(".hours-day-from").value || "09:00", close: row.querySelector(".hours-day-to").value || "18:00" }
+      : { closed: true };
+  });
+  return hours;
+}
+// Groups consecutive days sharing identical hours into one line (e.g. "Mon–Fri
+// 8:00 AM–9:00 PM") for the storefront/order-detail text summary, instead of
+// listing all seven days out -- this is what keeps opening_hours readable.
+function summarizeBusinessHours(hours) {
+  if (!hours) return "";
+  const segs = HOURS_DAYS.map(({ key, label }) => {
+    const d = hours[key];
+    return { label, text: d && !d.closed ? `${formatTime12(d.open)}–${formatTime12(d.close)}` : "Closed" };
+  });
+  const groups = [];
+  segs.forEach((seg) => {
+    const last = groups[groups.length - 1];
+    if (last && last.text === seg.text) last.labels.push(seg.label);
+    else groups.push({ text: seg.text, labels: [seg.label] });
+  });
+  return groups.map((g) => `${g.labels.length > 1 ? `${g.labels[0]}–${g.labels[g.labels.length - 1]}` : g.labels[0]} ${g.text}`).join(", ");
+}
+function nowInLagos() {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Lagos", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  const map = {};
+  parts.forEach((p) => { map[p.type] = p.value; });
+  const weekdayMap = { Mon: "mon", Tue: "tue", Wed: "wed", Thu: "thu", Fri: "fri", Sat: "sat", Sun: "sun" };
+  return { dayKey: weekdayMap[map.weekday], hhmm: `${map.hour === "24" ? "00" : map.hour}:${map.minute}` };
+}
+// No hours configured at all = treated as always reachable (a vendor who
+// hasn't set this up yet shouldn't suddenly become unmessageable).
+function vendorHoursStatus(v) {
+  const hours = v?.business_hours;
+  const { dayKey, hhmm } = nowInLagos();
+  const todayLabel = HOURS_DAY_FULL_LABEL[dayKey];
+  if (!hours) return { configured: false, isOpen: true, todayLabel, todayText: null };
+  const today = hours[dayKey];
+  if (!today || today.closed || !today.open || !today.close) {
+    return { configured: true, isOpen: false, todayLabel, todayText: "Closed today" };
+  }
+  const isOpen = hhmm >= today.open && hhmm <= today.close;
+  return { configured: true, isOpen, todayLabel, todayText: `${formatTime12(today.open)}–${formatTime12(today.close)}` };
+}
+function canMessageVendorNow(v) {
+  if (v?.allow_after_hours_messages !== false) return true;
+  const status = vendorHoursStatus(v);
+  if (!status.configured) return true;
+  return status.isOpen;
+}
+
 // ---------- VENDOR: EDIT PROFILE ----------
 async function renderVendorEditProfile() {
   if (!session || profile?.role === "admin" || (profile?.role !== "vendor" && !vendor)) return '<div class="empty-state">Access denied.</div>';
@@ -4863,13 +4989,25 @@ async function renderVendorEditProfile() {
     <label>City</label><input id="veCity" value="${esc(v.city || "")}" />
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
     <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
-    <label>Opening hours</label><input id="veHours" placeholder="e.g. Mon–Sat, 9am–6pm" value="${esc(v.opening_hours || "")}" />
     <label>Delivery fee (₦): charged when a buyer chooses delivery instead of pickup. Leave as 0 for free delivery.</label>
     <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
     <label>About your business</label><textarea id="veBio" rows="3">${esc(v.bio || "")}</textarea>
     <div class="flex" style="margin-top:0.8rem;">
       <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
       <button class="btn btn-outline" onclick="navigate('vendorDashboard')">Cancel</button>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
+    <h2><i class="fa-solid fa-clock"></i> Working hours ${infoPopoverHtml("veHoursInfo", "Buyers see these on your storefront. Turn off a day you're closed, or set start/end times for the days you're open.")}</h2>
+    <div id="veHoursRows">${HOURS_DAYS.map((d) => hoursDayRowHtml(d.key, d.label, v.business_hours ? v.business_hours[d.key] : { closed: false, open: "09:00", close: "18:00" })).join("")}</div>
+    <button type="button" class="btn btn-sm btn-outline" style="margin-top:0.6rem;" onclick="copyMondayHoursToAll()"><i class="fa-solid fa-copy"></i> Use Monday's hours for every day</button>
+    <div class="switch-row">
+      <span class="switch-label-text">Let buyers message you outside these hours ${infoPopoverHtml("veAfterHoursInfo", "Off: the Message button shows your working hours instead of opening a chat while you're closed. On: buyers can message you any time.")}</span>
+      <label class="switch-toggle"><input type="checkbox" id="veAllowAfterHours" ${v.allow_after_hours_messages !== false ? "checked" : ""} /><span class="switch-toggle-track"></span></label>
+    </div>
+    <div class="flex" style="margin-top:1rem;">
+      <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
     </div>
   </div>
 
@@ -4986,19 +5124,24 @@ async function submitVendorEditProfile() {
     errorEl.classList.remove("hidden");
     return;
   }
+  const business_hours = collectBusinessHoursFromForm();
   const { error } = await sb.from("vendors").update({
     business_name,
     address: byId("veAddress").value.trim() || null,
     city: byId("veCity").value.trim() || null,
     phone,
     whatsapp_number: byId("veWhatsapp").value.trim() || null,
-    opening_hours: byId("veHours").value.trim() || null,
+    opening_hours: summarizeBusinessHours(business_hours) || null,
+    business_hours,
+    allow_after_hours_messages: byId("veAllowAfterHours").checked,
     delivery_fee: Math.max(0, Number(byId("veDeliveryFee").value) || 0),
     bio: byId("veBio").value.trim() || null,
   }).eq("id", vendor.id);
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   vendor.business_name = business_name;
   vendor.phone = phone;
+  vendor.business_hours = business_hours;
+  vendor.allow_after_hours_messages = byId("veAllowAfterHours").checked;
   showToast("Business profile saved.", "success");
   navigate("vendorEditProfile");
 }
@@ -5088,7 +5231,11 @@ async function renderVendorProducts() {
     sb.from("products").select("*, category:categories(name)").eq("vendor_id", v.id).order("created_at", { ascending: false }),
     sb.from("order_items").select("product_id, quantity, unit_price, order:orders!inner(status, vendor_id)").eq("order.vendor_id", v.id),
   ]);
-  const favCounts = await Promise.all((products || []).map((p) => sb.rpc("get_favorite_count", { p_product_id: p.id })));
+  const { data: favCountRows } = (products || []).length
+    ? await sb.rpc("get_favorite_counts", { p_product_ids: products.map((p) => p.id) })
+    : { data: [] };
+  const favCountByProduct = {};
+  (favCountRows || []).forEach((r) => { favCountByProduct[r.product_id] = r.count; });
   const revenueByProduct = {};
   const pendingProductIds = new Set();
   const PENDING_ORDER_STATUSES = new Set(["pending", "confirmed", "handed_over", "returned", "disputed"]);
@@ -5135,7 +5282,7 @@ async function renderVendorProducts() {
         <td>${p.sale_price != null ? naira(p.sale_price) + servicePriceSuffix(p) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
         <td>${p.quantity_available} / ${p.quantity_total}</td>
         <td>${p.view_count || 0}</td>
-        <td>${favCounts[i]?.data ?? 0}</td>
+        <td>${favCountByProduct[p.id] ?? 0}</td>
         <td>${naira(revenueByProduct[p.id] || 0)}</td>
         <td><span class="badge ${p.status === "active" ? "success" : p.status === "paused" ? "warning" : "danger"}">${esc(p.status)}</span></td>
       </tr>`;
@@ -5686,13 +5833,15 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   if (status !== "all") query = query.eq("status", status);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
-  const { data: allOrders } = await query.order("created_at", { ascending: false });
+  // Stats always reflect the vendor's full order history, not whatever
+  // status/type/payment/date filters the list below happens to be set to
+  // -- run both queries together instead of one after the other.
+  const [{ data: allOrders }, { data: statsOrders }] = await Promise.all([
+    query.order("created_at", { ascending: false }),
+    sb.from("orders").select("status, created_at").eq("vendor_id", vendor.id),
+  ]);
   let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
   if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
-
-  // Stats always reflect the vendor's full order history, not whatever
-  // status/type/payment/date filters the list above happens to be set to.
-  const { data: statsOrders } = await sb.from("orders").select("status, created_at").eq("vendor_id", vendor.id);
   window.__orderStatsOrders = statsOrders || [];
 
   // Three rows of tab pills used to wrap into an unreadable jumble on
@@ -7544,6 +7693,13 @@ async function sendAiDraftMessage(vendorId, btn) {
   if (!text) return;
   btn.disabled = true;
   try {
+    const { data: v } = await sb.from("vendors").select("business_name, business_hours, allow_after_hours_messages").eq("id", vendorId).maybeSingle();
+    if (v && !canMessageVendorNow(v)) {
+      const status = vendorHoursStatus(v);
+      showToast(`${v.business_name || "This vendor"} is outside working hours right now${status.todayText ? ` (${status.todayLabel}: ${status.todayText})` : ""}.`, "info");
+      btn.disabled = false;
+      return;
+    }
     const { data: conversationId, error } = await sb.rpc("get_or_create_conversation", { p_vendor_id: vendorId });
     if (error) throw new Error(error.message);
     const { error: msgErr } = await sb.from("messages").insert({ conversation_id: conversationId, sender_id: session.user.id, body: text });
