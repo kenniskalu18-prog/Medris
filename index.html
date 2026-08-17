@@ -355,6 +355,8 @@
   }
   .ai-chat-panel.hidden { display: none; }
   .ai-chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; margin: 0.5rem 0; }
+  .shared-ai-chat { display: flex; flex-direction: column; gap: 0.6rem; max-width: 640px; margin: 0 auto; }
+  .shared-ai-chat .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.9rem; line-height: 1.45; white-space: pre-wrap; }
   #aiChatHistorySearch, .ai-chat-history-panel { display: none; }
   .ai-chat-panel.history-mode #aiChatHistorySearch { display: block; margin: 0 0 0.5rem; }
   .ai-chat-panel.history-mode .ai-chat-history-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -493,6 +495,8 @@
   #notifPanel.selecting .notif-select-check { display: inline-flex; }
   .notif-select-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.4rem 0.2rem 0.8rem; }
   .notif-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.2rem; }
+  .notif-mark-all-btn { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.2rem; background: none; border: none; color: var(--primary); font-size: 0.78rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .notif-mark-all-btn:hover { text-decoration: underline; }
   .notif-tab { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 0.6rem; padding: 0.4rem 0.3rem; font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
   .notif-tab.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
   .range-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
@@ -639,12 +643,17 @@
   .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
   .btn-whatsapp:hover { filter: brightness(1.08); }
-  .conv-list-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .conv-swipe-wrap { position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
+  .conv-swipe-wrap:last-child { border-bottom: none; }
+  .conv-list-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem; cursor: pointer; background: var(--card); position: relative; z-index: 1; touch-action: pan-y; user-select: none; }
   .conv-list-item:hover { background: var(--card); }
   .conv-list-item .avatar-circle { flex-shrink: 0; }
   .conv-list-item .conv-meta { flex: 1; min-width: 0; }
   .conv-list-item .conv-preview { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv-unread-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+  .conv-unread-badge { min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem; border-radius: 999px; background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .conv-swipe-action { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.7rem; font-weight: 600; color: #fff; background: var(--primary); cursor: pointer; z-index: 0; }
+  .conv-date-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin: 0.7rem auto; padding: 0.25rem 0.75rem; background: var(--card); border-radius: 999px; width: fit-content; }
   .chat-thread { display: flex; flex-direction: column; height: 65vh; max-height: 600px; border: 1px solid var(--border); border-radius: 0.9rem; overflow: hidden; background: var(--card); }
   .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
@@ -1124,6 +1133,7 @@
   <div class="drawer-header">
     <h4><img id="aiChatHeaderLogo" class="ai-chat-header-logo" alt="" /> Levi</h4>
     <div class="flex" style="gap:0.3rem;">
+      <button class="icon-btn" onclick="shareCurrentAiChat()" title="Share this chat"><i class="fa-solid fa-share-nodes"></i></button>
       <button class="icon-btn" onclick="startNewAiChat()" title="New chat"><i class="fa-solid fa-plus"></i></button>
       <button class="icon-btn" id="aiChatHistoryToggleBtn" onclick="toggleAiChatHistory()" title="Recent chats"><i class="fa-solid fa-clock-rotate-left"></i></button>
       <button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button>
@@ -2319,6 +2329,10 @@ async function renderNotifPanel() {
       <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe left to restore, right to delete forever." : `Swipe left to ${notifViewMode === "archived" ? "restore" : "archive"}, right to delete.`} Hold an item to select several.</p>`;
 
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
+  const hasUnread = (items || []).some((n) => !n.read);
+  const markAllBar = !notifSelectMode && notifViewMode !== "trash" && hasUnread
+    ? `<button class="notif-mark-all-btn" onclick="markAllNotifsRead()"><i class="fa-solid fa-check-double"></i> Mark all as read</button>`
+    : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
         <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></div>
@@ -2331,7 +2345,7 @@ async function renderNotifPanel() {
       </div>`).join("")
     : `<p class="muted" style="padding:0.4rem;">${emptyMsg}</p>`;
 
-  panel.innerHTML = topBar + list;
+  panel.innerHTML = topBar + markAllBar + list;
   panel.classList.toggle("selecting", notifSelectMode);
   setupNotifItemGestures(panel);
 }
@@ -2520,6 +2534,12 @@ function showUndoToast(message, undoFn) {
   setTimeout(dismiss, 5000);
 }
 
+async function markAllNotifsRead() {
+  if (!session) return;
+  await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
+  refreshNotifications();
+  showToast("All marked as read.", "success");
+}
 async function markSingleNotifRead(id) {
   if (!session) return;
   const el = document.querySelector(`.notif-item[data-id="${id}"]`);
@@ -2648,8 +2668,7 @@ async function uploadAvatar(event) {
 // ---------- MY DETAILS (any logged-in buyer/vendor's own contact info) ----------
 function renderEditProfile() {
   if (!session || !profile) return '<div class="empty-state">Please log in.</div>';
-  return `<h2><i class="fa-solid fa-id-card"></i> My details</h2>
-  <p class="muted">Keep this up to date. It's what fills in automatically at checkout, so a typo here won't follow you into every future order.</p>
+  return `<h2><i class="fa-solid fa-id-card"></i> My details ${infoPopoverHtml("editProfileInfo", "Keep this up to date. It's what fills in automatically at checkout, so a typo here won't follow you into every future order.")}</h2>
   <div class="card" style="max-width:480px;">
     <div id="editProfileError" class="error-text hidden"></div>
     <label>Full name</label>
@@ -2998,7 +3017,11 @@ function updateHeaderNavActive() {
 }
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
-  app.innerHTML = brandSpinnerHtml();
+  // Most navigations resolve in well under this, so we hold the outgoing
+  // page on screen and only swap to the spinner if the new one is
+  // genuinely still loading -- otherwise the transition is instant with
+  // no flash, and a slow one still gets a clear loading state.
+  let spinnerTimer = setTimeout(() => { app.innerHTML = brandSpinnerHtml(); }, 180);
   if (view !== "messages" && activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
   updateAuthUI();
@@ -3012,42 +3035,46 @@ async function navigate(view, params = {}, pushHistory = true) {
   // reload within the same tab/session, so init() below can resume here
   // instead.
   try { sessionStorage.setItem("medris_last_view", JSON.stringify({ view, params })); } catch (e) {}
+  let html;
   try {
     switch (view) {
-      case "home": app.innerHTML = await renderHome(); break;
-      case "productDetail": app.innerHTML = await renderProductDetail(params.productId); break;
-      case "storefront": app.innerHTML = await renderStorefront(params.vendorId); break;
-      case "vendors": app.innerHTML = renderVendorsDirectory(); break;
-      case "vendorApply": app.innerHTML = await renderVendorApply(); break;
-      case "vendorDashboard": app.innerHTML = await renderVendorDashboard(); break;
-      case "vendorEditProfile": app.innerHTML = await renderVendorEditProfile(); break;
-      case "editProfile": app.innerHTML = renderEditProfile(); break;
-      case "vendorProducts": app.innerHTML = await renderVendorProducts(); break;
-      case "vendorPackages": app.innerHTML = await renderVendorPackages(); break;
-      case "vendorEarnings": app.innerHTML = await renderVendorEarnings(); break;
-      case "vendorOrders": app.innerHTML = await renderVendorOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
-      case "buyerOrders": app.innerHTML = await renderBuyerOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
-      case "orderDetail": app.innerHTML = await renderOrderDetail(params.orderId); break;
-      case "adminPanel": app.innerHTML = await renderAdminPanel(params.status); break;
-      case "adminDisputes": app.innerHTML = await renderAdminDisputes(); break;
-      case "adminPeople": app.innerHTML = await renderAdminPeople(); break;
-      case "adminFeedback": app.innerHTML = await renderAdminFeedback(); break;
-      case "vendorSuggestionsInbox": app.innerHTML = await renderVendorSuggestionsInbox(); break;
-      case "adminUsers": app.innerHTML = await renderAdminUsers(); break;
-      case "adminFinance": app.innerHTML = await renderAdminFinance(); break;
-      case "adminLog": app.innerHTML = await renderAdminLog(); break;
-      case "wishlist": app.innerHTML = await renderWishlist(); break;
-      case "messages": app.innerHTML = await renderMessages(params.conversationId); break;
-      case "requestEquipment": app.innerHTML = await renderRequestEquipment(); break;
-      case "vendorRequests": app.innerHTML = await renderVendorRequests(); break;
-      case "terms": app.innerHTML = renderTerms(); break;
-      case "privacy": app.innerHTML = renderPrivacy(); break;
-      case "refundPolicy": app.innerHTML = renderRefundPolicy(); break;
-      default: app.innerHTML = await renderHome();
+      case "home": html = await renderHome(); break;
+      case "productDetail": html = await renderProductDetail(params.productId); break;
+      case "storefront": html = await renderStorefront(params.vendorId); break;
+      case "vendors": html = renderVendorsDirectory(); break;
+      case "vendorApply": html = await renderVendorApply(); break;
+      case "vendorDashboard": html = await renderVendorDashboard(); break;
+      case "vendorEditProfile": html = await renderVendorEditProfile(); break;
+      case "editProfile": html = renderEditProfile(); break;
+      case "vendorProducts": html = await renderVendorProducts(); break;
+      case "vendorPackages": html = await renderVendorPackages(); break;
+      case "vendorEarnings": html = await renderVendorEarnings(); break;
+      case "vendorOrders": html = await renderVendorOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
+      case "buyerOrders": html = await renderBuyerOrders(params.status, params.type, params.payment, params.dateFrom, params.dateTo); break;
+      case "orderDetail": html = await renderOrderDetail(params.orderId); break;
+      case "adminPanel": html = await renderAdminPanel(params.status); break;
+      case "adminDisputes": html = await renderAdminDisputes(); break;
+      case "adminPeople": html = await renderAdminPeople(); break;
+      case "adminFeedback": html = await renderAdminFeedback(); break;
+      case "vendorSuggestionsInbox": html = await renderVendorSuggestionsInbox(); break;
+      case "adminUsers": html = await renderAdminUsers(); break;
+      case "adminFinance": html = await renderAdminFinance(); break;
+      case "adminLog": html = await renderAdminLog(); break;
+      case "wishlist": html = await renderWishlist(); break;
+      case "messages": html = await renderMessages(params.conversationId); break;
+      case "requestEquipment": html = await renderRequestEquipment(); break;
+      case "vendorRequests": html = await renderVendorRequests(); break;
+      case "terms": html = renderTerms(); break;
+      case "privacy": html = renderPrivacy(); break;
+      case "refundPolicy": html = renderRefundPolicy(); break;
+      case "sharedAiChat": html = await renderSharedAiChat(params.token); break;
+      default: html = await renderHome();
     }
   } catch (err) {
-    app.innerHTML = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
+    html = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
   }
+  clearTimeout(spinnerTimer);
+  app.innerHTML = html;
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
   window.scrollTo(0, 0);
@@ -3438,15 +3465,81 @@ let msgListFilter = "all"; // 'all' | 'unread'
 
 function convRowHtml(c) {
   const name = c.other_name || "User";
-  return `<div class="conv-list-item" onclick="navigate('messages',{conversationId:'${c.conversation_id}'})">
-    ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
-    <div class="conv-meta">
-      <strong>${esc(name)}</strong>
-      <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
+  const isUnread = c.unread_count > 0;
+  return `<div class="conv-swipe-wrap">
+    <div class="conv-swipe-action" onclick="handleSwipeMarkUnread(event,'${c.conversation_id}')"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Read" : "Unread"}</span></div>
+    <div class="conv-list-item" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+      ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
+      <div class="conv-meta">
+        <strong>${esc(name)}</strong>
+        <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
+      </div>
+      ${isUnread ? `<span class="conv-unread-badge" title="${c.unread_count} unread">${c.unread_count > 99 ? "99+" : c.unread_count}</span>` : ""}
+      <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
     </div>
-    ${c.unread_count > 0 ? `<span class="conv-unread-dot" title="${c.unread_count} unread"></span>` : ""}
-    <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
   </div>`;
+}
+
+// ---------- SWIPE-TO-MARK-UNREAD (conversation list rows) ----------
+let convSwipeState = null;
+let convSwipeOpenItem = null;
+
+function setupConvSwipe(root) {
+  (root || document).querySelectorAll(".conv-list-item").forEach((item) => {
+    item.addEventListener("pointerdown", onConvSwipeStart);
+  });
+}
+function onConvSwipeStart(e) {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  const item = e.currentTarget;
+  convSwipeState = { item, startX: e.clientX, startY: e.clientY, dx: 0, dragging: false, pointerId: e.pointerId };
+  item.addEventListener("pointermove", onConvSwipeMove);
+  item.addEventListener("pointerup", onConvSwipeEnd);
+  item.addEventListener("pointercancel", onConvSwipeEnd);
+}
+function onConvSwipeMove(e) {
+  if (!convSwipeState || convSwipeState.item !== e.currentTarget) return;
+  const dx = e.clientX - convSwipeState.startX;
+  const dy = e.clientY - convSwipeState.startY;
+  if (!convSwipeState.dragging) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (Math.abs(dy) > Math.abs(dx)) { convSwipeState = null; return; }
+    convSwipeState.dragging = true;
+    convSwipeState.item.setPointerCapture(convSwipeState.pointerId);
+    if (convSwipeOpenItem && convSwipeOpenItem !== convSwipeState.item) closeConvSwipe(convSwipeOpenItem);
+  }
+  convSwipeState.dx = Math.min(0, Math.max(dx, -84));
+  convSwipeState.item.style.transform = `translateX(${convSwipeState.dx}px)`;
+}
+function onConvSwipeEnd(e) {
+  if (!convSwipeState) return;
+  const { item, dx, dragging } = convSwipeState;
+  item.removeEventListener("pointermove", onConvSwipeMove);
+  item.removeEventListener("pointerup", onConvSwipeEnd);
+  item.removeEventListener("pointercancel", onConvSwipeEnd);
+  if (dragging) {
+    item.dataset.wasSwiped = "1";
+    if (dx < -40) { item.style.transform = "translateX(-84px)"; convSwipeOpenItem = item; }
+    else { item.style.transform = "translateX(0)"; if (convSwipeOpenItem === item) convSwipeOpenItem = null; }
+  }
+  convSwipeState = null;
+}
+function closeConvSwipe(item) {
+  if (item) item.style.transform = "translateX(0)";
+  if (convSwipeOpenItem === item) convSwipeOpenItem = null;
+}
+function handleConvRowClick(event, conversationId) {
+  const item = event.currentTarget;
+  if (item.dataset.wasSwiped === "1") { item.dataset.wasSwiped = ""; return; }
+  if (convSwipeOpenItem) { closeConvSwipe(convSwipeOpenItem); return; }
+  navigate("messages", { conversationId });
+}
+async function handleSwipeMarkUnread(event, conversationId) {
+  event.stopPropagation();
+  const { error } = await sb.rpc("toggle_conversation_unread", { p_conversation_id: conversationId });
+  if (error) { showToast(error.message, "error"); return; }
+  refreshNotifications();
+  navigate("messages", {}, false);
 }
 
 function setMsgListFilter(f) {
@@ -3462,6 +3555,8 @@ function filterMsgList() {
   let shown = msgListFilter === "unread" ? convs.filter((c) => c.unread_count > 0) : convs;
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
   wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : msgListFilter === "unread" ? "Nothing unread." : "No conversations yet."}</div>`;
+  convSwipeOpenItem = null;
+  setupConvSwipe(wrap);
 }
 
 async function togglePinConversation(conversationId) {
@@ -3530,9 +3625,7 @@ async function renderMessages(conversationId) {
 
   const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
 
-  sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() })
-    .eq("conversation_id", conversationId).is("read_at", null).neq("sender_id", session.user.id)
-    .then(() => refreshNotifications());
+  sb.rpc("mark_conversation_opened", { p_conversation_id: conversationId }).then(() => refreshNotifications());
 
   let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('messages')"><i class="fa-solid fa-arrow-left"></i> All conversations</button>`;
   html += `<div class="flex" style="margin-bottom:0.6rem;">
@@ -3540,7 +3633,7 @@ async function renderMessages(conversationId) {
     <strong>${esc(otherName)}</strong>
   </div>`;
   html += `<div class="chat-thread">
-    <div class="chat-messages" id="chatMessages">${(messages || []).map(chatBubbleHtml).join("")}</div>
+    <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}</div>
     <div class="chat-input-row">
       <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelected(event,'${conversationId}')" />
       <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
@@ -3603,6 +3696,32 @@ function reactionsRowHtml(m) {
   Object.values(reactions).forEach((emoji) => { counts[emoji] = (counts[emoji] || 0) + 1; });
   return Object.entries(counts).map(([emoji, n]) => `<span class="msg-reaction-pill">${emoji}${n > 1 ? ` ${n}` : ""}</span>`).join("");
 }
+// ---------- WHATSAPP-STYLE CHAT DATE SEPARATORS (buyer-vendor chat + Levi) ----------
+function chatDateLabel(date) {
+  const d = new Date(date);
+  const now = new Date();
+  const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: sameYear ? undefined : "numeric" });
+}
+function chatDateKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function chatMessagesWithDatesHtml(messages, bubbleFn) {
+  let html = "";
+  let lastKey = null;
+  (messages || []).forEach((m) => {
+    const key = chatDateKey(m.created_at);
+    if (key !== lastKey) { html += `<div class="conv-date-sep">${chatDateLabel(m.created_at)}</div>`; lastKey = key; }
+    html += bubbleFn(m);
+  });
+  return html;
+}
+
 function chatBubbleHtml(m) {
   const mine = m.sender_id === session.user.id;
   const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -4930,7 +5049,10 @@ async function submitVendorEditProfile() {
     bio: byId("veBio").value.trim() || null,
   }).eq("id", vendor.id);
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
-  navigate("vendorDashboard");
+  vendor.business_name = business_name;
+  vendor.phone = phone;
+  showToast("Business profile saved.", "success");
+  navigate("vendorEditProfile");
 }
 
 async function uploadVendorLogo(event) {
@@ -5846,8 +5968,7 @@ async function renderOrderDetail(orderId) {
   }
 
   if (canRecordPayment) {
-    html += `<div class="card"><h3><i class="fa-solid fa-hand-holding-dollar"></i> Paid outside Paystack?</h3>
-      <p class="muted" style="font-size:0.85rem;">Record cash or bank transfer payments here. It marks this order paid and adds your commission to what you owe Levromart.</p>
+    html += `<div class="card"><h3><i class="fa-solid fa-hand-holding-dollar"></i> Paid outside Paystack? ${infoPopoverHtml("recordPaymentInfo", "Record cash or bank transfer payments here. It marks this order paid and adds your commission to what you owe Levromart.")}</h3>
       <div id="recordPaymentError" class="error-text hidden"></div>
       <label>Payment for</label>
       <select id="rpType"><option value="${feeType}">${feeType === "sale_price" ? "Sale price" : "Rental fee"}</option><option value="deposit">Deposit</option></select>
@@ -7174,6 +7295,7 @@ async function submitNewPassword() {
 let aiChatMessages = [];
 let currentAiConversationId = null;
 let aiChatResumeAttempted = false;
+let aiChatLastDateKey = null;
 function toggleAiChat() {
   if (!session) { showLogin(); return; }
   const panel = byId("aiChatPanel");
@@ -7201,16 +7323,17 @@ function showAiChatGreeting() {
 async function resumeLastAiConversation() {
   const savedId = localStorage.getItem("medris-ai-last-conversation");
   if (!savedId) { showAiChatGreeting(); return; }
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", savedId).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, created_at").eq("conversation_id", savedId).order("created_at", { ascending: true });
   if (error || !msgs || msgs.length === 0) { localStorage.removeItem("medris-ai-last-conversation"); showAiChatGreeting(); return; }
   currentAiConversationId = savedId;
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.created_at));
 }
 function startNewAiChat() {
   currentAiConversationId = null;
   aiConversationCreatePromise = null;
   localStorage.removeItem("medris-ai-last-conversation");
   aiChatMessages = [];
+  aiChatLastDateKey = null;
   byId("aiChatMessages").innerHTML = "";
   exitAiChatHistoryMode();
   showAiChatGreeting();
@@ -7283,14 +7406,15 @@ function searchAiChatHistory() {
   }, 250);
 }
 async function openAiConversation(id) {
-  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction").eq("conversation_id", id).order("created_at", { ascending: true });
+  const { data: msgs, error } = await sb.from("ai_messages").select("id, role, content, reaction, created_at").eq("conversation_id", id).order("created_at", { ascending: true });
   if (error || !msgs) { showToast("Couldn't open that chat.", "error"); return; }
   currentAiConversationId = id;
   aiConversationCreatePromise = null;
   localStorage.setItem("medris-ai-last-conversation", id);
   aiChatMessages = [];
+  aiChatLastDateKey = null;
   byId("aiChatMessages").innerHTML = "";
-  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction));
+  msgs.forEach((m) => appendAiChatMessage(m.role, m.content, false, true, m.id, m.reaction, m.created_at));
   exitAiChatHistoryMode();
 }
 async function deleteAiConversation(id, evt) {
@@ -7303,10 +7427,37 @@ async function deleteAiConversation(id, evt) {
     aiConversationCreatePromise = null;
     localStorage.removeItem("medris-ai-last-conversation");
     aiChatMessages = [];
+    aiChatLastDateKey = null;
     byId("aiChatMessages").innerHTML = "";
     showAiChatGreeting();
   }
   loadAiChatHistoryList();
+}
+async function renderSharedAiChat(token) {
+  const { data: rows, error } = await sb.rpc("get_shared_ai_conversation", { p_token: token });
+  if (error || !rows || rows.length === 0) {
+    return `<div class="empty-state"><i class="fa-solid fa-link-slash"></i> This chat link is no longer available.</div>
+      <div style="text-align:center;margin-top:1rem;"><button class="btn btn-sm" onclick="navigate('home')">Go to Levromart</button></div>`;
+  }
+  let html = `<div class="flex" style="align-items:center;gap:0.6rem;margin-bottom:0.3rem;"><img src="${MEDRIS_LOGO}" alt="" style="width:2.2rem;height:2.2rem;border-radius:50%;" /><div><strong>${esc(rows[0].title || "Shared chat")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">Shared conversation with Levi &middot; read-only</p></div></div>`;
+  html += `<div class="card shared-ai-chat">${chatMessagesWithDatesHtml(rows, (m) => {
+    const clean = m.role === "assistant" ? parseAiDraftMsgTag(parseAiNavTag(m.content).text).text : m.content;
+    return `<div class="ai-chat-msg ${m.role === "user" ? "user" : "assistant"}" style="align-self:${m.role === "user" ? "flex-end" : "flex-start"};">${esc(clean)}</div>`;
+  })}</div>`;
+  html += `<div style="text-align:center;margin-top:1rem;"><button class="btn btn-sm" onclick="navigate('home')"><i class="fa-solid fa-arrow-right"></i> Try Levromart</button></div>`;
+  return html;
+}
+async function shareCurrentAiChat() {
+  if (!currentAiConversationId) { showToast("Send a message first, then you can share this chat.", "info"); return; }
+  const { data: token, error } = await sb.rpc("set_ai_conversation_shared", { p_conversation_id: currentAiConversationId, p_shared: true });
+  if (error) { showToast(error.message, "error"); return; }
+  const link = `${location.origin}${location.pathname}?share=${token}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    showToast("Link copied. Anyone with it can view this chat (read-only).", "success");
+  } catch (e) {
+    await showConfirmDialog(link, { title: "Share link", okLabel: "Close" });
+  }
 }
 async function shareLocationFromChat() {
   const row = byId("aiChatLocationRow");
@@ -7431,7 +7582,7 @@ function animateAiFabPointing() {
     }, 650);
   });
 }
-function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction) {
+function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existingReaction, createdAt) {
   let displayText = content;
   let nav = null;
   let draft = null;
@@ -7447,6 +7598,17 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
   }
   if (role !== "typing") aiChatMessages.push({ role, content: displayText });
   const wrap = byId("aiChatMessages");
+  if (role !== "typing") {
+    const ts = createdAt || Date.now();
+    const key = chatDateKey(ts);
+    if (key !== aiChatLastDateKey) {
+      const sep = document.createElement("div");
+      sep.className = "conv-date-sep";
+      sep.textContent = chatDateLabel(ts);
+      wrap.appendChild(sep);
+      aiChatLastDateKey = key;
+    }
+  }
   const el = document.createElement("div");
   el.className = `ai-chat-msg ${role === "typing" ? "assistant" : role}`;
   if (msgId) el.dataset.msgId = msgId;
@@ -7816,6 +7978,13 @@ window.addEventListener("popstate", (e) => {
   await refreshAuthStateOnce();
 
   const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get("share")) {
+    const token = urlParams.get("share");
+    history.replaceState({ view: "sharedAiChat", params: { token } }, "", location.pathname);
+    await navigate("sharedAiChat", { token }, false);
+    return;
+  }
+
   if (urlParams.get("paid") === "1" && urlParams.get("reference")) {
     const reference = urlParams.get("reference");
     const orderId = urlParams.get("orderId");
