@@ -57,7 +57,9 @@ const DRAFT_MSG_PROMPT =
 // do, unlike the "ask first / draft it" pattern above for messages and
 // orders.
 const ADD_CART_PROMPT =
-  "If a buyer asks you to add one or more products to their cart (e.g. \"add the wheelchair and the ECG machine to my cart\", or lists several items they want to buy), you can add them directly — you don't need to ask them to do it themselves. End your reply with one self-closing tag per product, using a real product id from LIVE MARKETPLACE DATA or YOUR ACCOUNT above (never invent one): [[ADDCART productId=<id> quantity=<n>]] — quantity defaults to 1 if omitted, and you can include several of these tags in one reply for several products. Only add a product you have a real id for; if you're not sure which exact listing they mean, ask which one first instead of guessing. This only works for items sold outright (buy/sale listings, not services) — rentals need dates picked on the product page, so if someone asks to cart a rental, tell them to open its page instead. Never combine an ADDCART tag with a NAV or DRAFTMSG tag in the same reply. Say plainly, in your normal reply text before the tag(s), what you're adding — never go silent about it.";
+  "If a buyer asks you to add one or more products to their cart (e.g. \"add the wheelchair and the ECG machine to my cart\", or lists several items they want to buy), you can add them directly — you don't need to ask them to do it themselves. End your reply with one self-closing tag per product, using a real product id from LIVE MARKETPLACE DATA above (never invent one): [[ADDCART productId=<id> quantity=<n>]] — quantity defaults to 1 if omitted, and you can include several of these tags in one reply for several products. Only add a product you have a real id for; if you're not sure which exact listing they mean, ask which one first instead of guessing. This only works for items sold outright (buy/sale listings, not services) — rentals need dates picked on the product page, so if someone asks to cart a rental, tell them to open its page instead.\n" +
+  "If they ask you to remove or take something out of their cart, use their \"Current cart\" list in YOUR ACCOUNT above (never a product id from anywhere else) and end your reply with: [[REMOVECART productId=<id>]] — again, one tag per item, several allowed in one reply. If their cart is empty or you can't tell which cart item they mean, say so instead of guessing.\n" +
+  "Never combine an ADDCART or REMOVECART tag with a NAV or DRAFTMSG tag in the same reply, and don't mix ADDCART with REMOVECART in the same reply either. As soon as you use either tag, the person is taken straight to their cart to see the result — so say plainly, in your normal reply text before the tag(s), what you're adding or removing, but don't tell them to go check their cart themselves, since that happens automatically.";
 
 const SYSTEM_PROMPT =
   "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. If a \"YOUR ACCOUNT\" block is present below, you have this person's own real order history and message threads with vendors — use it to answer things like \"how many orders do I have\", \"what's the status of my last order\", or \"do I have unread messages\" directly and specifically, never with a vague \"check My Orders\" deflection. Never reveal this data to anyone chatting about someone else's account, and never invent an order or message that isn't in that block. You still cannot place or cancel an order through chat. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. Each product entry may include its category in [brackets] and a short quote from its actual listing description; a listing can be a genuine match even when the product's own name doesn't contain the word someone searched for (a listing named 'Red Ankara' can still be the right answer to 'shoe' if its category or description says so). Use category and description, not just the name, to judge relevance, and name the specific matching item even if its name looks unrelated at a glance. If several close matches come from the same vendor, it's fine to point at that vendor's storefront instead of picking just one. If nothing in the snapshot matches what someone's asking for, say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nWhen an entry includes a distance (e.g. \"2.3 km away\"), that means you know the buyer's real location and how far that vendor actually is — entries are already sorted nearest-first when this is available, so for questions like \"where can I get X\" or \"closest place for Y\", lead with the nearest matching vendor and mention the distance. If no entry has a distance, you don't know the buyer's location; don't guess or make one up, just answer without it (they can enable it from the Vendors page's map view or 'Show distances' button).\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
@@ -154,7 +156,7 @@ async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage, 
 // phone number and payment details are never included here, even though
 // it's the person's own data, to keep what's sent to Gemini minimal.
 async function buildBuyerContext(SUPABASE_URL, svcServiceHeaders, userId) {
-  const [ordersRes, convRes] = await Promise.all([
+  const [ordersRes, convRes, cartRes] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/orders?buyer_id=eq.${userId}&select=status,order_type,total_amount,created_at,vendor:vendors(business_name),items:order_items(quantity,product:products(name))&order=created_at.desc&limit=30`,
       { headers: svcServiceHeaders }
@@ -163,9 +165,17 @@ async function buildBuyerContext(SUPABASE_URL, svcServiceHeaders, userId) {
       `${SUPABASE_URL}/rest/v1/conversations?buyer_id=eq.${userId}&select=id,vendor:vendors(id,business_name)`,
       { headers: svcServiceHeaders }
     ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/cart_items?buyer_id=eq.${userId}&select=quantity,product:products(id,name)`,
+      { headers: svcServiceHeaders }
+    ),
   ]);
   const orders = ordersRes.ok ? await ordersRes.json() : [];
   const conversations = convRes.ok ? await convRes.json() : [];
+  const cartItems = cartRes.ok ? await cartRes.json() : [];
+  const cartLines = (cartItems || [])
+    .filter((c) => c.product)
+    .map((c) => `- ${c.product.name} x${c.quantity} (product id: ${c.product.id})`);
 
   const statusCounts = {};
   (orders || []).forEach((o) => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
@@ -194,7 +204,7 @@ async function buildBuyerContext(SUPABASE_URL, svcServiceHeaders, userId) {
     }).filter(Boolean);
   }
 
-  return `\n\nYOUR ACCOUNT (private — this person's own orders and messages, not visible to anyone else, and never share it with anyone else who chats with you):\n- Orders: ${(orders || []).length} total (${statusSummary})\n${orderLines.join("\n") || "(no orders yet)"}\n- Message threads with vendors:\n${messageLines.join("\n") || "(no conversations yet)"}`;
+  return `\n\nYOUR ACCOUNT (private — this person's own orders and messages, not visible to anyone else, and never share it with anyone else who chats with you):\n- Orders: ${(orders || []).length} total (${statusSummary})\n${orderLines.join("\n") || "(no orders yet)"}\n- Message threads with vendors:\n${messageLines.join("\n") || "(no conversations yet)"}\n- Current cart:\n${cartLines.join("\n") || "(empty)"}`;
 }
 
 // Only runs (and only reveals anything) when the person chatting is
