@@ -440,6 +440,7 @@
   #orderStatsAccordion.open .accordion-body { max-height: 520px; }
   #myRequestsAccordion.open .accordion-body { max-height: 3000px; }
   #veHoursAccordion.open .accordion-body { max-height: 640px; }
+  #appealsAccordion.open .accordion-body { max-height: 2000px; overflow-y: auto; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -502,8 +503,8 @@
   .notif-mark-all-btn:hover { text-decoration: underline; }
   .notif-tab { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 0.6rem; padding: 0.4rem 0.3rem; font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
   .notif-tab.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); color: var(--primary); font-weight: 600; }
-  .range-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
-  .range-tab { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+  .range-tabs { display: flex; gap: 0.5rem; flex-wrap: nowrap; overflow-x: auto; margin: 0.6rem 0; padding-bottom: 0.2rem; }
+  .range-tab { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: inherit; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; flex-shrink: 0; white-space: nowrap; }
   .range-tab.active { background: var(--primary-grad); border-color: transparent; color: #fff; font-weight: 600; }
   .revenue-chart-wrap { max-width: 700px; }
   .modern-chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.1rem 1rem 0.8rem; }
@@ -682,6 +683,10 @@
   .reaction-picker { position: absolute; bottom: calc(100% + 0.3rem); z-index: 20; display: flex; gap: 0.3rem; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.3rem 0.4rem; box-shadow: var(--shadow-float); }
   .chat-bubble-wrap.mine .reaction-picker { right: 0; }
   .chat-bubble-wrap.theirs .reaction-picker { left: 0; }
+  .msg-action-menu { position: absolute; bottom: calc(100% + 0.3rem); right: 0; z-index: 21; display: flex; flex-direction: column; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.8rem; padding: 0.3rem; box-shadow: var(--shadow-float); min-width: 130px; }
+  .msg-action-menu button { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; color: var(--text); font-size: 0.85rem; font-family: inherit; padding: 0.5rem 0.6rem; border-radius: 0.5rem; cursor: pointer; text-align: left; width: 100%; }
+  .msg-action-menu button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+  .chat-bubble.deleted { opacity: 0.7; }
   .reaction-picker button { border: none; background: none; padding: 0.1rem; font-size: 1.05rem; cursor: pointer; line-height: 1; transition: transform 0.1s ease; }
   .reaction-picker button:hover { transform: scale(1.25); }
   .ai-msg-reactions-row:empty { display: none; }
@@ -3474,7 +3479,7 @@ async function callVendorGated(event, phone, vendorId) {
   }
   window.location.href = telLink(phone);
 }
-async function startConversationWithVendor(vendorId) {
+async function startConversationWithVendor(vendorId, draftText) {
   if (!session) { showLogin(); return; }
   const { data: v } = await sb.from("vendors").select("business_name, business_hours, allow_after_hours_messages").eq("id", vendorId).maybeSingle();
   if (v && !canMessageVendorNow(v)) {
@@ -3484,7 +3489,11 @@ async function startConversationWithVendor(vendorId) {
   }
   const { data: conversationId, error } = await sb.rpc("get_or_create_conversation", { p_vendor_id: vendorId });
   if (error) { showToast(error.message, "error"); return; }
-  navigate("messages", { conversationId });
+  await navigate("messages", { conversationId });
+  if (draftText) {
+    const input = byId("chatInput");
+    if (input) { input.value = draftText; autoGrowChatInput(input); input.focus(); }
+  }
 }
 
 // ---------- SUGGESTION BOX ----------
@@ -3722,9 +3731,9 @@ async function renderMessages(conversationId) {
       <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   </div>
-  <p class="muted" style="font-size:0.78rem;margin-top:0.5rem;"><i class="fa-solid fa-shield-halved"></i> Messages here can't be edited or deleted once sent.</p>`;
+  <p class="muted" style="font-size:0.78rem;margin-top:0.5rem;"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>`;
 
-  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); }, 0);
+  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageLongPress(byId("chatMessages")); }, 0);
   subscribeToConversation(conversationId);
   return html;
 }
@@ -3805,10 +3814,16 @@ function chatMessagesWithDatesHtml(messages, bubbleFn) {
 function chatBubbleHtml(m) {
   const mine = m.sender_id === session.user.id;
   const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (m.deleted_at) {
+    return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
+      <div class="chat-bubble ${mine ? "mine" : "theirs"} deleted" data-msg-id="${m.id}"><span class="chat-bubble-text muted" style="font-style:italic;"><i class="fa-solid fa-ban"></i> This message was deleted</span><span class="chat-time"><span class="chat-time-text">${time}</span></span></div>
+    </div>`;
+  }
   const speakBtn = "speechSynthesis" in window ? `<button class="msg-speak" title="Read aloud" onclick="speakMessageBubble(this)"><i class="fa-solid fa-volume-high"></i></button>` : "";
   const reactBtn = `<button class="msg-react" title="React" onclick="toggleReactionPicker(event,'${m.id}')"><i class="fa-regular fa-face-smile"></i></button>`;
+  const editedTag = m.edited_at ? `<span class="muted" style="font-size:0.7rem;">(edited)</span>` : "";
   return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
-    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
+    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${editedTag}${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
     <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
   </div>`;
 }
@@ -3836,6 +3851,66 @@ async function reactToMessage(evt, msgId, emoji) {
   if (error) { showToast(error.message, "error"); return; }
   const row = document.querySelector(`.msg-reactions-row[data-reactions-for="${msgId}"]`);
   if (row) row.innerHTML = reactionsRowHtml({ reactions: data });
+}
+
+// ---------- EDIT/DELETE OWN MESSAGES (long-press, 30-minute window) ----------
+const MESSAGE_EDIT_WINDOW_MS = 30 * 60 * 1000;
+function setupMessageLongPress(root) {
+  (root || document).querySelectorAll(".chat-bubble.mine[data-msg-id]").forEach((bubble) => {
+    if (bubble.dataset.longPressBound) return;
+    bubble.dataset.longPressBound = "1";
+    let timer = null;
+    const start = () => { clearTimeout(timer); timer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(15); showMessageActionMenu(bubble); }, 500); };
+    const cancel = () => clearTimeout(timer);
+    bubble.addEventListener("pointerdown", start);
+    bubble.addEventListener("pointerup", cancel);
+    bubble.addEventListener("pointerleave", cancel);
+    bubble.addEventListener("pointercancel", cancel);
+    bubble.addEventListener("contextmenu", (e) => { e.preventDefault(); showMessageActionMenu(bubble); });
+  });
+}
+function showMessageActionMenu(bubble) {
+  document.querySelectorAll(".msg-action-menu, .reaction-picker").forEach((p) => p.remove());
+  const msgId = bubble.dataset.msgId;
+  const createdAt = bubble.dataset.createdAt;
+  if (!createdAt || Date.now() - new Date(createdAt).getTime() > MESSAGE_EDIT_WINDOW_MS) {
+    showToast("The 30-minute edit window for this message has passed.", "info");
+    return;
+  }
+  const wrap = bubble.closest(".chat-bubble-wrap");
+  if (!wrap) return;
+  const menu = document.createElement("div");
+  menu.className = "msg-action-menu";
+  menu.innerHTML = `<button type="button" onclick="startEditMessage('${msgId}')"><i class="fa-solid fa-pen"></i> Edit</button><button type="button" onclick="confirmDeleteMessage('${msgId}')"><i class="fa-solid fa-trash"></i> Delete</button>`;
+  wrap.appendChild(menu);
+}
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".msg-action-menu")) document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
+}, true);
+async function startEditMessage(msgId) {
+  document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
+  const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
+  const currentText = bubble?.querySelector(".chat-bubble-text")?.textContent || "";
+  const newText = await showTextPromptDialog("Edit message", "You can edit within 30 minutes of sending.", { placeholder: "Message…", okLabel: "Save" });
+  if (newText === null) return;
+  if (!newText.trim()) { showToast("Message can't be empty.", "error"); return; }
+  const { error } = await sb.rpc("edit_message", { p_message_id: msgId, p_new_body: newText.trim() });
+  if (error) { showToast(error.message, "error"); return; }
+  if (bubble) {
+    const textEl = bubble.querySelector(".chat-bubble-text");
+    if (textEl) textEl.textContent = newText.trim();
+    if (!bubble.querySelector(".chat-time").innerHTML.includes("(edited)")) {
+      bubble.querySelector(".chat-time").insertAdjacentHTML("afterbegin", `<span class="muted" style="font-size:0.7rem;">(edited)</span>`);
+    }
+  }
+}
+async function confirmDeleteMessage(msgId) {
+  document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
+  if (!(await showConfirmDialog("Delete this message? This can't be undone.", { title: "Delete message", okLabel: "Delete", danger: true }))) return;
+  const { error } = await sb.rpc("delete_message", { p_message_id: msgId });
+  if (error) { showToast(error.message, "error"); return; }
+  const wrap = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`)?.closest(".chat-bubble-wrap");
+  if (wrap) wrap.outerHTML = chatBubbleHtml({ id: msgId, sender_id: session.user.id, created_at: wrap.querySelector(".chat-bubble").dataset.createdAt, deleted_at: new Date().toISOString() });
 }
 
 function scrollChatToBottom() {
@@ -3901,6 +3976,7 @@ async function sendChatMessage(conversationId) {
   if (error) { showToast(error.message, "error"); return; }
   byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
   scrollChatToBottom();
+  setupMessageLongPress(byId("chatMessages"));
 }
 async function handleChatFileSelected(evt, conversationId) {
   const file = evt.target.files[0];
@@ -3922,6 +3998,7 @@ async function handleChatFileSelected(evt, conversationId) {
     byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
     scrollChatToBottom();
     resolveVisibleAttachments(byId("chatMessages"));
+    setupMessageLongPress(byId("chatMessages"));
   } catch (err) {
     showToast(err.message || "Could not attach that file.", "error");
   }
@@ -3931,7 +4008,7 @@ async function handleChatFileSelected(evt, conversationId) {
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
     .from("products")
-    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng), category:categories(name)")
+    .select("*, vendor:vendors!inner(id, business_name, previous_business_name, name_changed_at, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng), category:categories(name)")
     .eq("id", productId)
     .eq("status", "active")
     .eq("vendor.verification_status", "verified")
@@ -3962,7 +4039,7 @@ async function renderProductDetail(productId) {
       ${product.is_service ? `<span class="badge">Service</span>` : ""}
       <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
       ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
-      <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a></p>
+      <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
       <div class="contact-actions" style="align-items:center;">
         ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
         ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
@@ -3981,10 +4058,11 @@ async function renderProductDetail(productId) {
     const today = new Date().toISOString().slice(0, 10);
     html += `<div class="card"><h3><i class='fa-solid fa-calendar-days'></i> Rent this item</h3>
       <div class="flex">
-        <input type="date" id="rentStart" min="${today}" />
-        <input type="date" id="rentEnd" min="${today}" />
-        <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
+        <input type="date" id="rentStart" min="${today}" oninput="updateRentTotalPreview(${product.rental_rate},'${product.rental_rate_unit}')" />
+        <input type="date" id="rentEnd" min="${today}" oninput="updateRentTotalPreview(${product.rental_rate},'${product.rental_rate_unit}')" />
+        <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" oninput="updateRentTotalPreview(${product.rental_rate},'${product.rental_rate_unit}')" style="width:90px;" />
       </div>
+      <p class="muted" id="rentTotalPreview">Pick your dates to see the total.</p>
       ${deliveryFieldsHtml("rent", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
       <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
       <p id="rentError" class="error-text hidden"></p>
@@ -3997,9 +4075,9 @@ async function renderProductDetail(productId) {
       <div class="flex">
         ${isTimedService
           ? `<div><label style="margin:0;">Number of ${product.service_price_unit}s</label><input type="number" id="buyQty" value="1" min="1" oninput="updateServiceTotalPreview(${product.sale_price},'${product.service_price_unit}')" style="width:140px;" /></div>`
-          : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />`}
+          : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" oninput="updateBuyTotalPreview(${product.sale_price ?? 0})" style="width:90px;" />`}
       </div>
-      ${isTimedService ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
+      ${product.sale_price != null ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
       <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
       <p id="buyError" class="error-text hidden"></p>
@@ -4153,6 +4231,22 @@ function updateServiceTotalPreview(rate, unit) {
   const qty = parseInt(byId("buyQty").value) || 0;
   const el = byId("serviceTotalPreview");
   if (el) el.textContent = `Total: ${naira(rate * qty)} (${qty} ${unit}${qty === 1 ? "" : "s"} × ${naira(rate)}/${unit})`;
+}
+function updateBuyTotalPreview(rate) {
+  const qty = parseInt(byId("buyQty").value) || 0;
+  const el = byId("serviceTotalPreview");
+  if (el) el.textContent = `Total: ${naira(rate * qty)} (${qty} × ${naira(rate)})`;
+}
+function updateRentTotalPreview(rate, unit) {
+  const start = byId("rentStart")?.value;
+  const end = byId("rentEnd")?.value;
+  const qty = parseInt(byId("rentQty")?.value) || 0;
+  const el = byId("rentTotalPreview");
+  if (!el) return;
+  if (!start || !end) { el.textContent = "Pick your dates to see the total."; return; }
+  const days = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+  const units = unit === "week" ? Math.ceil(days / 7) : days;
+  el.textContent = `Total: ${naira(rate * units * qty)} (${qty} × ${units} ${unit}${units === 1 ? "" : "s"} × ${naira(rate)}/${unit})`;
 }
 
 async function buyNow(vendorId, productId) {
@@ -4354,6 +4448,15 @@ async function renderVendorsMap() {
 }
 
 // ---------- STOREFRONT (public vendor page) ----------
+// Shown for a couple weeks after a vendor renames, so buyers who knew them
+// by the old name don't wonder where they went.
+const VENDOR_RENAME_GRACE_DAYS = 14;
+function vendorNameWithFormerly(v) {
+  if (!v.previous_business_name || !v.name_changed_at) return esc(v.business_name);
+  const daysSince = (Date.now() - new Date(v.name_changed_at).getTime()) / 86400000;
+  if (daysSince > VENDOR_RENAME_GRACE_DAYS) return esc(v.business_name);
+  return `${esc(v.business_name)} <span class="muted" style="font-weight:400;font-size:0.8em;">(formerly ${esc(v.previous_business_name)})</span>`;
+}
 async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
@@ -4375,7 +4478,7 @@ async function renderStorefront(vendorId) {
       <div class="flex" style="justify-content:space-between;">
         <div class="flex">
           ${v.logo_url ? `<img src="${esc(v.logo_url)}" class="avatar-circle" style="width:3rem;height:3rem;object-fit:cover;" />` : `<div class="avatar-circle" style="width:3rem;height:3rem;">${esc((v.business_name || "?")[0].toUpperCase())}</div>`}
-          <div><h2 style="margin:0;">${esc(v.business_name)}</h2><p class="muted">${[v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online-only business"}</p></div>
+          <div><h2 style="margin:0;">${vendorNameWithFormerly(v)}</h2><p class="muted">${[v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online-only business"}</p></div>
         </div>
         <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
       </div>
@@ -4716,9 +4819,8 @@ async function sendOffer(requestId) {
 
 // ---------- VENDOR APPLICATION ----------
 async function renderVendorApply() {
-  if (!session) return '<div class="empty-state">This page is for vendor accounts only.</div>';
+  if (!session) return '<div class="empty-state">Please log in to apply as a vendor.</div>';
   if (profile?.role === "admin") return '<div class="empty-state">Admin accounts can\'t own a vendor store on Levromart.</div>';
-  if (profile?.role !== "vendor" && !vendor) return '<div class="empty-state">This page is for vendor accounts only.</div>';
   const { data: existing } = await sb.from("vendors").select("id").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
   if (existing) { navigate("vendorDashboard"); return '<p class="muted">Redirecting…</p>'; }
 
@@ -4905,7 +5007,7 @@ async function renderVendorEarnings() {
   vendorEarningsPeriod = "today";
 
   const { data: orders } = await sb.from("orders")
-    .select("id, total_amount, order_type, payout_released_at, items:order_items(quantity, unit_price, product:products(name)), payments(created_at, status)")
+    .select("id, total_amount, order_type, payout_released_at, buyer:users(name), items:order_items(quantity, unit_price, product:products(name)), payments(created_at, status)")
     .eq("vendor_id", v.id).eq("payout_status", "released").not("payout_released_at", "is", null)
     .order("payout_released_at", { ascending: false });
   window.__vendorEarningsOrders = orders || [];
@@ -4954,11 +5056,12 @@ function renderVendorEarningsBody() {
     html += `<div class="category-group-header flex" style="justify-content:space-between;">
       <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th style="text-align:center;"><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th style="text-align:center;"><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th style="text-align:center;">Amount</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Buyer</th><th style="text-align:center;"><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th style="text-align:center;"><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th style="text-align:center;">Amount</th></tr></thead><tbody>`;
     dayOrders.forEach((o) => {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
       html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
         <td>${items}</td>
+        <td>${esc(o.buyer?.name || "—")}</td>
         <td style="text-align:center;">${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">—</span>'}</td>
         <td style="text-align:center;">${esc(o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }))}</td>
         <td style="text-align:center;">${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
@@ -6154,6 +6257,10 @@ function orderListHtml(orders, isBuyerView) {
 }
 
 // ---------- ORDER DETAIL ----------
+function pickupMessageDraft(order) {
+  const itemsText = order.package?.name || (order.items || []).map((it) => `${it.product?.name || "item"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}`).join(", ") || "my order";
+  return `Hi! I'd like to confirm pickup for ${itemsText}. Could you share your exact location and a good time to come by?`;
+}
 async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
@@ -6232,7 +6339,7 @@ async function renderOrderDetail(orderId) {
     html += `<div class="card"><h3><i class="fa-solid fa-location-dot"></i> Pickup location</h3>
       ${addr ? `<p>${addr}</p>` : `<p class="muted">This vendor hasn't listed a pickup address yet. Message them to confirm where to collect your order.</p>`}
       ${order.vendor?.opening_hours ? `<p class="muted" style="font-size:0.85rem;"><i class="fa-solid fa-clock"></i> ${esc(order.vendor.opening_hours)}</p>` : ""}
-      <button class="btn btn-sm" onclick="startConversationWithVendor('${order.vendor.id}')"><i class="fa-solid fa-comment-dots"></i> Message vendor to confirm pickup</button>
+      <button class="btn btn-sm" data-draft="${esc(pickupMessageDraft(order))}" onclick="startConversationWithVendor('${order.vendor.id}', this.dataset.draft)"><i class="fa-solid fa-comment-dots"></i> Message vendor to confirm pickup</button>
     </div>`;
   }
 
@@ -6811,17 +6918,19 @@ async function renderAdminPeople() {
     </div>
   </div>`;
   if (appeals && appeals.length) {
-    html += `<div class="card" style="border-color:var(--warning);max-width:600px;margin-bottom:1.2rem;">
-      <h3 style="margin:0;"><i class="fa-solid fa-flag"></i> Suspension appeals awaiting review (${appeals.length})</h3>
-      ${appeals.map((a) => `<div style="border-top:1px solid var(--border);padding:0.6rem 0;">
-        <strong>${esc(a.user_name || a.user_email)}</strong>
-        <p class="muted" style="margin:0.2rem 0;font-size:0.82rem;">Suspended for: ${esc(a.suspension_reason || "")}</p>
-        <p style="margin:0.3rem 0;">${esc(a.message)}</p>
-        <div class="flex" style="gap:0.5rem;">
-          <button class="btn btn-sm" onclick="approveAppeal('${a.user_id}')"><i class="fa-solid fa-check"></i> Approve &amp; unsuspend</button>
-          <button class="btn btn-sm btn-outline" onclick="denyAppealPrompt('${a.id}')"><i class="fa-solid fa-xmark"></i> Deny</button>
-        </div>
-      </div>`).join("")}
+    html += `<div class="accordion-section open" id="appealsAccordion" style="max-width:600px;margin-bottom:1.2rem;border-color:var(--warning);">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-flag"></i> Suspension appeals awaiting review (${appeals.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+      <div class="accordion-body">
+        ${appeals.map((a) => `<div style="border-top:1px solid var(--border);padding:0.6rem 0;">
+          <strong>${esc(a.user_name || a.user_email)}</strong>
+          <p class="muted" style="margin:0.2rem 0;font-size:0.82rem;">Suspended for: ${esc(a.suspension_reason || "")}</p>
+          <p style="margin:0.3rem 0;">${esc(a.message)}</p>
+          <div class="flex" style="gap:0.5rem;">
+            <button class="btn btn-sm" onclick="approveAppeal('${a.user_id}')"><i class="fa-solid fa-check"></i> Approve &amp; unsuspend</button>
+            <button class="btn btn-sm btn-outline" onclick="denyAppealPrompt('${a.id}')"><i class="fa-solid fa-xmark"></i> Deny</button>
+          </div>
+        </div>`).join("")}
+      </div>
     </div>`;
   }
   html += `<input type="text" id="adminPeopleSearch" placeholder="Search by name or email…" style="max-width:320px;margin-bottom:0.8rem;" oninput="filterAdminPeople()" />`;
@@ -6866,9 +6975,10 @@ async function approveAppeal(userId) {
   navigate("adminPeople");
 }
 async function denyAppealPrompt(appealId) {
-  const response = await showTextPromptDialog("Deny appeal", "Optional: explain why, this is sent to the user.", { placeholder: "Reason (optional)…", okLabel: "Deny appeal", danger: true });
+  const response = await showTextPromptDialog("Deny appeal", "This reason is sent to the user, so explain why.", { placeholder: "Reason for denying…", okLabel: "Deny appeal", danger: true });
   if (response === null) return;
-  const { error } = await sb.rpc("admin_deny_appeal", { p_appeal_id: appealId, p_response: response.trim() || null });
+  if (!response.trim()) { showToast("A reason is required.", "error"); return; }
+  const { error } = await sb.rpc("admin_deny_appeal", { p_appeal_id: appealId, p_response: response.trim() });
   if (error) { showToast(error.message, "error"); return; }
   showToast("Appeal denied.", "success");
   navigate("adminPeople");
@@ -7158,10 +7268,15 @@ function renderAdminFinanceRange() {
 
   const statsArea = byId("financeStatsArea");
   if (statsArea) {
-    statsArea.innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));max-width:700px;margin:0.8rem 0;">
-      <div class="stat"><div class="n">${paid.length}</div><div class="muted">Paid transactions</div></div>
-      <div class="stat"><div class="n">${naira(volume)}</div><div class="muted">Gross volume</div></div>
-      <div class="stat"><div class="n">${naira(commission)}</div><div class="muted">Commission earned</div></div>
+    statsArea.innerHTML = `<div class="accordion-section" id="financeStatsAccordion" style="max-width:700px;">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> Summary</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+      <div class="accordion-body">
+        <table class="order-stats-table">
+          <tr><td>Paid transactions</td><td>${paid.length}</td></tr>
+          <tr><td>Gross volume</td><td>${naira(volume)}</td></tr>
+          <tr><td>Commission earned</td><td>${naira(commission)}</td></tr>
+        </table>
+      </div>
     </div>`;
     statsArea.appendChild(buildRevenueChart(paid, adminFinanceRange));
   }
