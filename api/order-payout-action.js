@@ -145,6 +145,11 @@ async function markManual({ orderId, accessToken }, res) {
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
   if (order.payout_status !== "held") { res.status(400).json({ error: `Payout status is "${order.payout_status}", not held, nothing to mark.` }); return; }
 
+  await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: "PATCH", headers: svcHeaders,
+    body: JSON.stringify({ payout_status: "paid_manual", payout_released_at: new Date().toISOString() }),
+  });
+
   res.status(200).json({ marked: true });
 }
 
