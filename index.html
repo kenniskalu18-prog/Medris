@@ -126,20 +126,6 @@
   .brand-spinner-arc-2 { stroke: color-mix(in srgb, var(--primary) 35%, transparent); stroke-dasharray: 58 132; stroke-dashoffset: 95; }
   @keyframes brandSpinnerRotate { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .brand-spinner-ring { animation: none; } }
-  #splashScreen { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.4s ease; }
-  #splashScreen.splash-hide { opacity: 0; pointer-events: none; }
-  #splashScreen.splash-gone { display: none; }
-  .splash-stack { position: relative; width: min(60vw, 320px); aspect-ratio: 788 / 200; }
-  .splash-layer { position: absolute; top: 0; left: 0; height: 100%; width: 100%; object-fit: contain; opacity: 0; }
-  .splash-circle { animation: splashCirclePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards, logoPulse 3s ease-in-out 0.7s infinite; }
-  .splash-left { animation: splashSlideLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards; }
-  .splash-right { animation: splashSlideRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards; }
-  @keyframes splashCirclePop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
-  @keyframes splashSlideLeft { from { opacity: 0; transform: translateX(-45%); } to { opacity: 1; transform: translateX(0); } }
-  @keyframes splashSlideRight { from { opacity: 0; transform: translateX(45%); } to { opacity: 1; transform: translateX(0); } }
-  @media (prefers-reduced-motion: reduce) {
-    .splash-layer, .splash-circle, .splash-left, .splash-right { animation: none !important; opacity: 1; transform: none; }
-  }
   .login-modal-logo { width: 4.5rem; height: auto; display: block; margin: 0 auto 0.6rem; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 45%, transparent)); }
   /* Plain <a> tags had no site-wide style at all, so they fell back to the
      browser's default blue-underline — jarring against the rest of the
@@ -432,6 +418,7 @@
   .side-drawer.left { left: 0; border-right: 1px solid var(--glass-border); transform: translateX(-105%); }
   .side-drawer.left.open { transform: translateX(0); }
   .drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+  .ai-chat-panel .drawer-header { cursor: move; touch-action: none; }
   .drawer-header h4 { font-size: 1.05rem; }
   .drawer-subhead { font-size: 0.78rem; margin: 1.1rem 0 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .accordion-section { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; margin-bottom: 0.7rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: border-color 0.2s ease; }
@@ -765,13 +752,6 @@
 </style>
 </head>
 <body>
-<div id="splashScreen">
-  <div class="splash-stack">
-    <img id="splashCircle" class="splash-layer splash-circle" alt="" />
-    <span id="splashLeft" class="splash-layer splash-left brand-logo-text" aria-hidden="true"></span>
-    <span id="splashRight" class="splash-layer splash-right brand-logo-text" aria-hidden="true"></span>
-  </div>
-</div>
 <header>
   <div class="header-left">
     <div class="icon-wrap" id="profileWrap">
@@ -1236,9 +1216,6 @@ function brandSpinnerHtml(label) {
   </div></div>`;
 }
 setLogoMask(document.getElementById("brandLogoRight"), LEVROMART_LOGO_RIGHT);
-setLogoMask(document.getElementById("splashLeft"), LEVROMART_LOGO_LEFT);
-document.getElementById("splashCircle").src = LEVROMART_LOGO_CIRCLE;
-setLogoMask(document.getElementById("splashRight"), LEVROMART_LOGO_RIGHT);
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("tourLeviLogo").src = MEDRIS_LOGO;
@@ -1943,17 +1920,6 @@ function showToast(message, type = "info") {
 function showVerifyingPaymentScreen() {
   const app = byId("app");
   if (app) app.innerHTML = `<div class="empty-state">${brandSpinnerHtml("Confirming your payment…")}<p class="muted" style="font-size:0.85rem;">This only takes a moment. Please don't close this page.</p></div>`;
-}
-
-// One-time-per-launch brand animation: the circle pops in, then the two
-// halves of the wordmark slide in from either side to meet it (see the
-// splash-* CSS above). Purely cosmetic chrome, so it's on its own timer
-// rather than gated on auth/data actually being ready underneath.
-function hideSplashScreen() {
-  const el = byId("splashScreen");
-  if (!el) return;
-  el.classList.add("splash-hide");
-  setTimeout(() => el.classList.add("splash-gone"), 450);
 }
 
 function showConfirmDialog(message, opts = {}) {
@@ -8313,6 +8279,73 @@ async function sendAiChatMessage() {
   });
 })();
 
+// Dragging the open chat panel itself (not just the collapsed round FAB) --
+// grabbed by its header only, so buttons up there and scrolling the message
+// list underneath still work normally.
+(function setupAiChatPanelDrag() {
+  const panel = byId("aiChatPanel");
+  const header = panel?.querySelector(".drawer-header");
+  if (!panel || !header) return;
+  const STORAGE_KEY = "levromart_ai_panel_pos";
+  const MOVE_THRESHOLD = 6;
+  let dragging = false, moved = false, pointerId = null;
+  let startClientX = 0, startClientY = 0, startLeft = 0, startTop = 0;
+
+  function clamp(x, y) {
+    const margin = 8;
+    const maxX = window.innerWidth - panel.offsetWidth - margin;
+    const maxY = window.innerHeight - panel.offsetHeight - margin;
+    return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
+  }
+  function applyPosition(x, y) {
+    panel.style.left = `${x}px`;
+    panel.style.top = `${y}px`;
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+  }
+  function savePosition() {
+    const rect = panel.getBoundingClientRect();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top })); } catch (e) {}
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+      const { x, y } = clamp(saved.x, saved.y);
+      applyPosition(x, y);
+    }
+  } catch (e) {}
+
+  header.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return; // let header buttons (new chat, history, close) work untouched
+    dragging = true; moved = false; pointerId = e.pointerId;
+    startClientX = e.clientX; startClientY = e.clientY;
+    const rect = panel.getBoundingClientRect();
+    startLeft = rect.left; startTop = rect.top;
+    header.setPointerCapture(e.pointerId);
+  });
+  header.addEventListener("pointermove", (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+    const dx = e.clientX - startClientX, dy = e.clientY - startClientY;
+    if (!moved && Math.hypot(dx, dy) > MOVE_THRESHOLD) moved = true;
+    if (!moved) return;
+    const { x, y } = clamp(startLeft + dx, startTop + dy);
+    applyPosition(x, y);
+  });
+  function endDrag(e) {
+    if (!dragging || (e && e.pointerId !== pointerId)) return;
+    dragging = false;
+    if (moved) savePosition();
+  }
+  header.addEventListener("pointerup", endDrag);
+  header.addEventListener("pointercancel", endDrag);
+  window.addEventListener("resize", () => {
+    if (!panel.style.left) return; // still at its default right/bottom anchor — nothing to clamp
+    const rect = panel.getBoundingClientRect();
+    const { x, y } = clamp(rect.left, rect.top);
+    applyPosition(x, y);
+  });
+})();
+
 // ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
 // A handful of plain, non-destructive popups should close like a native
 // sheet: tap outside, or press the phone's back button, same as tapping
@@ -8356,7 +8389,6 @@ window.addEventListener("popstate", (e) => {
   initLocationSetting();
   initLeviVisible();
   initAiChatMic();
-  setTimeout(hideSplashScreen, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1900);
   byId("footerYear").textContent = new Date().getFullYear();
   history.replaceState({ view: "home", params: {} }, "", location.pathname + location.search);
   await refreshAuthStateOnce();
