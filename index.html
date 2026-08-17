@@ -662,6 +662,9 @@
   @media (prefers-reduced-motion: reduce) { .product-card-wrap, .vendor-card { animation: none; } }
   .fav-btn { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: rgba(255,255,255,0.85); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: transform 0.15s; }
   .fav-btn:hover { transform: scale(1.12); }
+  .card-cart-btn { position: absolute; top: 0.6rem; left: 0.6rem; z-index: 2; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: var(--primary); color: #fff; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: transform 0.15s; }
+  .card-cart-btn:hover { transform: scale(1.12); }
+  .card-cart-btn.added { background: var(--success); }
   .trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.6rem 0; }
   .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
@@ -2505,13 +2508,21 @@ function exitNotifSelectMode(rerender = true) {
   if (rerender) renderNotifPanel();
 }
 
-// ---- inbox <-> archive (always reversible, no confirmation needed) ----
+// ---- inbox <-> archive ----
+// Single-item quick actions below keep their undo-toast (fast, low-risk,
+// trivially reversible one at a time). Batch actions on a multi-select
+// don't have a batch-undo though, so a mis-tap here affects everyone
+// selected with no easy way back -- hence a confirm first, sized to the
+// actual count involved.
 async function batchArchiveOrRestoreSelected() {
   const ids = [...notifSelectedIds];
-  await sb.from("notifications").update({ archived: notifViewMode !== "archived" }).in("id", ids);
+  const restoring = notifViewMode === "archived";
+  const verb = restoring ? "Restore" : "Archive";
+  if (!(await showConfirmDialog(`${verb} ${ids.length} selected notification${ids.length === 1 ? "" : "s"}?`, { title: `${verb} notifications`, okLabel: verb }))) return;
+  await sb.from("notifications").update({ archived: !restoring }).in("id", ids);
   exitNotifSelectMode(false);
   refreshNotifications();
-  showToast(notifViewMode === "archived" ? `${ids.length} restored.` : `${ids.length} archived.`, "success");
+  showToast(restoring ? `${ids.length} restored.` : `${ids.length} archived.`, "success");
 }
 async function quickArchiveNotif(id) {
   await sb.from("notifications").update({ archived: true }).eq("id", id);
@@ -2524,9 +2535,10 @@ async function quickUnarchiveNotif(id) {
   showUndoToast("Notification restored.", async () => { await sb.from("notifications").update({ archived: true }).eq("id", id); refreshNotifications(); });
 }
 
-// ---- inbox/archive -> trash (soft delete, reversible, no confirmation) ----
+// ---- inbox/archive -> trash (soft delete) ----
 async function batchTrashSelected() {
   const ids = [...notifSelectedIds];
+  if (!(await showConfirmDialog(`Move ${ids.length} selected notification${ids.length === 1 ? "" : "s"} to trash?`, { title: "Move to trash", okLabel: "Move to trash" }))) return;
   await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).in("id", ids);
   exitNotifSelectMode(false);
   refreshNotifications();
@@ -2538,9 +2550,10 @@ async function quickTrashNotif(id) {
   showUndoToast("Notification moved to trash.", async () => { await sb.from("notifications").update({ deleted_at: null }).eq("id", id); refreshNotifications(); });
 }
 
-// ---- trash -> restore (reversible) ----
+// ---- trash -> restore ----
 async function batchRestoreSelected() {
   const ids = [...notifSelectedIds];
+  if (!(await showConfirmDialog(`Restore ${ids.length} selected notification${ids.length === 1 ? "" : "s"} from trash?`, { title: "Restore notifications", okLabel: "Restore" }))) return;
   await sb.from("notifications").update({ deleted_at: null }).in("id", ids);
   exitNotifSelectMode(false);
   refreshNotifications();
@@ -2583,6 +2596,7 @@ function showUndoToast(message, undoFn) {
 
 async function markAllNotifsRead() {
   if (!session) return;
+  if (!(await showConfirmDialog("Mark every notification as read?", { title: "Mark all as read", okLabel: "Mark all read" }))) return;
   await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
   refreshNotifications();
   showToast("All marked as read.", "success");
@@ -3441,8 +3455,10 @@ async function filterHomeProducts() {
 function productCardHtml(p) {
   const img = p.photos?.[0];
   const isFav = favoriteIds.has(p.id);
+  const canQuickAdd = !p.is_service && (p.listing_type === "sale" || p.listing_type === "both") && profile?.role !== "admin";
   return `<div class="product-card-wrap">
     <button class="fav-btn ${isFav ? "active" : ""}" onclick="toggleFavorite(event,'${p.id}')" title="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
+    ${canQuickAdd ? `<button class="card-cart-btn" onclick="quickAddToCart(event,'${p.id}',this)" title="Add to cart"><i class="fa-solid fa-cart-plus"></i></button>` : ""}
     <div class="card" style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
       <div class="product-img">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
       <h4 style="margin:0.6rem 0 0.2rem;">${esc(p.name)}</h4>
@@ -3593,6 +3609,22 @@ async function addToCart(productId, qty) {
   if (error) { showToast(error.message, "error"); return; }
   showToast("Added to cart.", "success");
   refreshNotifications();
+}
+// One-tap add straight from a product card's grid/rail listing, without
+// opening the product page first -- same RPC as addToCart, just with a
+// quick icon flip on the button itself as feedback instead of only a toast.
+async function quickAddToCart(evt, productId, btn) {
+  evt.stopPropagation();
+  if (!session) { showLogin(); return; }
+  btn.disabled = true;
+  const { error } = await sb.rpc("add_to_cart", { p_product_id: productId, p_quantity: 1 });
+  btn.disabled = false;
+  if (error) { showToast(error.message, "error"); return; }
+  refreshNotifications();
+  const original = btn.innerHTML;
+  btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
+  btn.classList.add("added");
+  setTimeout(() => { btn.innerHTML = original; btn.classList.remove("added"); }, 1200);
 }
 async function updateCartQty(cartItemId, newQty) {
   if (newQty < 1) return;
@@ -4383,9 +4415,11 @@ function updateDeliveryEta(prefix) {
   const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vLat, vLng);
   const eta = estimateDeliveryRange(km);
   if (isDistance) {
-    const base = Number(wrap.dataset.fee) || 0;
+    // Pure rate × distance, matching compute_delivery_fee server-side --
+    // no separate flat base stacked underneath, so this preview and the
+    // actual charge never disagree.
     const perKm = Number(wrap.dataset.perKm) || 0;
-    const fee = Math.round((base + perKm * km) / 50) * 50;
+    const fee = Math.round((perKm * km) / 50) * 50;
     feeEl.innerHTML = `<i class="fa-solid fa-truck"></i> ${naira(fee)} · ${formatDistanceKm(km)} · ~${eta}`;
   } else {
     feeEl.innerHTML = `<i class="fa-solid fa-clock"></i> ~${eta} estimated`;
@@ -5426,6 +5460,7 @@ async function renderVendorEditProfile() {
   const bp = (billingPreview && billingPreview[0]) || { listing_count: 0, amount: 0 };
   setTimeout(loadBankOptions, 0);
   setTimeout(initVendorLocationMap, 0);
+  setTimeout(() => { toggleVendorDeliveryFeeMode(); updateVeDeliveryPerKmExample(); }, 0);
 
   return `${commissionOwed > 0 ? `
   <div class="banner banner-warning" style="max-width:480px;margin:0 auto 1rem;">
@@ -5452,15 +5487,16 @@ async function renderVendorEditProfile() {
     <label>City</label><input id="veCity" value="${esc(v.city || "")}" />
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
     <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
-    <label>Delivery fee ${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere; distance-based adds a per-km rate on top, calculated from the buyer's shared location to your shop pin. Leave the amount at 0 for free delivery.")}</label>
-    <select id="veDeliveryFeeMode" onchange="byId('veDeliveryPerKmRow').classList.toggle('hidden', this.value !== 'distance')">
+    <label id="veDeliveryFeeLabel">Delivery fee ${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere. Distance-based charges purely by the per-km rate below (buyer's shared location to your shop pin) — this flat amount is then only used as a fallback if you haven't pinned your shop's location yet. Leave amounts at 0 for free delivery.")}</label>
+    <select id="veDeliveryFeeMode" onchange="toggleVendorDeliveryFeeMode()">
       <option value="flat" ${v.delivery_fee_mode !== "distance" ? "selected" : ""}>Flat fee</option>
       <option value="distance" ${v.delivery_fee_mode === "distance" ? "selected" : ""}>Distance-based</option>
     </select>
     <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
     <div id="veDeliveryPerKmRow" class="${v.delivery_fee_mode === "distance" ? "" : "hidden"}">
-      <label>₦ per km</label>
-      <input id="veDeliveryPerKm" type="number" min="0" step="10" placeholder="e.g. 100" value="${v.delivery_fee_per_km || 0}" />
+      <label>₦ per km <span class="muted" style="font-weight:400;">(the only charge — no flat amount added on top)</span></label>
+      <input id="veDeliveryPerKm" type="number" min="0" step="10" placeholder="e.g. 100" value="${v.delivery_fee_per_km || 0}" oninput="updateVeDeliveryPerKmExample()" />
+      <p class="muted" id="veDeliveryPerKmExample" style="font-size:0.8rem;margin-top:0.3rem;"></p>
     </div>
     <label>About your business</label><textarea id="veBio" rows="3">${esc(v.bio || "")}</textarea>
     <div class="flex" style="margin-top:0.8rem;">
@@ -5591,6 +5627,25 @@ async function saveVendorBankDetails() {
   }
 }
 
+// Distance mode charges purely by the per-km rate (see compute_delivery_fee)
+// -- the flat "Delivery fee" field only ever applies in flat mode, or as a
+// fallback if the shop has no pinned location yet, so its label switches to
+// say that instead of implying it stacks on top of the per-km rate too.
+function toggleVendorDeliveryFeeMode() {
+  const isDistance = byId("veDeliveryFeeMode").value === "distance";
+  byId("veDeliveryPerKmRow").classList.toggle("hidden", !isDistance);
+  const label = byId("veDeliveryFeeLabel");
+  if (label) label.childNodes[0].textContent = isDistance ? "Fallback flat fee (only used if location isn't set) " : "Delivery fee ";
+  if (isDistance) updateVeDeliveryPerKmExample();
+}
+function updateVeDeliveryPerKmExample() {
+  const el = byId("veDeliveryPerKmExample");
+  if (!el) return;
+  const rate = Number(byId("veDeliveryPerKm")?.value) || 0;
+  if (rate <= 0) { el.textContent = ""; return; }
+  const at = (km) => naira(Math.round((rate * km) / 50) * 50);
+  el.textContent = `Example: ${at(1)} at 1km, ${at(3)} at 3km, ${at(5)} at 5km.`;
+}
 async function submitVendorEditProfile() {
   const errorEl = byId("vendorEditError");
   errorEl.classList.add("hidden");
@@ -5759,7 +5814,7 @@ async function renderVendorProducts() {
         <td>${esc(p.name)}</td>
         <td>${esc(p.category?.name || "Uncategorized")}</td>
         <td>${p.sale_price != null ? naira(p.sale_price) + servicePriceSuffix(p) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
-        <td>${p.quantity_available} / ${p.quantity_total}</td>
+        <td>${p.is_service ? "—" : `${p.quantity_available} / ${p.quantity_total}`}</td>
         <td>${p.view_count || 0}</td>
         <td>${favCountByProduct[p.id] ?? 0}</td>
         <td>${naira(revenueByProduct[p.id] || 0)}</td>
@@ -5787,7 +5842,7 @@ async function renderVendorProducts() {
       html += `<div class="card" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc(catName.toLowerCase())}">
         <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
         <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
-        <p class="muted">${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available · ${p.status}</p>
+        <p class="muted">${p.is_service ? "Service" : `${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available`} · ${p.status}</p>
         <p class="muted" style="font-size:0.8rem;"><i class='fa-solid fa-eye'></i> ${p.view_count || 0} views · <i class='fa-solid fa-heart'></i> ${favCount} saved · <i class="fa-solid fa-sack-dollar"></i> ${naira(revenueByProduct[p.id] || 0)}</p>
         ${hasPendingOrder ? `<p class="muted" style="font-size:0.8rem;color:var(--danger,#dc2626);"><i class="fa-solid fa-circle-exclamation"></i> Has a pending order, can't be removed until it's cleared</p>` : ""}
         <div class="flex">
