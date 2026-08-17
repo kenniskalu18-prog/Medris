@@ -354,14 +354,18 @@
     width: 3rem; height: 3rem; border-radius: 50%;
     background: var(--card); color: var(--primary); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-    box-shadow: var(--shadow-float); cursor: pointer; z-index: 149;
+    box-shadow: var(--shadow-float); cursor: grab; z-index: 149; user-select: none; touch-action: none;
   }
+  .cart-fab.dragging { cursor: grabbing; transition: none; }
   .cart-fab.hidden { display: none; }
   @media (max-width: 720px) { .cart-fab { bottom: calc(9.2rem + env(safe-area-inset-bottom, 0px)); } }
   .cart-fab-badge { position: absolute; top: -0.25rem; right: -0.25rem; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; border-radius: 999px; min-width: 1.15rem; height: 1.15rem; display: flex; align-items: center; justify-content: center; padding: 0 0.28rem; }
   .cart-fab-badge.hidden { display: none; }
   .ai-chat-panel {
-    position: fixed; right: 1.2rem; bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); width: min(360px, 90vw); height: min(500px, 68vh);
+    /* Centered by default (not anchored to a corner) -- dragging it by the
+       header overrides this with an explicit left/top/transform:none, see
+       setupAiChatPanelDrag. */
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, 90vw); height: min(500px, 68vh);
     background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--glass-border); border-radius: 1.1rem; box-shadow: 0 20px 50px rgba(0,0,0,0.3); z-index: 150;
     display: flex; flex-direction: column; padding: 1rem; color: var(--text);
@@ -697,6 +701,9 @@
   .chat-bubble-wrap.theirs .reaction-picker { left: 0; }
   .msg-action-menu { position: absolute; bottom: calc(100% + 0.3rem); right: 0; z-index: 21; display: flex; flex-direction: column; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.8rem; padding: 0.3rem; box-shadow: var(--shadow-float); min-width: 130px; }
   .msg-action-menu button { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; color: var(--text); font-size: 0.85rem; font-family: inherit; padding: 0.5rem 0.6rem; border-radius: 0.5rem; cursor: pointer; text-align: left; width: 100%; }
+  .chat-edit-textarea { display: block; width: 100%; min-width: 12rem; background: rgba(255,255,255,0.95); color: #1a1a1a; border: none; border-radius: 0.6rem; padding: 0.5rem 0.6rem; font-family: inherit; font-size: 0.92rem; line-height: 1.4; resize: none; }
+  .chat-edit-actions { display: flex; justify-content: flex-end; gap: 0.4rem; margin-top: 0.4rem; }
+  .chat-edit-actions .btn { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
   .msg-action-menu button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
   .chat-bubble.deleted { opacity: 0.7; }
   .reaction-picker button { border: none; background: none; padding: 0.1rem; font-size: 1.05rem; cursor: pointer; line-height: 1; transition: transform 0.1s ease; }
@@ -1168,7 +1175,7 @@
 <div id="toastStack" class="toast-stack"></div>
 
 <!-- Floating, draggable AI chat -->
-<div id="cartFab" class="cart-fab hidden" title="Your cart" onclick="navigate('cart')"><i class="fa-solid fa-cart-shopping"></i><span id="cartFabBadge" class="cart-fab-badge hidden">0</span></div>
+<div id="cartFab" class="cart-fab hidden" title="Your cart"><i class="fa-solid fa-cart-shopping"></i><span id="cartFabBadge" class="cart-fab-badge hidden">0</span></div>
 <div id="aiChatFab" class="ai-chat-fab" title="Chat with Levi"><img id="aiChatFabLogo" class="ai-chat-fab-logo" alt="" /></div>
 <div id="aiChatPanel" class="ai-chat-panel hidden">
   <div class="drawer-header">
@@ -2736,7 +2743,12 @@ function renderEditProfile() {
     <label>Delivery address</label>
     <textarea id="epAddress" rows="2" placeholder="e.g. Elkanemi Hostel, Block A, Room A12">${esc(profile.address || "")}</textarea>
     <button class="btn btn-sm" id="epSaveBtn" style="margin-top:0.8rem;width:100%;" onclick="submitEditProfile()"><i class="fa-solid fa-check"></i> Save changes</button>
-  </div>`;
+  </div>
+  ${!vendor && profile.role !== "admin" ? `<div class="card" style="max-width:480px;">
+    <h3 style="margin-top:0;"><i class="fa-solid fa-store"></i> Want to sell on Levromart?</h3>
+    <p class="muted" style="font-size:0.85rem;">Open your own storefront and start listing products or services.</p>
+    <button class="btn btn-sm btn-outline" onclick="navigate('vendorApply')">Apply to become a vendor</button>
+  </div>` : ""}`;
 }
 async function submitEditProfile() {
   const errorEl = byId("editProfileError");
@@ -4041,7 +4053,7 @@ function showMessageActionMenu(bubble) {
   const msgId = bubble.dataset.msgId;
   const createdAt = bubble.dataset.createdAt;
   if (!createdAt || Date.now() - new Date(createdAt).getTime() > MESSAGE_EDIT_WINDOW_MS) {
-    showToast("The 30-minute edit window for this message has passed.", "info");
+    showToast("The 30-minute window to edit or delete this message has passed.", "info");
     return;
   }
   const wrap = bubble.closest(".chat-bubble-wrap");
@@ -4054,21 +4066,55 @@ function showMessageActionMenu(bubble) {
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".msg-action-menu")) document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
 }, true);
-async function startEditMessage(msgId) {
+// Edits happen in place, right inside the message bubble itself -- not a
+// separate popup dialog and not the main compose bar -- so it's obvious
+// this is changing that exact message, not drafting a new one (which was
+// easy to confuse with the old popup and risked sending the same message
+// twice: once as the "edit", once again if they also retyped it below).
+let editOriginalBubbleHtml = new Map();
+function startEditMessage(msgId) {
   document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
   const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
-  const currentText = bubble?.querySelector(".chat-bubble-text")?.textContent || "";
-  const newText = await showTextPromptDialog("Edit message", "You can edit within 30 minutes of sending.", { placeholder: "Message…", okLabel: "Save" });
-  if (newText === null) return;
-  if (!newText.trim()) { showToast("Message can't be empty.", "error"); return; }
-  const { error } = await sb.rpc("edit_message", { p_message_id: msgId, p_new_body: newText.trim() });
+  if (!bubble) return;
+  const currentText = bubble.querySelector(".chat-bubble-text")?.textContent || "";
+  editOriginalBubbleHtml.set(msgId, bubble.innerHTML);
+  bubble.innerHTML = `<textarea class="chat-edit-textarea" rows="2" maxlength="2000">${esc(currentText)}</textarea>
+    <div class="chat-edit-actions">
+      <button type="button" class="btn btn-sm btn-outline" onclick="cancelEditMessage('${msgId}')">Cancel</button>
+      <button type="button" class="btn btn-sm" onclick="saveEditMessage('${msgId}')">Save</button>
+    </div>`;
+  const ta = bubble.querySelector(".chat-edit-textarea");
+  autoGrowChatInput(ta);
+  ta.addEventListener("input", () => autoGrowChatInput(ta));
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function cancelEditMessage(msgId) {
+  const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
+  const original = editOriginalBubbleHtml.get(msgId);
+  if (bubble && original != null) bubble.innerHTML = original;
+  editOriginalBubbleHtml.delete(msgId);
+}
+async function saveEditMessage(msgId) {
+  const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
+  const newText = bubble?.querySelector(".chat-edit-textarea")?.value.trim();
+  if (!newText) { showToast("Message can't be empty.", "error"); return; }
+  const { error } = await sb.rpc("edit_message", { p_message_id: msgId, p_new_body: newText });
   if (error) { showToast(error.message, "error"); return; }
-  if (bubble) {
-    const textEl = bubble.querySelector(".chat-bubble-text");
-    if (textEl) textEl.textContent = newText.trim();
-    if (!bubble.querySelector(".chat-time").innerHTML.includes("(edited)")) {
-      bubble.querySelector(".chat-time").insertAdjacentHTML("afterbegin", `<span class="muted" style="font-size:0.7rem;">(edited)</span>`);
-    }
+  // Restore the original bubble markup (attachment, reactions, ticks all
+  // untouched) then patch in just the new text and an "(edited)" tag --
+  // same minimal-diff approach either way, just reached after the inline
+  // editor closes instead of straight from the menu.
+  const original = editOriginalBubbleHtml.get(msgId);
+  if (bubble && original != null) bubble.innerHTML = original;
+  editOriginalBubbleHtml.delete(msgId);
+  if (!bubble) return;
+  const textEl = bubble.querySelector(".chat-bubble-text");
+  const timeEl = bubble.querySelector(".chat-time");
+  if (textEl) textEl.textContent = newText;
+  else if (timeEl) timeEl.insertAdjacentHTML("beforebegin", `<span class="chat-bubble-text">${esc(newText)}</span>`);
+  if (timeEl && !timeEl.innerHTML.includes("(edited)")) {
+    timeEl.insertAdjacentHTML("afterbegin", `<span class="muted" style="font-size:0.7rem;">(edited)</span>`);
   }
 }
 async function confirmDeleteMessage(msgId) {
@@ -4288,43 +4334,61 @@ function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, 
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex" style="margin:0.6rem 0 0.9rem;">
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (fee depends on distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="hidden" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
-      ${!isDistance && fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
-      ${isDistance ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;" id="${prefix}FeeLine"></p>` : ""}
-      ${hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;" id="${prefix}EtaLine"></p>` : ""}
-      <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a>. It'll remember for next time.</p>
+      ${!isDistance && fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.35rem 0 0;"><i class="fa-solid fa-truck"></i> ${naira(fee)} delivery fee.</p>` : ""}
+      ${isDistance || hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.35rem 0 0;" id="${prefix}FeeLine"></p>` : ""}
+      <p class="muted" style="font-size:0.76rem;margin-top:0.25rem;">Wrong? <a href="#" onclick="navigate('editProfile');return false;">Fix in profile</a>.</p>
     </div>`;
 }
-function toggleDeliveryFields(prefix) {
+// Distance-priced delivery only ever gets a real, accurate fee once we know
+// where the buyer actually is -- so for that mode, picking "Delivery"
+// compulsorily asks for location right away instead of letting them
+// proceed and only finding out (or worse, getting a wrong flat-rate fee)
+// at checkout.
+async function toggleDeliveryFields(prefix) {
   const method = document.querySelector(`input[name="${prefix}DeliveryMethod"]:checked`)?.value;
   byId(`${prefix}DeliveryFields`)?.classList.toggle("hidden", method !== "delivery");
-  if (method === "delivery") updateDeliveryEta(prefix);
+  if (method !== "delivery") return;
+  const wrap = byId(`${prefix}DeliveryFields`);
+  const isDistance = wrap?.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0 && wrap.dataset.vendorLat && wrap.dataset.vendorLng;
+  if (isDistance && !buyerLocation) {
+    try {
+      await requestBuyerLocation();
+    } catch (err) {
+      showToast("Delivery for this vendor is priced by distance, so it needs your location. Switched back to pickup.", "info");
+      const pickupRadio = document.querySelector(`input[name="${prefix}DeliveryMethod"][value="pickup"]`);
+      if (pickupRadio) pickupRadio.checked = true;
+      byId(`${prefix}DeliveryFields`)?.classList.add("hidden");
+      return;
+    }
+  }
+  updateDeliveryEta(prefix);
 }
 function updateDeliveryEta(prefix) {
   const wrap = byId(`${prefix}DeliveryFields`);
-  const etaEl = byId(`${prefix}EtaLine`);
   const feeEl = byId(`${prefix}FeeLine`);
-  if (!wrap) return;
+  if (!wrap || !feeEl) return;
   const vLat = parseFloat(wrap.dataset.vendorLat);
   const vLng = parseFloat(wrap.dataset.vendorLng);
   if (isNaN(vLat) || isNaN(vLng)) return;
+  const isDistance = wrap.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0;
   if (!buyerLocation) {
-    const link = `<a href="#" onclick="requestDeliveryEta('${prefix}');return false;">share your location</a>`;
-    if (etaEl) etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time available once you ${link}.`;
-    if (feeEl) feeEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> Delivery fee shown once you ${link}.`;
+    feeEl.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> <a href="#" onclick="requestDeliveryEta('${prefix}');return false;">Share location</a> for ${isDistance ? "the fee + ETA" : "an ETA"}.`;
     return;
   }
   const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vLat, vLng);
-  if (etaEl) etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
-  if (feeEl && wrap.dataset.feeMode === "distance") {
+  const eta = estimateDeliveryRange(km);
+  if (isDistance) {
     const base = Number(wrap.dataset.fee) || 0;
     const perKm = Number(wrap.dataset.perKm) || 0;
     const fee = Math.round((base + perKm * km) / 50) * 50;
-    feeEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> Delivery fee for this address: ${naira(fee)} (${formatDistanceKm(km)}). This will be added to your total.`;
+    feeEl.innerHTML = `<i class="fa-solid fa-truck"></i> ${naira(fee)} · ${formatDistanceKm(km)} · ~${eta}`;
+  } else {
+    feeEl.innerHTML = `<i class="fa-solid fa-clock"></i> ~${eta} estimated`;
   }
 }
 async function requestDeliveryEta(prefix) {
@@ -4341,11 +4405,11 @@ function updateOrderDeliveryEta() {
   const v = window.__orderEtaVendor;
   if (!etaEl || !v) return;
   if (!buyerLocation) {
-    etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> <a href="#" onclick="requestOrderEta();return false;">Share your location</a> to see an estimated delivery time.`;
+    etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> <a href="#" onclick="requestOrderEta();return false;">Share location</a> for an ETA.`;
     return;
   }
   const km = haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng);
-  etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
+  etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> ~${estimateDeliveryRange(km)} estimated delivery.`;
 }
 async function requestOrderEta() {
   try {
@@ -8068,7 +8132,7 @@ async function renderSharedAiChat(token) {
   }
   let html = `<div class="flex" style="align-items:center;gap:0.6rem;margin-bottom:0.3rem;"><img src="${MEDRIS_LOGO}" alt="" style="width:2.2rem;height:2.2rem;border-radius:50%;" /><div><strong>${esc(rows[0].title || "Shared chat")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">Shared conversation with Levi &middot; read-only</p></div></div>`;
   html += `<div class="card shared-ai-chat">${chatMessagesWithDatesHtml(rows, (m) => {
-    const clean = m.role === "assistant" ? parseAiAddCartTags(parseAiDraftMsgTag(parseAiNavTag(m.content).text).text).text : m.content;
+    const clean = m.role === "assistant" ? parseAiRemoveCartTags(parseAiAddCartTags(parseAiDraftMsgTag(parseAiNavTag(m.content).text).text).text).text : m.content;
     return `<div class="ai-chat-msg ${m.role === "user" ? "user" : "assistant"}" style="align-self:${m.role === "user" ? "flex-end" : "flex-start"};">${esc(clean)}</div>`;
   })}</div>`;
   html += `<div style="text-align:center;margin-top:1rem;"><button class="btn btn-sm" onclick="navigate('home')"><i class="fa-solid fa-arrow-right"></i> Try Levromart</button></div>`;
@@ -8188,6 +8252,29 @@ async function applyAiAddCartItems(items) {
   if (added) refreshNotifications();
   return { added, failed };
 }
+// [[REMOVECART productId=<id>]] -- same self-closing, repeatable shape as
+// ADDCART. Levi is told to only ever use product ids from the buyer's own
+// "Current cart" context (see buildBuyerContext in api/chat.js), so this
+// is just a plain delete scoped to the signed-in buyer's own cart row.
+const AI_REMOVECART_TAG_RE = /\[\[REMOVECART productId=([a-zA-Z0-9-]+)\]\]/g;
+function parseAiRemoveCartTags(content) {
+  const str = String(content || "");
+  const items = [];
+  let m;
+  AI_REMOVECART_TAG_RE.lastIndex = 0;
+  while ((m = AI_REMOVECART_TAG_RE.exec(str))) items.push({ productId: m[1] });
+  const text = str.replace(AI_REMOVECART_TAG_RE, "").replace(/\s{2,}/g, " ").trim();
+  return { text: text || content, items };
+}
+async function applyAiRemoveCartItems(items) {
+  let removed = 0;
+  for (const it of items) {
+    const { error } = await sb.from("cart_items").delete().eq("buyer_id", session.user.id).eq("product_id", it.productId);
+    if (!error) removed++;
+  }
+  if (removed) refreshNotifications();
+  return { removed };
+}
 async function sendAiDraftMessage(vendorId, btn) {
   const card = btn.closest(".ai-chat-draft-card");
   const text = card.querySelector(".ai-chat-draft-text").value.trim();
@@ -8244,18 +8331,21 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
   let nav = null;
   let draft = null;
   let cartItems = null;
+  let removeCartItems = null;
   if (role === "assistant") {
     const parsedNav = parseAiNavTag(content);
     const parsedDraft = parseAiDraftMsgTag(parsedNav.text);
     const parsedCart = parseAiAddCartTags(parsedDraft.text);
-    displayText = parsedCart.text;
+    const parsedRemoveCart = parseAiRemoveCartTags(parsedCart.text);
+    displayText = parsedRemoveCart.text;
     // Re-showing a past conversation shouldn't replay its side effects --
-    // an old "take you there" tag (or an old cart-add) firing again would
-    // yank someone away, or re-add items, from a conversation they're just
-    // re-reading.
+    // an old "take you there" tag (or an old cart add/remove) firing again
+    // would yank someone away, or re-apply a cart change, on a conversation
+    // they're just re-reading.
     nav = isReplay ? null : parsedNav.nav;
     draft = parsedDraft.draft;
     cartItems = isReplay ? [] : parsedCart.items;
+    removeCartItems = isReplay ? [] : parsedRemoveCart.items;
   }
   if (role !== "typing") aiChatMessages.push({ role, content: displayText });
   const wrap = byId("aiChatMessages");
@@ -8310,14 +8400,25 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
         if (span && data?.business_name) span.textContent = data.business_name;
       });
     }
-    if (cartItems && cartItems.length) {
-      const card = document.createElement("div");
-      card.className = "ai-chat-draft-card";
-      card.innerHTML = `<div class="ai-chat-draft-label"><i class="fa-solid fa-cart-plus"></i> Adding to your cart…</div>`;
-      el.appendChild(card);
-      applyAiAddCartItems(cartItems).then(({ added, failed }) => {
-        card.innerHTML = `<div class="ai-chat-draft-label"><i class="fa-solid fa-cart-plus"></i> ${added} item${added === 1 ? "" : "s"} added to your cart${failed ? `, ${failed} couldn't be added` : ""}</div>
-          <div class="ai-chat-draft-actions"><button class="btn btn-sm" onclick="toggleAiChat();navigate('cart')"><i class="fa-solid fa-cart-shopping"></i> View cart</button></div>`;
+    if ((cartItems && cartItems.length) || (removeCartItems && removeCartItems.length)) {
+      // Same "beat to read, then go" pattern as the NAV tag above -- a cart
+      // change takes you straight to the cart page to see the result,
+      // rather than leaving a "View cart" button someone has to notice
+      // and tap themselves.
+      const navHint = document.createElement("div");
+      navHint.className = "ai-chat-nav-hint";
+      navHint.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Updating your cart…`;
+      el.appendChild(navHint);
+      Promise.all([
+        cartItems && cartItems.length ? applyAiAddCartItems(cartItems) : Promise.resolve({ added: 0, failed: 0 }),
+        removeCartItems && removeCartItems.length ? applyAiRemoveCartItems(removeCartItems) : Promise.resolve({ removed: 0 }),
+      ]).then(([addResult, removeResult]) => {
+        const parts = [];
+        if (addResult.added) parts.push(`${addResult.added} added`);
+        if (addResult.failed) parts.push(`${addResult.failed} couldn't be added`);
+        if (removeResult.removed) parts.push(`${removeResult.removed} removed`);
+        navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} — taking you there…`;
+        setTimeout(() => { toggleAiChat(); navigate("cart"); }, 900);
       });
     }
   }
@@ -8536,11 +8637,11 @@ async function sendAiChatMessage() {
   }
 }
 
-// Draggable floating action button — tap to open, drag to reposition (and
-// it remembers where you leave it).
-(function setupAiChatFab() {
-  const fab = byId("aiChatFab");
-  const STORAGE_KEY = "levromart_ai_fab_pos";
+// Draggable floating action button — tap to fire onTap, drag to reposition
+// (and it remembers where you leave it). Shared by the Levi FAB and the
+// cart FAB, which each just pass their own element/storage key/tap action.
+function setupDraggableFab(fab, storageKey, onTap) {
+  if (!fab) return;
   const MOVE_THRESHOLD = 6;
   let dragging = false, moved = false, pointerId = null;
   let startClientX = 0, startClientY = 0, startLeft = 0, startTop = 0;
@@ -8559,11 +8660,11 @@ async function sendAiChatMessage() {
   }
   function savePosition() {
     const rect = fab.getBoundingClientRect();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top })); } catch (e) {}
+    try { localStorage.setItem(storageKey, JSON.stringify({ x: rect.left, y: rect.top })); } catch (e) {}
   }
 
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
       const { x, y } = clamp(saved.x, saved.y);
       applyPosition(x, y);
@@ -8590,7 +8691,7 @@ async function sendAiChatMessage() {
     dragging = false;
     fab.classList.remove("dragging");
     if (moved) savePosition();
-    else toggleAiChat();
+    else onTap();
   }
   fab.addEventListener("pointerup", endDrag);
   fab.addEventListener("pointercancel", endDrag);
@@ -8600,7 +8701,9 @@ async function sendAiChatMessage() {
     const { x, y } = clamp(rect.left, rect.top);
     applyPosition(x, y);
   });
-})();
+}
+setupDraggableFab(byId("aiChatFab"), "levromart_ai_fab_pos", toggleAiChat);
+setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
 // Dragging the open chat panel itself (not just the collapsed round FAB) --
 // grabbed by its header only, so buttons up there and scrolling the message
@@ -8625,6 +8728,9 @@ async function sendAiChatMessage() {
     panel.style.top = `${y}px`;
     panel.style.right = "auto";
     panel.style.bottom = "auto";
+    // Cancels the CSS default's translate(-50%,-50%) centering -- once
+    // moved, left/top are real screen coordinates, not a centering offset.
+    panel.style.transform = "none";
   }
   function savePosition() {
     const rect = panel.getBoundingClientRect();
