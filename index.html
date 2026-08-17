@@ -452,6 +452,7 @@
   .accordion-section.open .accordion-body { max-height: 320px; padding: 0 0.9rem 0.9rem; }
   #orderStatsAccordion.open .accordion-body { max-height: 520px; }
   #myRequestsAccordion.open .accordion-body { max-height: 3000px; }
+  #veHoursAccordion.open .accordion-body { max-height: 640px; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -632,8 +633,11 @@
   /* On a wide (desktop/laptop) screen there's room to just show every card
      at once — swipe-to-scroll with a fixed card width makes sense on a
      phone, but on a wide viewport it left a few cards on the left and a
-     dead strip of empty space on the right instead of using the space. */
-  @media (min-width: 860px) {
+     dead strip of empty space on the right instead of using the space.
+     The threshold is set above phone-class viewport widths (including
+     large phones some Android browsers report as 860px+) so scrolling
+     stays the phone behavior and only genuine desktop/laptop widths wrap. */
+  @media (min-width: 1024px) {
     .hscroll { flex-wrap: wrap; overflow-x: visible; scroll-snap-type: none; }
     .hscroll > * { flex: 1 1 240px; max-width: 280px; }
   }
@@ -832,6 +836,7 @@
   </div>
   <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
   <div class="settings-row-card"><div class="theme-option" id="locationToggleOption" onclick="toggleLocationSetting()"></div></div>
+  <div class="settings-row-card"><div class="theme-option" id="leviVisibleToggleOption" onclick="toggleLeviVisible()"></div></div>
   <div class="accordion-section hidden" id="changePasswordSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-key'></i> Security</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
@@ -1107,6 +1112,29 @@
     <div class="flex" style="justify-content:flex-end;">
       <button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
       <button class="btn btn-sm" id="confirmModalOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="textPromptModal" class="modal hidden">
+  <div class="modal-content" style="max-width:420px;">
+    <h3 id="textPromptModalTitle">Please confirm</h3>
+    <p id="textPromptModalMsg" class="muted" style="margin:0.6rem 0;"></p>
+    <textarea id="textPromptModalInput" rows="3"></textarea>
+    <div class="flex" style="justify-content:flex-end;margin-top:0.6rem;">
+      <button class="btn btn-sm" id="textPromptModalCancel" style="background:#6b7280;">Cancel</button>
+      <button class="btn btn-sm" id="textPromptModalOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="roleSelectModal" class="modal hidden">
+  <div class="modal-content" style="max-width:400px;">
+    <h3><i class="fa-solid fa-user-check"></i> One more step</h3>
+    <p class="muted" style="margin:0.6rem 0 1rem;">You signed in with Google. Just tell us what brings you to Levromart so we can set up your account.</p>
+    <div class="flex" style="flex-direction:column;gap:0.6rem;">
+      <button class="btn" onclick="chooseAccountRole('buyer')"><i class="fa-solid fa-cart-shopping"></i> I'm here to buy or rent</button>
+      <button class="btn btn-outline" onclick="chooseAccountRole('vendor')"><i class="fa-solid fa-store"></i> I'm here to sell</button>
     </div>
   </div>
 </div>
@@ -1862,8 +1890,32 @@ function renderSoundToggle() {
   el.innerHTML = `<i class='fa-solid ${soundEnabled ? "fa-volume-high" : "fa-volume-xmark"}'></i> Sound effects: ${soundEnabled ? "On" : "Off"}`;
 }
 function initSound() {
-  soundEnabled = localStorage.getItem("medris-sound") !== "0";
+  soundEnabled = localStorage.getItem("medris-sound") === "1";
   renderSoundToggle();
+}
+
+// ---------- LEVI VISIBILITY (hide the floating chat button entirely) ----------
+let leviVisible = true;
+function toggleLeviVisible() {
+  leviVisible = !leviVisible;
+  localStorage.setItem("medris-levi-visible", leviVisible ? "1" : "0");
+  if (!leviVisible) { byId("aiChatPanel")?.classList.add("hidden"); }
+  applyLeviVisibility();
+  renderLeviVisibleToggle();
+  showToast(leviVisible ? "Levi is back." : "Levi is hidden. Turn this back on here any time.", "success");
+}
+function applyLeviVisibility() {
+  byId("aiChatFab")?.classList.toggle("hidden", !leviVisible);
+}
+function renderLeviVisibleToggle() {
+  const el = byId("leviVisibleToggleOption");
+  if (!el) return;
+  el.innerHTML = `<i class='fa-solid ${leviVisible ? "fa-comment-dots" : "fa-comment-slash"}'></i> Levi assistant: ${leviVisible ? "Shown" : "Hidden"}`;
+}
+function initLeviVisible() {
+  leviVisible = localStorage.getItem("medris-levi-visible") !== "0";
+  renderLeviVisibleToggle();
+  applyLeviVisibility();
 }
 document.addEventListener("click", (e) => {
   if (e.target.closest(".btn, .icon-btn, .cat-chip, .theme-option, .accent-swatch, .bottom-nav-item, .fav-btn")) playSound("click");
@@ -1922,6 +1974,34 @@ function showConfirmDialog(message, opts = {}) {
     };
     const onOk = () => cleanup(true);
     const onCancel = () => cleanup(false);
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+  });
+}
+// Same idea as showConfirmDialog but collects a short piece of text (e.g. a
+// mandatory reason) instead of a plain yes/no. Resolves the typed text, or
+// null if cancelled.
+function showTextPromptDialog(title, message, opts = {}) {
+  return new Promise((resolve) => {
+    const modal = byId("textPromptModal");
+    byId("textPromptModalTitle").textContent = title || "Please confirm";
+    byId("textPromptModalMsg").textContent = message || "";
+    const input = byId("textPromptModalInput");
+    input.value = "";
+    input.placeholder = opts.placeholder || "";
+    const okBtn = byId("textPromptModalOk");
+    const cancelBtn = byId("textPromptModalCancel");
+    okBtn.textContent = opts.okLabel || "Confirm";
+    okBtn.className = opts.danger ? "btn btn-sm btn-danger" : "btn btn-sm";
+    modal.classList.remove("hidden");
+    const cleanup = (result) => {
+      modal.classList.add("hidden");
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      resolve(result);
+    };
+    const onOk = () => cleanup(input.value);
+    const onCancel = () => cleanup(null);
     okBtn.addEventListener("click", onOk);
     cancelBtn.addEventListener("click", onCancel);
   });
@@ -2553,6 +2633,22 @@ async function refreshAuthState() {
   await refreshNotifications();
   subscribeNotifications();
   loadAiVoices();
+  // Google sign-in creates the account straight away with no chance to
+  // pick buyer vs vendor first (unlike the manual signup form, which asks
+  // up front) -- this catches that gap and asks right after, before the
+  // account is treated as fully set up.
+  if (profile && profile.role_selected === false) byId("roleSelectModal")?.classList.remove("hidden");
+}
+async function chooseAccountRole(role) {
+  const { error } = await sb.from("users").update({ role, role_selected: true }).eq("id", session.user.id);
+  if (error) { showToast(error.message, "error"); return; }
+  profile.role = role;
+  profile.role_selected = true;
+  byId("roleSelectModal")?.classList.add("hidden");
+  updateAuthUI();
+  renderBottomNav();
+  if (role === "vendor") navigate("vendorApply");
+  else showToast("You're all set.", "success");
 }
 
 function updateAuthUI() {
@@ -2908,6 +3004,45 @@ async function submitLoginOtp() {
   }
 }
 
+// ---------- SUSPENDED ACCOUNT SCREEN ----------
+async function renderSuspendedScreen() {
+  const { data: appeal } = await sb.rpc("get_my_account_appeal");
+  const a = appeal && appeal[0];
+  const hasPendingAppeal = a && a.status === "pending";
+
+  let html = `<div class="card" style="max-width:480px;margin:2rem auto;">
+    <h2 style="color:var(--danger);"><i class="fa-solid fa-ban"></i> Account suspended</h2>
+    <p style="margin:0.6rem 0;">${esc(profile.suspended_reason || "Your account has been suspended.")}</p>`;
+
+  if (a) {
+    html += `<div class="banner ${a.status === "pending" ? "banner-warning" : a.status === "approved" ? "banner-success" : "banner-danger"}" style="margin-top:0.8rem;">
+      <strong>Your appeal is ${a.status}.</strong>
+      ${a.admin_response ? `<p class="muted" style="margin-top:0.3rem;">${esc(a.admin_response)}</p>` : ""}
+    </div>`;
+  }
+
+  if (!hasPendingAppeal) {
+    html += `<label style="margin-top:1rem;">${a ? "Submit a new appeal" : "Appeal this suspension"}</label>
+      <textarea id="appealMessage" rows="4" placeholder="Explain why you think this suspension should be lifted…"></textarea>
+      <div id="appealError" class="error-text hidden"></div>
+      <button class="btn btn-sm" style="margin-top:0.4rem;" onclick="submitAppeal()"><i class="fa-solid fa-paper-plane"></i> Submit appeal</button>`;
+  }
+
+  html += `<button class="btn btn-sm btn-outline" style="margin-top:1rem;" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</button>
+  </div>`;
+  return html;
+}
+async function submitAppeal() {
+  const errorEl = byId("appealError");
+  errorEl.classList.add("hidden");
+  const message = byId("appealMessage").value.trim();
+  if (!message) { errorEl.textContent = "Explain why you're appealing first."; errorEl.classList.remove("hidden"); return; }
+  const { error } = await sb.rpc("submit_account_appeal", { p_message: message });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  showToast("Appeal submitted. We'll review it and get back to you.", "success");
+  navigate("suspended", {}, false);
+}
+
 async function cancelLoginOtp() {
   byId("otpModal").classList.add("hidden");
   pendingOtpAccessToken = null;
@@ -2980,11 +3115,11 @@ function updateHeaderNavActive() {
 }
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
-  // Most navigations resolve in well under this, so we hold the outgoing
-  // page on screen and only swap to the spinner if the new one is
-  // genuinely still loading -- otherwise the transition is instant with
-  // no flash, and a slow one still gets a clear loading state.
-  let spinnerTimer = setTimeout(() => { app.innerHTML = brandSpinnerHtml(); }, 180);
+  // A suspended account is locked to this one screen no matter what it
+  // tries to navigate to -- appealing (or logging out) is all that's left.
+  if (profile?.suspended_at && view !== "suspended") view = "suspended";
+  // The outgoing page just stays on screen, silently, until the new one is
+  // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
   if (view !== "messages" && activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
   updateAuthUI();
@@ -3031,12 +3166,12 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "privacy": html = renderPrivacy(); break;
       case "refundPolicy": html = renderRefundPolicy(); break;
       case "sharedAiChat": html = await renderSharedAiChat(params.token); break;
+      case "suspended": html = await renderSuspendedScreen(); break;
       default: html = await renderHome();
     }
   } catch (err) {
     html = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
   }
-  clearTimeout(spinnerTimer);
   app.innerHTML = html;
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
@@ -3363,6 +3498,16 @@ async function renderWishlist() {
 let activeMsgChannel = null;
 let activeConversationId = null;
 
+async function callVendorGated(event, phone, vendorId) {
+  event.preventDefault();
+  const { data: v } = await sb.from("vendors").select("business_name, business_hours, allow_after_hours_messages").eq("id", vendorId).maybeSingle();
+  if (v && !canMessageVendorNow(v)) {
+    const status = vendorHoursStatus(v);
+    showToast(`${v.business_name || "This vendor"} is outside working hours right now${status.todayText ? ` (${status.todayLabel}: ${status.todayText})` : ""}. Try calling during their working hours.`, "info");
+    return;
+  }
+  window.location.href = telLink(phone);
+}
 async function startConversationWithVendor(vendorId) {
   if (!session) { showLogin(); return; }
   const { data: v } = await sb.from("vendors").select("business_name, business_hours, allow_after_hours_messages").eq("id", vendorId).maybeSingle();
@@ -3820,7 +3965,7 @@ async function handleChatFileSelected(evt, conversationId) {
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
     .from("products")
-    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee, lat, lng), category:categories(name)")
+    .select("*, vendor:vendors!inner(id, business_name, city, address, phone, whatsapp_number, avg_rating, verification_status, cac_number, created_at, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng), category:categories(name)")
     .eq("id", productId)
     .eq("status", "active")
     .eq("vendor.verification_status", "verified")
@@ -3854,7 +3999,7 @@ async function renderProductDetail(productId) {
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${esc(product.vendor.business_name)}</a></p>
       <div class="contact-actions" style="align-items:center;">
         ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
-        ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
+        ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
         ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
       </div>
       ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
@@ -3874,7 +4019,7 @@ async function renderProductDetail(productId) {
         <input type="date" id="rentEnd" min="${today}" />
         <input type="number" id="rentQty" value="1" min="1" max="${product.quantity_total}" placeholder="Qty" style="width:90px;" />
       </div>
-      ${deliveryFieldsHtml("rent", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng)}
+      ${deliveryFieldsHtml("rent", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
       <button class="btn" onclick="confirmRental('${product.vendor.id}','${product.id}')">Reserve</button>
       <p id="rentError" class="error-text hidden"></p>
     </div>`;
@@ -3889,7 +4034,7 @@ async function renderProductDetail(productId) {
           : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" style="width:90px;" />`}
       </div>
       ${isTimedService ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
-      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng)}
+      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
       <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
@@ -3923,17 +4068,19 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
-function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng) {
+function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, perKm) {
   const fee = Number(deliveryFee) || 0;
+  const isDistance = feeMode === "distance" && Number(perKm) > 0 && vendorLat != null && vendorLng != null;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex" style="margin:0.6rem 0 0.9rem;">
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (fee depends on distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
-    <div id="${prefix}DeliveryFields" class="hidden" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}">
+    <div id="${prefix}DeliveryFields" class="hidden" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
       <input type="tel" id="${prefix}Phone" placeholder="Phone number (so the vendor can reach you)" value="${esc(profile?.phone || "")}" />
-      ${fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
+      ${!isDistance && fee > 0 ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;"><i class="fa-solid fa-circle-info"></i> A delivery fee of ${naira(fee)} will be added to your total.</p>` : ""}
+      ${isDistance ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;" id="${prefix}FeeLine"></p>` : ""}
       ${hasVendorLoc ? `<p class="muted" style="font-size:0.8rem;margin:0.3rem 0 0;" id="${prefix}EtaLine"></p>` : ""}
       <p class="muted" style="font-size:0.78rem;margin-top:0.3rem;">Wrong details? <a href="#" onclick="navigate('editProfile');return false;">Update them here</a>. It'll remember for next time.</p>
     </div>`;
@@ -3946,16 +4093,25 @@ function toggleDeliveryFields(prefix) {
 function updateDeliveryEta(prefix) {
   const wrap = byId(`${prefix}DeliveryFields`);
   const etaEl = byId(`${prefix}EtaLine`);
-  if (!wrap || !etaEl) return;
+  const feeEl = byId(`${prefix}FeeLine`);
+  if (!wrap) return;
   const vLat = parseFloat(wrap.dataset.vendorLat);
   const vLng = parseFloat(wrap.dataset.vendorLng);
   if (isNaN(vLat) || isNaN(vLng)) return;
   if (!buyerLocation) {
-    etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time available once you <a href="#" onclick="requestDeliveryEta('${prefix}');return false;">share your location</a>.`;
+    const link = `<a href="#" onclick="requestDeliveryEta('${prefix}');return false;">share your location</a>`;
+    if (etaEl) etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time available once you ${link}.`;
+    if (feeEl) feeEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> Delivery fee shown once you ${link}.`;
     return;
   }
   const km = haversineKm(buyerLocation.lat, buyerLocation.lng, vLat, vLng);
-  etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
+  if (etaEl) etaEl.innerHTML = `<i class="fa-solid fa-clock"></i> Estimated delivery time: ~${estimateDeliveryRange(km)} (rough estimate based on distance, not guaranteed).`;
+  if (feeEl && wrap.dataset.feeMode === "distance") {
+    const base = Number(wrap.dataset.fee) || 0;
+    const perKm = Number(wrap.dataset.perKm) || 0;
+    const fee = Math.round((base + perKm * km) / 50) * 50;
+    feeEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> Delivery fee for this address: ${naira(fee)} (${formatDistanceKm(km)}). This will be added to your total.`;
+  }
 }
 async function requestDeliveryEta(prefix) {
   try {
@@ -4020,6 +4176,8 @@ async function confirmRental(vendorId, productId) {
     p_delivery_method: delivery.method,
     p_delivery_address: delivery.address,
     p_delivery_phone: delivery.phone,
+    p_buyer_lat: buyerLocation?.lat ?? null,
+    p_buyer_lng: buyerLocation?.lng ?? null,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   navigate("orderDetail", { orderId });
@@ -4053,6 +4211,8 @@ async function buyNow(vendorId, productId) {
     p_delivery_method: delivery.method,
     p_delivery_address: delivery.address,
     p_delivery_phone: delivery.phone,
+    p_buyer_lat: buyerLocation?.lat ?? null,
+    p_buyer_lng: buyerLocation?.lng ?? null,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   navigate("orderDetail", { orderId });
@@ -4269,7 +4429,7 @@ async function renderStorefront(vendorId) {
   ].filter(Boolean).join("");
   html += `<div class="contact-actions" style="align-items:center;">
     ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-solid fa-comment-dots'></i> Message</button>` : ""}
-    ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
+    ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}" onclick="callVendorGated(event,'${esc(v.phone)}','${v.id}')"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
     ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
     ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;">
       <button class="btn btn-sm btn-outline" type="button" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button>
@@ -4452,7 +4612,7 @@ async function renderRequestEquipment() {
               <span class="badge ${o.status === "accepted" ? "success" : o.status === "declined" ? "danger" : ""}">${esc(o.status)}</span>
               ${r.status === "open" && o.status === "pending" ? `<button class="btn btn-sm" onclick="acceptOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-outline" onclick="declineOffer('${o.id}')">Decline</button>` : ""}
               ${o.status === "accepted" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${o.vendor_id}')" title="Message vendor"><i class='fa-solid fa-comment-dots'></i></button>` : ""}
-              ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}"><i class='fa-solid fa-phone'></i></a>` : ""}
+              ${o.status === "accepted" && o.vendor?.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(o.vendor.phone)}" onclick="callVendorGated(event,'${esc(o.vendor.phone)}','${o.vendor_id}')"><i class='fa-solid fa-phone'></i></a>` : ""}
             </div>
           </div>
           ${o.price != null ? `<p class="muted" style="font-size:0.78rem;margin:0.3rem 0 0;">Item: ${naira(o.price)}${delivery > 0 ? ` + ${naira(delivery)} delivery fee if you need it delivered` : " · free pickup or delivery"}</p>` : ""}
@@ -4989,8 +5149,16 @@ async function renderVendorEditProfile() {
     <label>City</label><input id="veCity" value="${esc(v.city || "")}" />
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
     <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
-    <label>Delivery fee (₦): charged when a buyer chooses delivery instead of pickup. Leave as 0 for free delivery.</label>
+    <label>Delivery fee ${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere; distance-based adds a per-km rate on top, calculated from the buyer's shared location to your shop pin. Leave the amount at 0 for free delivery.")}</label>
+    <select id="veDeliveryFeeMode" onchange="byId('veDeliveryPerKmRow').classList.toggle('hidden', this.value !== 'distance')">
+      <option value="flat" ${v.delivery_fee_mode !== "distance" ? "selected" : ""}>Flat fee</option>
+      <option value="distance" ${v.delivery_fee_mode === "distance" ? "selected" : ""}>Distance-based</option>
+    </select>
     <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
+    <div id="veDeliveryPerKmRow" class="${v.delivery_fee_mode === "distance" ? "" : "hidden"}">
+      <label>₦ per km</label>
+      <input id="veDeliveryPerKm" type="number" min="0" step="10" placeholder="e.g. 100" value="${v.delivery_fee_per_km || 0}" />
+    </div>
     <label>About your business</label><textarea id="veBio" rows="3">${esc(v.bio || "")}</textarea>
     <div class="flex" style="margin-top:0.8rem;">
       <button class="btn" onclick="submitVendorEditProfile()">Save changes</button>
@@ -5000,10 +5168,16 @@ async function renderVendorEditProfile() {
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
     <h2><i class="fa-solid fa-clock"></i> Working hours ${infoPopoverHtml("veHoursInfo", "Buyers see these on your storefront. Turn off a day you're closed, or set start/end times for the days you're open.")}</h2>
-    <div id="veHoursRows">${HOURS_DAYS.map((d) => hoursDayRowHtml(d.key, d.label, v.business_hours ? v.business_hours[d.key] : { closed: false, open: "09:00", close: "18:00" })).join("")}</div>
-    <button type="button" class="btn btn-sm btn-outline" style="margin-top:0.6rem;" onclick="copyMondayHoursToAll()"><i class="fa-solid fa-copy"></i> Use Monday's hours for every day</button>
+    <p class="muted" style="font-size:0.85rem;">${v.opening_hours ? esc(v.opening_hours) : "Not set yet."}</p>
+    <div class="accordion-section" id="veHoursAccordion">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-pen"></i> Edit hours</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+      <div class="accordion-body">
+        <div id="veHoursRows">${HOURS_DAYS.map((d) => hoursDayRowHtml(d.key, d.label, v.business_hours ? v.business_hours[d.key] : { closed: false, open: "09:00", close: "18:00" })).join("")}</div>
+        <button type="button" class="btn btn-sm btn-outline" style="margin-top:0.6rem;" onclick="copyMondayHoursToAll()"><i class="fa-solid fa-copy"></i> Use Monday's hours for every day</button>
+      </div>
+    </div>
     <div class="switch-row">
-      <span class="switch-label-text">Let buyers message you outside these hours ${infoPopoverHtml("veAfterHoursInfo", "Off: the Message button shows your working hours instead of opening a chat while you're closed. On: buyers can message you any time.")}</span>
+      <span class="switch-label-text">Let buyers message or call you outside these hours ${infoPopoverHtml("veAfterHoursInfo", "Off: the Message and Call buttons show your working hours instead of reaching you while you're closed. On: buyers can contact you any time.")}</span>
       <label class="switch-toggle"><input type="checkbox" id="veAllowAfterHours" ${v.allow_after_hours_messages !== false ? "checked" : ""} /><span class="switch-toggle-track"></span></label>
     </div>
     <div class="flex" style="margin-top:1rem;">
@@ -5135,6 +5309,8 @@ async function submitVendorEditProfile() {
     business_hours,
     allow_after_hours_messages: byId("veAllowAfterHours").checked,
     delivery_fee: Math.max(0, Number(byId("veDeliveryFee").value) || 0),
+    delivery_fee_mode: byId("veDeliveryFeeMode").value,
+    delivery_fee_per_km: Math.max(0, Number(byId("veDeliveryPerKm").value) || 0),
     bio: byId("veBio").value.trim() || null,
   }).eq("id", vendor.id);
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
@@ -6645,10 +6821,15 @@ async function adminToggleVendorActive(vendorId, currentlyActive, businessName) 
 // for seeing who's actually on the platform and how many of each kind.
 async function renderAdminPeople() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
-  const { data: people } = await sb.from("users").select("id, name, email, role, city, created_at").order("created_at", { ascending: false });
+  const [{ data: people }, { data: appeals }] = await Promise.all([
+    sb.from("users").select("id, name, email, role, city, created_at, suspended_at, suspended_reason").order("created_at", { ascending: false }),
+    sb.rpc("admin_get_pending_appeals"),
+  ]);
 
   const counts = { buyer: 0, vendor: 0, admin: 0 };
   (people || []).forEach((p) => { if (counts[p.role] != null) counts[p.role]++; });
+  const appealByUser = {};
+  (appeals || []).forEach((a) => { appealByUser[a.user_id] = a; });
 
   let html = `<h2><i class='fa-solid fa-users'></i> People on Levromart</h2>`;
   html += adminNavHtml("adminPeople");
@@ -6663,9 +6844,23 @@ async function renderAdminPeople() {
       </table>
     </div>
   </div>`;
+  if (appeals && appeals.length) {
+    html += `<div class="card" style="border-color:var(--warning);max-width:600px;margin-bottom:1.2rem;">
+      <h3 style="margin:0;"><i class="fa-solid fa-flag"></i> Suspension appeals awaiting review (${appeals.length})</h3>
+      ${appeals.map((a) => `<div style="border-top:1px solid var(--border);padding:0.6rem 0;">
+        <strong>${esc(a.user_name || a.user_email)}</strong>
+        <p class="muted" style="margin:0.2rem 0;font-size:0.82rem;">Suspended for: ${esc(a.suspension_reason || "")}</p>
+        <p style="margin:0.3rem 0;">${esc(a.message)}</p>
+        <div class="flex" style="gap:0.5rem;">
+          <button class="btn btn-sm" onclick="approveAppeal('${a.user_id}')"><i class="fa-solid fa-check"></i> Approve &amp; unsuspend</button>
+          <button class="btn btn-sm btn-outline" onclick="denyAppealPrompt('${a.id}')"><i class="fa-solid fa-xmark"></i> Deny</button>
+        </div>
+      </div>`).join("")}
+    </div>`;
+  }
   html += `<input type="text" id="adminPeopleSearch" placeholder="Search by name or email…" style="max-width:320px;margin-bottom:0.8rem;" oninput="filterAdminPeople()" />`;
   html += `<div class="table-wrap"><table class="data-table" id="adminPeopleTable"><thead><tr>
-    <th>Name</th><th>Email</th><th>Role</th><th>City</th><th>Joined</th>
+    <th>Name</th><th>Email</th><th>Role</th><th>City</th><th>Joined</th><th>Status</th><th></th>
   </tr></thead><tbody>`;
   html += (people || []).map((p) => `<tr>
     <td>${esc(p.name || "—")}</td>
@@ -6673,9 +6868,44 @@ async function renderAdminPeople() {
     <td><span class="badge">${esc(p.role)}</span></td>
     <td>${esc(p.city || "—")}</td>
     <td>${new Date(p.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+    <td>${p.suspended_at ? `<span class="badge danger" title="${esc(p.suspended_reason || "")}">Suspended</span>` : `<span class="badge success">Active</span>`}${appealByUser[p.id] ? ` <span class="badge warning">Appealed</span>` : ""}</td>
+    <td>${p.role === "admin" ? "" : p.suspended_at
+      ? `<button class="btn btn-sm btn-outline" onclick="unsuspendUser('${p.id}','${esc(p.name || p.email)}')">Unsuspend</button>`
+      : `<button class="btn btn-sm btn-danger" onclick="suspendUserPrompt('${p.id}','${esc(p.name || p.email)}')">Suspend</button>`}</td>
   </tr>`).join("");
   html += `</tbody></table></div>`;
   return html;
+}
+async function suspendUserPrompt(userId, name) {
+  const reason = await showTextPromptDialog(`Suspend ${name}`, "This reason is sent to the user as their suspension notice, so make it clear.", { placeholder: "Reason for suspension…", okLabel: "Suspend", danger: true });
+  if (reason === null) return;
+  if (!reason.trim()) { showToast("A reason is required.", "error"); return; }
+  const { error } = await sb.rpc("admin_suspend_user", { p_user_id: userId, p_reason: reason.trim() });
+  if (error) { showToast(error.message, "error"); return; }
+  showToast(`${name} suspended and notified.`, "success");
+  navigate("adminPeople");
+}
+async function unsuspendUser(userId, name) {
+  if (!(await showConfirmDialog(`Lift the suspension on ${name}?`, { title: "Unsuspend", okLabel: "Unsuspend" }))) return;
+  const { error } = await sb.rpc("admin_unsuspend_user", { p_user_id: userId });
+  if (error) { showToast(error.message, "error"); return; }
+  showToast(`${name} unsuspended.`, "success");
+  navigate("adminPeople");
+}
+async function approveAppeal(userId) {
+  if (!(await showConfirmDialog("Approve this appeal and unsuspend the account?", { title: "Approve appeal", okLabel: "Approve" }))) return;
+  const { error } = await sb.rpc("admin_unsuspend_user", { p_user_id: userId });
+  if (error) { showToast(error.message, "error"); return; }
+  showToast("Appeal approved, account unsuspended.", "success");
+  navigate("adminPeople");
+}
+async function denyAppealPrompt(appealId) {
+  const response = await showTextPromptDialog("Deny appeal", "Optional: explain why, this is sent to the user.", { placeholder: "Reason (optional)…", okLabel: "Deny appeal", danger: true });
+  if (response === null) return;
+  const { error } = await sb.rpc("admin_deny_appeal", { p_appeal_id: appealId, p_response: response.trim() || null });
+  if (error) { showToast(error.message, "error"); return; }
+  showToast("Appeal denied.", "success");
+  navigate("adminPeople");
 }
 function filterAdminPeople() {
   const q = byId("adminPeopleSearch").value.trim().toLowerCase();
@@ -8124,6 +8354,7 @@ window.addEventListener("popstate", (e) => {
   initAccent();
   initSound();
   initLocationSetting();
+  initLeviVisible();
   initAiChatMic();
   setTimeout(hideSplashScreen, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1900);
   byId("footerYear").textContent = new Date().getFullYear();
