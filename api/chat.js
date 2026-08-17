@@ -241,7 +241,7 @@ async function buildVendorContext(SUPABASE_URL, svcServiceHeaders, userId) {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   try {
-    const { messages, accessToken, lat, lng } = JSON.parse(await readBody(req));
+    const { messages, accessToken, lat, lng, currentView, currentViewParams, lastRenderError } = JSON.parse(await readBody(req));
     if (!Array.isArray(messages) || messages.length === 0) { res.status(400).json({ error: "messages array required" }); return; }
     if (!accessToken) { res.status(401).json({ error: "Please log in to use the assistant." }); return; }
     const buyerLat = typeof lat === "number" ? lat : null;
@@ -313,13 +313,27 @@ module.exports = async function handler(req, res) {
       }
     } catch (e) {}
 
+    // Not literal screen vision — just the router's own view name and, if
+    // that view just threw during render, the error it threw. Enough to
+    // turn "why is my page showing this" into a real answer instead of a
+    // generic "I can't see your screen" deflection, without ever claiming
+    // to see pixels, layout, or anything the person didn't tell it.
+    let currentScreenContext = "";
+    if (typeof currentView === "string" && currentView) {
+      const paramsStr = currentViewParams && Object.keys(currentViewParams).length ? ` (params: ${JSON.stringify(currentViewParams).slice(0, 200)})` : "";
+      currentScreenContext = `\n\nCURRENT SCREEN: This person's app is currently showing the "${currentView}" view${paramsStr}. This is the same view-name system used for your own [[NAV:...]] tags, so you know what it is. You do NOT see their actual screen, layout, or any error not listed here -- if they describe something you don't have data for, ask them to tell you what they see rather than guessing.`;
+      if (typeof lastRenderError === "string" && lastRenderError) {
+        currentScreenContext += ` That view just failed to load with this error: "${lastRenderError.slice(0, 300)}". If they ask why the page looks broken/empty/is showing an error, use this to explain plainly what's likely wrong (translate technical terms into plain language), and suggest refreshing or trying again in a bit; if it sounds like a real bug rather than something they can fix themselves, tell them it's worth reporting to Levromart.`;
+      }
+    }
+
     const callGemini = (model) => fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
         headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}${accountStatusContext}` }] },
+          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}${accountStatusContext}${currentScreenContext}` }] },
           contents,
           generationConfig: { maxOutputTokens: 400 },
         }),
