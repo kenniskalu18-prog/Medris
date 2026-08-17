@@ -2177,54 +2177,6 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPa
 // back-gesture, and touches starting inside scrollable rails, form
 // controls, drawers, or modals are ignored so this never hijacks a
 // carousel swipe, a table's own horizontal scroll, or a text selection.
-(function setupPageSwipeNav() {
-  const OS_EDGE_EXCLUDE = 20, THRESHOLD = 60;
-  let startX = null, startY = null, tracking = false;
-  function isExempt(el) {
-    if (el.closest(".bottom-nav-add")) return true;
-    if (el.closest(".bottom-nav")) return false; // swiping across the nav itself is the same gesture, always allowed
-    if (el.closest(".hscroll, .cat-row, .table-wrap, input, textarea, select, button, a, .side-drawer, .modal, .ai-chat-fab, .ai-chat-panel")) return true;
-    // Belt-and-suspenders: any horizontally-scrollable container, no matter
-    // its class name, is exempt too — catches spots like the storefront
-    // comparison table that don't use .table-wrap, so a table swipe never
-    // gets hijacked into a page change.
-    let node = el;
-    while (node && node !== document.body) {
-      const style = getComputedStyle(node);
-      if ((style.overflowX === "auto" || style.overflowX === "scroll") && node.scrollWidth > node.clientWidth) return true;
-      node = node.parentElement;
-    }
-    return false;
-  }
-  document.addEventListener("touchstart", (e) => {
-    if (document.querySelector(".side-drawer.open") || document.querySelector(".modal:not(.hidden)") || !byId("tourModal").classList.contains("hidden")) { tracking = false; return; }
-    const t = e.touches[0];
-    if (t.clientX <= OS_EDGE_EXCLUDE || t.clientX >= window.innerWidth - OS_EDGE_EXCLUDE) { tracking = false; return; }
-    if (isExempt(e.target)) { tracking = false; return; }
-    startX = t.clientX; startY = t.clientY; tracking = true;
-  }, { passive: true });
-  document.addEventListener("touchmove", (e) => {
-    if (!tracking) return;
-    const dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
-    // Compare relative dx/dy rather than a small fixed vertical cutoff — a
-    // real horizontal swipe naturally arcs a bit vertically, and a flat
-    // cutoff was killing most genuine swipes before reaching the threshold.
-    if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) tracking = false;
-  }, { passive: true });
-  document.addEventListener("touchend", (e) => {
-    if (!tracking || startX === null) { tracking = false; return; }
-    const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
-    tracking = false;
-    if (Math.abs(dx) < THRESHOLD) return;
-    const tabs = window.__bottomNavItems || [];
-    const idx = tabs.findIndex((it) => it.view === currentView);
-    if (idx === -1) return;
-    const nextIdx = dx < 0 ? Math.min(idx + 1, tabs.length - 1) : Math.max(idx - 1, 0);
-    if (nextIdx === idx) return;
-    new Function(tabs[nextIdx].action)();
-  });
-})();
-
 // ---------- NOTIFICATIONS (real, persisted, realtime) ----------
 let notifChannel = null;
 function timeAgo(dateStr) {
@@ -2737,10 +2689,6 @@ function renderBottomNav() {
     items.push({ icon: "<i class='fa-solid fa-hand'></i>", label: "Request", action: "requireLoginThen('requestEquipment')", view: "requestEquipment" });
     items.push({ icon: "<i class='fa-solid fa-user'></i>", label: "Login", action: "showLogin()", view: null });
   }
-  // Kept for the page-wide swipe-to-switch-tabs gesture (see
-  // setupPageSwipeNav) — it needs the same ordered, navigable item list
-  // the buttons were drawn from, action strings included.
-  window.__bottomNavItems = items.filter((it) => !it.isAdd && it.view && it.action);
   const itemHtml = (it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}${it.badge ? `<span class="bn-badge">${it.badge > 9 ? "9+" : it.badge}</span>` : ""}</span><span>${it.label}</span></button>`;
   if (vendor) {
     // Split evenly into two groups either side of the "+" — a dedicated
@@ -4323,7 +4271,7 @@ async function renderStorefront(vendorId) {
     html += `<input type="text" id="storefrontSearch" placeholder="Search this vendor's products…" oninput="filterStorefrontProducts()" style="margin-bottom:0.8rem;" />`;
   }
   html += `<div id="storefrontGrid" class="grid">${(products && products.length > 0) ? "<p class='muted'>Loading…</p>" : '<div class="empty-state">No products listed yet.</div>'}</div>`;
-  html += `<div id="storefrontTable" class="hidden" style="overflow-x:auto;"></div>`;
+  html += `<div id="storefrontTable" class="hidden" style="overflow-x:auto;max-height:26rem;overflow-y:auto;"></div>`;
   storefrontViewMode = "grid";
   if (products && products.length > 0) setTimeout(filterStorefrontProducts, 0);
 
@@ -5177,7 +5125,7 @@ async function renderVendorProducts() {
         </table>
       </div>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+    html += `<div class="table-wrap" style="max-height:26rem;overflow-y:auto;"><table class="data-table"><thead><tr>
       <th>Product</th><th>Category</th><th>Price</th><th>Qty avail / total</th><th>Views</th><th>Saved</th><th>Revenue</th><th>Status</th>
     </tr></thead><tbody>`;
     products.forEach((p, i) => {
@@ -5770,7 +5718,13 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
     <label style="margin:0;font-size:0.78rem;font-weight:400;">To <input type="date" value="${esc(dateTo)}" onchange="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:this.value})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
     ${dateFrom || dateTo ? `<a href="#" onclick="navigate('vendorOrders',{status:'${status}',type:'${type}',payment:'${payment}'});return false;">Clear dates</a>` : ""}
   </div>`;
-  html += orderListHtml(sortOrdersForList(orders), false);
+  orderListViewMode = "cards";
+  orderListExpanded = false;
+  const sortedOrders = sortOrdersForList(orders);
+  window.__orderListOrders = sortedOrders;
+  window.__orderListIsBuyer = false;
+  html += orderListControlsHtml(sortedOrders.length);
+  html += `<div id="orderListWrap">${orderListHtml(sortedOrders, false)}</div>`;
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
   setTimeout(() => { enhanceSelectsIn(byId("app")); renderOrderStatsBody(); }, 0);
   return html;
@@ -5811,7 +5765,13 @@ async function renderBuyerOrders(status, type, payment, dateFrom, dateTo) {
     <label style="margin:0;font-size:0.78rem;font-weight:400;">To <input type="date" value="${esc(dateTo)}" onchange="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:this.value})" style="width:auto;margin:0 0 0 0.3rem;" /></label>
     ${dateFrom || dateTo ? `<a href="#" onclick="navigate('buyerOrders',{status:'${status}',type:'${type}',payment:'${payment}'});return false;">Clear dates</a>` : ""}
   </div>`;
-  html += orderListHtml(sortOrdersForList(orders), true);
+  orderListViewMode = "cards";
+  orderListExpanded = false;
+  const sortedOrders = sortOrdersForList(orders);
+  window.__orderListOrders = sortedOrders;
+  window.__orderListIsBuyer = true;
+  html += orderListControlsHtml(sortedOrders.length);
+  html += `<div id="orderListWrap">${orderListHtml(sortedOrders, true)}</div>`;
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Continue shopping</button>`;
   setTimeout(() => enhanceSelectsIn(byId("app")), 0);
   return html;
@@ -5849,9 +5809,49 @@ function orderDateTimeStr(iso) {
   return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+let orderListViewMode = "cards"; // cards | table
+let orderListExpanded = false;
+const ORDER_LIST_PAGE_SIZE = 5;
+
+function orderListControlsHtml(total) {
+  if (!total) return "";
+  return `<div class="flex" style="gap:0.5rem;justify-content:flex-end;margin:0 0 0.5rem;">
+    <button class="btn btn-sm ${orderListViewMode === "cards" ? "" : "btn-outline"}" onclick="setOrderListView('cards')"><i class="fa-solid fa-list"></i> List</button>
+    <button class="btn btn-sm ${orderListViewMode === "table" ? "" : "btn-outline"}" onclick="setOrderListView('table')"><i class="fa-solid fa-table-list"></i> Table</button>
+  </div>`;
+}
+function setOrderListView(mode) {
+  orderListViewMode = mode;
+  renderOrderListWrap();
+}
+function toggleOrderListExpanded() {
+  orderListExpanded = !orderListExpanded;
+  renderOrderListWrap();
+}
+function renderOrderListWrap() {
+  const wrap = byId("orderListWrap");
+  if (!wrap) return;
+  wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
+}
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
-  return orders.map((o) => `
+  const total = orders.length;
+  const shown = orderListExpanded ? orders : orders.slice(0, ORDER_LIST_PAGE_SIZE);
+  const moreBtn = total > ORDER_LIST_PAGE_SIZE
+    ? `<button class="btn btn-sm btn-outline" style="width:100%;margin-top:0.5rem;" onclick="toggleOrderListExpanded()">${orderListExpanded ? `<i class="fa-solid fa-chevron-up"></i> Show less` : `<i class="fa-solid fa-chevron-down"></i> Show all ${total} orders`}</button>`
+    : "";
+  if (orderListViewMode === "table") {
+    return `<div class="table-wrap" style="max-height:26rem;overflow-y:auto;"><table class="data-table"><thead><tr>
+      <th>${isBuyerView ? "Vendor" : "Buyer"}</th><th>Type</th><th>Amount</th><th>Date</th><th>Status</th>
+    </tr></thead><tbody>${shown.map((o) => `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
+      <td>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</td>
+      <td style="text-transform:capitalize;">${esc(o.order_type)}</td>
+      <td>${naira(o.total_amount)}</td>
+      <td>${o.created_at ? orderDateTimeStr(o.created_at) : ""}</td>
+      <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
+    </tr>`).join("")}</tbody></table></div>${moreBtn}`;
+  }
+  return shown.map((o) => `
     <div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
       <div>
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
@@ -5859,7 +5859,7 @@ function orderListHtml(orders, isBuyerView) {
         ${o.created_at ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-solid fa-calendar-days"></i> ${orderDateTimeStr(o.created_at)}</p>` : ""}
       </div>
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
-    </div>`).join("");
+    </div>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -7862,10 +7862,7 @@ async function sendAiChatMessage() {
 }
 
 // Draggable floating action button — tap to open, drag to reposition (and
-// it remembers where you leave it). Earlier this was locked in place
-// because dragging fought with the page-wide swipe-to-navigate gesture; now
-// that isExempt() explicitly excludes .ai-chat-fab (see setupPageSwipeNav),
-// the two don't collide, so this is safe to bring back.
+// it remembers where you leave it).
 (function setupAiChatFab() {
   const fab = byId("aiChatFab");
   const STORAGE_KEY = "levromart_ai_fab_pos";
