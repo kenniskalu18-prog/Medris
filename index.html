@@ -2316,7 +2316,7 @@ async function refreshNotifications() {
   const { data: convs } = await sb.rpc("list_my_conversations");
   unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
 
-  if (session && profile?.role === "buyer" && !vendor) {
+  if (session && profile?.role !== "admin") {
     const { count: cartCount } = await sb.from("cart_items").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id);
     buyerCartCount = cartCount || 0;
   } else {
@@ -2814,7 +2814,7 @@ function renderBottomNav() {
 function updateCartFab() {
   const fab = byId("cartFab");
   if (!fab) return;
-  const show = session && profile?.role === "buyer" && !vendor;
+  const show = session && profile?.role !== "admin";
   fab.classList.toggle("hidden", !show);
   const badge = byId("cartFabBadge");
   if (badge) {
@@ -3117,6 +3117,12 @@ async function confirmDeleteAccount() {
 
 // ---------- NAVIGATION ----------
 let currentView = "home";
+let currentViewParams = {};
+// So Levi can be told "the person is looking at page X" (and, if that page
+// just crashed, what it crashed with) instead of only ever answering in
+// the abstract -- cleared on every successful render, only ever reflects
+// the CURRENT screen, never a stale one from earlier in the session.
+let lastRenderError = null;
 function updateHeaderNavActive() {
   document.querySelectorAll(".header-nav-link").forEach((el) => el.classList.toggle("active", el.dataset.view === currentView));
 }
@@ -3129,6 +3135,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
   if (view !== "messages" && activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
+  currentViewParams = params || {};
   updateAuthUI();
   renderBottomNav();
   updateHeaderNavActive();
@@ -3177,8 +3184,10 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "suspended": html = await renderSuspendedScreen(); break;
       default: html = await renderHome();
     }
+    lastRenderError = null;
   } catch (err) {
     html = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
+    lastRenderError = err.message;
   }
   app.innerHTML = html;
   clearAutoScrollTimers();
@@ -3523,7 +3532,7 @@ function cartItemRowHtml(it) {
 }
 async function renderCart() {
   if (!session) return '<div class="empty-state">Log in to see your cart.</div>';
-  if (profile?.role !== "buyer" || vendor) return '<div class="empty-state">Cart is for buyer accounts.</div>';
+  if (profile?.role === "admin") return '<div class="empty-state">Admin accounts can\'t make purchases on Levromart.</div>';
 
   const { data: items, error } = await sb.from("cart_items")
     .select("id, quantity, created_at, product:products(id, name, sale_price, photos, quantity_available, status, vendor:vendors(id, business_name, previous_business_name, name_changed_at, is_active, verification_status, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng))")
@@ -5709,7 +5718,7 @@ async function renderVendorProducts() {
     html += `<div class="grid">`;
     groups.get(catName).forEach((p) => {
       const img = p.photos?.[0];
-      const favCount = favCounts[products.indexOf(p)]?.data ?? 0;
+      const favCount = favCountByProduct[p.id] ?? 0;
       const hasPendingOrder = pendingProductIds.has(p.id);
       html += `<div class="card" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc(catName.toLowerCase())}">
         <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
@@ -5943,14 +5952,9 @@ async function saveProduct() {
       const chosenSectorId = byId("prodSector").value;
       const { data: otherParent } = await sb.from("categories").select("id").eq("sector_id", chosenSectorId).is("parent_category_id", null).ilike("name", "Other").maybeSingle();
       const otherParentId = otherParent?.id;
-      const { data: existingCat } = await sb.from("categories").select("id").eq("parent_category_id", otherParentId).ilike("name", customName).maybeSingle();
-      if (existingCat) {
-        category_id = existingCat.id;
-      } else {
-        const { data: newCat, error: catErr } = await sb.from("categories").insert({ name: customName, parent_category_id: otherParentId, sector_id: chosenSectorId }).select("id").single();
-        if (catErr) throw new Error(`Couldn't create that category: ${catErr.message}`);
-        category_id = newCat.id;
-      }
+      const { data: newCategoryId, error: catErr } = await sb.rpc("create_vendor_category", { p_name: customName, p_sector_id: chosenSectorId, p_parent_category_id: otherParentId });
+      if (catErr) throw new Error(`Couldn't create that category: ${catErr.message}`);
+      category_id = newCategoryId;
     }
 
     const fields = {
@@ -8511,6 +8515,10 @@ async function sendAiChatMessage() {
         // app (map view, "Show distances") — Levi never triggers its own
         // location prompt mid-conversation, that'd be jarring.
         lat: buyerLocation?.lat, lng: buyerLocation?.lng,
+        // Levi can't see pixels, but knowing which screen someone's on (and
+        // whether it just crashed) turns "why is my page showing this" from
+        // a guessing game into a real answer.
+        currentView, currentViewParams, lastRenderError,
       }),
     });
     const json = await res.json();
