@@ -309,10 +309,13 @@
   .photo-dropzone strong { font-size: 0.92rem; }
   .photo-dropzone .muted { font-size: 0.78rem; }
   .photo-dropzone:hover, .photo-dropzone.drag-over { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--input-bg)); }
-  .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  /* Every data table on the site scrolls inside a capped height instead of
+     stretching the page forever -- -webkit-overflow-scrolling keeps touch
+     scroll working reliably for a nested scroller in a mobile/PWA context. */
+  .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 26rem; -webkit-overflow-scrolling: touch; background: var(--card); border: 1px solid var(--border); border-radius: 0.9rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
   .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
   .data-table th, .data-table td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); }
-  .data-table th { color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .data-table th { position: sticky; top: 0; z-index: 1; background: var(--card); color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .data-table tbody tr:last-child td { border-bottom: none; }
   .data-table tbody tr:hover { background: color-mix(in srgb, var(--primary) 5%, transparent); }
   .category-group-header { display: flex; align-items: center; gap: 0.6rem; margin: 1.4rem 0 0.8rem; font-size: 1rem; font-weight: 600; color: var(--text-muted); }
@@ -668,6 +671,23 @@
   .card-cart-btn { position: absolute; top: 0.6rem; left: 0.6rem; z-index: 2; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: var(--primary); color: #fff; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: transform 0.15s; }
   .card-cart-btn:hover { transform: scale(1.12); }
   .card-cart-btn.added { background: var(--success); }
+  /* Compact, Jumia-style 2-up product grid on phones -- browsing shouldn't
+     mean one giant card per screen. Scoped to grids of actual product
+     cards (:has) so vendor/package card grids, which carry more text,
+     keep their roomier single-column layout. */
+  @media (max-width: 640px) {
+    .grid:has(.product-card-wrap) { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+    .grid:has(.product-card-wrap) .product-card-wrap .card { padding: 0.6rem; border-radius: 0.8rem; }
+    .grid:has(.product-card-wrap) .product-img { height: 6.5rem; font-size: 0.7rem; border-radius: 0.4rem; }
+    .grid:has(.product-card-wrap) .product-card-wrap h4 { font-size: 0.8rem; margin: 0.45rem 0 0.15rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .grid:has(.product-card-wrap) .product-card-wrap .badge { font-size: 0.6rem; padding: 0.12rem 0.4rem; }
+    .grid:has(.product-card-wrap) .product-card-wrap p.muted { font-size: 0.66rem; margin: 0.25rem 0 0; }
+    .grid:has(.product-card-wrap) .product-card-wrap div[style*="margin:0.5rem 0"] { margin: 0.3rem 0 !important; font-size: 0.78rem; }
+    .grid:has(.product-card-wrap) .fav-btn, .grid:has(.product-card-wrap) .card-cart-btn { width: 1.5rem; height: 1.5rem; font-size: 0.7rem; top: 0.4rem; }
+    .grid:has(.product-card-wrap) .fav-btn { right: 0.4rem; }
+    .grid:has(.product-card-wrap) .card-cart-btn { left: 0.4rem; }
+    .grid:has(.product-card-wrap) .product-card-wrap [style*="gap:0.3rem"] { max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; }
+  }
   .trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.6rem 0; }
   .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
@@ -5522,6 +5542,7 @@ async function renderVendorEarnings() {
   html += `<div class="segmented-tabs" id="vendorEarningsTabs">
     ${Object.entries(VENDOR_EARNINGS_PERIODS).map(([p, label]) => `<button class="${p === "today" ? "active" : ""}" data-earn-period="${p}" onclick="switchVendorEarningsPeriod('${p}')">${label}</button>`).join("")}
   </div>`;
+  html += `<input type="text" placeholder="Search earnings…" style="max-width:320px;margin-top:0.8rem;" oninput="filterTableRowsBySearch(this,'.vendorEarningsTableWrap')" />`;
   html += `<div id="vendorEarningsBody" style="margin-top:1.2rem;"></div>`;
   setTimeout(renderVendorEarningsBody, 0);
   return html;
@@ -5561,7 +5582,7 @@ function renderVendorEarningsBody() {
     html += `<div class="category-group-header flex" style="justify-content:space-between;">
       <span>${esc(dateKey)}</span><span>${naira(dayTotal)}</span>
     </div>`;
-    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Buyer</th><th style="text-align:center;"><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th style="text-align:center;"><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th style="text-align:center;">Amount</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap vendorEarningsTableWrap"><table class="data-table"><thead><tr><th>Item(s)</th><th>Buyer</th><th style="text-align:center;"><i class="fa-solid fa-arrow-down" style="color:#16a34a;"></i> Buyer paid</th><th style="text-align:center;"><i class="fa-solid fa-arrow-up" style="color:var(--primary);"></i> Paid to you</th><th style="text-align:center;">Amount</th></tr></thead><tbody>`;
     dayOrders.forEach((o) => {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
       html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
@@ -6737,6 +6758,24 @@ function sortOrdersForList(orders) {
   });
 }
 
+// Generic search-any-table helper — hides <tr> rows (and, if a table ends
+// up with none left visible, its own preceding date-group header) whose
+// text doesn't match. Reused across every data table on the site instead
+// of writing bespoke filter logic per table.
+function filterTableRowsBySearch(inputEl, scopeSelector) {
+  const q = inputEl.value.trim().toLowerCase();
+  document.querySelectorAll(scopeSelector).forEach((wrap) => {
+    let anyVisible = false;
+    wrap.querySelectorAll("tbody tr").forEach((row) => {
+      const match = !q || row.textContent.toLowerCase().includes(q);
+      row.classList.toggle("hidden", !match);
+      if (match) anyVisible = true;
+    });
+    wrap.classList.toggle("hidden", !anyVisible);
+    const header = wrap.previousElementSibling;
+    if (header && header.classList.contains("category-group-header")) header.classList.toggle("hidden", !anyVisible);
+  });
+}
 function orderDateTimeStr(iso) {
   return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
@@ -7695,6 +7734,8 @@ async function renderAdminLog() {
 
   if (!log || log.length === 0) { html += `<p class="muted">No admin actions logged yet.</p>`; return html; }
 
+  html += `<input type="text" placeholder="Search the log…" style="max-width:320px;margin:0.6rem 0;" oninput="filterTableRowsBySearch(this,'.adminLogTableWrap')" />`;
+
   const byDate = new Map();
   log.forEach((entry) => {
     const dateKey = new Date(entry.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
@@ -7703,7 +7744,7 @@ async function renderAdminLog() {
   });
   byDate.forEach((dayEntries, dateKey) => {
     html += `<div class="category-group-header">${esc(dateKey)}</div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th></tr></thead><tbody>`;
+      <div class="table-wrap adminLogTableWrap"><table class="data-table"><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th></tr></thead><tbody>`;
     dayEntries.forEach((entry) => {
       const meta = ACTION_LABEL[entry.action] || { text: entry.action, icon: "fa-circle-info", cls: "" };
       html += `<tr>
@@ -7736,39 +7777,18 @@ function filterTxnsByRange(txns, range) {
 
 async function renderAdminFinance() {
   if (!session || profile?.role !== "admin") return '<div class="empty-state">Access denied.</div>';
-  const [{ data: vendors }, { data: txns }, { data: heldOrders }] = await Promise.all([
+  const [{ data: vendors }, { data: txns }] = await Promise.all([
     sb.rpc("admin_list_vendor_payouts"),
     sb.rpc("admin_list_transactions"),
-    sb.from("orders").select("id, status, total_amount, created_at, vendor:vendors(business_name)").eq("payout_status", "held").order("created_at", { ascending: false }),
   ]);
   __adminFinanceData = { vendors: vendors || [], txns: txns || [] };
 
   let html = `<h2><i class="fa-solid fa-sack-dollar"></i> Vendors &amp; Transactions</h2><p class="muted">Monitor payouts and every payment moving through Levromart.</p>`;
   html += adminNavHtml("adminFinance");
 
-  // "held" orders that are still "completed" got confirmed by the buyer
-  // but the actual bank transfer to the vendor failed (most often Paystack
-  // requiring a one-time OTP approval on a newly-live account) — those
-  // need a human to retry them, since the buyer-side button is gone once
-  // an order is completed. Everything else here is just mid-flight and
-  // will resolve itself once the buyer confirms or the 5-day window passes.
-  const stuckPayouts = (heldOrders || []).filter((o) => o.status === "completed");
-  if (stuckPayouts.length > 0) {
-    html += `<div class="banner banner-warning" style="max-width:700px;">
-      <h3 style="margin:0;"><i class="fa-solid fa-triangle-exclamation"></i> ${stuckPayouts.length} payout${stuckPayouts.length === 1 ? "" : "s"} stuck</h3>
-      <p class="muted" style="margin-top:0.3rem;">These orders were confirmed received, but the transfer to the vendor's bank account failed and needs a retry. If it keeps failing, check Paystack Dashboard → Transfers for the reason (often an OTP approval needed on new live accounts, or Transfers being blocked entirely until your business type is upgraded from Starter to Registered). If you've paid the vendor yourself outside Paystack in the meantime, use "Mark paid manually" instead of retrying.</p>
-      ${stuckPayouts.map((o) => `<div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem;">
-        <span>${esc(o.vendor?.business_name || "")} · ${naira(o.total_amount)} · ${orderDateTimeStr(o.created_at)}</span>
-        <span class="flex" style="gap:0.4rem;">
-          <button class="btn btn-sm" onclick="adminRetryPayout('${o.id}', this)">Retry payout</button>
-          <button class="btn btn-sm btn-outline" onclick="adminMarkPayoutManual('${o.id}', this)">Mark paid manually</button>
-        </span>
-      </div>`).join("")}
-    </div>`;
-  }
-
   html += `<h3 style="margin-top:1.2rem;">Vendors</h3>`;
-  html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+  html += `<input type="text" placeholder="Search vendors…" style="max-width:320px;margin-bottom:0.6rem;" oninput="filterTableRowsBySearch(this,'.financeVendorsTableWrap')" />`;
+  html += `<div class="table-wrap financeVendorsTableWrap"><table class="data-table"><thead><tr>
     <th>Business</th><th>Status</th><th>Payouts</th><th>Commission %</th><th>Completed orders</th><th>Total collected</th><th>Commission owed (offline)</th><th>Storefront</th>
   </tr></thead><tbody>`;
   (vendors || []).forEach((v) => {
@@ -7802,59 +7822,12 @@ async function renderAdminFinance() {
     <button class="btn btn-sm btn-outline" onclick="exportFinanceCsv()"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
     <button class="btn btn-sm btn-outline" onclick="exportFinancePdf()"><i class="fa-solid fa-file-pdf"></i> Download / Print PDF</button>
   </div>`;
+  html += `<input type="text" placeholder="Search transactions…" style="max-width:320px;margin-bottom:0.6rem;" oninput="filterTableRowsBySearch(this,'.financeTxnTableWrap')" />`;
   html += `<div id="financeTableArea"></div>`;
   html += `<p class="muted" style="margin-top:0.6rem;">Commission owed on offline (cash/transfer) sales, all vendors, all time: <strong>${naira(totalOwed)}</strong></p>`;
 
   setTimeout(() => renderAdminFinanceRange(), 0);
   return html;
-}
-
-async function adminRetryPayout(orderId, btn) {
-  btn.disabled = true;
-  btn.textContent = "Retrying…";
-  try {
-    const res = await fetch("/api/order-payout-action", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "release", orderId, accessToken: session.access_token }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Retry failed.");
-    if (json.transferred) { showToast("Payout sent successfully.", "success"); navigate("adminFinance"); }
-    else { showToast(json.payoutError || "Still failing. Check Paystack Dashboard → Transfers for why.", "error"); btn.disabled = false; btn.textContent = "Retry payout"; }
-  } catch (err) {
-    showToast(err.message, "error");
-    btn.disabled = false;
-    btn.textContent = "Retry payout";
-  }
-}
-
-// Escape hatch for accounts stuck on Paystack Starter Business (Transfers
-// API blocked until upgraded to Registered Business) — lets the admin pay
-// the vendor themselves outside Paystack and just record it as settled,
-// rather than orders sitting "held" forever waiting on a retry that can't
-// succeed. Confirmed first since there's no undo once it's marked.
-async function adminMarkPayoutManual(orderId, btn) {
-  const ok = await showConfirmDialog(
-    "Only confirm this after you've actually paid the vendor yourself (bank transfer, cash, etc). This marks the payout as settled without Paystack ever moving the money.",
-    { title: "Mark payout paid manually?", okLabel: "Yes, I've paid them" }
-  );
-  if (!ok) return;
-  btn.disabled = true;
-  btn.textContent = "Marking…";
-  try {
-    const res = await fetch("/api/order-payout-action", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "mark-manual", orderId, accessToken: session.access_token }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Could not mark this payout.");
-    showToast("Marked as paid.", "success");
-    navigate("adminFinance");
-  } catch (err) {
-    showToast(err.message, "error");
-    btn.disabled = false;
-    btn.textContent = "Mark paid manually";
-  }
 }
 
 function switchAdminFinanceRange(range, btn) {
@@ -7901,7 +7874,7 @@ function renderAdminFinanceRange() {
     let tableHtml = "";
     byDate.forEach((dayTxns, dateKey) => {
       tableHtml += `<div class="category-group-header">${esc(dateKey)}</div>
-        <div class="table-wrap"><table class="data-table"><thead><tr>
+        <div class="table-wrap financeTxnTableWrap"><table class="data-table"><thead><tr>
           <th>Time</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th>
         </tr></thead><tbody>${dayTxns.map((t) => `<tr>
           <td>${new Date(t.created_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" })}</td>
