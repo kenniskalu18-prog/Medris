@@ -533,8 +533,8 @@
   @media (prefers-reduced-motion: reduce) { .modern-chart-line, .modern-chart-area, .chart-dot { transition: none; opacity: 1; } }
   .modern-chart-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-muted); }
   .modern-chart-tooltip { font-size: 0.78rem; text-align: center; margin-top: 0.3rem; min-height: 1.1rem; color: var(--primary); font-weight: 600; }
-  .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-  .accent-swatch { width: 2.1rem; height: 2.1rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s ease, box-shadow 0.2s ease; flex-shrink: 0; }
+  .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .accent-swatch { width: 1.55rem; height: 1.55rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: transform 0.15s ease, box-shadow 0.2s ease; flex-shrink: 0; }
   .accent-swatch:hover { transform: scale(1.12); box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 35%, transparent); }
   .accent-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--card), 0 0 12px color-mix(in srgb, var(--primary) 55%, transparent); }
   .accent-swatch.active::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
@@ -842,6 +842,10 @@
     </div>
   </div>
   <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
+  <div class="settings-row-card">
+    <p class="muted" style="font-size:0.8rem;margin:0 0 0.4rem;">Sound style</p>
+    <div class="flex" id="soundStyleOptions" style="gap:0.4rem;"></div>
+  </div>
   <div class="settings-row-card"><div class="theme-option" id="locationToggleOption" onclick="toggleLocationSetting()"></div></div>
   <div class="settings-row-card"><div class="theme-option" id="leviVisibleToggleOption" onclick="toggleLeviVisible()"></div></div>
   <div class="accordion-section hidden" id="changePasswordSection">
@@ -1860,11 +1864,51 @@ function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
+// "chime" is the original sine-tone sound some found grating for routine
+// taps -- "click" and "typewriter" are short filtered noise bursts instead
+// (a real click/key sound, not a musical note), used for the frequent
+// click/open interaction sounds. notify/success/error stay as short tone
+// sequences either way since those are meant to carry information, not
+// mimic a physical sound.
+let soundStyle = "click";
+const SOUND_STYLES = [
+  { key: "click", label: "Click" },
+  { key: "typewriter", label: "Typing" },
+  { key: "chime", label: "Chime" },
+];
+function playPercussiveSound(ctx, kind) {
+  const now = ctx.currentTime;
+  const isOpen = kind === "open";
+  const bufferSize = Math.floor(ctx.sampleRate * (soundStyle === "typewriter" ? 0.05 : 0.03));
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = soundStyle === "typewriter" ? "bandpass" : "highpass";
+  filter.frequency.value = soundStyle === "typewriter" ? (isOpen ? 1200 : 1900) : (isOpen ? 2400 : 3200);
+  filter.Q.value = soundStyle === "typewriter" ? 4 : 1;
+  const gain = ctx.createGain();
+  const peak = isOpen ? 0.32 : 0.24;
+  const decay = soundStyle === "typewriter" ? 0.06 : 0.035;
+  gain.gain.setValueAtTime(peak, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + decay + 0.01);
+}
 function playSound(kind) {
   if (!soundEnabled) return;
   try {
     const ctx = getAudioCtx();
     if (ctx.state === "suspended") ctx.resume();
+    if ((kind === "click" || kind === "open") && soundStyle !== "chime") {
+      playPercussiveSound(ctx, kind);
+      return;
+    }
     const now = ctx.currentTime;
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
@@ -1895,9 +1939,22 @@ function renderSoundToggle() {
   if (!el) return;
   el.innerHTML = `<i class='fa-solid ${soundEnabled ? "fa-volume-high" : "fa-volume-xmark"}'></i> Sound effects: ${soundEnabled ? "On" : "Off"}`;
 }
+function setSoundStyle(style) {
+  soundStyle = style;
+  localStorage.setItem("medris-sound-style", style);
+  renderSoundStyleOptions();
+  playSound("click");
+}
+function renderSoundStyleOptions() {
+  const wrap = byId("soundStyleOptions");
+  if (!wrap) return;
+  wrap.innerHTML = SOUND_STYLES.map((s) => `<button type="button" class="btn btn-sm ${s.key === soundStyle ? "" : "btn-outline"}" onclick="setSoundStyle('${s.key}')">${esc(s.label)}</button>`).join("");
+}
 function initSound() {
   soundEnabled = localStorage.getItem("medris-sound") === "1";
+  soundStyle = localStorage.getItem("medris-sound-style") || "click";
   renderSoundToggle();
+  renderSoundStyleOptions();
 }
 
 // ---------- LEVI VISIBILITY (hide the floating chat button entirely) ----------
@@ -2093,6 +2150,11 @@ function initTheme() {
 }
 
 // ---------- ACCENT COLOR ----------
+// Trimmed from 20 down to 12 -- several of the original 20 were near
+// duplicates a few degrees apart on the same hue (Crimson/Rose,
+// Violet/Royal Purple/Plum, Steel Blue/Ocean Blue, Sky/Cyan, Forest
+// Green/Emerald, Coral/Rose, Gold/Amber), so picking between them barely
+// changed anything. This set keeps one clearly distinct swatch per hue.
 const ACCENT_PALETTE = [
   { name: "Teal (Default)", base: "#0f766e", light: "#14b8a6" },
   { name: "Ocean Blue", base: "#1d4ed8", light: "#3b82f6" },
@@ -2102,18 +2164,10 @@ const ACCENT_PALETTE = [
   { name: "Emerald", base: "#047857", light: "#10b981" },
   { name: "Indigo", base: "#4338ca", light: "#6366f1" },
   { name: "Slate", base: "#334155", light: "#64748b" },
-  { name: "Crimson", base: "#b91c1c", light: "#ef4444" },
   { name: "Cyan", base: "#0e7490", light: "#06b6d4" },
-  { name: "Forest Green", base: "#166534", light: "#22c55e" },
   { name: "Sunset Orange", base: "#c2410c", light: "#fb923c" },
   { name: "Magenta", base: "#a21caf", light: "#e879f9" },
-  { name: "Sky", base: "#0369a1", light: "#38bdf8" },
   { name: "Lime", base: "#4d7c0f", light: "#a3e635" },
-  { name: "Coral", base: "#9d174d", light: "#fb7185" },
-  { name: "Violet", base: "#5b21b6", light: "#8b5cf6" },
-  { name: "Gold", base: "#a16207", light: "#eab308" },
-  { name: "Steel Blue", base: "#1e40af", light: "#60a5fa" },
-  { name: "Plum", base: "#86198f", light: "#d946ef" },
 ];
 let currentAccentIndex = 0;
 function lightenHex(hex, amt) {
@@ -3149,6 +3203,24 @@ let currentViewParams = {};
 // the abstract -- cleared on every successful render, only ever reflects
 // the CURRENT screen, never a stale one from earlier in the session.
 let lastRenderError = null;
+// A raw Postgres/Supabase/network error ("cannot add postgres_changes
+// callbacks...", "Failed to fetch", etc.) means nothing to a buyer or
+// vendor and just reads as a code leak -- classify it into one plain,
+// on-brand line with an icon instead. The real message still goes to the
+// console for debugging, and lastRenderError above still carries it
+// untouched for Levi's own diagnostic context.
+function friendlyErrorText(err) {
+  const raw = String(err?.message || err || "");
+  console.error("Levromart error:", raw);
+  if (/fetch|network|offline|websocket|realtime|socket|timeout|NetworkError/i.test(raw)) {
+    return { icon: "fa-wifi", text: "Network trouble reaching Levromart. Check your connection and try again." };
+  }
+  return { icon: "fa-triangle-exclamation", text: "Something went wrong. Please try again in a moment." };
+}
+function errorStateHtml(err) {
+  const { icon, text } = friendlyErrorText(err);
+  return `<div class="empty-state"><i class="fa-solid ${icon}" style="font-size:1.6rem;display:block;margin-bottom:0.6rem;"></i>${text}</div>`;
+}
 function updateHeaderNavActive() {
   document.querySelectorAll(".header-nav-link").forEach((el) => el.classList.toggle("active", el.dataset.view === currentView));
 }
@@ -3159,7 +3231,13 @@ async function navigate(view, params = {}, pushHistory = true) {
   if (profile?.suspended_at && view !== "suspended") view = "suspended";
   // The outgoing page just stays on screen, silently, until the new one is
   // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
-  if (view !== "messages" && activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
+  // Awaited -- removeChannel is itself async (it has to tell the realtime
+  // server to leave the topic), and firing it without waiting let a fast
+  // re-navigation into a new/the same conversation call .channel() on that
+  // topic again before the old subscription had actually finished closing,
+  // which is what caused the "cannot add postgres_changes callbacks after
+  // subscribe()" crash.
+  if (view !== "messages" && activeMsgChannel) { await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
   currentViewParams = params || {};
   updateAuthUI();
@@ -3212,7 +3290,7 @@ async function navigate(view, params = {}, pushHistory = true) {
     }
     lastRenderError = null;
   } catch (err) {
-    html = `<div class="empty-state">Something went wrong: ${esc(err.message)}</div>`;
+    html = errorStateHtml(err);
     lastRenderError = err.message;
   }
   app.innerHTML = html;
@@ -3405,6 +3483,29 @@ async function fetchSearchSuggestions(term) {
 }
 function hideSearchSuggestions() { byId("heroSearchSuggest")?.classList.add("hidden"); }
 
+const PRODUCT_LIST_SELECT = "id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)";
+
+// Used whenever a search/filter comes up empty — instead of a dead end,
+// show what IS available so the buyer isn't stuck looking at nothing.
+async function fetchFallbackProducts(excludeIds) {
+  let q = sb
+    .from("products")
+    .select(PRODUCT_LIST_SELECT)
+    .eq("status", "active")
+    .eq("vendor.verification_status", "verified")
+    .eq("vendor.is_active", true);
+  if (currentSectorId) q = q.eq("category.sector_id", currentSectorId);
+  if (excludeIds?.length) q = q.not("id", "in", `(${excludeIds.join(",")})`);
+  const { data } = await q.order("created_at", { ascending: false }).limit(8);
+  return data || [];
+}
+
+function noResultsWithFallbackHtml(message, fallback) {
+  const notice = `<div class="empty-state" style="grid-column:1/-1;padding:1.5rem 1rem;">${esc(message)}</div>`;
+  if (!fallback.length) return `<div class="empty-state">No products found. Vendors, start listing!</div>`;
+  return notice + fallback.map(productCardHtml).join("");
+}
+
 async function filterHomeProducts() {
   const search = byId("searchInput")?.value.trim() || "";
   const listing = byId("filterListing")?.value || "";
@@ -3422,14 +3523,15 @@ async function filterHomeProducts() {
     const { data: idRows } = await sb.rpc("search_product_ids", { p_query: search });
     matchingIds = (idRows || []).map((r) => r.id);
     if (matchingIds.length === 0) {
-      grid.innerHTML = `<div class="empty-state">No products found. Vendors, start listing!</div>`;
+      const fallback = await fetchFallbackProducts();
+      grid.innerHTML = noResultsWithFallbackHtml(`No product named "${search}" yet — but here's what's available:`, fallback);
       return;
     }
   }
 
   let query = sb
     .from("products")
-    .select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)")
+    .select(PRODUCT_LIST_SELECT)
     .eq("status", "active")
     .eq("vendor.verification_status", "verified")
     .eq("vendor.is_active", true);
@@ -3444,7 +3546,11 @@ async function filterHomeProducts() {
 
   const { data: products, error } = await query.order("created_at", { ascending: false });
   if (error || !products || products.length === 0) {
-    grid.innerHTML = `<div class="empty-state">No products found. Vendors, start listing!</div>`;
+    const fallback = await fetchFallbackProducts();
+    const message = search
+      ? `No exact match for "${search}" with these filters — but here's what's available:`
+      : "No products match these filters — but here's what's available:";
+    grid.innerHTML = noResultsWithFallbackHtml(message, fallback);
     return;
   }
   // Restore search relevance order (best match first) instead of the
@@ -3567,7 +3673,7 @@ async function renderCart() {
     .select("id, quantity, created_at, product:products(id, name, sale_price, photos, quantity_available, status, vendor:vendors(id, business_name, previous_business_name, name_changed_at, is_active, verification_status, delivery_fee, delivery_fee_mode, delivery_fee_per_km, lat, lng))")
     .eq("buyer_id", session.user.id)
     .order("created_at", { ascending: true });
-  if (error) return `<div class="empty-state">Couldn't load your cart: ${esc(error.message)}</div>`;
+  if (error) return errorStateHtml(error);
 
   let html = `<h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>`;
   if (!items || items.length === 0) {
@@ -3868,13 +3974,13 @@ async function togglePinConversation(conversationId) {
 
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
-  if (activeMsgChannel) { sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
+  if (activeMsgChannel) { await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
   activeConversationId = conversationId || null;
 
   if (!conversationId) {
     const isVendor = !!vendor;
     const { data: convs, error } = await sb.rpc("list_my_conversations");
-    if (error) return `<div class="empty-state">Couldn't load messages: ${esc(error.message)}</div>`;
+    if (error) return errorStateHtml(error);
 
     if (!convs || convs.length === 0) {
       return `<h2><i class="fa-solid fa-comments"></i> Messages</h2><div class="empty-state">No conversations yet. ${isVendor ? "Buyers who message you will show up here." : "Message a vendor from their storefront or a product page."}</div>`;
@@ -4324,7 +4430,7 @@ async function renderProductDetail(productId) {
           : `<input type="number" id="buyQty" value="1" min="1" max="${product.quantity_available}" placeholder="Qty" oninput="updateBuyTotalPreview(${product.sale_price ?? 0})" style="width:90px;" />`}
       </div>
       ${product.sale_price != null ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
-      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km)}
+      ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km, product.is_service ? "In-person" : "Pickup")}
       <div class="flex">
         <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
         ${!product.is_service ? `<button class="btn btn-outline" onclick="addToCart('${product.id}', parseInt(byId('buyQty').value)||1)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>` : ""}
@@ -4361,12 +4467,12 @@ const RELATED_EQUIPMENT = {
   "Ultrasound Machine": ["ECG Machine"],
 };
 
-function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, perKm) {
+function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, perKm, pickupLabel) {
   const fee = Number(deliveryFee) || 0;
   const isDistance = feeMode === "distance" && Number(perKm) > 0 && vendorLat != null && vendorLng != null;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex" style="margin:0.6rem 0 0.9rem;">
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Pickup</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> ${esc(pickupLabel || "Pickup")}</label>
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="dyn-delivery-fields" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
@@ -4920,8 +5026,7 @@ async function renderRequestEquipment() {
     (async () => { if (!window.__categories?.length) { const { data } = await sb.from("categories").select("*").order("name"); window.__categories = data || []; } })(),
   ]);
 
-  let html = `<h2><i class='fa-solid fa-hand'></i> Request an item</h2>
-    <p class="muted">Can't find what you need? Post it and nearby vendors will send you offers.</p>
+  let html = `<h2><i class='fa-solid fa-hand'></i> Request an item ${infoPopoverHtml("reqEquipInfo", "Can't find what you need? Post it and nearby vendors will send you offers.")}</h2>
     <div class="card" style="max-width:520px;">
       <div id="reqError" class="error-text hidden"></div>
       <label>What do you need? *</label><input id="reqTitle" placeholder="e.g. Oxygen concentrator, jollof rice for 20…" />
@@ -6430,10 +6535,12 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   orderListViewMode = "cards";
   orderListExpanded = false;
   const sortedOrders = sortOrdersForList(orders);
-  window.__orderListOrders = sortedOrders;
+  const { active: activeVendorOrders, history: historyVendorOrders } = splitActiveAndHistoryOrders(sortedOrders, status);
+  window.__orderListOrders = activeVendorOrders;
   window.__orderListIsBuyer = false;
-  html += orderListControlsHtml(sortedOrders.length);
-  html += `<div id="orderListWrap">${orderListHtml(sortedOrders, false)}</div>`;
+  html += orderListControlsHtml(activeVendorOrders.length);
+  html += `<div id="orderListWrap">${orderListHtml(activeVendorOrders, false)}</div>`;
+  html += orderHistoryAccordionHtml(historyVendorOrders, false);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('vendorDashboard')"><i class='fa-solid fa-arrow-left'></i> Back to Dashboard</button>`;
   setTimeout(() => { enhanceSelectsIn(byId("app")); renderOrderStatsBody(); }, 0);
   return html;
@@ -6477,10 +6584,12 @@ async function renderBuyerOrders(status, type, payment, dateFrom, dateTo) {
   orderListViewMode = "cards";
   orderListExpanded = false;
   const sortedOrders = sortOrdersForList(orders);
-  window.__orderListOrders = sortedOrders;
+  const { active: activeBuyerOrders, history: historyBuyerOrders } = splitActiveAndHistoryOrders(sortedOrders, status);
+  window.__orderListOrders = activeBuyerOrders;
   window.__orderListIsBuyer = true;
-  html += orderListControlsHtml(sortedOrders.length);
-  html += `<div id="orderListWrap">${orderListHtml(sortedOrders, true)}</div>`;
+  html += orderListControlsHtml(activeBuyerOrders.length);
+  html += `<div id="orderListWrap">${orderListHtml(activeBuyerOrders, true)}</div>`;
+  html += orderHistoryAccordionHtml(historyBuyerOrders, true);
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Continue shopping</button>`;
   setTimeout(() => enhanceSelectsIn(byId("app")), 0);
   return html;
@@ -6521,6 +6630,44 @@ function orderDateTimeStr(iso) {
 let orderListViewMode = "cards"; // cards | table
 let orderListExpanded = false;
 const ORDER_LIST_PAGE_SIZE = 5;
+
+// Finished orders (nothing left to do) move out of the main list into a
+// collapsed, date-grouped "Order history" section -- only when no explicit
+// status filter is picked, so choosing "Completed" from the dropdown still
+// shows completed orders directly instead of hiding them behind a second
+// collapse.
+const ORDER_HISTORY_STATUSES = new Set(["completed", "cancelled"]);
+function splitActiveAndHistoryOrders(orders, status) {
+  if (status !== "all") return { active: orders, history: [] };
+  return {
+    active: orders.filter((o) => !ORDER_HISTORY_STATUSES.has(o.status)),
+    history: orders.filter((o) => ORDER_HISTORY_STATUSES.has(o.status)),
+  };
+}
+function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
+  if (!historyOrders || !historyOrders.length) return "";
+  const byDate = new Map();
+  historyOrders.forEach((o) => {
+    const key = new Date(o.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key).push(o);
+  });
+  let inner = "";
+  byDate.forEach((dayOrders, dateKey) => {
+    inner += `<div class="category-group-header">${esc(dateKey)}</div>`;
+    inner += dayOrders.map((o) => `<div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
+      <div>
+        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
+        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
+      </div>
+      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
+    </div>`).join("");
+  });
+  return `<div class="accordion-section" style="margin-top:1.2rem;">
+    <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-clock-rotate-left"></i> Order history (${historyOrders.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
+    <div class="accordion-body">${inner}</div>
+  </div>`;
+}
 
 function orderListControlsHtml(total) {
   if (!total) return "";
@@ -7120,13 +7267,20 @@ const SUPER_ADMIN_EMAIL = "kenniskalu18@gmail.com";
 // with admin access already passed real auth to get this far, and this
 // password is visible to anyone who reads the page source.
 const ADMIN_ACTION_PASSWORD = "medris2026";
-function promptAdminPassword(actionLabel) {
+// Shared modal, pluggable check -- promptAdminPassword below keeps the old
+// fat-finger behavior (checks the one shared team password) for routine
+// dangerous actions like deleting a vendor. promptPasswordConfirm on its
+// own lets a caller supply a real async check instead, used for actually
+// re-verifying someone's own Supabase account password (see demoteAdmin),
+// which is genuine security rather than a shared-string speed bump.
+function promptPasswordConfirm(actionLabel, verify) {
   return new Promise((resolve) => {
     const modal = byId("adminPasswordModal");
     const input = byId("adminPasswordInput");
+    const errorEl = byId("adminPasswordError");
     input.value = "";
-    byId("adminPasswordError").classList.add("hidden");
-    byId("adminPasswordModalMsg").textContent = `Type the admin action password to ${actionLabel}.`;
+    errorEl.classList.add("hidden");
+    byId("adminPasswordModalMsg").textContent = `Confirm your password to ${actionLabel}.`;
     modal.classList.remove("hidden");
     setTimeout(() => input.focus(), 50);
     const okBtn = byId("adminPasswordOk");
@@ -7138,9 +7292,12 @@ function promptAdminPassword(actionLabel) {
       input.removeEventListener("keydown", onKey);
       resolve(result);
     };
-    const onOk = () => {
-      if (input.value === ADMIN_ACTION_PASSWORD) cleanup(true);
-      else { byId("adminPasswordError").classList.remove("hidden"); input.value = ""; input.focus(); }
+    const onOk = async () => {
+      okBtn.disabled = true;
+      const ok = await verify(input.value);
+      okBtn.disabled = false;
+      if (ok) cleanup(true);
+      else { errorEl.classList.remove("hidden"); input.value = ""; input.focus(); }
     };
     const onCancel = () => cleanup(false);
     const onKey = (e) => { if (e.key === "Enter") onOk(); };
@@ -7148,6 +7305,9 @@ function promptAdminPassword(actionLabel) {
     cancelBtn.addEventListener("click", onCancel);
     input.addEventListener("keydown", onKey);
   });
+}
+function promptAdminPassword(actionLabel) {
+  return promptPasswordConfirm(actionLabel, async (v) => v === ADMIN_ACTION_PASSWORD);
 }
 
 // Immutable trail of the actions that actually affect a vendor's ability
@@ -7330,7 +7490,7 @@ async function renderAdminFeedback() {
   const { data: suggestions, error } = await sb.rpc("get_platform_suggestions");
   let html = `<h2><i class='fa-solid fa-comment-medical'></i> Feedback</h2>`;
   html += adminNavHtml("adminFeedback");
-  if (error) { html += `<div class="empty-state">Couldn't load feedback: ${esc(error.message)}</div>`; return html; }
+  if (error) { html += errorStateHtml(error); return html; }
   html += (suggestions && suggestions.length)
     ? suggestions.map(suggestionRowHtml).join("")
     : `<div class="empty-state">No feedback yet.</div>`;
@@ -7342,7 +7502,7 @@ async function renderVendorSuggestionsInbox() {
   const { data: suggestions, error } = await sb.rpc("get_vendor_suggestions");
   let html = `<h2><i class='fa-solid fa-comment-medical'></i> Suggestions</h2>
   <p class="muted">Feedback buyers have sent about your shop. Some may be anonymous.</p>`;
-  if (error) { html += `<div class="empty-state">Couldn't load suggestions: ${esc(error.message)}</div>`; return html; }
+  if (error) { html += errorStateHtml(error); return html; }
   html += (suggestions && suggestions.length)
     ? suggestions.map(suggestionRowHtml).join("")
     : `<div class="empty-state">Nothing yet.</div>`;
@@ -7384,6 +7544,18 @@ async function promoteUserToAdmin() {
 
 async function demoteAdmin(email) {
   if (!(await showConfirmDialog(`Remove admin access from ${email}? They'll be set back to a regular buyer account.`, { title: "Remove admin", okLabel: "Remove", danger: true }))) return;
+  // A protected admin's own account can only ever be demoted by that same
+  // account (enforced server-side too) -- and even then, only after
+  // re-entering the real account password, not just being an already-open
+  // session. Guards against a hijacked session/token that doesn't actually
+  // know the password.
+  if (email === session.user.email) {
+    const ok = await promptPasswordConfirm("remove your own admin access", async (pw) => {
+      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+      return !error;
+    });
+    if (!ok) return;
+  }
   const { error } = await sb.rpc("admin_set_user_role", { target_email: email, new_role: "buyer" });
   if (error) { showToast(error.message, "error"); return; }
   navigate("adminUsers");
@@ -7400,6 +7572,8 @@ async function renderAdminLog() {
     reactivate_storefront: { text: "reactivated storefront", icon: "fa-play", cls: "success" },
     suspend_user: { text: "suspended account", icon: "fa-user-slash", cls: "danger" },
     unsuspend_user: { text: "reinstated account", icon: "fa-user-check", cls: "success" },
+    promote_admin: { text: "promoted to admin", icon: "fa-user-shield", cls: "warning" },
+    demote_admin: { text: "removed admin access", icon: "fa-user-minus", cls: "danger" },
   };
 
   let html = `<h2><i class="fa-solid fa-clock-rotate-left"></i> Admin activity log ${infoPopoverHtml("adminActivityInfo", "Every reject, approve, pause and reactivate: who did it, and when. This trail can't be edited or deleted, even by admins.")}</h2>`;
