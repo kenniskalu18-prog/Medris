@@ -289,13 +289,29 @@ module.exports = async function handler(req, res) {
       buyerContext = "";
     }
 
+    // If this account is currently suspended, Levi still needs to be
+    // reachable to explain why (the suspended screen links straight to
+    // this chat) -- without this, it had no way to know and just denied
+    // any record of a suspension, which reads as dismissive.
+    let accountStatusContext = "";
+    try {
+      const statusRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}&select=suspended_at,suspended_reason`,
+        { headers: svcService }
+      );
+      const [statusRow] = statusRes.ok ? await statusRes.json() : [];
+      if (statusRow?.suspended_at) {
+        accountStatusContext = `\n\nACCOUNT STATUS: This user's account is currently SUSPENDED. Reason given by Levromart admins: "${statusRow.suspended_reason}". If they ask why, tell them plainly using this exact reason -- don't be evasive or claim you have no record of it. Let them know they can submit an appeal from the suspended-account screen (up to 3 per day) and an admin will review it.`;
+      }
+    } catch (e) {}
+
     const callGemini = (model) => fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
         headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}` }] },
+          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}${accountStatusContext}` }] },
           contents,
           generationConfig: { maxOutputTokens: 400 },
         }),
