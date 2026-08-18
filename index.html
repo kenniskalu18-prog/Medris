@@ -279,7 +279,15 @@
      squeezed into a half-width column on phones — that's what was making
      product images look tiny; side-by-side only once there's room for it. */
   .product-detail-grid { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
-  @media (min-width: 640px) { .product-detail-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+  /* The image column is naturally much taller than the short text/price
+     stack next to it -- align-items:center keeps that stack centered
+     against the photo's height instead of pinned to the top with a big
+     empty gap underneath on wide screens. Capping the photo's height stops
+     it from stretching that gap even further on very wide monitors. */
+  @media (min-width: 640px) {
+    .product-detail-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center; }
+    .product-detail-grid > div:first-child img, .product-detail-grid > div:first-child .product-img { max-height: 460px; }
+  }
   .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
   .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
   .error-text { color: var(--danger); font-size: 0.85rem; margin: 0.3rem 0; }
@@ -378,6 +386,10 @@
     display: flex; flex-direction: column; padding: 1rem; color: var(--text);
   }
   .ai-chat-panel.hidden { display: none; }
+  /* Wider reading room on demand -- same centered/draggable panel, just a
+     bigger box, works identically on a phone (more of the viewport) and a
+     desktop (a real wide-chat width instead of a cramped 360px column). */
+  .ai-chat-panel.expanded { width: min(720px, 94vw); height: min(88vh, 820px); }
   .ai-chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; margin: 0.5rem 0; }
   .shared-ai-chat { display: flex; flex-direction: column; gap: 0.6rem; max-width: 640px; margin: 0 auto; }
   .shared-ai-chat .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.9rem; line-height: 1.45; white-space: pre-wrap; }
@@ -708,6 +720,11 @@
   .conv-swipe-action { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.7rem; font-weight: 600; color: #fff; background: var(--primary); cursor: pointer; z-index: 0; }
   .conv-date-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin: 0.7rem auto; padding: 0.25rem 0.75rem; background: var(--card); border-radius: 999px; width: fit-content; }
   .chat-thread { display: flex; flex-direction: column; height: 65vh; max-height: 600px; border: 1px solid var(--border); border-radius: 0.9rem; overflow: hidden; background: var(--card); }
+  /* Chunky desktop scrollbars (Windows/Linux Chrome, unlike macOS's overlay
+     style) looked out of place on a chat thread -- scrolling still works
+     via wheel/trackpad/drag, the bar itself just isn't drawn. */
+  .chat-messages, .ai-chat-messages, .ai-chat-history-panel { scrollbar-width: none; -ms-overflow-style: none; }
+  .chat-messages::-webkit-scrollbar, .ai-chat-messages::-webkit-scrollbar, .ai-chat-history-panel::-webkit-scrollbar { display: none; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
   .chat-bubble.mine { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.25rem; }
@@ -1166,6 +1183,17 @@
   </div>
 </div>
 
+<div id="productRegionsModal" class="modal hidden">
+  <div class="modal-content" style="max-width:400px;">
+    <h3><i class="fa-solid fa-map-location-dot"></i> <span id="productRegionsTitle"></span></h3>
+    <p class="muted" style="margin:0.4rem 0 0.8rem;font-size:0.85rem;">Where orders for this product have come from, most first.</p>
+    <div id="productRegionsBody"></div>
+    <div class="flex" style="justify-content:flex-end;margin-top:0.6rem;">
+      <button class="btn btn-sm" onclick="byId('productRegionsModal').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="chatListPickerModal" class="modal hidden">
   <div class="modal-content" style="max-width:380px;">
     <h3><i class="fa-solid fa-layer-group"></i> Add to a list</h3>
@@ -1185,6 +1213,19 @@
       <button class="btn" onclick="chooseAccountRole('buyer')"><i class="fa-solid fa-cart-shopping"></i> I'm here to buy or rent</button>
       <button class="btn btn-outline" onclick="chooseAccountRole('vendor')"><i class="fa-solid fa-store"></i> I'm here to sell</button>
     </div>
+  </div>
+</div>
+
+<div id="setPasswordModal" class="modal hidden">
+  <div class="modal-content" style="max-width:400px;">
+    <h3><i class="fa-solid fa-key"></i> Set a password</h3>
+    <p class="muted" style="margin:0.6rem 0 1rem;">You signed in with Google, so your account doesn't have a password yet. Set one now — it means you can also log in without Google, and it's needed for anything that asks you to confirm your password, like deleting your account.</p>
+    <div id="setPasswordError" class="error-text hidden"></div>
+    <label>New password</label>
+    <input type="password" id="setPasswordInput" autocomplete="new-password" placeholder="At least 8 characters" />
+    <label>Confirm password</label>
+    <input type="password" id="setPasswordConfirmInput" autocomplete="new-password" />
+    <button class="btn" style="margin-top:0.8rem;" onclick="setAccountPassword()">Set password</button>
   </div>
 </div>
 
@@ -1229,6 +1270,7 @@
       <button class="icon-btn" onclick="shareCurrentAiChat()" title="Share this chat"><i class="fa-solid fa-share-nodes"></i></button>
       <button class="icon-btn" onclick="startNewAiChat()" title="New chat"><i class="fa-solid fa-plus"></i></button>
       <button class="icon-btn" id="aiChatHistoryToggleBtn" onclick="toggleAiChatHistory()" title="Recent chats"><i class="fa-solid fa-clock-rotate-left"></i></button>
+      <button class="icon-btn" id="aiChatExpandBtn" onclick="toggleAiChatExpanded()" title="Expand"><i class="fa-solid fa-expand"></i></button>
       <button class="drawer-close-btn" onclick="toggleAiChat()"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
@@ -2761,8 +2803,11 @@ async function refreshAuthState() {
   // Google sign-in creates the account straight away with no chance to
   // pick buyer vs vendor first (unlike the manual signup form, which asks
   // up front) -- this catches that gap and asks right after, before the
-  // account is treated as fully set up.
+  // account is treated as fully set up. Everything else that might need
+  // asking (setting a password, the periodic OTP re-check) waits behind
+  // this one, see runPostAuthChecks.
   if (profile && profile.role_selected === false) byId("roleSelectModal")?.classList.remove("hidden");
+  else await runPostAuthChecks();
 }
 async function chooseAccountRole(role) {
   const { error } = await sb.from("users").update({ role, role_selected: true }).eq("id", session.user.id);
@@ -2774,6 +2819,68 @@ async function chooseAccountRole(role) {
   renderBottomNav();
   if (role === "vendor") navigate("vendorApply");
   else showToast("You're all set.", "success");
+  await runPostAuthChecks();
+}
+
+async function setAccountPassword() {
+  const pw = byId("setPasswordInput").value;
+  const confirm = byId("setPasswordConfirmInput").value;
+  const errorEl = byId("setPasswordError");
+  errorEl.classList.add("hidden");
+  if (pw.length < 8) { errorEl.textContent = "Password must be at least 8 characters."; errorEl.classList.remove("hidden"); return; }
+  if (pw !== confirm) { errorEl.textContent = "Passwords don't match."; errorEl.classList.remove("hidden"); return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  await sb.from("users").update({ has_password: true }).eq("id", session.user.id);
+  profile.has_password = true;
+  byId("setPasswordModal").classList.add("hidden");
+  byId("setPasswordInput").value = "";
+  byId("setPasswordConfirmInput").value = "";
+  showToast("Password set. You can now log in with it too.", "success");
+  await runPostAuthChecks();
+}
+
+// Sequenced so at most one of these modals is ever open at a time: a
+// Google account with no password set yet gets asked first (this is what
+// lets password-based actions like deleting the account work uniformly
+// for every account, Google or not); only once that's resolved does the
+// periodic email-OTP re-check run. otpCheckDoneThisBoot keeps the OTP
+// check from firing again on every token-refresh-triggered auth-state
+// change within the same page load -- it only needs to run once per
+// actual app open (a real reload naturally resets it).
+let otpCheckDoneThisBoot = false;
+async function runPostAuthChecks() {
+  if (!profile || !session) return;
+  if (profile.has_password === false) { byId("setPasswordModal")?.classList.remove("hidden"); return; }
+  if (!otpCheckDoneThisBoot) {
+    otpCheckDoneThisBoot = true;
+    await checkOtpRequirement(session.access_token);
+  }
+}
+// One shared identity re-check for every path that can land someone in the
+// app: password login, Google OAuth, and simply reopening the app after
+// the 7-day window has lapsed on a still-valid session. The server (see
+// api/auth-otp.js) is the one deciding whether it's actually due, based on
+// users.otp_verified_at, not the client.
+async function checkOtpRequirement(accessToken) {
+  let otpJson = {};
+  try {
+    const res = await fetch("/api/auth-otp", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "send", accessToken }),
+    });
+    otpJson = await res.json();
+  } catch (e) {
+    // A network hiccup on this check shouldn't lock someone out of an
+    // already-valid session -- fail open, same as the account-status check.
+    return;
+  }
+  if (!otpJson.otpRequired) return;
+  pendingOtpAccessToken = accessToken;
+  byId("otpInput").value = "";
+  byId("otpError").classList.add("hidden");
+  byId("otpModal").classList.remove("hidden");
+  setTimeout(() => byId("otpInput")?.focus(), 50);
 }
 
 function updateAuthUI() {
@@ -3072,31 +3179,11 @@ async function submitAuth() {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
       await enforceSingleSession();
-
-      const { data: freshData } = await sb.auth.getSession();
-      const accessToken = freshData.session?.access_token;
-      // Sign-in itself already succeeded above — a network hiccup on this
-      // secondary OTP-check call shouldn't surface as a login failure when
-      // the user is, in fact, logged in. Fail open (skip OTP) rather than
-      // block on a transient error here.
-      let otpJson = {};
-      try {
-        const otpRes = await fetch("/api/auth-otp", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "send", accessToken }),
-        });
-        otpJson = await otpRes.json();
-      } catch (otpErr) {}
-      if (otpJson.otpRequired) {
-        pendingOtpAccessToken = accessToken;
-        hideLogin();
-        byId("otpInput").value = "";
-        byId("otpError").classList.add("hidden");
-        byId("otpModal").classList.remove("hidden");
-        setTimeout(() => byId("otpInput")?.focus(), 50);
-        return;
-      }
-
+      // The OTP check (and role-select / set-password, if either is still
+      // pending on this account) all now run from inside finishLoginSuccess
+      // -> refreshAuthStateOnce -> runPostAuthChecks, one shared sequence
+      // for every sign-in path (password, Google, and a returning session
+      // past its 7-day OTP window) instead of duplicating the check here.
       await finishLoginSuccess("home");
     }
   } catch (err) {
@@ -3139,7 +3226,17 @@ async function submitLoginOtp() {
     if (!json.ok) { errorEl.textContent = json.error || "That code didn't work."; errorEl.classList.remove("hidden"); return; }
     byId("otpModal").classList.add("hidden");
     pendingOtpAccessToken = null;
-    await finishLoginSuccess("adminPanel");
+    // Fresh sign-in still has the login modal up (and nothing rendered
+    // behind it worth keeping) -- send it to Home/adminPanel like any other
+    // login. A standing session that just hit its 7-day OTP window is
+    // already sitting on a real page, so just re-render exactly that page
+    // instead of yanking them somewhere else.
+    if (byId("loginModal") && !byId("loginModal").classList.contains("hidden")) {
+      await finishLoginSuccess(profile?.role === "admin" ? "adminPanel" : "home");
+    } else {
+      await refreshAuthStateOnce();
+      navigate(currentView || "home", currentViewParams || {}, false);
+    }
   } catch (err) {
     errorEl.textContent = "Couldn't verify that code. Try again.";
     errorEl.classList.remove("hidden");
@@ -6036,10 +6133,16 @@ async function renderVendorProducts() {
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
 
-  const [{ data: products }, { data: orderItems }] = await Promise.all([
+  const [{ data: products }, { data: orderItems }, { data: regionRows }] = await Promise.all([
     sb.from("products").select("*, category:categories(name)").eq("vendor_id", v.id).order("created_at", { ascending: false }),
     sb.from("order_items").select("product_id, quantity, unit_price, order:orders!inner(status, vendor_id)").eq("order.vendor_id", v.id),
+    sb.rpc("get_vendor_product_regions", { p_vendor_id: v.id }),
   ]);
+  // Already sorted order_count desc per product by the RPC -- [0] of each
+  // group is that product's single busiest region.
+  const regionsByProduct = {};
+  (regionRows || []).forEach((r) => { (regionsByProduct[r.product_id] ||= []).push(r); });
+  window.__vendorProductRegions = regionsByProduct;
   const { data: favCountRows } = (products || []).length
     ? await sb.rpc("get_favorite_counts", { p_product_ids: products.map((p) => p.id) })
     : { data: [] };
@@ -6082,9 +6185,10 @@ async function renderVendorProducts() {
       </div>
     </div>`;
     html += `<div class="table-wrap" style="max-height:26rem;overflow-y:auto;"><table class="data-table"><thead><tr>
-      <th>Product</th><th>Category</th><th>Price</th><th>Qty avail / total</th><th>Views</th><th>Saved</th><th>Revenue</th><th>Status</th>
+      <th>Product</th><th>Category</th><th>Price</th><th>Qty avail / total</th><th>Views</th><th>Saved</th><th>Revenue</th><th>Top region</th><th>Status</th>
     </tr></thead><tbody>`;
     products.forEach((p, i) => {
+      const topRegion = regionsByProduct[p.id]?.[0];
       html += `<tr onclick="openEditProductModal('${p.id}')" style="cursor:pointer;" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc((p.category?.name || "").toLowerCase())}">
         <td>${esc(p.name)}</td>
         <td>${esc(p.category?.name || "Uncategorized")}</td>
@@ -6093,6 +6197,7 @@ async function renderVendorProducts() {
         <td>${p.view_count || 0}</td>
         <td>${favCountByProduct[p.id] ?? 0}</td>
         <td>${naira(revenueByProduct[p.id] || 0)}</td>
+        <td>${topRegion ? `<a href="#" onclick="event.stopPropagation();showProductRegions('${p.id}','${esc(p.name).replace(/'/g, "\\'")}');return false;">${esc(topRegion.city)} (${topRegion.order_count})</a>` : `<span class="muted">—</span>`}</td>
         <td><span class="badge ${p.status === "active" ? "success" : p.status === "paused" ? "warning" : "danger"}">${esc(p.status)}</span></td>
       </tr>`;
     });
@@ -6114,11 +6219,13 @@ async function renderVendorProducts() {
       const img = p.photos?.[0];
       const favCount = favCountByProduct[p.id] ?? 0;
       const hasPendingOrder = pendingProductIds.has(p.id);
+      const topRegion = regionsByProduct[p.id]?.[0];
       html += `<div class="card" data-vp-name="${esc((p.name || "").toLowerCase())}" data-vp-cat="${esc(catName.toLowerCase())}">
         <div class="product-img">${img ? `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;">` : "<i class='fa-solid fa-camera'></i> No image"}</div>
         <h4 style="margin:0.5rem 0 0.2rem;">${esc(p.name)}</h4>
         <p class="muted">${p.is_service ? "Service" : `${p.listing_type} · ${p.quantity_available}/${p.quantity_total} available`} · ${p.status}</p>
         <p class="muted" style="font-size:0.8rem;"><i class='fa-solid fa-eye'></i> ${p.view_count || 0} views · <i class='fa-solid fa-heart'></i> ${favCount} saved · <i class="fa-solid fa-sack-dollar"></i> ${naira(revenueByProduct[p.id] || 0)}</p>
+        ${topRegion ? `<p class="muted" style="font-size:0.8rem;"><i class="fa-solid fa-map-location-dot"></i> Sells best in <a href="#" onclick="event.stopPropagation();showProductRegions('${p.id}','${esc(p.name).replace(/'/g, "\\'")}');return false;">${esc(topRegion.city)} (${topRegion.order_count} order${topRegion.order_count === 1 ? "" : "s"})</a></p>` : ""}
         ${hasPendingOrder ? `<p class="muted" style="font-size:0.8rem;color:var(--danger,#dc2626);"><i class="fa-solid fa-circle-exclamation"></i> Has a pending order, can't be removed until it's cleared</p>` : ""}
         <div class="flex">
           <button class="btn btn-sm" onclick="openEditProductModal('${p.id}')"><i class='fa-solid fa-pen'></i> Edit</button>
@@ -6134,6 +6241,18 @@ async function renderVendorProducts() {
   return html;
 }
 
+function showProductRegions(productId, productName) {
+  const rows = window.__vendorProductRegions?.[productId] || [];
+  byId("productRegionsTitle").textContent = productName;
+  const maxCount = Math.max(...rows.map((r) => r.order_count), 1);
+  byId("productRegionsBody").innerHTML = rows.length
+    ? rows.map((r) => `<div style="margin:0.5rem 0;">
+        <div class="flex" style="justify-content:space-between;font-size:0.85rem;"><span>${esc(r.city)}</span><span class="muted">${r.order_count} order${r.order_count === 1 ? "" : "s"} · ${r.total_units} unit${r.total_units === 1 ? "" : "s"}</span></div>
+        <div style="height:0.4rem;background:var(--border);border-radius:999px;overflow:hidden;margin-top:0.2rem;"><div style="height:100%;width:${(r.order_count / maxCount) * 100}%;background:var(--primary);"></div></div>
+      </div>`).join("")
+    : `<p class="muted">No orders yet for this product.</p>`;
+  byId("productRegionsModal").classList.remove("hidden");
+}
 function filterVendorProducts() {
   const q = (byId("vendorProductSearch")?.value || "").trim().toLowerCase();
   document.querySelectorAll("[data-vp-name]").forEach((el) => {
@@ -8219,7 +8338,8 @@ function renderPrivacy() {
     <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Levromart admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
 
     <h3>5. Security</h3>
-    <p>Passwords are never stored in plain text (handled by Supabase Auth). Access to vendor verification documents and payment records is restricted to the account owner and admins.</p>
+    <p>Passwords are never stored in plain text (handled by Supabase Auth). Every account, including ones created with Google, has a password on file so account actions that require it (like deleting your account) work consistently. Access to vendor verification documents and payment records is restricted to the account owner and admins.</p>
+    <p>We periodically confirm it's really you by emailing a one-time login code: on a new login, and again roughly every 7 days on a device that's stayed signed in. This code is single-use, expires after 10 minutes, and is only ever used to verify your session, never to identify you for any other purpose.</p>
 
     <h3>6. Contact</h3>
     <p>Privacy questions can be raised through your account, or with a Levromart admin via a support request.</p>
@@ -8344,6 +8464,11 @@ function toggleAiChat() {
   panel.classList.toggle("hidden");
   if (!panel.classList.contains("hidden")) {
     playSound("open");
+    let wasExpanded = false;
+    try { wasExpanded = localStorage.getItem("levromart-ai-chat-expanded") === "1"; } catch (e) {}
+    panel.classList.toggle("expanded", wasExpanded);
+    const expandBtn = byId("aiChatExpandBtn");
+    if (expandBtn) { expandBtn.title = wasExpanded ? "Shrink" : "Expand"; expandBtn.querySelector("i").className = wasExpanded ? "fa-solid fa-compress" : "fa-solid fa-expand"; }
     if (aiChatMessages.length === 0) {
       if (!aiChatResumeAttempted) { aiChatResumeAttempted = true; resumeLastAiConversation(); }
       else showAiChatGreeting();
@@ -8403,6 +8528,14 @@ async function persistAiMessage(role, content) {
   if (!convId) return null;
   const { data } = await sb.from("ai_messages").insert({ conversation_id: convId, role, content }).select("id").single();
   return data?.id || null;
+}
+function toggleAiChatExpanded() {
+  const panel = byId("aiChatPanel");
+  const expanded = panel.classList.toggle("expanded");
+  const btn = byId("aiChatExpandBtn");
+  btn.title = expanded ? "Shrink" : "Expand";
+  btn.querySelector("i").className = expanded ? "fa-solid fa-compress" : "fa-solid fa-expand";
+  try { localStorage.setItem("levromart-ai-chat-expanded", expanded ? "1" : "0"); } catch (e) {}
 }
 function toggleAiChatHistory() {
   const panel = byId("aiChatPanel");
