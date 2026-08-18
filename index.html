@@ -1219,7 +1219,7 @@
 <div id="setPasswordModal" class="modal hidden">
   <div class="modal-content" style="max-width:400px;">
     <h3><i class="fa-solid fa-key"></i> Set a password</h3>
-    <p class="muted" style="margin:0.6rem 0 1rem;">You signed in with Google, so your account doesn't have a password yet. Set one now — it means you can also log in without Google, and it's needed for anything that asks you to confirm your password, like deleting your account.</p>
+    <p class="muted" style="margin:0.6rem 0 1rem;">You signed in with Google, so your account has no password yet. Set one so you can log in without Google too, and so password-protected actions like deleting your account work.</p>
     <div id="setPasswordError" class="error-text hidden"></div>
     <label>New password</label>
     <input type="password" id="setPasswordInput" autocomplete="new-password" placeholder="At least 8 characters" />
@@ -2829,9 +2829,23 @@ async function setAccountPassword() {
   errorEl.classList.add("hidden");
   if (pw.length < 8) { errorEl.textContent = "Password must be at least 8 characters."; errorEl.classList.remove("hidden"); return; }
   if (pw !== confirm) { errorEl.textContent = "Passwords don't match."; errorEl.classList.remove("hidden"); return; }
-  const { error } = await sb.auth.updateUser({ password: pw });
-  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
-  await sb.from("users").update({ has_password: true }).eq("id", session.user.id);
+  // Set via the server's admin API (api/auth-otp.js), not the client
+  // auth.updateUser() call -- a Google-only account has no password to
+  // compare against, and Supabase's own client-side "must differ from the
+  // old password" check has a known rough edge that misfires in exactly
+  // that case. The admin path sets it directly and skips that check.
+  try {
+    const res = await fetch("/api/auth-otp", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set-password", accessToken: session.access_token, password: pw }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || "Could not set password.");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+    return;
+  }
   profile.has_password = true;
   byId("setPasswordModal").classList.add("hidden");
   byId("setPasswordInput").value = "";
