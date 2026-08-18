@@ -275,26 +275,30 @@
   .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
   .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1.1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
   .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
-  /* Stacked (image full-width on top) below ~640px so the photo isn't
-     squeezed into a half-width column on phones — that's what was making
-     product images look tiny; side-by-side only once there's room for it. */
-  .product-detail-grid { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
-  /* The image column is naturally much taller than the short text/price
-     stack next to it -- align-items:center keeps that stack centered
-     against the photo's height instead of pinned to the top with a big
-     empty gap underneath on wide screens. Capping the photo's height stops
-     it from stretching that gap even further on very wide monitors. */
+  /* Product page: title up top spanning the full card, photo below it,
+     then each row of details (contact actions, vendor/condition/description,
+     price/stock) spread evenly across the card's width instead of
+     everything being squeezed into a narrow column beside the photo. */
+  .product-detail-title { margin: 0 0 1rem; padding-right: 2.5rem; font-size: 1.5rem; }
+  .product-detail-media { text-align: center; margin-bottom: 1.2rem; }
+  .product-detail-media .product-img, .product-detail-media img { max-height: 340px; width: auto; max-width: 100%; margin: 0 auto; }
+  .product-detail-actions {
+    display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: center;
+    padding: 0.9rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 1.2rem;
+  }
+  .product-detail-info { display: flex; flex-wrap: wrap; gap: 0.6rem 1.6rem; margin-bottom: 1.2rem; }
+  .product-detail-info p { margin: 0; }
+  .product-detail-stats {
+    display: flex; flex-wrap: wrap; gap: 1rem 1.8rem; justify-content: space-between;
+    padding-top: 1rem; border-top: 1px solid var(--border);
+  }
+  .product-detail-stats > div { display: flex; flex-direction: column; gap: 0.2rem; }
+  .product-detail-stats .muted { font-size: 0.78rem; }
   @media (min-width: 640px) {
-    .product-detail-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center; }
-    .product-detail-grid > div:first-child img, .product-detail-grid > div:first-child .product-img { max-height: 460px; }
-    /* The info side was a tight little cluster of one-line paragraphs
-       floating in a cell as tall as the photo -- give each line real
-       breathing room instead of the default cramped paragraph stacking,
-       so it actually uses the space next to the photo rather than just
-       sitting in the middle of a mostly-empty column. */
-    .product-detail-grid > div:last-child { display: flex; flex-direction: column; gap: 1rem; }
-    .product-detail-grid > div:last-child p { margin: 0; }
-    .product-detail-grid > div:last-child h2 { font-size: 1.6rem; }
+    .product-detail-title { font-size: 1.8rem; text-align: center; }
+    .product-detail-media .product-img, .product-detail-media img { max-height: 420px; }
+    .product-detail-actions { justify-content: space-between; }
+    .product-detail-info { justify-content: space-between; }
   }
   .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
   .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
@@ -4640,25 +4644,28 @@ async function renderProductDetail(productId) {
     : `<div class="product-img" style="height:220px;"><i class='fa-solid fa-camera'></i> No image</div>`;
   const isFav = favoriteIds.has(product.id);
 
-  let html = `<div class="card product-detail-grid" style="position:relative;">
+  const statItems = [
+    !product.is_service ? { label: "Available", value: `${product.quantity_available} / ${product.quantity_total}` } : null,
+    product.sale_price != null ? { label: product.is_service ? "Price" : "Buy price", value: naira(product.sale_price) + servicePriceSuffix(product) } : null,
+    product.rental_rate != null ? { label: "Rent", value: `${naira(product.rental_rate)} per ${product.rental_rate_unit}` } : null,
+    product.deposit_amount ? { label: "Refundable deposit", value: naira(product.deposit_amount) } : null,
+  ].filter(Boolean);
+
+  let html = `<div class="card product-detail-card" style="position:relative;">
     <button class="fav-btn ${isFav ? "active" : ""}" style="top:1rem;right:1rem;" onclick="toggleFavorite(event,'${product.id}')" title="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
-    <div>${photosHtml}</div>
-    <div>
-      <h2>${esc(product.name)}</h2>
-      ${product.is_service ? `<span class="badge">Service</span>` : ""}
-      <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
-      ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
-      <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
-      <div class="contact-actions" style="align-items:center;">
-        ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
-        ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
-        ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
-      </div>
-      ${product.is_service ? "" : `<p><strong>Available:</strong> ${product.quantity_available} / ${product.quantity_total}</p>`}
-      ${product.sale_price != null ? `<p><strong>${product.is_service ? "Price" : "Buy price"}:</strong> ${naira(product.sale_price)}${servicePriceSuffix(product)}</p>` : ""}
-      ${product.rental_rate != null ? `<p><strong>Rent:</strong> ${naira(product.rental_rate)} per ${product.rental_rate_unit}</p>` : ""}
-      ${product.deposit_amount ? `<p><strong>Refundable deposit:</strong> ${naira(product.deposit_amount)}</p>` : ""}
+    <h2 class="product-detail-title">${esc(product.name)}${product.is_service ? ` <span class="badge">Service</span>` : ""}</h2>
+    <div class="product-detail-media">${photosHtml}</div>
+    <div class="product-detail-actions">
+      ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>` : ""}
+      ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
+      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
     </div>
+    <div class="product-detail-info">
+      <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
+      ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
+      <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
+    </div>
+    ${statItems.length ? `<div class="product-detail-stats">${statItems.map((s) => `<div><span class="muted">${esc(s.label)}</span><strong>${s.value}</strong></div>`).join("")}</div>` : ""}
   </div>`;
 
   if (profile?.role === "admin") {
