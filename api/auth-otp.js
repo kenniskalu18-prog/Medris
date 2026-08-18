@@ -1,12 +1,15 @@
 // POST { action: "send" | "verify", accessToken, code? }
-// Admin-only email OTP, required after the password on every fresh login
-// (not on ordinary page reloads) — this account has real power
-// (approve/delete vendors, finance access), so it gets the extra step;
-// buyer/vendor accounts don't have anything worth adding that friction for.
+// Email OTP for every account, not just admins -- required on a genuinely
+// fresh login, and again every 7 days on a standing session (checked via
+// users.otp_verified_at, which the client re-checks once per app boot).
+// New signups get otp_verified_at set to their signup time, so this never
+// interrupts someone's very first session -- only returning ones, once the
+// 7-day window has actually lapsed.
 // Merged from the old separate send-login-otp.js / verify-login-otp.js —
 // same two flows, just picked by `action` now (Vercel's Hobby plan caps
 // deployments at 12 serverless functions, so related endpoints share a
 // file rather than each getting its own).
+const OTP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const { readBody, env, sendNotificationEmail } = require("./_util");
 
 module.exports = async function handler(req, res) {
@@ -35,9 +38,12 @@ async function sendOtp({ accessToken }, res) {
   const me = await meRes.json();
   if (!meRes.ok || !me?.id) { res.status(401).json({ error: "Invalid session" }); return; }
 
-  const uRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}&select=role,name,email`, { headers: svcAuth });
+  const uRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}&select=name,email,otp_verified_at`, { headers: svcAuth });
   const [u] = await uRes.json();
-  if (!u || u.role !== "admin") { res.status(200).json({ ok: true, otpRequired: false }); return; }
+  if (!u) { res.status(200).json({ ok: true, otpRequired: false }); return; }
+
+  const lastVerified = u.otp_verified_at ? new Date(u.otp_verified_at).getTime() : 0;
+  if (Date.now() - lastVerified < OTP_INTERVAL_MS) { res.status(200).json({ ok: true, otpRequired: false }); return; }
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -85,10 +91,16 @@ async function verifyOtp({ accessToken, code }, res) {
     return;
   }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/admin_login_otps?id=eq.${otp.id}`, {
-    method: "PATCH", headers: svcHeaders,
-    body: JSON.stringify({ used_at: new Date().toISOString() }),
-  });
+  await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/admin_login_otps?id=eq.${otp.id}`, {
+      method: "PATCH", headers: svcHeaders,
+      body: JSON.stringify({ used_at: new Date().toISOString() }),
+    }),
+    fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}`, {
+      method: "PATCH", headers: svcHeaders,
+      body: JSON.stringify({ otp_verified_at: new Date().toISOString() }),
+    }),
+  ]);
 
   res.status(200).json({ ok: true });
 }
