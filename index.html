@@ -287,6 +287,14 @@
   @media (min-width: 640px) {
     .product-detail-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center; }
     .product-detail-grid > div:first-child img, .product-detail-grid > div:first-child .product-img { max-height: 460px; }
+    /* The info side was a tight little cluster of one-line paragraphs
+       floating in a cell as tall as the photo -- give each line real
+       breathing room instead of the default cramped paragraph stacking,
+       so it actually uses the space next to the photo rather than just
+       sitting in the middle of a mostly-empty column. */
+    .product-detail-grid > div:last-child { display: flex; flex-direction: column; gap: 1rem; }
+    .product-detail-grid > div:last-child p { margin: 0; }
+    .product-detail-grid > div:last-child h2 { font-size: 1.6rem; }
   }
   .divider { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
   .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
