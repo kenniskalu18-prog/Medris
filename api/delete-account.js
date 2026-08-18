@@ -80,10 +80,15 @@ module.exports = async function handler(req, res) {
     ]);
 
     // Permanently ban the login (no expiry we'd ever reasonably hit) rather
-    // than deleting the auth row, since that delete would cascade.
+    // than deleting the auth row, since that delete would cascade. Also
+    // move the *auth* email (not just the public.users one patched above)
+    // off to the same anonymized address -- otherwise the real email stays
+    // locked to this now-banned-forever identity and the person can never
+    // sign up again with their own email, even though this was their own
+    // choice to delete, not a for-cause ban.
     await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${me.id}`, {
       method: "PUT", headers: svcHeaders,
-      body: JSON.stringify({ ban_duration: "876000h" }),
+      body: JSON.stringify({ ban_duration: "876000h", email: anonEmail }),
     });
 
     res.status(200).json({ deleted: true });
