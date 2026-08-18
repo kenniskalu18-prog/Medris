@@ -1,4 +1,4 @@
-// POST { action: "send" | "verify", accessToken, code? }
+// POST { action: "send" | "verify" | "set-password", accessToken, code?, password? }
 // Email OTP for every account, not just admins -- required on a genuinely
 // fresh login, and again every 7 days on a standing session (checked via
 // users.otp_verified_at, which the client re-checks once per app boot).
@@ -17,6 +17,7 @@ module.exports = async function handler(req, res) {
   try {
     const body = JSON.parse(await readBody(req));
     if (body.action === "verify") return verifyOtp(body, res);
+    if (body.action === "set-password") return setPassword(body, res);
     return sendOtp(body, res);
   } catch (err) {
     res.status(500).json({ error: err.message || "Server error" });
@@ -101,6 +102,44 @@ async function verifyOtp({ accessToken, code }, res) {
       body: JSON.stringify({ otp_verified_at: new Date().toISOString() }),
     }),
   ]);
+
+  res.status(200).json({ ok: true });
+}
+
+// Sets a password for the calling account through Supabase's admin API
+// instead of the regular client-side auth.updateUser() call. An OAuth-only
+// account (Google sign-in, no password ever set) has a known rough edge in
+// Supabase's own "new password must differ from the old one" check -- it
+// can misfire and reject a brand-new password as a duplicate even though
+// there was never a real one to compare against. The admin API sets the
+// password directly and doesn't run that comparison at all.
+async function setPassword({ accessToken, password }, res) {
+  if (!accessToken || !password) { res.status(400).json({ error: "accessToken and password are required" }); return; }
+  if (String(password).length < 8) { res.status(400).json({ error: "Password must be at least 8 characters." }); return; }
+
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+  const svcAuth = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+
+  const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+  });
+  const me = await meRes.json();
+  if (!meRes.ok || !me?.id) { res.status(401).json({ error: "Invalid session" }); return; }
+
+  const setRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${me.id}`, {
+    method: "PUT",
+    headers: { ...svcAuth, "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  const setJson = await setRes.json();
+  if (!setRes.ok) { res.status(400).json({ error: setJson.msg || setJson.error_description || setJson.message || "Could not set password." }); return; }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}`, {
+    method: "PATCH", headers: { ...svcAuth, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ has_password: true }),
+  });
 
   res.status(200).json({ ok: true });
 }
