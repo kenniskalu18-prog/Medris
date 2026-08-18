@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Levromart</title>
 <meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
@@ -75,11 +75,15 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { width: 100%; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
+  /* touch-action: pan-x/pan-y (not "manipulation") -- still allows normal
+     scrolling but drops double-tap-to-zoom and pinch-zoom gestures, so the
+     app stays fixed at one scale like a native app, on top of the
+     viewport meta tag above. */
+  html { width: 100%; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-x pan-y; }
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif; color: var(--text); min-height: 100vh; display: flex; flex-direction: column;
     width: 100%; max-width: 100%; background-color: var(--bg); background-image: var(--bg-wash); background-attachment: fixed;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 0.25s ease, color 0.25s ease; touch-action: pan-x pan-y;
   }
   header {
     background: var(--glass-bg); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
