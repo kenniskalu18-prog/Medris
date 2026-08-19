@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobihealth Champions | Application Management Portal</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-body">
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <span class="brand-mark" style="width:52px;height:52px;border-radius:14px;" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 13h2l1.5-4h3L11 13h2.5l1-6H19l1 3h1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.8" fill="currentColor"/><circle cx="17" cy="17" r="1.8" fill="currentColor"/></svg>
+    </span>
+    <h1>Mobihealth Champions</h1>
+    <p class="subtitle">Application Management Portal</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Admin Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Send Login Link</button>
+    </form>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ===================== ACCESS DENIED ===================== -->
+<div class="denied-wrap" id="deniedScreen" style="display:none;">
+  <div class="denied-card">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+    <h2 style="color:var(--navy)">You don&rsquo;t have permission to access this dashboard.</h2>
+    <p style="color:var(--text-muted)">This admin portal is restricted to approved Mobihealth administrators. Contact the Super Admin if you believe this is a mistake.</p>
+    <button class="btn btn-outline" id="signOutDeniedBtn" style="margin-top:14px;">Sign Out</button>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div class="admin-shell" id="dashboardScreen" style="display:none;">
+  <aside class="admin-sidebar" id="sidebar">
+    <a class="brand" href="#">
+      <span class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 13h2l1.5-4h3L11 13h2.5l1-6H19l1 3h1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.8" fill="currentColor"/><circle cx="17" cy="17" r="1.8" fill="currentColor"/></svg></span>
+      <span><span class="brand-name">Mobihealth</span><span class="brand-tag">Champions Admin</span></span>
+    </a>
+    <nav class="admin-nav">
+      <button data-view="dashboardView" class="active">Dashboard</button>
+      <button data-view="applicationsView">Applications</button>
+      <button data-view="adminsView" id="navAdmins">Manage Administrators</button>
+      <button data-view="settingsView" id="navSettings">Application Settings</button>
+      <button data-view="activityView">Activity Log</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="me" id="meEmail"></div>
+      <button class="btn btn-outline btn-block btn-sm" id="signOutBtn">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <h1 id="topbarTitle">Dashboard</h1>
+      <div></div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- DASHBOARD -->
+      <section class="admin-view active" id="dashboardView">
+        <div class="stat-grid">
+          <div class="stat-card"><span class="num" id="statTotal">0</span><span class="lbl">Total Applications</span></div>
+          <div class="stat-card accent-new"><span class="num" id="statNew">0</span><span class="lbl">New</span></div>
+          <div class="stat-card accent-review"><span class="num" id="statReview">0</span><span class="lbl">Under Review</span></div>
+          <div class="stat-card accent-short"><span class="num" id="statShort">0</span><span class="lbl">Shortlisted</span></div>
+          <div class="stat-card accent-selected"><span class="num" id="statSelected">0</span><span class="lbl">Selected</span></div>
+          <div class="stat-card accent-rejected"><span class="num" id="statRejected">0</span><span class="lbl">Not Selected</span></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="recentTable">
+            <thead><tr><th>Application ID</th><th>Name</th><th>Department</th><th>Level</th><th>Date Applied</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- APPLICATIONS -->
+      <section class="admin-view" id="applicationsView">
+        <div class="toolbar">
+          <input type="search" id="searchInput" placeholder="Search by name, email, application ID, department or matric no.">
+          <select id="filterFaculty"><option value="">All Faculties</option></select>
+          <select id="filterLevel"><option value="">All Levels</option></select>
+          <select id="filterStatus">
+            <option value="">All Statuses</option>
+            <option>New</option><option>Under Review</option><option>Shortlisted</option><option>Interview</option><option>Selected</option><option>Not Selected</option>
+          </select>
+          <button class="btn btn-outline btn-sm" id="exportCsvBtn">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="applicationsTable">
+            <thead><tr>
+              <th>Application ID</th><th>Applicant</th><th>Faculty</th><th>Department</th><th>Level</th>
+              <th>Email</th><th>Phone</th><th>Date Applied</th><th>Status</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="applicationsEmpty" style="display:none;">No applications match your search/filters yet.</div>
+      </section>
+
+      <!-- MANAGE ADMINS -->
+      <section class="admin-view" id="adminsView">
+        <div class="settings-form" style="margin-bottom:22px;">
+          <label style="font-weight:700;color:var(--navy-soft);">Add New Administrator</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input type="email" id="newAdminEmail" placeholder="admin@example.com" style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;">
+            <button class="btn btn-primary" id="addAdminBtn">Add Admin</button>
+          </div>
+          <div class="login-msg" id="adminMsg"></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Email</th><th>Date Added</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="adminsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="admin-view" id="settingsView">
+        <form class="settings-form" id="settingsForm">
+          <div class="field"><label>Programme Name</label><input type="text" id="setProgramName"></div>
+          <div class="field"><label>Programme Description</label><textarea id="setProgramDesc"></textarea></div>
+          <div class="field"><label>Application Status</label>
+            <select id="setStatus"><option value="open">Open</option><option value="closed">Closed</option></select>
+          </div>
+          <div class="field"><label>Application Deadline</label><input type="datetime-local" id="setDeadline"></div>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+          <div class="login-msg" id="settingsMsg"></div>
+        </form>
+      </section>
+
+      <!-- ACTIVITY LOG -->
+      <section class="admin-view" id="activityView">
+        <div class="log-list" id="activityLogList"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Detail Drawer -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <strong id="drawerName">Applicant</strong>
+    <button class="modal-close" id="drawerCloseBtn" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

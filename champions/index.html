@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Become a Mobihealth Campus Champion | UNILAG</title>
+<meta name="description" content="Apply to become a Mobihealth Campus Champion at the University of Lagos. Lead. Inspire. Impact.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 13h2l1.5-4h3L11 13h2.5l1-6H19l1 3h1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.8" fill="currentColor"/><circle cx="17" cy="17" r="1.8" fill="currentColor"/></svg>
+      </span>
+      <span>
+        <span class="brand-name">Mobihealth</span>
+        <span class="brand-tag">Campus Champions</span>
+      </span>
+    </a>
+    <nav>
+      <a class="nav-link" href="#why">Why Join</a>
+      <a class="nav-link" href="#who">Eligibility</a>
+      <a class="nav-link" href="#deadline">Deadline</a>
+      <button class="btn btn-primary btn-sm" id="applyNavBtn">Apply Now</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="container">
+      <div>
+        <span class="hero-badge"><span class="dot"></span> UNILAG · Applications Open</span>
+        <h1>Become a <span class="accent-blue">Mobihealth</span><br><span class="accent-green">Champion</span></h1>
+        <div class="hero-tagline"><span>Lead.</span><span>Inspire.</span><span>Impact.</span></div>
+        <p class="lede">We're building a movement of passionate UNILAG students who believe in better health, smarter choices, and stronger communities. Will you be our next champion?</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" id="applyHeroBtn">Apply Now</button>
+          <a class="btn btn-outline" href="#why">Learn More</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img src="assets/unilag-hero.jpg" alt="Mobihealth Campus Champions at the University of Lagos" onerror="this.parentElement.innerHTML='<div class=&quot;placeholder&quot;>Add a campus photo at champions/assets/unilag-hero.jpg</div>'">
+      </div>
+    </div>
+  </section>
+
+  <section class="info-strip">
+    <div class="container">
+      <div class="info-card">
+        <div class="info-item">
+          <span class="info-icon blue" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <div><h3>Who Can Apply?</h3><p>All students, all levels<span class="muted">University of Lagos (UNILAG)</span></p></div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon green" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <div><h3>Application Deadline</h3><p id="deadlineHeadline">Saturday, September 5, 2026</p></div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon blue" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <div><h3>Be Part Of</h3><p>A passionate team<span class="muted">of changemakers on campus and beyond</span></p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Why Join</span>
+        <h2>Why Become a Champion?</h2>
+        <p>Being a Mobihealth Campus Champion is more than a title — it's a launchpad.</p>
+      </div>
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="why-icon" style="background:var(--blue)" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M11 19l-3-3m0 0l6-6 3 3-6 6zm0 0L4 20l1-4 6-6"/><path d="M14 4l6 6-3 3-6-6z"/></svg></span>
+          <h3>Make an Impact</h3>
+          <p>Promote health awareness, encourage healthier choices and contribute to meaningful change on campus.</p>
+        </div>
+        <div class="why-card">
+          <span class="why-icon" style="background:var(--green)" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+          <h3>Build Your Skills</h3>
+          <p>Develop communication, leadership, teamwork, advocacy and project-management skills.</p>
+        </div>
+        <div class="why-card">
+          <span class="why-icon" style="background:var(--pink)" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M8.5 13.5L6 21l6-3 6 3-2.5-7.5"/></svg></span>
+          <h3>Earn Recognition</h3>
+          <p>Gain certificates, recognition and opportunities to grow through your involvement.</p>
+        </div>
+        <div class="why-card">
+          <span class="why-icon" style="background:var(--orange)" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M12 2v13m0-13l4 4m-4-4L8 6"/></svg></span>
+          <h3>Enjoy Exclusive Perks</h3>
+          <p>Access selected Mobihealth activities, training opportunities, events and other benefits.</p>
+        </div>
+        <div class="why-card">
+          <span class="why-icon" style="background:#7c3aed" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+          <h3>Join a Community</h3>
+          <p>Connect with passionate students and become part of a growing campus health movement.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="who">
+    <div class="container">
+      <div class="who-section">
+        <div class="container">
+          <div class="who-grid">
+            <div>
+              <span class="eyebrow" style="color:#6fe08a">Eligibility</span>
+              <h2>Who Can Apply?</h2>
+              <p class="lede">Students currently studying at the University of Lagos, from any faculty and any level.</p>
+            </div>
+            <ul class="who-list">
+              <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Students from ALL LEVELS on UNILAG campus</li>
+              <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Undergraduate students, any faculty or department</li>
+              <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Passionate about healthcare, tech, communication, advocacy or community impact</li>
+              <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Willing to actively represent and promote Mobihealth on campus</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="deadline" class="deadline-section">
+    <div class="container">
+      <div class="deadline-card">
+        <span class="eyebrow2">Application Deadline</span>
+        <h2 id="deadlineFull">Saturday, September 5, 2026</h2>
+        <div class="countdown" id="countdown" aria-live="polite">
+          <div class="unit"><span class="num" id="cdDays">--</span><span class="lbl">Days</span></div>
+          <div class="unit"><span class="num" id="cdHours">--</span><span class="lbl">Hours</span></div>
+          <div class="unit"><span class="num" id="cdMins">--</span><span class="lbl">Mins</span></div>
+          <div class="unit"><span class="num" id="cdSecs">--</span><span class="lbl">Secs</span></div>
+        </div>
+        <span class="deadline-status" id="deadlineStatus">Applications Open</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="closed-banner" id="closedBanner" style="display:none;">
+    Applications for the Mobihealth Campus Champions Programme are now closed.
+  </div>
+
+  <section class="final-cta">
+    <div class="container">
+      <div class="final-cta-inner">
+        <div>
+          <h2>Ready to make a difference?</h2>
+          <p>Join the Mobihealth Champions and be the change our campus needs.</p>
+        </div>
+        <div>
+          <button class="btn btn-primary btn-block" id="applyFooterBtn">Apply Now</button>
+        </div>
+      </div>
+      <div class="footer-grid">
+        <div>
+          <h4>Mobihealth</h4>
+          <p>A campus initiative by Mobihealth for University of Lagos students. Not officially operated by the University of Lagos.</p>
+        </div>
+        <div>
+          <h4>For Enquiries</h4>
+          <p>DM us on our official social media handles, or email us directly.</p>
+          <a href="mailto:mobihealth.ng@gmail.com">mobihealth.ng@gmail.com</a>
+        </div>
+        <div class="footer-social">
+          <h4>Follow Us</h4>
+          <a href="https://instagram.com/mobihealth.ng" target="_blank" rel="noopener">Instagram — @mobihealth.ng</a>
+          <a href="https://x.com/mobihealth_ng" target="_blank" rel="noopener">X — @mobihealth_ng</a>
+          <a href="https://tiktok.com/@mobihealth.ng" target="_blank" rel="noopener">TikTok — @mobihealth.ng</a>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Mobihealth. All rights reserved. &middot; <a href="admin.html" style="color:rgba(255,255,255,0.5)">Admin</a></div>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== APPLICATION MODAL ===================== -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalStepLabel">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="step-label" id="modalStepLabel">Step 1 of 5</span>
+      <button class="modal-close" id="modalCloseBtn" aria-label="Close application form">&times;</button>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="modal-body">
+      <div class="form-alert" id="formAlert"></div>
+      <form id="applicationForm" novalidate>
+
+        <!-- STEP 1 -->
+        <div class="step-panel active" data-step="1">
+          <h3 class="step-title">Let's Get to Know You</h3>
+          <p class="step-sub">Step 1 of 5 &middot; Personal Information</p>
+          <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" name="full_name" required></div>
+          <div class="field"><label>Preferred Name <span class="opt">(optional)</span></label><input type="text" name="preferred_name"></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Email Address <span class="req">*</span></label><input type="email" name="email" required></div>
+            <div class="field"><label>Phone Number <span class="req">*</span></label><input type="tel" name="phone" required></div>
+          </div>
+          <div class="field"><label>WhatsApp Number <span class="opt">(optional)</span></label><input type="tel" name="whatsapp"></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Gender <span class="opt">(optional)</span></label>
+              <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select>
+            </div>
+            <div class="field"><label>Age Range <span class="opt">(optional)</span></label>
+              <select name="age_range"><option value="">Select</option><option>Under 18</option><option>18–20</option><option>21–23</option><option>24+</option></select>
+            </div>
+          </div>
+          <div class="field"><label>UNILAG Student ID / Matric Number <span class="req">*</span></label><input type="text" name="matric_number" required></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Faculty <span class="req">*</span></label><input type="text" name="faculty" required></div>
+            <div class="field"><label>Department <span class="req">*</span></label><input type="text" name="department" required></div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Current Level <span class="req">*</span></label>
+              <select name="level" required>
+                <option value="">Select</option>
+                <option>100 Level</option><option>200 Level</option><option>300 Level</option>
+                <option>400 Level</option><option>500 Level</option><option>600 Level</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>Expected Graduation Year <span class="req">*</span></label><input type="text" inputmode="numeric" name="graduation_year" required placeholder="e.g. 2027"></div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-panel" data-step="2">
+          <h3 class="step-title">Tell Us About Yourself</h3>
+          <p class="step-sub">Step 2 of 5 &middot; About You</p>
+          <div class="field">
+            <label>Briefly introduce yourself <span class="req">*</span></label>
+            <textarea name="introduction" maxlength="500" required></textarea>
+            <div class="char-count"><span data-count-for="introduction">0</span>/500</div>
+          </div>
+          <div class="field">
+            <label>What are you passionate about? <span class="req">*</span></label>
+            <div class="choice-group" data-checkbox-group="passions">
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Healthcare">Healthcare</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Technology">Technology</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Health education">Health education</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Public health">Public health</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Entrepreneurship">Entrepreneurship</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Leadership">Leadership</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Social impact">Social impact</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Community development">Community development</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Media & communication">Media & communication</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Other">Other</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Have you previously participated in any student organisation, volunteer programme, campaign or leadership role?</label>
+            <div class="choice-group" data-radio-group="has_prior_experience">
+              <label class="choice-pill"><input type="radio" name="has_prior_experience" value="yes">Yes</label>
+              <label class="choice-pill"><input type="radio" name="has_prior_experience" value="no">No</label>
+            </div>
+          </div>
+          <div class="field reveal" id="priorExperienceReveal">
+            <label>Tell us briefly about your experience</label>
+            <textarea name="previous_experience"></textarea>
+          </div>
+          <div class="field">
+            <label>What leadership or extracurricular roles have you held? <span class="opt">(optional)</span></label>
+            <textarea name="leadership_roles"></textarea>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step-panel" data-step="3">
+          <h3 class="step-title">Why Do You Want to Be a Mobihealth Champion?</h3>
+          <p class="step-sub">Step 3 of 5 &middot; Motivation</p>
+          <div class="field"><label>Why do you want to become a Mobihealth Campus Champion? <span class="req">*</span></label><textarea name="why_mobihealth" required></textarea></div>
+          <div class="field"><label>What do you think a Mobihealth Campus Champion should do? <span class="req">*</span></label><textarea name="champion_role" required></textarea></div>
+          <div class="field"><label>How would you promote Mobihealth among students on campus? <span class="req">*</span></label><textarea name="promotion_strategy" required></textarea></div>
+          <div class="field"><label>Imagine you had one month to increase awareness of Mobihealth among UNILAG students. What would you do? <span class="opt">(optional)</span></label><textarea name="one_month_idea"></textarea></div>
+          <div class="field">
+            <label>Which areas would you be most interested in contributing to? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-checkbox-group="contribution_areas">
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Health awareness">Health awareness</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Social media">Social media</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Content creation">Content creation</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Event planning">Event planning</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Campus outreach">Campus outreach</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Public speaking">Public speaking</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Student engagement">Student engagement</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Marketing">Marketing</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Partnerships">Partnerships</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Research">Research</label>
+              <label class="choice-pill"><input type="checkbox" name="contribution_areas" value="Other">Other</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step-panel" data-step="4">
+          <h3 class="step-title">Your Experience &amp; Availability</h3>
+          <p class="step-sub">Step 4 of 5 &middot; Experience &amp; Availability</p>
+          <div class="field">
+            <label>How would you rate your communication skills? <span class="opt">(optional, 1–5)</span></label>
+            <div class="rating-group" data-rating-group="communication_rating">
+              <button type="button" data-value="1">1</button><button type="button" data-value="2">2</button>
+              <button type="button" data-value="3">3</button><button type="button" data-value="4">4</button><button type="button" data-value="5">5</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>How comfortable are you speaking in front of people? <span class="opt">(optional, 1–5)</span></label>
+            <div class="rating-group" data-rating-group="public_speaking_rating">
+              <button type="button" data-value="1">1</button><button type="button" data-value="2">2</button>
+              <button type="button" data-value="3">3</button><button type="button" data-value="4">4</button><button type="button" data-value="5">5</button>
+            </div>
+          </div>
+          <div class="field"><label>How active are you on social media? <span class="opt">(optional)</span></label>
+            <select name="social_media_activity"><option value="">Select</option><option>Very active</option><option>Active</option><option>Occasionally active</option><option>Not very active</option></select>
+          </div>
+          <div class="field">
+            <label>Which platforms do you actively use? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-checkbox-group="social_platforms">
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Instagram">Instagram</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="TikTok">TikTok</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="X">X</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Facebook">Facebook</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="LinkedIn">LinkedIn</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="WhatsApp">WhatsApp</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="YouTube">YouTube</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Other">Other</label>
+            </div>
+          </div>
+          <div class="field"><label>How many hours per week could you dedicate to the Champion programme? <span class="opt">(optional)</span></label>
+            <select name="weekly_availability"><option value="">Select</option><option>Less than 2 hours</option><option>2–4 hours</option><option>4–6 hours</option><option>6+ hours</option></select>
+          </div>
+          <div class="field">
+            <label>Are you comfortable representing Mobihealth at campus events? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-radio-group="campus_events">
+              <label class="choice-pill"><input type="radio" name="campus_events" value="yes">Yes</label>
+              <label class="choice-pill"><input type="radio" name="campus_events" value="no">No</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Are you comfortable sharing Mobihealth-related content on your social media? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-radio-group="social_media_sharing">
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="Yes">Yes</label>
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="No">No</label>
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="Maybe">Maybe</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step-panel" data-step="5">
+          <h3 class="step-title">Almost There!</h3>
+          <p class="step-sub">Step 5 of 5 &middot; Final Details</p>
+          <div class="field"><label>What is one idea you would love to introduce as a Mobihealth Champion? <span class="opt">(optional)</span></label><textarea name="champion_idea"></textarea></div>
+          <div class="field"><label>What makes you different from other applicants? <span class="opt">(optional)</span></label><textarea name="unique_strength"></textarea></div>
+          <div class="field"><label>Where did you hear about this opportunity? <span class="opt">(optional)</span></label>
+            <select name="referral_source"><option value="">Select</option><option>Instagram</option><option>WhatsApp</option><option>Friend</option><option>Campus event</option><option>Mobihealth Champion</option><option>Student organisation</option><option>Other</option></select>
+          </div>
+          <div class="field">
+            <label>Upload a clear profile photograph <span class="req">*</span> <span class="opt">(JPG/PNG, max 5MB)</span></label>
+            <label class="file-drop" id="photoDrop" for="profilePhoto">
+              <span class="file-name" id="photoName">Click to choose a photo</span>
+              <small>JPG, JPEG or PNG · up to 5MB</small>
+              <input type="file" id="profilePhoto" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+            </label>
+          </div>
+          <div class="field">
+            <label>Upload your CV/resume <span class="opt">(optional, PDF/DOC/DOCX, max 10MB)</span></label>
+            <label class="file-drop" id="cvDrop" for="cvUpload">
+              <span class="file-name" id="cvName">Click to choose a file</span>
+              <small>PDF, DOC or DOCX · up to 10MB</small>
+              <input type="file" id="cvUpload" accept=".pdf,.doc,.docx">
+            </label>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Instagram username <span class="opt">(optional)</span></label><input type="text" name="instagram"></div>
+            <div class="field"><label>LinkedIn profile <span class="opt">(optional)</span></label><input type="url" name="linkedin"></div>
+          </div>
+          <div class="field"><label>Anything else you'd like us to know? <span class="opt">(optional)</span></label><textarea name="additional_information"></textarea></div>
+
+          <div class="declaration">
+            <input type="checkbox" id="declare1" required>
+            <p><label for="declare1">I confirm that the information provided in this application is accurate to the best of my knowledge. I understand that submitting this application does not guarantee selection as a Mobihealth Campus Champion.</label></p>
+          </div>
+          <div class="declaration">
+            <input type="checkbox" id="declare2" required>
+            <p><label for="declare2">I consent to Mobihealth using the information provided for the purpose of reviewing my application and contacting me regarding the Campus Champions programme.</label></p>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- SUCCESS SCREEN -->
+      <div class="success-screen" id="successScreen" style="display:none;">
+        <div class="success-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h2>Application Submitted!</h2>
+        <p>Thank you for applying to become a Mobihealth Campus Champion.</p>
+        <p>Your application has been successfully received.</p>
+        <div class="ref-box">
+          <div class="muted" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">Keep this reference number for your records</div>
+          <div class="ref-num" id="refNumber">MOBI-2026-00000</div>
+        </div>
+        <p>Follow Mobihealth for updates.</p>
+        <div class="success-social">
+          <a href="https://instagram.com/mobihealth.ng" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
+          <a href="https://x.com/mobihealth_ng" target="_blank" rel="noopener" aria-label="X">X</a>
+          <a href="https://tiktok.com/@mobihealth.ng" target="_blank" rel="noopener" aria-label="TikTok">TT</a>
+        </div>
+        <button class="btn btn-primary" style="margin-top:24px" id="successCloseBtn">Done</button>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="modalFooter">
+      <button type="button" class="btn btn-outline" id="backBtn" disabled>Back</button>
+      <button type="button" class="btn btn-primary" id="nextBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
