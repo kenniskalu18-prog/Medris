@@ -193,6 +193,12 @@ create policy champion_applications_update on public.champion_applications
   using (public.champion_is_admin())
   with check (public.champion_is_admin());
 
+-- Only the Super Admin can permanently delete an application.
+drop policy if exists champion_applications_delete on public.champion_applications;
+create policy champion_applications_delete on public.champion_applications
+  for delete to authenticated
+  using (public.champion_is_super_admin());
+
 -- Admins table: only admins can read the list; only super admins can add/change admins.
 drop policy if exists champion_admins_select on public.champion_admins;
 create policy champion_admins_select on public.champion_admins
