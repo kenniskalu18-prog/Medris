@@ -1058,6 +1058,8 @@ section { padding: 76px 0; }
           <div class="muted" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">Keep this reference number for your records</div>
           <div class="ref-num" id="refNumber">MOBI-2026-00000</div>
         </div>
+        <p style="font-size:0.85rem;">Your default email app should have just opened with a summary pre-filled — just hit send there. Didn't open?</p>
+        <button type="button" class="btn btn-outline btn-sm" id="resendMailBtn">Open Email App</button>
         <p>Follow Mobihealth for updates.</p>
         <div class="success-social">
           <a href="https://www.instagram.com/mymobihealth" target="_blank" rel="noopener" aria-label="Instagram" class="success-social-icon success-social-icon--ig">
@@ -1712,6 +1714,33 @@ window.mobihealthSupabase = window.supabase.createClient(
     return path;
   }
 
+  // Recipient(s) for the guaranteed mailto: fallback. Add HR back in when
+  // ready: "HR@mobihealthinternational.com,kenniskalu18@gmail.com".
+  const INTERNAL_MAIL_TO = "kenniskalu18@gmail.com";
+
+  function buildInternalMailtoLink(data, applicationNumber) {
+    const subject = `New MTCP Champion Application — ${data.full_name} (${applicationNumber})`;
+    const lines = [
+      `New MTCP Telehealth Champion application received.`,
+      ``,
+      `Reference: ${applicationNumber}`,
+      `Full Name: ${data.full_name}`,
+      `Email: ${data.email}`,
+      `Phone: ${data.phone}`,
+      `Institution: ${data.institution}`,
+      `Level: ${data.level}`,
+      `Faculty: ${data.faculty}`,
+      `Department: ${data.department}`,
+      `Primary Track: ${data.primary_track}`,
+      `Secondary Tracks: ${(data.secondary_tracks || []).join(", ") || "None"}`,
+      `Leadership Interest: ${data.wants_leadership ? "Yes — " + (data.leadership_role_interest || "role not specified") : "No"}`,
+      ``,
+      `Full application details (including photo/CV and long-form answers) are in the admin dashboard.`,
+    ];
+    const body = lines.join("\n");
+    return `mailto:${encodeURIComponent(INTERNAL_MAIL_TO)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   async function submitApplication() {
     if (submitting) return;
     submitting = true;
@@ -1760,7 +1789,7 @@ window.mobihealthSupabase = window.supabase.createClient(
         throw insertErr;
       }
 
-      // Best-effort confirmation + internal notification email (Supabase Edge Function; safe to fail silently)
+      // Best-effort confirmation + internal notification email (Supabase Edge Function; safe to fail silently if not configured)
       supabase.functions.invoke("champions-notify", {
         body: {
           email: data.email, name: data.full_name, applicationNumber,
@@ -1768,6 +1797,14 @@ window.mobihealthSupabase = window.supabase.createClient(
           primaryTrack: data.primary_track, wantsLeadership: data.wants_leadership,
         },
       }).catch(() => {});
+
+      // Guaranteed, no-setup-required path: open the applicant's own mail app
+      // with a pre-filled summary addressed to the Mobihealth team. Works
+      // with zero backend configuration since mailto: links are handled by
+      // the browser/OS directly.
+      const mailtoLink = buildInternalMailtoLink(data, applicationNumber);
+      document.getElementById("resendMailBtn").addEventListener("click", () => { window.location.href = mailtoLink; });
+      window.location.href = mailtoLink;
 
       clearDraft();
       document.getElementById("refNumber").textContent = applicationNumber;
