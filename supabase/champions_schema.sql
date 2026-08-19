@@ -218,18 +218,6 @@ create policy champion_admins_write on public.champion_admins
   for insert to authenticated
   with check (public.champion_is_super_admin());
 
--- Let a newly-signed-up user request access for themselves — but only ever
--- as a pending, non-admin request, never active, never super_admin. Real
--- approval (flipping status to 'active') is a Super-Admin-only update below.
-drop policy if exists champion_admins_insert_self on public.champion_admins;
-create policy champion_admins_insert_self on public.champion_admins
-  for insert to authenticated
-  with check (
-    lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-    and status = 'pending'
-    and role = 'admin'
-  );
-
 drop policy if exists champion_admins_update on public.champion_admins;
 create policy champion_admins_update on public.champion_admins
   for update to authenticated
@@ -259,6 +247,68 @@ create trigger champion_protect_primary_admin_trigger
   before update on public.champion_admins
   for each row
   execute function public.champion_protect_primary_admin();
+
+-- =========================================================
+-- Rate-limited admin access requests (max 3 per email per 24h)
+-- =========================================================
+-- Every request attempt (new signup or re-request after being declined) is
+-- logged here. Not directly readable/writable by clients -- only the
+-- SECURITY DEFINER function below touches it, so the limit can't be
+-- bypassed by calling the table directly.
+create table if not exists public.champion_admin_requests (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  requested_at timestamptz not null default now()
+);
+alter table public.champion_admin_requests enable row level security;
+create index if not exists champion_admin_requests_email_idx on public.champion_admin_requests (lower(email), requested_at);
+
+-- Called by the app right after a user signs in for the first time (or
+-- signs back in after being declined). Files a pending request for their
+-- own email, capped at 3 attempts per rolling 24 hours. Already-pending or
+-- already-active accounts are left untouched and don't consume the limit.
+create or replace function public.champion_request_admin_access()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_count int;
+  v_status text;
+begin
+  if v_email = '' then
+    raise exception 'Not authenticated';
+  end if;
+
+  select status into v_status from public.champion_admins where lower(email) = v_email;
+
+  if v_status is not null and v_status <> 'removed' then
+    return v_status; -- already pending or active -- nothing to do, no limit consumed
+  end if;
+
+  select count(*) into v_count
+  from public.champion_admin_requests
+  where lower(email) = v_email and requested_at > now() - interval '24 hours';
+
+  if v_count >= 3 then
+    raise exception 'You''ve reached the maximum of 3 requests per day. Please try again later.';
+  end if;
+
+  insert into public.champion_admin_requests (email) values (v_email);
+
+  if v_status is null then
+    insert into public.champion_admins (email, role, status, added_by) values (v_email, 'admin', 'pending', v_email);
+  else
+    update public.champion_admins set status = 'pending' where lower(email) = v_email;
+  end if;
+
+  return 'pending';
+end;
+$$;
+
+grant execute on function public.champion_request_admin_access() to authenticated;
 
 -- Settings: readable by everyone (needed for the public countdown/open-closed state),
 -- editable only by approved admins.

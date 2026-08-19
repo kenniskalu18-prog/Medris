@@ -594,7 +594,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
   <div class="denied-card">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
     <h2 style="color:var(--navy)">You don&rsquo;t have permission to access this dashboard.</h2>
-    <p style="color:var(--text-muted)">This admin portal is restricted to approved Mobihealth administrators. Contact an admin if you believe this is a mistake.</p>
+    <p style="color:var(--text-muted)" id="deniedMessage">This admin portal is restricted to approved Mobihealth administrators. Contact an admin if you believe this is a mistake.</p>
     <button class="btn btn-outline" id="signOutDeniedBtn" style="margin-top:14px;">Sign Out</button>
     <div><a href="index.html" class="back-to-home" style="margin-top:14px;display:inline-block;">&larr; Back to Mobihealth Champions</a></div>
   </div>
@@ -854,9 +854,15 @@ window.mobihealthSupabase = window.supabase.createClient(
       .eq("email", email)
       .maybeSingle();
 
-    if (!adminRow) {
-      // Brand-new signup: file a pending request for the Super Admin to review.
-      await supabase.from("champion_admins").insert({ email, role: "admin", status: "pending", added_by: email });
+    if (!adminRow || adminRow.status === "removed") {
+      // Brand-new signup, or re-requesting after being declined: file a
+      // pending request (rate-limited server-side to 3/day per email).
+      const { error } = await supabase.rpc("champion_request_admin_access");
+      if (error) {
+        $("deniedMessage").textContent = error.message;
+        showOnly(deniedScreen);
+        return;
+      }
       showOnly(pendingScreen);
       return;
     }
