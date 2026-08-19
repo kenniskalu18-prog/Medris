@@ -66,6 +66,8 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--grad-blue); color: #fff; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; box-shadow: 0 6px 16px rgba(26,86,219,0.35);
 }
+.brand-mark--logo { background: #fff; box-shadow: 0 4px 14px rgba(10,26,69,0.14); padding: 3px; }
+.brand-mark--logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
 .brand-name { font-weight: 800; font-size: 1.15rem; color: var(--navy); letter-spacing: -0.02em; }
 .brand-tag { font-size: 0.72rem; color: var(--blue); font-weight: 600; display: block; margin-top: -2px; }
 .topbar nav { display: flex; align-items: center; gap: 18px; }
@@ -218,6 +220,8 @@ section { padding: 76px 0; }
 .who-section .container { position: relative; max-width: 980px; padding: 64px 20px; }
 .who-grid { display: grid; gap: 30px; }
 @media (min-width: 860px) { .who-grid { grid-template-columns: 1fr 1fr; align-items: center; } }
+.who-heading-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.unilag-crest { border-radius: 10px; background: #fff; padding: 5px; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
 .who-section h2 { font-size: clamp(1.6rem, 3.5vw, 2.1rem); margin: 0 0 14px; }
 .who-section p.lede { color: rgba(255,255,255,0.78); margin-bottom: 0; }
 .who-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
