@@ -19,7 +19,7 @@ create table if not exists public.champion_admins (
 
 -- Seed the initial Super Admin. Change the email below before running if needed.
 insert into public.champion_admins (email, role, added_by, status)
-values ('kennyskalu18@gmail.com', 'super_admin', 'system', 'active')
+values ('kenniskalu18@gmail.com', 'super_admin', 'system', 'active')
 on conflict (email) do nothing;
 
 -- =========================================================

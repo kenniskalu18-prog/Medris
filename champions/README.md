@@ -29,7 +29,7 @@ instance.
   Only emails present in the `champion_admins` table (with `status =
   active`) can see any application data — this is enforced in the database
   itself via Row Level Security, not just hidden in the UI.
-- The **Super Admin** (seeded as `kennyskalu18@gmail.com`) can add or remove
+- The **Super Admin** (seeded as `kenniskalu18@gmail.com`) can add or remove
   other admins from the "Manage Administrators" screen. Regular admins can
   view/manage applications but cannot touch the admin list.
 - No secret keys ever live in the browser. The only key shipped to the
@@ -92,7 +92,7 @@ Admins sign in via **magic link** (no passwords to manage):
 
 ## 4. Adding the first admin / more admins
 
-The Super Admin (`kennyskalu18@gmail.com`) is already seeded in the
+The Super Admin (`kenniskalu18@gmail.com`) is already seeded in the
 database by the schema script. To add more admins:
 
 - **From the dashboard (recommended):** sign in as the Super Admin, go to
