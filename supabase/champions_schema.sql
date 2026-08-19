@@ -53,6 +53,7 @@ create table if not exists public.champion_applications (
   gender text,
   age_range text,
   matric_number text not null,
+  institution text,
   faculty text not null,
   department text not null,
   level text not null,
@@ -69,6 +70,13 @@ create table if not exists public.champion_applications (
   promotion_strategy text,
   one_month_idea text,
   contribution_areas text[],
+  primary_track text,
+  secondary_tracks text[],
+  wants_leadership boolean default false,
+  leadership_role_interest text,
+  leadership_experience text,
+  why_lead text,
+  leadership_idea text,
 
   communication_rating int check (communication_rating between 1 and 5),
   public_speaking_rating int check (public_speaking_rating between 1 and 5),
@@ -96,6 +104,7 @@ create table if not exists public.champion_applications (
 
 create unique index if not exists champion_applications_email_idx on public.champion_applications (lower(email));
 create unique index if not exists champion_applications_matric_idx on public.champion_applications (lower(matric_number));
+create index if not exists champion_applications_institution_idx on public.champion_applications (institution);
 create index if not exists champion_applications_faculty_idx on public.champion_applications (faculty);
 create index if not exists champion_applications_department_idx on public.champion_applications (department);
 create index if not exists champion_applications_level_idx on public.champion_applications (level);

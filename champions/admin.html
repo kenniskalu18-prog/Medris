@@ -672,6 +672,8 @@ table.data-table tr:hover td { background: #fbfcfe; }
       <section class="admin-view" id="applicationsView">
         <div class="toolbar">
           <input type="search" id="searchInput" placeholder="Search by name, email, application ID, department or matric no.">
+          <select id="filterInstitution"><option value="">All Institutions</option></select>
+          <select id="filterTrack"><option value="">All Tracks</option></select>
           <select id="filterFaculty"><option value="">All Faculties</option></select>
           <select id="filterLevel"><option value="">All Levels</option></select>
           <select id="filterStatus">
@@ -684,7 +686,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
         <div class="table-wrap">
           <table class="data-table" id="applicationsTable">
             <thead><tr>
-              <th>Application ID</th><th>Applicant</th><th>Faculty</th><th>Department</th><th>Level</th>
+              <th>Application ID</th><th>Applicant</th><th>Institution</th><th>Track</th><th>Faculty</th><th>Department</th><th>Level</th>
               <th>Email</th><th>Phone</th><th>Date Applied</th><th>Status</th>
             </tr></thead>
             <tbody></tbody>
@@ -981,24 +983,32 @@ window.mobihealthSupabase = window.supabase.createClient(
   }
 
   function populateFilters() {
+    const institutions = [...new Set(allApplications.map((a) => a.institution).filter(Boolean))].sort();
+    const tracks = [...new Set(allApplications.map((a) => a.primary_track).filter(Boolean))].sort();
     const faculties = [...new Set(allApplications.map((a) => a.faculty).filter(Boolean))].sort();
     const levels = [...new Set(allApplications.map((a) => a.level).filter(Boolean))].sort();
-    const fSel = $("filterFaculty"), lSel = $("filterLevel");
+    const iSel = $("filterInstitution"), tSel = $("filterTrack"), fSel = $("filterFaculty"), lSel = $("filterLevel");
+    iSel.innerHTML = '<option value="">All Institutions</option>' + institutions.map((i) => `<option>${escapeHtml(i)}</option>`).join("");
+    tSel.innerHTML = '<option value="">All Tracks</option>' + tracks.map((t) => `<option>${escapeHtml(t)}</option>`).join("");
     fSel.innerHTML = '<option value="">All Faculties</option>' + faculties.map((f) => `<option>${escapeHtml(f)}</option>`).join("");
     lSel.innerHTML = '<option value="">All Levels</option>' + levels.map((l) => `<option>${escapeHtml(l)}</option>`).join("");
   }
 
   function getFiltered() {
     const q = $("searchInput").value.trim().toLowerCase();
+    const institution = $("filterInstitution").value;
+    const track = $("filterTrack").value;
     const faculty = $("filterFaculty").value;
     const level = $("filterLevel").value;
     const status = $("filterStatus").value;
     return allApplications.filter((a) => {
+      if (institution && a.institution !== institution) return false;
+      if (track && a.primary_track !== track) return false;
       if (faculty && a.faculty !== faculty) return false;
       if (level && a.level !== level) return false;
       if (status && a.status !== status) return false;
       if (q) {
-        const hay = `${a.full_name} ${a.email} ${a.application_number} ${a.department} ${a.matric_number}`.toLowerCase();
+        const hay = `${a.full_name} ${a.email} ${a.application_number} ${a.department} ${a.matric_number} ${a.institution || ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -1015,6 +1025,8 @@ window.mobihealthSupabase = window.supabase.createClient(
       tr.innerHTML = `
         <td><a class="row-link" data-id="${a.id}">${a.application_number}</a></td>
         <td>${escapeHtml(a.full_name)}</td>
+        <td>${escapeHtml(a.institution)}</td>
+        <td>${escapeHtml(a.primary_track)}</td>
         <td>${escapeHtml(a.faculty)}</td>
         <td>${escapeHtml(a.department)}</td>
         <td>${escapeHtml(a.level)}</td>
@@ -1026,7 +1038,7 @@ window.mobihealthSupabase = window.supabase.createClient(
     });
     tbody.querySelectorAll(".row-link").forEach((el) => el.addEventListener("click", () => openDrawer(el.dataset.id)));
   }
-  ["searchInput", "filterFaculty", "filterLevel", "filterStatus"].forEach((id) => {
+  ["searchInput", "filterInstitution", "filterTrack", "filterFaculty", "filterLevel", "filterStatus"].forEach((id) => {
     $(id).addEventListener("input", renderApplicationsTable);
     $(id).addEventListener("change", renderApplicationsTable);
   });
@@ -1034,7 +1046,7 @@ window.mobihealthSupabase = window.supabase.createClient(
   // ---------------- CSV export ----------------
   $("exportCsvBtn").addEventListener("click", async () => {
     const rows = getFiltered();
-    const cols = ["application_number", "full_name", "email", "phone", "faculty", "department", "level", "matric_number", "status", "created_at"];
+    const cols = ["application_number", "full_name", "email", "phone", "institution", "primary_track", "faculty", "department", "level", "matric_number", "wants_leadership", "leadership_role_interest", "status", "created_at"];
     const csv = [cols.join(",")].concat(
       rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","))
     ).join("\n");
@@ -1069,6 +1081,7 @@ window.mobihealthSupabase = window.supabase.createClient(
           ${pdfRow("Gender", a.gender)}
           ${pdfRow("Age Range", a.age_range)}
           ${pdfRow("Matric Number", a.matric_number)}
+          ${pdfRow("Institution", a.institution)}
           ${pdfRow("Faculty", a.faculty)}
           ${pdfRow("Department", a.department)}
           ${pdfRow("Level", a.level)}
@@ -1082,15 +1095,27 @@ window.mobihealthSupabase = window.supabase.createClient(
           ${pdfBlock("Leadership Roles", a.leadership_roles)}
         </div>
         <div class="pdf-section">
+          <h4>Track</h4>
+          ${pdfRow("Primary Track", a.primary_track)}
+          ${pdfRow("Secondary Tracks", (a.secondary_tracks || []).join(", "))}
+        </div>
+        <div class="pdf-section">
           <h4>Motivation</h4>
           ${pdfBlock("Why Mobihealth", a.why_mobihealth)}
           ${pdfBlock("What a Champion should do", a.champion_role)}
           ${pdfBlock("Promotion Strategy", a.promotion_strategy)}
           ${pdfBlock("One-Month Idea", a.one_month_idea)}
-          ${pdfBlock("Contribution Areas", (a.contribution_areas || []).join(", "))}
           ${pdfBlock("Champion Idea", a.champion_idea)}
           ${pdfBlock("Unique Strength", a.unique_strength)}
         </div>
+        ${a.wants_leadership ? `
+        <div class="pdf-section">
+          <h4>Leadership Application</h4>
+          ${pdfRow("Role Interested In", a.leadership_role_interest)}
+          ${pdfBlock("Leadership Experience", a.leadership_experience)}
+          ${pdfBlock("Why They Want to Lead", a.why_lead)}
+          ${pdfBlock("Leadership Idea", a.leadership_idea)}
+        </div>` : ""}
         <div class="pdf-section">
           <h4>Availability</h4>
           ${pdfRow("Communication (1-5)", a.communication_rating)}
@@ -1163,6 +1188,7 @@ window.mobihealthSupabase = window.supabase.createClient(
         ${detailRow("Gender", a.gender)}
         ${detailRow("Age Range", a.age_range)}
         ${detailRow("Matric Number", a.matric_number)}
+        ${detailRow("Institution", a.institution)}
         ${detailRow("Faculty", a.faculty)}
         ${detailRow("Department", a.department)}
         ${detailRow("Level", a.level)}
@@ -1176,15 +1202,27 @@ window.mobihealthSupabase = window.supabase.createClient(
         ${detailBlock("Leadership Roles", a.leadership_roles)}
       </div>
       <div class="detail-section">
+        <h4>Track</h4>
+        ${detailRow("Primary Track", a.primary_track)}
+        ${detailRow("Secondary Tracks", (a.secondary_tracks || []).join(", "))}
+      </div>
+      <div class="detail-section">
         <h4>Motivation</h4>
         ${detailBlock("Why Mobihealth", a.why_mobihealth)}
         ${detailBlock("What a Champion should do", a.champion_role)}
         ${detailBlock("Promotion Strategy", a.promotion_strategy)}
         ${detailBlock("One-Month Idea", a.one_month_idea)}
-        ${detailBlock("Contribution Areas", (a.contribution_areas || []).join(", "))}
         ${detailBlock("Champion Idea", a.champion_idea)}
         ${detailBlock("Unique Strength", a.unique_strength)}
       </div>
+      ${a.wants_leadership ? `
+      <div class="detail-section">
+        <h4>Leadership Application</h4>
+        ${detailRow("Role Interested In", a.leadership_role_interest)}
+        ${detailBlock("Leadership Experience", a.leadership_experience)}
+        ${detailBlock("Why They Want to Lead", a.why_lead)}
+        ${detailBlock("Leadership Idea", a.leadership_idea)}
+      </div>` : ""}
       <div class="detail-section">
         <h4>Availability</h4>
         ${detailRow("Communication (1-5)", a.communication_rating)}
