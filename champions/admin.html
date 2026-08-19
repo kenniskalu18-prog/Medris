@@ -435,9 +435,6 @@ body.admin-body { background: var(--bg); }
 .login-card h1 { font-size: 1.3rem; margin: 0 0 4px; color: var(--navy); }
 .login-card .subtitle { color: var(--text-muted); margin: 0 0 26px; font-size: 0.92rem; }
 .login-card .field { text-align: left; }
-.login-tabs { display: flex; background: var(--bg); border-radius: 999px; padding: 4px; margin-bottom: 22px; }
-.login-tab { flex: 1; border: none; background: none; padding: 9px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
-.login-tab.active { background: #fff; color: var(--blue); box-shadow: var(--shadow); }
 .back-to-home { display: block; text-align: center; margin-top: 18px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-decoration: none; }
 .back-to-home:hover { color: var(--blue); }
 .login-msg { font-size: 0.85rem; margin-top: 14px; padding: 10px 12px; border-radius: 10px; display: none; }
@@ -565,10 +562,6 @@ table.data-table tr:hover td { background: #fbfcfe; }
     </span>
     <h1>Mobihealth Champions</h1>
     <p class="subtitle">Application Management Portal</p>
-    <div class="login-tabs">
-      <button type="button" class="login-tab active" id="tabSignIn">Sign In</button>
-      <button type="button" class="login-tab" id="tabCreate">Create Password</button>
-    </div>
     <form id="loginForm">
       <div class="field">
         <label for="loginEmail">Admin Email</label>
@@ -578,14 +571,30 @@ table.data-table tr:hover td { background: #fbfcfe; }
         <label for="loginPassword">Password</label>
         <input type="password" id="loginPassword" required placeholder="Your password" autocomplete="current-password" minlength="6">
       </div>
-      <div class="field" id="confirmPasswordField" style="display:none;">
-        <label for="loginPasswordConfirm">Confirm Password</label>
-        <input type="password" id="loginPasswordConfirm" placeholder="Confirm password" autocomplete="new-password" minlength="6">
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn" data-action="signin">Sign In</button>
+        <button type="submit" class="btn btn-outline btn-block" id="createAccountBtn" data-action="create">Create Account</button>
       </div>
-      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Sign In</button>
     </form>
+    <button type="button" class="back-to-home" id="forgotPasswordBtn" style="background:none;border:none;cursor:pointer;width:100%;">Forgot password?</button>
     <div class="login-msg" id="loginMsg"></div>
     <a href="index.html" class="back-to-home">&larr; Back to Mobihealth Champions</a>
+  </div>
+</div>
+
+<!-- ===================== SET NEW PASSWORD (after reset link) ===================== -->
+<div class="login-wrap" id="resetScreen" style="display:none;">
+  <div class="login-card">
+    <h1>Set a New Password</h1>
+    <p class="subtitle">Choose a new password for your admin account.</p>
+    <form id="resetForm">
+      <div class="field">
+        <label for="resetPassword">New Password</label>
+        <input type="password" id="resetPassword" required placeholder="New password" autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="resetSubmitBtn">Save New Password</button>
+    </form>
+    <div class="login-msg" id="resetMsg"></div>
   </div>
 </div>
 
@@ -779,46 +788,29 @@ window.mobihealthSupabase = window.supabase.createClient(
   const loginScreen = $("loginScreen");
   const deniedScreen = $("deniedScreen");
   const pendingScreen = $("pendingScreen");
+  const resetScreen = $("resetScreen");
   const dashboardScreen = $("dashboardScreen");
 
   function showOnly(screen) {
-    [loadingScreen, loginScreen, deniedScreen, pendingScreen, dashboardScreen].forEach((s) => (s.style.display = "none"));
+    [loadingScreen, loginScreen, deniedScreen, pendingScreen, resetScreen, dashboardScreen].forEach((s) => (s.style.display = "none"));
     screen.style.display = screen === dashboardScreen ? "flex" : "flex";
   }
 
   // ---------------- Auth ----------------
-  let loginMode = "signin"; // "signin" | "create"
-
-  function setLoginMode(mode) {
-    loginMode = mode;
-    $("tabSignIn").classList.toggle("active", mode === "signin");
-    $("tabCreate").classList.toggle("active", mode === "create");
-    $("confirmPasswordField").style.display = mode === "create" ? "block" : "none";
-    $("loginPasswordConfirm").required = mode === "create";
-    $("loginSubmitBtn").textContent = mode === "create" ? "Create Account" : "Sign In";
-    $("loginMsg").classList.remove("show", "error", "success");
-  }
-  $("tabSignIn").addEventListener("click", () => setLoginMode("signin"));
-  $("tabCreate").addEventListener("click", () => setLoginMode("create"));
-
   $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const action = (e.submitter && e.submitter.dataset.action) || "signin";
     const email = $("loginEmail").value.trim().toLowerCase();
     const password = $("loginPassword").value;
-    const btn = $("loginSubmitBtn");
+    const signInBtn = $("loginSubmitBtn");
+    const createBtn = $("createAccountBtn");
     const msg = $("loginMsg");
     msg.classList.remove("error", "success");
 
-    if (loginMode === "create") {
-      const confirmPassword = $("loginPasswordConfirm").value;
-      if (password !== confirmPassword) {
-        msg.textContent = "Passwords don't match."; msg.classList.add("error", "show"); return;
-      }
-      btn.disabled = true;
-      btn.textContent = "Creating...";
+    if (action === "create") {
+      createBtn.disabled = true; createBtn.textContent = "Creating...";
       const { data, error } = await supabase.auth.signUp({ email, password });
-      btn.disabled = false;
-      btn.textContent = "Create Account";
+      createBtn.disabled = false; createBtn.textContent = "Create Account";
       if (error) {
         msg.textContent = error.message; msg.classList.add("error", "show");
       } else if (data.session) {
@@ -828,14 +820,46 @@ window.mobihealthSupabase = window.supabase.createClient(
         msg.classList.add("success", "show");
       }
     } else {
-      btn.disabled = true;
-      btn.textContent = "Signing in...";
+      signInBtn.disabled = true; signInBtn.textContent = "Signing in...";
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      btn.disabled = false;
-      btn.textContent = "Sign In";
+      signInBtn.disabled = false; signInBtn.textContent = "Sign In";
       if (error) {
         msg.textContent = error.message; msg.classList.add("error", "show");
       }
+    }
+  });
+
+  $("forgotPasswordBtn").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim().toLowerCase();
+    const msg = $("loginMsg");
+    msg.classList.remove("error", "success");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      msg.textContent = "Enter your admin email above first, then tap \"Forgot password?\" again.";
+      msg.classList.add("error", "show");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+    msg.classList.remove("error", "success");
+    if (error) {
+      msg.textContent = error.message; msg.classList.add("error", "show");
+    } else {
+      msg.textContent = "Check your email for a password reset link."; msg.classList.add("success", "show");
+    }
+  });
+
+  $("resetForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("resetSubmitBtn");
+    const msg = $("resetMsg");
+    msg.classList.remove("error", "success");
+    btn.disabled = true; btn.textContent = "Saving...";
+    const { error } = await supabase.auth.updateUser({ password: $("resetPassword").value });
+    btn.disabled = false; btn.textContent = "Save New Password";
+    if (error) {
+      msg.textContent = error.message; msg.classList.add("error", "show");
+    } else {
+      msg.textContent = "Password updated — signing you in..."; msg.classList.add("success", "show");
+      setTimeout(() => checkSession(), 1200);
     }
   });
 
@@ -1393,7 +1417,10 @@ window.mobihealthSupabase = window.supabase.createClient(
     return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  supabase.auth.onAuthStateChange(() => checkSession());
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") { showOnly(resetScreen); return; }
+    checkSession();
+  });
   checkSession();
 })();
 
