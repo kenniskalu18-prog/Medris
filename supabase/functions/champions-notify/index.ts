@@ -4,9 +4,10 @@
 //   supabase secrets set RESEND_API_KEY=re_xxx --project-ref <ref>
 // Optionally also set CHAMPIONS_EMAIL_FROM, e.g. "Mobihealth <noreply@yourdomain.com>".
 //
-// Internal recipients (HR + a temporary test address) are hardcoded below --
-// edit INTERNAL_RECIPIENTS directly in this file and redeploy to change them.
-const INTERNAL_RECIPIENTS = ["HR@mobihealthinternational.com", "kenniskalu18@gmail.com"];
+// Internal recipients are hardcoded below -- edit INTERNAL_RECIPIENTS
+// directly in this file and redeploy to change them. Currently just the
+// test address; add "HR@mobihealthinternational.com" back once testing is done.
+const INTERNAL_RECIPIENTS = ["kenniskalu18@gmail.com"];
 
 // Deno.serve is the Supabase Edge Runtime's built-in HTTP entrypoint.
 Deno.serve(async (req) => {
