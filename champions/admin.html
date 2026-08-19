@@ -825,7 +825,7 @@ window.mobihealthSupabase = window.supabase.createClient(
       if (error) {
         msg.textContent = error.message; msg.classList.add("error", "show");
       } else if (data.session) {
-        msg.textContent = "Account created — signing you in..."; msg.classList.add("success", "show");
+        msg.textContent = "Account created. Signing you in..."; msg.classList.add("success", "show");
       } else {
         msg.textContent = "Account created. If you're not signed in automatically, ask an admin to disable \"Confirm email\" in Supabase, or check your inbox.";
         msg.classList.add("success", "show");
@@ -869,7 +869,7 @@ window.mobihealthSupabase = window.supabase.createClient(
     if (error) {
       msg.textContent = error.message; msg.classList.add("error", "show");
     } else {
-      msg.textContent = "Password updated — signing you in..."; msg.classList.add("success", "show");
+      msg.textContent = "Password updated. Signing you in..."; msg.classList.add("success", "show");
       setTimeout(() => checkSession(), 1200);
     }
   });
@@ -947,7 +947,7 @@ window.mobihealthSupabase = window.supabase.createClient(
     (data || []).forEach((row) => {
       const el = document.createElement("div");
       el.className = "log-item";
-      el.innerHTML = `<div><span class="who">${escapeHtml(row.admin_email)}</span> — ${escapeHtml(row.action)}${row.details ? " — " + escapeHtml(row.details) : ""}</div><div class="when">${new Date(row.created_at).toLocaleString()}</div>`;
+      el.innerHTML = `<div><span class="who">${escapeHtml(row.admin_email)}</span> &middot; ${escapeHtml(row.action)}${row.details ? " &middot; " + escapeHtml(row.details) : ""}</div><div class="when">${new Date(row.created_at).toLocaleString()}</div>`;
       list.appendChild(el);
     });
   }
@@ -1080,14 +1080,14 @@ window.mobihealthSupabase = window.supabase.createClient(
   });
 
   // ---------------- PDF export (browser print -> Save as PDF) ----------------
-  function pdfRow(k, v) { return `<div class="pdf-row"><span class="k">${escapeHtml(k)}</span><span class="v">${v ? escapeHtml(String(v)) : "—"}</span></div>`; }
-  function pdfBlock(k, v) { return `<div class="pdf-block"><div class="k">${escapeHtml(k)}</div><div class="v">${v ? escapeHtml(String(v)) : "—"}</div></div>`; }
+  function pdfRow(k, v) { return `<div class="pdf-row"><span class="k">${escapeHtml(k)}</span><span class="v">${v ? escapeHtml(String(v)) : "N/A"}</span></div>`; }
+  function pdfBlock(k, v) { return `<div class="pdf-block"><div class="k">${escapeHtml(k)}</div><div class="v">${v ? escapeHtml(String(v)) : "N/A"}</div></div>`; }
 
   function buildApplicantPdfHtml(a) {
     return `
       <div class="pdf-doc">
         <div class="pdf-header">
-          <h1>Mobihealth Campus Champions — Application</h1>
+          <h1>Mobihealth Campus Champions: Application</h1>
           <span class="pdf-ref">${escapeHtml(a.application_number)}</span>
         </div>
         <span class="pdf-status">${escapeHtml(a.status)}</span>
@@ -1354,8 +1354,8 @@ window.mobihealthSupabase = window.supabase.createClient(
     return error ? null : data.signedUrl;
   }
 
-  function detailRow(k, v) { return `<div class="detail-row"><span class="k">${k}</span><span class="v">${v ? escapeHtml(String(v)) : "—"}</span></div>`; }
-  function detailBlock(k, v) { return `<div class="detail-block"><div class="k">${k}</div><div class="v">${v ? escapeHtml(String(v)) : "—"}</div></div>`; }
+  function detailRow(k, v) { return `<div class="detail-row"><span class="k">${k}</span><span class="v">${v ? escapeHtml(String(v)) : "N/A"}</span></div>`; }
+  function detailBlock(k, v) { return `<div class="detail-block"><div class="k">${k}</div><div class="v">${v ? escapeHtml(String(v)) : "N/A"}</div></div>`; }
 
   // ---------------- Admins management ----------------
   async function loadAdmins() {

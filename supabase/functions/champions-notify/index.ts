@@ -1,13 +1,12 @@
-// MTCP Telehealth Champions — application confirmation + internal notification email.
+// MTCP Telehealth Champions: application confirmation + internal notification email.
 // Deployed as a Supabase Edge Function so the Resend API key never touches
 // client-side code or the Vercel deployment. Configure the secret with:
 //   supabase secrets set RESEND_API_KEY=re_xxx --project-ref <ref>
 // Optionally also set CHAMPIONS_EMAIL_FROM, e.g. "Mobihealth <noreply@yourdomain.com>".
 //
 // Internal recipients are hardcoded below -- edit INTERNAL_RECIPIENTS
-// directly in this file and redeploy to change them. Currently just the
-// test address; add "HR@mobihealthinternational.com" back once testing is done.
-const INTERNAL_RECIPIENTS = ["kenniskalu18@gmail.com"];
+// directly in this file and redeploy to change them.
+const INTERNAL_RECIPIENTS = ["HR@mobihealthinternational.com"];
 
 // Deno.serve is the Supabase Edge Runtime's built-in HTTP entrypoint.
 Deno.serve(async (req) => {
@@ -66,7 +65,7 @@ Deno.serve(async (req) => {
     </body></html>`;
 
     const internalRow = (k: string, v: unknown) =>
-      `<tr><td style="padding:5px 10px;color:#5a6b8c;font-size:13px;">${esc(k)}</td><td style="padding:5px 10px;font-size:13px;font-weight:600;color:#14213d;">${esc(v || "—")}</td></tr>`;
+      `<tr><td style="padding:5px 10px;color:#5a6b8c;font-size:13px;">${esc(k)}</td><td style="padding:5px 10px;font-size:13px;font-weight:600;color:#14213d;">${esc(v || "N/A")}</td></tr>`;
 
     const internalHtml = `<!doctype html><html><body style="margin:0;padding:0;background:#f6f8fc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fc;padding:24px 12px;">
@@ -111,7 +110,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from,
           to: INTERNAL_RECIPIENTS,
-          subject: `New MTCP Champion Application — ${name || email}`,
+          subject: `New MTCP Champion Application: ${name || email}`,
           html: internalHtml,
         }),
       }),
