@@ -374,6 +374,7 @@ section { padding: 76px 0; }
 
 .form-alert { background: #fff3f3; border: 1px solid #ffd2d2; color: #a3272c; border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; font-weight: 600; margin-bottom: 16px; display: none; }
 .form-alert.show { display: block; }
+.form-alert.info { background: #eaf1ff; border-color: #c7d9ff; color: var(--blue); }
 
 /* Success screen */
 .success-screen { text-align: center; padding: 30px 6px; }
@@ -843,8 +844,8 @@ section { padding: 76px 0; }
 // Supabase client-side app is configured) — real protection comes from the Row
 // Level Security policies in /supabase/champions_schema.sql, not from hiding
 // these values. Never put the service_role key here or anywhere in this folder.
-window.MOBIHEALTH_SUPABASE_URL = "https://ovklnoroyxobijgvsyfp.supabase.co";
-window.MOBIHEALTH_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92a2xub3JveXhvYmlqZ3ZzeWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzgzNDcsImV4cCI6MjEwMTExNDM0N30.rosKY0iNbOnAHHXF-vVSxjIs82wNQzrQcMyAUfGgIrM";
+window.MOBIHEALTH_SUPABASE_URL = "https://wwixsbcrpcsthkkdosru.supabase.co";
+window.MOBIHEALTH_SUPABASE_ANON_KEY = "sb_publishable__qMmlxO4SZaXlO9HB7Hu4A_hYBoPaG4";
 
 window.mobihealthSupabase = window.supabase.createClient(
   window.MOBIHEALTH_SUPABASE_URL,
@@ -929,13 +930,97 @@ window.mobihealthSupabase = window.supabase.createClient(
     return settings.application_status !== "closed" && Date.now() <= new Date(settings.deadline).getTime();
   }
 
+  // ---------------- Draft autosave (localStorage) ----------------
+  const DRAFT_KEY = "mobihealth_champion_draft_v1";
+
+  function saveDraft() {
+    try {
+      const fd = new FormData(form);
+      const values = {};
+      for (const key of new Set(fd.keys())) {
+        const all = fd.getAll(key);
+        values[key] = all.length > 1 ? all : all[0];
+      }
+      values.__ratings = {
+        communication_rating: document.querySelector('[data-rating-group="communication_rating"]').dataset.value || "",
+        public_speaking_rating: document.querySelector('[data-rating-group="public_speaking_rating"]').dataset.value || "",
+      };
+      values.__declare1 = document.getElementById("declare1").checked;
+      values.__declare2 = document.getElementById("declare2").checked;
+      values.__step = currentStep;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+    } catch (e) { /* localStorage unavailable (private browsing etc.) — fail silently */ }
+  }
+
+  function hasDraft() {
+    try { return !!localStorage.getItem(DRAFT_KEY); } catch (e) { return false; }
+  }
+
+  function restoreDraft() {
+    let values;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      values = JSON.parse(raw);
+    } catch (e) { return false; }
+
+    Object.keys(values).forEach((key) => {
+      if (key.startsWith("__")) return;
+      const fields = form.querySelectorAll(`[name="${CSS.escape(key)}"]`);
+      if (!fields.length) return;
+      const val = values[key];
+      const first = fields[0];
+      if (first.type === "checkbox" || first.type === "radio") {
+        const arr = Array.isArray(val) ? val : [val];
+        fields.forEach((f) => {
+          f.checked = arr.includes(f.value);
+          const pill = f.closest(".choice-pill");
+          if (pill) pill.classList.toggle("checked", f.checked);
+        });
+      } else {
+        first.value = Array.isArray(val) ? val[0] : val;
+      }
+    });
+
+    if (values.__ratings) {
+      Object.entries(values.__ratings).forEach(([name, v]) => {
+        if (!v) return;
+        const group = document.querySelector(`[data-rating-group="${name}"]`);
+        if (!group) return;
+        group.dataset.value = v;
+        group.querySelectorAll("button").forEach((b) => b.classList.toggle("checked", b.dataset.value === v));
+      });
+    }
+    if (typeof values.__declare1 === "boolean") document.getElementById("declare1").checked = values.__declare1;
+    if (typeof values.__declare2 === "boolean") document.getElementById("declare2").checked = values.__declare2;
+
+    const priorRadio = form.querySelector('input[name="has_prior_experience"]:checked');
+    document.getElementById("priorExperienceReveal").classList.toggle("show", !!priorRadio && priorRadio.value === "yes");
+
+    form.querySelectorAll("textarea[maxlength]").forEach((ta) => {
+      const counter = document.querySelector(`[data-count-for="${ta.name}"]`);
+      if (counter) counter.textContent = ta.value.length;
+    });
+
+    if (values.__step) currentStep = Math.min(Math.max(Number(values.__step) || 1, 1), TOTAL_STEPS);
+    return true;
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+  }
+
+  form.addEventListener("input", saveDraft);
+  form.addEventListener("change", saveDraft);
+
   // ---------------- Modal open/close ----------------
   function openModal() {
     if (!isApplicationOpen()) return;
     overlay.classList.add("open");
     document.body.style.overflow = "hidden";
-    currentStep = 1;
-    showStep(1);
+    const restored = hasDraft() && restoreDraft();
+    showStep(currentStep || 1);
+    if (restored) showAlert("Picking up where you left off — your answers were restored. You'll just need to re-select your photo/CV on the last step.", "info");
   }
   function closeModal() {
     overlay.classList.remove("open");
@@ -967,6 +1052,7 @@ window.mobihealthSupabase = window.supabase.createClient(
         group.querySelectorAll("button").forEach((b) => b.classList.remove("checked"));
         btn.classList.add("checked");
         group.dataset.value = btn.dataset.value;
+        saveDraft();
       });
     });
   });
@@ -1020,8 +1106,12 @@ window.mobihealthSupabase = window.supabase.createClient(
     modalBody.scrollTop = 0;
   }
 
-  function showAlert(msg) { formAlert.textContent = msg; formAlert.classList.add("show"); }
-  function hideAlert() { formAlert.classList.remove("show"); }
+  function showAlert(msg, type) {
+    formAlert.textContent = msg;
+    formAlert.classList.toggle("info", type === "info");
+    formAlert.classList.add("show");
+  }
+  function hideAlert() { formAlert.classList.remove("show"); formAlert.classList.remove("info"); }
 
   function markInvalid(field, msg) {
     field.closest(".field").classList.add("invalid");
@@ -1072,12 +1162,13 @@ window.mobihealthSupabase = window.supabase.createClient(
     return valid;
   }
 
-  backBtn.addEventListener("click", () => { if (currentStep > 1) { currentStep--; showStep(currentStep); } });
+  backBtn.addEventListener("click", () => { if (currentStep > 1) { currentStep--; showStep(currentStep); saveDraft(); } });
   nextBtn.addEventListener("click", async () => {
     if (!validateStep(currentStep)) return;
     if (currentStep < TOTAL_STEPS) {
       currentStep++;
       showStep(currentStep);
+      saveDraft();
     } else {
       await submitApplication();
     }
@@ -1193,6 +1284,7 @@ window.mobihealthSupabase = window.supabase.createClient(
         body: { email: data.email, name: data.full_name, applicationNumber },
       }).catch(() => {});
 
+      clearDraft();
       document.getElementById("refNumber").textContent = applicationNumber;
       form.style.display = "none";
       modalFooter.style.display = "none";
