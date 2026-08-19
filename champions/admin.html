@@ -506,6 +506,29 @@ table.data-table tr:hover td { background: #fbfcfe; }
 .log-item .who { font-weight: 700; color: var(--navy); }
 .log-item .when { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
 
+/* ---------- PDF export (print-to-PDF) ---------- */
+#printArea { display: none; }
+.pdf-doc { max-width: 760px; margin: 0 auto; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #14213d; }
+.pdf-doc + .pdf-doc { page-break-before: always; margin-top: 40px; }
+.pdf-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1a56db; padding-bottom: 12px; margin-bottom: 18px; }
+.pdf-header h1 { font-size: 18px; margin: 0; color: #0a1a45; }
+.pdf-header .pdf-ref { font-size: 13px; font-weight: 700; color: #1a56db; }
+.pdf-status { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #e8eefd; color: #1a56db; font-size: 11px; font-weight: 700; margin-bottom: 14px; }
+.pdf-section { margin-bottom: 16px; }
+.pdf-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #1a56db; border-bottom: 1px solid #e2e8f4; padding-bottom: 4px; margin: 0 0 8px; }
+.pdf-row { display: flex; gap: 10px; font-size: 12px; padding: 3px 0; }
+.pdf-row .k { width: 180px; flex-shrink: 0; color: #5a6b8c; }
+.pdf-row .v { font-weight: 600; }
+.pdf-block { margin-bottom: 8px; font-size: 12px; }
+.pdf-block .k { font-weight: 700; color: #5a6b8c; font-size: 11px; margin-bottom: 2px; }
+.pdf-block .v { white-space: pre-wrap; }
+
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { display: block; position: absolute; top: 0; left: 0; width: 100%; }
+  .pdf-doc { max-width: 100%; padding: 20px; }
+}
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
@@ -598,6 +621,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
             <option>New</option><option>Under Review</option><option>Shortlisted</option><option>Interview</option><option>Selected</option><option>Not Selected</option>
           </select>
           <button class="btn btn-outline btn-sm" id="exportCsvBtn">Export CSV</button>
+          <button class="btn btn-outline btn-sm" id="exportPdfBtn">Export All (PDF)</button>
         </div>
         <div class="table-wrap">
           <table class="data-table" id="applicationsTable">
@@ -657,10 +681,16 @@ table.data-table tr:hover td { background: #fbfcfe; }
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <strong id="drawerName">Applicant</strong>
-    <button class="modal-close" id="drawerCloseBtn" aria-label="Close">&times;</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-outline btn-sm" id="drawerPdfBtn">Download PDF</button>
+      <button class="modal-close" id="drawerCloseBtn" aria-label="Close">&times;</button>
+    </div>
   </div>
   <div class="drawer-body" id="drawerBody"></div>
 </div>
+
+<!-- Printable area used for PDF export (browser's Print -> Save as PDF) -->
+<div id="printArea"></div>
 
 <script>
 // Mobihealth Campus Champions — Supabase client configuration.
@@ -886,10 +916,100 @@ window.mobihealthSupabase = window.supabase.createClient(
     await logActivity("Exported applications", `${rows.length} rows`);
   });
 
+  // ---------------- PDF export (browser print -> Save as PDF) ----------------
+  function pdfRow(k, v) { return `<div class="pdf-row"><span class="k">${escapeHtml(k)}</span><span class="v">${v ? escapeHtml(String(v)) : "—"}</span></div>`; }
+  function pdfBlock(k, v) { return `<div class="pdf-block"><div class="k">${escapeHtml(k)}</div><div class="v">${v ? escapeHtml(String(v)) : "—"}</div></div>`; }
+
+  function buildApplicantPdfHtml(a) {
+    return `
+      <div class="pdf-doc">
+        <div class="pdf-header">
+          <h1>Mobihealth Campus Champions — Application</h1>
+          <span class="pdf-ref">${escapeHtml(a.application_number)}</span>
+        </div>
+        <span class="pdf-status">${escapeHtml(a.status)}</span>
+        <div class="pdf-section">
+          <h4>Personal Information</h4>
+          ${pdfRow("Full Name", a.full_name)}
+          ${pdfRow("Preferred Name", a.preferred_name)}
+          ${pdfRow("Email", a.email)}
+          ${pdfRow("Phone", a.phone)}
+          ${pdfRow("WhatsApp", a.whatsapp)}
+          ${pdfRow("Gender", a.gender)}
+          ${pdfRow("Age Range", a.age_range)}
+          ${pdfRow("Matric Number", a.matric_number)}
+          ${pdfRow("Faculty", a.faculty)}
+          ${pdfRow("Department", a.department)}
+          ${pdfRow("Level", a.level)}
+          ${pdfRow("Graduation Year", a.graduation_year)}
+        </div>
+        <div class="pdf-section">
+          <h4>About &amp; Experience</h4>
+          ${pdfBlock("Introduction", a.introduction)}
+          ${pdfBlock("Passions", (a.passions || []).join(", "))}
+          ${pdfBlock("Prior Experience", a.has_prior_experience ? (a.previous_experience || "Yes") : "No")}
+          ${pdfBlock("Leadership Roles", a.leadership_roles)}
+        </div>
+        <div class="pdf-section">
+          <h4>Motivation</h4>
+          ${pdfBlock("Why Mobihealth", a.why_mobihealth)}
+          ${pdfBlock("What a Champion should do", a.champion_role)}
+          ${pdfBlock("Promotion Strategy", a.promotion_strategy)}
+          ${pdfBlock("One-Month Idea", a.one_month_idea)}
+          ${pdfBlock("Contribution Areas", (a.contribution_areas || []).join(", "))}
+          ${pdfBlock("Champion Idea", a.champion_idea)}
+          ${pdfBlock("Unique Strength", a.unique_strength)}
+        </div>
+        <div class="pdf-section">
+          <h4>Availability</h4>
+          ${pdfRow("Communication (1-5)", a.communication_rating)}
+          ${pdfRow("Public Speaking (1-5)", a.public_speaking_rating)}
+          ${pdfRow("Social Media Activity", a.social_media_activity)}
+          ${pdfRow("Platforms", (a.social_platforms || []).join(", "))}
+          ${pdfRow("Weekly Availability", a.weekly_availability)}
+          ${pdfRow("Comfortable at Events", a.campus_events ? "Yes" : "No")}
+          ${pdfRow("Will Share on Social", a.social_media_sharing)}
+          ${pdfRow("Instagram", a.instagram)}
+          ${pdfRow("LinkedIn", a.linkedin)}
+          ${pdfRow("Referral Source", a.referral_source)}
+        </div>
+        <div class="pdf-section">
+          ${pdfBlock("Additional Information", a.additional_information)}
+        </div>
+        <div class="pdf-section">
+          ${pdfRow("Submitted", new Date(a.created_at).toLocaleString())}
+        </div>
+      </div>
+    `;
+  }
+
+  function printAndClear() {
+    window.print();
+    setTimeout(() => { $("printArea").innerHTML = ""; }, 500);
+  }
+
+  $("drawerPdfBtn").addEventListener("click", async () => {
+    const a = allApplications.find((x) => x.id === currentDrawerId);
+    if (!a) return;
+    $("printArea").innerHTML = buildApplicantPdfHtml(a);
+    await logActivity("Application exported as PDF", a.application_number);
+    printAndClear();
+  });
+
+  $("exportPdfBtn").addEventListener("click", async () => {
+    const rows = getFiltered();
+    if (!rows.length) return;
+    $("printArea").innerHTML = rows.map(buildApplicantPdfHtml).join("");
+    await logActivity("Exported applications as PDF", `${rows.length} applications`);
+    printAndClear();
+  });
+
   // ---------------- Detail drawer ----------------
+  let currentDrawerId = null;
   async function openDrawer(id) {
     const a = allApplications.find((x) => x.id === id);
     if (!a) return;
+    currentDrawerId = id;
     $("drawerName").textContent = a.full_name;
     const photoUrl = a.profile_photo_path ? await signedUrl("champion-photos", a.profile_photo_path) : null;
     const cvUrl = a.cv_path ? await signedUrl("champion-cvs", a.cv_path) : null;
