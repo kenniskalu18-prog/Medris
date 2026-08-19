@@ -435,6 +435,9 @@ body.admin-body { background: var(--bg); }
 .login-card h1 { font-size: 1.3rem; margin: 0 0 4px; color: var(--navy); }
 .login-card .subtitle { color: var(--text-muted); margin: 0 0 26px; font-size: 0.92rem; }
 .login-card .field { text-align: left; }
+.login-tabs { display: flex; background: var(--bg); border-radius: 999px; padding: 4px; margin-bottom: 22px; }
+.login-tab { flex: 1; border: none; background: none; padding: 9px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+.login-tab.active { background: #fff; color: var(--blue); box-shadow: var(--shadow); }
 .login-msg { font-size: 0.85rem; margin-top: 14px; padding: 10px 12px; border-radius: 10px; display: none; }
 .login-msg.show { display: block; }
 .login-msg.success { background: var(--green-soft); color: #1c7a2c; }
@@ -560,12 +563,24 @@ table.data-table tr:hover td { background: #fbfcfe; }
     </span>
     <h1>Mobihealth Champions</h1>
     <p class="subtitle">Application Management Portal</p>
+    <div class="login-tabs">
+      <button type="button" class="login-tab active" id="tabSignIn">Sign In</button>
+      <button type="button" class="login-tab" id="tabCreate">Create Password</button>
+    </div>
     <form id="loginForm">
       <div class="field">
         <label for="loginEmail">Admin Email</label>
         <input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email">
       </div>
-      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Send Login Link</button>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" required placeholder="Your password" autocomplete="current-password" minlength="6">
+      </div>
+      <div class="field" id="confirmPasswordField" style="display:none;">
+        <label for="loginPasswordConfirm">Confirm Password</label>
+        <input type="password" id="loginPasswordConfirm" placeholder="Confirm password" autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Sign In</button>
     </form>
     <div class="login-msg" id="loginMsg"></div>
   </div>
@@ -746,26 +761,55 @@ window.mobihealthSupabase = window.supabase.createClient(
   }
 
   // ---------------- Auth ----------------
+  let loginMode = "signin"; // "signin" | "create"
+
+  function setLoginMode(mode) {
+    loginMode = mode;
+    $("tabSignIn").classList.toggle("active", mode === "signin");
+    $("tabCreate").classList.toggle("active", mode === "create");
+    $("confirmPasswordField").style.display = mode === "create" ? "block" : "none";
+    $("loginPasswordConfirm").required = mode === "create";
+    $("loginSubmitBtn").textContent = mode === "create" ? "Create Account" : "Sign In";
+    $("loginMsg").classList.remove("show", "error", "success");
+  }
+  $("tabSignIn").addEventListener("click", () => setLoginMode("signin"));
+  $("tabCreate").addEventListener("click", () => setLoginMode("create"));
+
   $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = $("loginEmail").value.trim().toLowerCase();
+    const password = $("loginPassword").value;
     const btn = $("loginSubmitBtn");
     const msg = $("loginMsg");
-    btn.disabled = true;
-    btn.textContent = "Sending...";
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href },
-    });
-    btn.disabled = false;
-    btn.textContent = "Send Login Link";
     msg.classList.remove("error", "success");
-    if (error) {
-      msg.textContent = error.message;
-      msg.classList.add("error", "show");
+
+    if (loginMode === "create") {
+      const confirmPassword = $("loginPasswordConfirm").value;
+      if (password !== confirmPassword) {
+        msg.textContent = "Passwords don't match."; msg.classList.add("error", "show"); return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Creating...";
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      btn.disabled = false;
+      btn.textContent = "Create Account";
+      if (error) {
+        msg.textContent = error.message; msg.classList.add("error", "show");
+      } else if (data.session) {
+        msg.textContent = "Account created — signing you in..."; msg.classList.add("success", "show");
+      } else {
+        msg.textContent = "Account created. If you're not signed in automatically, ask your Super Admin to disable \"Confirm email\" in Supabase, or check your inbox.";
+        msg.classList.add("success", "show");
+      }
     } else {
-      msg.textContent = "Check your email for a secure login link.";
-      msg.classList.add("success", "show");
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      btn.disabled = false;
+      btn.textContent = "Sign In";
+      if (error) {
+        msg.textContent = error.message; msg.classList.add("error", "show");
+      }
     }
   });
 
