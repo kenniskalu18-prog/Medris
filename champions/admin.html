@@ -600,6 +600,17 @@ table.data-table tr:hover td { background: #fbfcfe; }
   </div>
 </div>
 
+<!-- ===================== PENDING APPROVAL ===================== -->
+<div class="denied-wrap" id="pendingScreen" style="display:none;">
+  <div class="denied-card">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#b5650b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <h2 style="color:var(--navy)">Your admin request is awaiting approval.</h2>
+    <p style="color:var(--text-muted)">Your account has been created, but a Super Admin needs to approve you before you can access the dashboard. You'll be able to sign in as soon as you're approved.</p>
+    <button class="btn btn-outline" id="signOutPendingBtn" style="margin-top:14px;">Sign Out</button>
+    <div><a href="index.html" class="back-to-home" style="margin-top:14px;display:inline-block;">&larr; Back to Mobihealth Champions</a></div>
+  </div>
+</div>
+
 <!-- ===================== DASHBOARD ===================== -->
 <div class="admin-shell" id="dashboardScreen" style="display:none;">
   <aside class="admin-sidebar" id="sidebar">
@@ -610,7 +621,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
     <nav class="admin-nav">
       <button data-view="dashboardView" class="active">Dashboard</button>
       <button data-view="applicationsView">Applications</button>
-      <button data-view="adminsView" id="navAdmins">Manage Administrators</button>
+      <button data-view="adminsView" id="navAdmins">Manage Administrators <span id="pendingBadge" style="display:none;background:#ff3d78;color:#fff;border-radius:999px;padding:1px 8px;font-size:0.72rem;margin-left:4px;"></span></button>
       <button data-view="settingsView" id="navSettings">Application Settings</button>
       <button data-view="activityView">Activity Log</button>
     </nav>
@@ -675,8 +686,18 @@ table.data-table tr:hover td { background: #fbfcfe; }
 
       <!-- MANAGE ADMINS -->
       <section class="admin-view" id="adminsView">
+        <div id="pendingRequestsWrap" style="display:none;margin-bottom:22px;">
+          <h3 style="margin:0 0 10px;color:var(--navy);font-size:1rem;">Pending Requests</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Email</th><th>Requested</th><th>Actions</th></tr></thead>
+              <tbody id="pendingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
         <div class="settings-form" style="margin-bottom:22px;">
           <label style="font-weight:700;color:var(--navy-soft);">Add New Administrator</label>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin:2px 0 8px;">Pre-approve someone before they even sign up, so they land straight in the dashboard the first time they create a password.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <input type="email" id="newAdminEmail" placeholder="admin@example.com" style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;">
             <button class="btn btn-primary" id="addAdminBtn">Add Admin</button>
@@ -757,10 +778,11 @@ window.mobihealthSupabase = window.supabase.createClient(
   const loadingScreen = $("loadingScreen");
   const loginScreen = $("loginScreen");
   const deniedScreen = $("deniedScreen");
+  const pendingScreen = $("pendingScreen");
   const dashboardScreen = $("dashboardScreen");
 
   function showOnly(screen) {
-    [loadingScreen, loginScreen, deniedScreen, dashboardScreen].forEach((s) => (s.style.display = "none"));
+    [loadingScreen, loginScreen, deniedScreen, pendingScreen, dashboardScreen].forEach((s) => (s.style.display = "none"));
     screen.style.display = screen === dashboardScreen ? "flex" : "flex";
   }
 
@@ -819,23 +841,28 @@ window.mobihealthSupabase = window.supabase.createClient(
 
   $("signOutBtn").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
   $("signOutDeniedBtn").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
+  $("signOutPendingBtn").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
 
   async function checkSession() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { showOnly(loginScreen); return; }
 
     const email = session.user.email.toLowerCase();
-    const { data: adminRow, error } = await supabase
+    const { data: adminRow } = await supabase
       .from("champion_admins")
       .select("email, role, status")
       .eq("email", email)
-      .eq("status", "active")
       .maybeSingle();
 
-    if (error || !adminRow) {
-      showOnly(deniedScreen);
+    if (!adminRow) {
+      // Brand-new signup: file a pending request for the Super Admin to review.
+      await supabase.from("champion_admins").insert({ email, role: "admin", status: "pending", added_by: email });
+      showOnly(pendingScreen);
       return;
     }
+    if (adminRow.status === "pending") { showOnly(pendingScreen); return; }
+    if (adminRow.status !== "active") { showOnly(deniedScreen); return; }
+
     currentAdmin = { email: adminRow.email, role: adminRow.role };
     $("meEmail").textContent = currentAdmin.email;
     if (currentAdmin.role !== "super_admin") {
@@ -1230,11 +1257,56 @@ window.mobihealthSupabase = window.supabase.createClient(
   async function loadAdmins() {
     const { data } = await supabase.from("champion_admins").select("*").order("created_at", { ascending: true });
     allAdmins = data || [];
+    const pendingCount = allAdmins.filter((a) => a.status === "pending").length;
+    const badge = $("pendingBadge");
+    badge.textContent = pendingCount;
+    badge.style.display = pendingCount ? "inline-block" : "none";
   }
   function renderAdmins() {
+    const pending = allAdmins.filter((a) => a.status === "pending");
+    const rest = allAdmins.filter((a) => a.status !== "pending");
+
+    $("pendingRequestsWrap").style.display = pending.length ? "block" : "none";
+    const pendingBody = $("pendingTableBody");
+    pendingBody.innerHTML = "";
+    pending.forEach((admin) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(admin.email)}</td>
+        <td>${new Date(admin.created_at).toLocaleDateString()}</td>
+        <td class="admin-table-actions">
+          <button class="btn btn-primary btn-sm" data-approve="${admin.id}">Approve</button>
+          <button class="btn btn-outline btn-sm" data-decline="${admin.id}">Decline</button>
+        </td>`;
+      pendingBody.appendChild(tr);
+    });
+    pendingBody.querySelectorAll("[data-approve]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const email = btn.closest("tr").children[0].textContent;
+        const { error } = await supabase.from("champion_admins").update({ status: "active" }).eq("id", btn.dataset.approve);
+        if (!error) {
+          await logActivity("Admin request approved", email);
+          await loadAdmins();
+          renderAdmins();
+        }
+      });
+    });
+    pendingBody.querySelectorAll("[data-decline]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Decline this admin request?")) return;
+        const email = btn.closest("tr").children[0].textContent;
+        const { error } = await supabase.from("champion_admins").update({ status: "removed" }).eq("id", btn.dataset.decline);
+        if (!error) {
+          await logActivity("Admin request declined", email);
+          await loadAdmins();
+          renderAdmins();
+        }
+      });
+    });
+
     const tbody = $("adminsTableBody");
     tbody.innerHTML = "";
-    allAdmins.forEach((admin) => {
+    rest.forEach((admin) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(admin.email)}</td>

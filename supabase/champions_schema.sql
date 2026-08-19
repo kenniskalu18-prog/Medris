@@ -13,7 +13,7 @@ create table if not exists public.champion_admins (
   email text not null unique,
   role text not null default 'admin' check (role in ('super_admin', 'admin')),
   added_by text,
-  status text not null default 'active' check (status in ('active', 'removed')),
+  status text not null default 'active' check (status in ('active', 'pending', 'removed')),
   created_at timestamptz not null default now()
 );
 
@@ -199,16 +199,36 @@ create policy champion_applications_delete on public.champion_applications
   for delete to authenticated
   using (public.champion_is_super_admin());
 
--- Admins table: only admins can read the list; only super admins can add/change admins.
+-- Admins table: only admins can read the full list; only super admins can add/change admins.
 drop policy if exists champion_admins_select on public.champion_admins;
 create policy champion_admins_select on public.champion_admins
   for select to authenticated
   using (public.champion_is_admin());
 
+-- Anyone can always see their OWN admin row (any status) — this is what lets
+-- the app tell a brand-new signup, a pending request, and an approved admin
+-- apart, before they're an approved admin themselves.
+drop policy if exists champion_admins_select_self on public.champion_admins;
+create policy champion_admins_select_self on public.champion_admins
+  for select to authenticated
+  using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
+
 drop policy if exists champion_admins_write on public.champion_admins;
 create policy champion_admins_write on public.champion_admins
   for insert to authenticated
   with check (public.champion_is_super_admin());
+
+-- Let a newly-signed-up user request access for themselves — but only ever
+-- as a pending, non-admin request, never active, never super_admin. Real
+-- approval (flipping status to 'active') is a Super-Admin-only update below.
+drop policy if exists champion_admins_insert_self on public.champion_admins;
+create policy champion_admins_insert_self on public.champion_admins
+  for insert to authenticated
+  with check (
+    lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    and status = 'pending'
+    and role = 'admin'
+  );
 
 drop policy if exists champion_admins_update on public.champion_admins;
 create policy champion_admins_update on public.champion_admins
