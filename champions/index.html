@@ -393,6 +393,19 @@ section { padding: 76px 0; }
   outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(26,86,219,0.12); background: #fff;
 }
 .field .char-count { text-align: right; font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; }
+.autocomplete-field { position: relative; }
+.autocomplete-list {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: #fff;
+  border: 1.5px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); max-height: 240px;
+  overflow-y: auto; z-index: 30;
+}
+.autocomplete-list.open { display: block; }
+.autocomplete-item { padding: 11px 14px; font-size: 0.92rem; color: var(--navy-soft); cursor: pointer; border-bottom: 1px solid var(--bg); }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.active { background: var(--bg); color: var(--blue); }
+.autocomplete-item .match { font-weight: 800; color: var(--blue); }
+.autocomplete-empty { padding: 12px 14px; font-size: 0.85rem; color: var(--text-muted); }
+.autocomplete-field input[type="text"].picked { border-color: var(--green); background: var(--green-soft); }
 .field .error-msg { color: #c62828; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 600; }
 .field.invalid input, .field.invalid select, .field.invalid textarea { border-color: #c62828; }
 .field.invalid .error-msg { display: block; }
@@ -805,7 +818,12 @@ section { padding: 76px 0; }
               <select name="age_range"><option value="">Select</option><option>Under 18</option><option>18–20</option><option>21–23</option><option>24+</option></select>
             </div>
           </div>
-          <div class="field"><label>University / Tertiary Institution <span class="req">*</span></label><input type="text" name="institution" required placeholder="e.g. University of Lagos"></div>
+          <div class="field autocomplete-field">
+            <label for="institutionSearch">University / Tertiary Institution <span class="req">*</span></label>
+            <input type="text" id="institutionSearch" placeholder="Start typing your school name or abbreviation (e.g. UNILAG)" autocomplete="off">
+            <input type="hidden" name="institution" id="institutionValue" required>
+            <div class="autocomplete-list" id="institutionList"></div>
+          </div>
           <div class="field"><label>Student ID / Matric Number <span class="req">*</span></label><input type="text" name="matric_number" required></div>
           <div class="field-row cols-2">
             <div class="field"><label>Faculty <span class="req">*</span></label><input type="text" name="faculty" required></div>
@@ -1082,6 +1100,118 @@ window.mobihealthSupabase = window.supabase.createClient(
   "use strict";
 
   const supabase = window.mobihealthSupabase;
+
+  // Nigerian universities & tertiary institutions, with common abbreviations
+  // as aliases so "UNILAG" or "UI" resolves to the full name. Not exhaustive —
+  // "Other University / Tertiary Institution" is always offered as a fallback.
+  const INSTITUTIONS = [
+    { name: "University of Lagos", aliases: ["unilag"] },
+    { name: "University of Ibadan", aliases: ["ui", "uibadan"] },
+    { name: "Obafemi Awolowo University", aliases: ["oau", "ife"] },
+    { name: "University of Benin", aliases: ["uniben"] },
+    { name: "Ahmadu Bello University", aliases: ["abu", "abuzaria"] },
+    { name: "University of Nigeria, Nsukka", aliases: ["unn", "nsukka"] },
+    { name: "University of Ilorin", aliases: ["unilorin"] },
+    { name: "University of Port Harcourt", aliases: ["uniport"] },
+    { name: "Lagos State University", aliases: ["lasu"] },
+    { name: "Covenant University", aliases: ["covenant", "cu"] },
+    { name: "Babcock University", aliases: ["babcock"] },
+    { name: "Federal University of Technology, Akure", aliases: ["futa"] },
+    { name: "Federal University of Technology, Owerri", aliases: ["futo"] },
+    { name: "Federal University of Technology, Minna", aliases: ["futminna"] },
+    { name: "Lagos State University of Science and Technology", aliases: ["lasustech"] },
+    { name: "Nnamdi Azikiwe University", aliases: ["unizik"] },
+    { name: "Bayero University Kano", aliases: ["buk"] },
+    { name: "University of Calabar", aliases: ["unical"] },
+    { name: "University of Uyo", aliases: ["uniuyo"] },
+    { name: "University of Jos", aliases: ["unijos"] },
+    { name: "University of Maiduguri", aliases: ["unimaid"] },
+    { name: "Usmanu Danfodiyo University, Sokoto", aliases: ["udusok", "udus"] },
+    { name: "Federal University, Oye-Ekiti", aliases: ["fuoye"] },
+    { name: "Ekiti State University", aliases: ["eksu"] },
+    { name: "Ladoke Akintola University of Technology", aliases: ["lautech"] },
+    { name: "Olabisi Onabanjo University", aliases: ["oou"] },
+    { name: "Adekunle Ajasin University", aliases: ["aaua"] },
+    { name: "Redeemer's University", aliases: ["run"] },
+    { name: "Bells University of Technology", aliases: ["bellsuniversity"] },
+    { name: "Bowen University", aliases: ["bowen"] },
+    { name: "Pan-Atlantic University", aliases: ["pau"] },
+    { name: "American University of Nigeria", aliases: ["aun"] },
+    { name: "Caleb University", aliases: ["caleb"] },
+    { name: "Landmark University", aliases: ["landmark"] },
+    { name: "Afe Babalola University", aliases: ["abuad"] },
+    { name: "Igbinedion University", aliases: ["iuo"] },
+    { name: "Novena University", aliases: ["novena"] },
+    { name: "Elizade University", aliases: ["elizade"] },
+    { name: "Crawford University", aliases: ["crawford"] },
+    { name: "Crescent University", aliases: ["crescent"] },
+    { name: "Wesley University", aliases: ["wesley"] },
+    { name: "Al-Hikmah University", aliases: ["alhikmah"] },
+    { name: "Fountain University", aliases: ["fountain"] },
+    { name: "Joseph Ayo Babalola University", aliases: ["jabu"] },
+    { name: "Kwara State University", aliases: ["kwasu"] },
+    { name: "Kogi State University", aliases: ["ksu"] },
+    { name: "Benue State University", aliases: ["bsu"] },
+    { name: "Delta State University", aliases: ["delsu"] },
+    { name: "Rivers State University", aliases: ["rsu"] },
+    { name: "Imo State University", aliases: ["imsu"] },
+    { name: "Abia State University", aliases: ["absu"] },
+    { name: "Enugu State University of Science and Technology", aliases: ["esut"] },
+    { name: "Nasarawa State University", aliases: ["nsuk"] },
+    { name: "Niger Delta University", aliases: ["ndu"] },
+    { name: "Osun State University", aliases: ["uniosun"] },
+    { name: "Ondo State University of Science and Technology", aliases: ["osustech"] },
+    { name: "Plateau State University", aliases: ["plasu"] },
+    { name: "Ambrose Alli University", aliases: ["aau"] },
+    { name: "Ebonyi State University", aliases: ["ebsu"] },
+    { name: "Cross River University of Technology", aliases: ["crutech"] },
+    { name: "Akwa Ibom State University", aliases: ["aksu"] },
+    { name: "Adamawa State University", aliases: ["adsu"] },
+    { name: "Gombe State University", aliases: ["gsu"] },
+    { name: "Kaduna State University", aliases: ["kasu"] },
+    { name: "Kebbi State University of Science and Technology", aliases: ["ksust"] },
+    { name: "Sokoto State University", aliases: ["ssu"] },
+    { name: "Taraba State University", aliases: ["tsu"] },
+    { name: "Yobe State University", aliases: ["ysu"] },
+    { name: "Zamfara State University", aliases: [] },
+    { name: "Federal University, Lokoja", aliases: ["fulokoja"] },
+    { name: "Federal University, Lafia", aliases: ["fulafia"] },
+    { name: "Federal University, Dutse", aliases: ["fud"] },
+    { name: "Federal University, Gashua", aliases: ["fugashua"] },
+    { name: "Federal University, Gusau", aliases: ["fugusau"] },
+    { name: "Federal University, Kashere", aliases: ["fukashere"] },
+    { name: "Federal University, Otuoke", aliases: ["fuotuoke"] },
+    { name: "Federal University, Wukari", aliases: ["fuwukari"] },
+    { name: "Federal University, Birnin Kebbi", aliases: [] },
+    { name: "Federal University Dutsin-Ma", aliases: ["fudutsinma"] },
+    { name: "Federal University of Health Sciences, Otukpo", aliases: [] },
+    { name: "Federal University of Petroleum Resources, Effurun", aliases: ["fupre"] },
+    { name: "Federal University of Agriculture, Abeokuta", aliases: ["funaab"] },
+    { name: "Federal University of Agriculture, Makurdi", aliases: ["fuam"] },
+    { name: "Michael Okpara University of Agriculture, Umudike", aliases: ["mouau"] },
+    { name: "National Open University of Nigeria", aliases: ["noun"] },
+    { name: "Lagos State University of Education", aliases: ["laspotech", "lasued"] },
+    { name: "Yaba College of Technology", aliases: ["yabatech"] },
+    { name: "Federal Polytechnic, Ilaro", aliases: ["poliilaro"] },
+    { name: "Federal Polytechnic, Nekede", aliases: ["fpn"] },
+    { name: "Lagos State Polytechnic", aliases: ["laspotech"] },
+    { name: "Kaduna Polytechnic", aliases: ["kadpoly"] },
+    { name: "Auchi Polytechnic", aliases: ["auchipoly"] },
+    { name: "Ibadan Polytechnic", aliases: ["thepoly", "ibadanpoly"] },
+    { name: "Moshood Abiola Polytechnic", aliases: ["mapoly"] },
+    { name: "Federal School of Dental Technology and Therapy", aliases: [] },
+    { name: "Lagos State College of Health Technology", aliases: [] },
+    { name: "College of Medicine, University of Lagos", aliases: ["colamed"] },
+    { name: "Nigerian Defence Academy", aliases: ["nda"] },
+    { name: "Nile University of Nigeria", aliases: ["nile"] },
+    { name: "Veritas University", aliases: ["veritas"] },
+    { name: "Baze University", aliases: ["baze"] },
+    { name: "Baze University Abuja", aliases: ["baze"] },
+    { name: "University of Abuja", aliases: ["uniabuja"] },
+    { name: "Nigerian Turkish Nile University", aliases: [] },
+    { name: "Other University / Tertiary Institution", aliases: ["other"] },
+  ];
+
   const TOTAL_STEPS = 5;
   let currentStep = 1;
   let submitting = false;
@@ -1234,6 +1364,7 @@ window.mobihealthSupabase = window.supabase.createClient(
     });
 
     if (values.__step) currentStep = Math.min(Math.max(Number(values.__step) || 1, 1), TOTAL_STEPS);
+    if (window.__syncInstitutionDisplay) window.__syncInstitutionDisplay();
     return true;
   }
 
@@ -1311,6 +1442,101 @@ window.mobihealthSupabase = window.supabase.createClient(
     document.getElementById("leadershipReveal").classList.toggle("show", e.target.checked);
     saveDraft();
   });
+
+  // ---------------- Institution autocomplete ----------------
+  (function setupInstitutionAutocomplete() {
+    const searchInput = document.getElementById("institutionSearch");
+    const hiddenInput = document.getElementById("institutionValue");
+    const list = document.getElementById("institutionList");
+    let activeIndex = -1;
+
+    function normalize(s) { return s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim(); }
+
+    function matches(query) {
+      const q = normalize(query);
+      if (!q) return [];
+      const scored = [];
+      INSTITUTIONS.forEach((inst) => {
+        if (inst.name === "Other University / Tertiary Institution") return;
+        const name = normalize(inst.name);
+        let score = -1;
+        if (name.startsWith(q)) score = 3;
+        else if (inst.aliases.some((a) => a === q)) score = 3;
+        else if (inst.aliases.some((a) => a.startsWith(q))) score = 2;
+        else if (name.includes(q)) score = 1;
+        else if (name.split(" ").some((w) => w.startsWith(q))) score = 1;
+        if (score >= 0) scored.push({ inst, score });
+      });
+      scored.sort((a, b) => b.score - a.score || a.inst.name.localeCompare(b.inst.name));
+      return scored.slice(0, 8).map((s) => s.inst);
+    }
+
+    function renderList(items, query) {
+      activeIndex = -1;
+      if (!items.length) {
+        list.innerHTML = `<div class="autocomplete-empty">No match — try a different spelling, or pick "Other University / Tertiary Institution" below.</div>
+          <div class="autocomplete-item" data-name="Other University / Tertiary Institution">Other University / Tertiary Institution</div>`;
+      } else {
+        list.innerHTML = items.map((inst) => `<div class="autocomplete-item" data-name="${escAttr(inst.name)}">${highlight(inst.name, query)}</div>`).join("")
+          + `<div class="autocomplete-item" data-name="Other University / Tertiary Institution">Other University / Tertiary Institution</div>`;
+      }
+      list.classList.add("open");
+    }
+
+    function highlight(name, query) {
+      const q = normalize(query);
+      if (!q) return name;
+      const idx = normalize(name).indexOf(q);
+      if (idx === -1) return name;
+      return name.slice(0, idx) + `<span class="match">${name.slice(idx, idx + query.length)}</span>` + name.slice(idx + query.length);
+    }
+
+    function escAttr(s) { return String(s).replace(/"/g, "&quot;"); }
+
+    function pick(name) {
+      searchInput.value = name;
+      hiddenInput.value = name;
+      searchInput.classList.add("picked");
+      list.classList.remove("open");
+      saveDraft();
+    }
+
+    searchInput.addEventListener("input", () => {
+      hiddenInput.value = "";
+      searchInput.classList.remove("picked");
+      const items = matches(searchInput.value);
+      if (searchInput.value.trim()) renderList(items, searchInput.value); else list.classList.remove("open");
+    });
+
+    searchInput.addEventListener("focus", () => {
+      if (searchInput.value.trim() && !hiddenInput.value) renderList(matches(searchInput.value), searchInput.value);
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      const items = list.querySelectorAll(".autocomplete-item");
+      if (!items.length || !list.classList.contains("open")) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); }
+      else if (e.key === "Enter") { e.preventDefault(); if (activeIndex >= 0) items[activeIndex].click(); return; }
+      else return;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIndex));
+    });
+
+    list.addEventListener("click", (e) => {
+      const item = e.target.closest(".autocomplete-item");
+      if (item) pick(item.dataset.name);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".autocomplete-field")) list.classList.remove("open");
+    });
+
+    // Restoring a saved draft can set hiddenInput.value directly — reflect it
+    // in the visible search box and mark it picked.
+    window.__syncInstitutionDisplay = () => {
+      if (hiddenInput.value) { searchInput.value = hiddenInput.value; searchInput.classList.add("picked"); }
+    };
+  })();
 
   // character counters
   form.querySelectorAll("textarea[maxlength]").forEach((ta) => {

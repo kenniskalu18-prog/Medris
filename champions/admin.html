@@ -526,7 +526,16 @@ table.data-table tr:hover td { background: #fbfcfe; }
 /* ---------- PDF export (print-to-PDF) ---------- */
 #printArea { display: none; }
 .pdf-doc { max-width: 760px; margin: 0 auto; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #14213d; }
-.pdf-doc + .pdf-doc { page-break-before: always; margin-top: 40px; }
+.pdf-doc + .pdf-doc { margin-top: 30px; border-top: 1px dashed #e2e8f4; padding-top: 30px; }
+.pdf-group-header {
+  page-break-before: always; max-width: 760px; margin: 0 auto 4px; padding: 10px 0; font-size: 20px; font-weight: 800;
+  color: #0a1a45; border-bottom: 3px solid #1a56db;
+}
+.pdf-group-header:first-child { page-break-before: avoid; }
+.pdf-subgroup-header {
+  max-width: 760px; margin: 18px auto 0; font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #1a56db; background: #e8eefd; display: inline-block; padding: 5px 12px; border-radius: 999px;
+}
 .pdf-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1a56db; padding-bottom: 12px; margin-bottom: 18px; }
 .pdf-header h1 { font-size: 18px; margin: 0; color: #0a1a45; }
 .pdf-header .pdf-ref { font-size: 13px; font-weight: 700; color: #1a56db; }
@@ -1044,9 +1053,20 @@ window.mobihealthSupabase = window.supabase.createClient(
   });
 
   // ---------------- CSV export ----------------
+  // Sort by institution then primary track, so a downloaded file naturally
+  // groups every school's applicants together, and within each school
+  // groups them by the track they applied for.
+  function sortBySchoolThenTrack(rows) {
+    return [...rows].sort((a, b) =>
+      (a.institution || "").localeCompare(b.institution || "") ||
+      (a.primary_track || "").localeCompare(b.primary_track || "") ||
+      (a.full_name || "").localeCompare(b.full_name || "")
+    );
+  }
+
   $("exportCsvBtn").addEventListener("click", async () => {
-    const rows = getFiltered();
-    const cols = ["application_number", "full_name", "email", "phone", "institution", "primary_track", "faculty", "department", "level", "matric_number", "wants_leadership", "leadership_role_interest", "status", "created_at"];
+    const rows = sortBySchoolThenTrack(getFiltered());
+    const cols = ["institution", "primary_track", "application_number", "full_name", "email", "phone", "faculty", "department", "level", "matric_number", "wants_leadership", "leadership_role_interest", "status", "created_at"];
     const csv = [cols.join(",")].concat(
       rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","))
     ).join("\n");
@@ -1153,9 +1173,25 @@ window.mobihealthSupabase = window.supabase.createClient(
   });
 
   $("exportPdfBtn").addEventListener("click", async () => {
-    const rows = getFiltered();
+    const rows = sortBySchoolThenTrack(getFiltered());
     if (!rows.length) return;
-    $("printArea").innerHTML = rows.map(buildApplicantPdfHtml).join("");
+    let html = "";
+    let lastInstitution = null, lastTrack = null;
+    rows.forEach((a) => {
+      const institution = a.institution || "Institution not specified";
+      const track = a.primary_track || "Track not specified";
+      if (institution !== lastInstitution) {
+        html += `<div class="pdf-group-header">${escapeHtml(institution)}</div>`;
+        lastInstitution = institution;
+        lastTrack = null;
+      }
+      if (track !== lastTrack) {
+        html += `<div class="pdf-subgroup-header">${escapeHtml(track)}</div>`;
+        lastTrack = track;
+      }
+      html += buildApplicantPdfHtml(a);
+    });
+    $("printArea").innerHTML = html;
     await logActivity("Exported applications as PDF", `${rows.length} applications`);
     printAndClear();
   });
