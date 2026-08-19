@@ -594,7 +594,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
   <div class="denied-card">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
     <h2 style="color:var(--navy)">You don&rsquo;t have permission to access this dashboard.</h2>
-    <p style="color:var(--text-muted)">This admin portal is restricted to approved Mobihealth administrators. Contact the Super Admin if you believe this is a mistake.</p>
+    <p style="color:var(--text-muted)">This admin portal is restricted to approved Mobihealth administrators. Contact an admin if you believe this is a mistake.</p>
     <button class="btn btn-outline" id="signOutDeniedBtn" style="margin-top:14px;">Sign Out</button>
     <div><a href="index.html" class="back-to-home" style="margin-top:14px;display:inline-block;">&larr; Back to Mobihealth Champions</a></div>
   </div>
@@ -605,7 +605,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
   <div class="denied-card">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#b5650b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     <h2 style="color:var(--navy)">Your admin request is awaiting approval.</h2>
-    <p style="color:var(--text-muted)">Your account has been created, but a Super Admin needs to approve you before you can access the dashboard. You'll be able to sign in as soon as you're approved.</p>
+    <p style="color:var(--text-muted)">Your account has been created, but an admin needs to approve you before you can access the dashboard. You'll be able to sign in as soon as you're approved.</p>
     <button class="btn btn-outline" id="signOutPendingBtn" style="margin-top:14px;">Sign Out</button>
     <div><a href="index.html" class="back-to-home" style="margin-top:14px;display:inline-block;">&larr; Back to Mobihealth Champions</a></div>
   </div>
@@ -824,7 +824,7 @@ window.mobihealthSupabase = window.supabase.createClient(
       } else if (data.session) {
         msg.textContent = "Account created — signing you in..."; msg.classList.add("success", "show");
       } else {
-        msg.textContent = "Account created. If you're not signed in automatically, ask your Super Admin to disable \"Confirm email\" in Supabase, or check your inbox.";
+        msg.textContent = "Account created. If you're not signed in automatically, ask an admin to disable \"Confirm email\" in Supabase, or check your inbox.";
         msg.classList.add("success", "show");
       }
     } else {
@@ -1184,7 +1184,7 @@ window.mobihealthSupabase = window.supabase.createClient(
       ${currentAdmin.role === "super_admin" ? `
       <div class="detail-section danger-zone">
         <h4>Delete Application</h4>
-        <p>This permanently removes ${escapeHtml(a.full_name)}'s application and cannot be undone. Only the Super Admin can do this. Type your admin email to confirm.</p>
+        <p>This permanently removes ${escapeHtml(a.full_name)}'s application and cannot be undone. Only you can do this. Type your admin email to confirm.</p>
         <input type="email" id="deleteConfirmEmail" placeholder="Type your admin email to confirm">
         <button class="btn btn-danger btn-sm" id="deleteAppBtn" disabled>Delete Permanently</button>
       </div>` : ""}
@@ -1264,7 +1264,9 @@ window.mobihealthSupabase = window.supabase.createClient(
   }
   function renderAdmins() {
     const pending = allAdmins.filter((a) => a.status === "pending");
-    const rest = allAdmins.filter((a) => a.status !== "pending");
+    // Removed/declined admins are kept in the database (and in the activity
+    // log) for the audit trail, but drop out of view here once removed.
+    const rest = allAdmins.filter((a) => a.status === "active");
 
     $("pendingRequestsWrap").style.display = pending.length ? "block" : "none";
     const pendingBody = $("pendingTableBody");
@@ -1311,10 +1313,10 @@ window.mobihealthSupabase = window.supabase.createClient(
       tr.innerHTML = `
         <td>${escapeHtml(admin.email)}</td>
         <td>${new Date(admin.created_at).toLocaleDateString()}</td>
-        <td><span class="pill-role ${admin.role === "super_admin" ? "pill-super" : "pill-admin"}">${admin.role === "super_admin" ? "Super Admin" : "Admin"}</span></td>
-        <td>${admin.status === "active" ? "Active" : "Removed"}</td>
+        <td><span class="pill-role pill-admin">Admin</span></td>
+        <td>Active</td>
         <td class="admin-table-actions">
-          ${admin.status === "active" && admin.role !== "super_admin" ? `<button class="btn btn-outline btn-sm" data-remove="${admin.id}">Remove</button>` : ""}
+          ${admin.role !== "super_admin" ? `<button class="btn btn-outline btn-sm" data-remove="${admin.id}">Remove</button>` : ""}
         </td>`;
       tbody.appendChild(tr);
     });
