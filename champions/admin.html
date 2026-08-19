@@ -438,6 +438,8 @@ body.admin-body { background: var(--bg); }
 .login-tabs { display: flex; background: var(--bg); border-radius: 999px; padding: 4px; margin-bottom: 22px; }
 .login-tab { flex: 1; border: none; background: none; padding: 9px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
 .login-tab.active { background: #fff; color: var(--blue); box-shadow: var(--shadow); }
+.back-to-home { display: block; text-align: center; margin-top: 18px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-decoration: none; }
+.back-to-home:hover { color: var(--blue); }
 .login-msg { font-size: 0.85rem; margin-top: 14px; padding: 10px 12px; border-radius: 10px; display: none; }
 .login-msg.show { display: block; }
 .login-msg.success { background: var(--green-soft); color: #1c7a2c; }
@@ -583,6 +585,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
       <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Sign In</button>
     </form>
     <div class="login-msg" id="loginMsg"></div>
+    <a href="index.html" class="back-to-home">&larr; Back to Mobihealth Champions</a>
   </div>
 </div>
 
@@ -593,6 +596,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
     <h2 style="color:var(--navy)">You don&rsquo;t have permission to access this dashboard.</h2>
     <p style="color:var(--text-muted)">This admin portal is restricted to approved Mobihealth administrators. Contact the Super Admin if you believe this is a mistake.</p>
     <button class="btn btn-outline" id="signOutDeniedBtn" style="margin-top:14px;">Sign Out</button>
+    <div><a href="index.html" class="back-to-home" style="margin-top:14px;display:inline-block;">&larr; Back to Mobihealth Champions</a></div>
   </div>
 </div>
 

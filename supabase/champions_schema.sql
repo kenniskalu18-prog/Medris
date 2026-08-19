@@ -216,6 +216,30 @@ create policy champion_admins_update on public.champion_admins
   using (public.champion_is_super_admin())
   with check (public.champion_is_super_admin());
 
+-- Belt-and-braces: the primary Super Admin's row can never be demoted or
+-- deactivated by anyone, even another Super Admin acting through the RLS
+-- policy above. Update the email below if you change your primary admin.
+create or replace function public.champion_protect_primary_admin()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if lower(old.email) = 'kenniskalu18@gmail.com' then
+    if new.status <> 'active' or new.role <> 'super_admin' then
+      raise exception 'This account cannot be demoted or deactivated.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists champion_protect_primary_admin_trigger on public.champion_admins;
+create trigger champion_protect_primary_admin_trigger
+  before update on public.champion_admins
+  for each row
+  execute function public.champion_protect_primary_admin();
+
 -- Settings: readable by everyone (needed for the public countdown/open-closed state),
 -- editable only by approved admins.
 drop policy if exists champion_settings_select on public.champion_settings;
