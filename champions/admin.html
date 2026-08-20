@@ -518,10 +518,24 @@ table.data-table tr:hover td { background: #fbfcfe; }
 
 .settings-form { max-width: 560px; display: grid; gap: 16px; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
 
-.log-list { display: grid; gap: 10px; }
-.log-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 0.88rem; display: flex; justify-content: space-between; gap: 12px; }
+.log-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.log-tabs { display: flex; gap: 6px; background: #eef1f9; border-radius: 999px; padding: 4px; }
+.log-tab { border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
+.log-tab:hover { color: var(--navy); }
+.log-tab.active { background: #fff; color: var(--blue); box-shadow: 0 1px 4px rgba(10,26,69,0.12); }
+.log-count { color: var(--text-muted); font-size: 0.8rem; }
+
+.log-scroll { max-height: 560px; overflow-y: auto; border: 1px solid var(--border); border-radius: 14px; background: #fbfcfe; padding: 4px 4px 4px; }
+.log-date-group { padding: 14px 16px 4px; }
+.log-date-heading { position: sticky; top: 0; z-index: 1; background: #fbfcfe; margin: 0 -16px 10px; padding: 8px 16px; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.log-list { display: grid; gap: 8px; padding-bottom: 8px; }
+.log-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 0.86rem; display: flex; align-items: flex-start; gap: 12px; }
+.log-item-avatar { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #e8eefd; color: var(--blue); font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.log-item-body { flex: 1; min-width: 0; }
 .log-item .who { font-weight: 700; color: var(--navy); }
-.log-item .when { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.log-item .when { color: var(--text-muted); font-size: 0.76rem; white-space: nowrap; margin-top: 2px; }
+.log-item-main { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.log-empty { text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 40px 16px; }
 
 /* ---------- PDF export (print-to-PDF) ---------- */
 #printArea { display: none; }
@@ -748,7 +762,16 @@ table.data-table tr:hover td { background: #fbfcfe; }
 
       <!-- ACTIVITY LOG -->
       <section class="admin-view" id="activityView">
-        <div class="log-list" id="activityLogList"></div>
+        <div class="log-toolbar">
+          <div class="log-tabs" id="logTabs">
+            <button type="button" class="log-tab active" data-range="today">Today</button>
+            <button type="button" class="log-tab" data-range="week">This Week</button>
+            <button type="button" class="log-tab" data-range="month">This Month</button>
+            <button type="button" class="log-tab" data-range="all">All Time</button>
+          </div>
+          <div class="log-count" id="logCount"></div>
+        </div>
+        <div class="log-scroll" id="activityLogList"></div>
       </section>
 
     </div>
@@ -940,16 +963,83 @@ window.mobihealthSupabase = window.supabase.createClient(
     if (!currentAdmin) return;
     await supabase.from("champion_activity_log").insert({ admin_email: currentAdmin.email, action, details: details || "" });
   }
-  async function loadActivityLog() {
-    const { data } = await supabase.from("champion_activity_log").select("*").order("created_at", { ascending: false }).limit(200);
+
+  let activityLogData = [];
+  let activityRange = "today";
+
+  function activityInitials(email) {
+    const name = String(email || "").split("@")[0];
+    const parts = name.split(/[._-]/).filter(Boolean);
+    const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
+    return letters.toUpperCase();
+  }
+
+  function activityDateHeading(d) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    const day = new Date(d); day.setHours(0, 0, 0, 0);
+    if (day.getTime() === today.getTime()) return "Today";
+    if (day.getTime() === yesterday.getTime()) return "Yesterday";
+    return day.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  }
+
+  function renderActivityLog() {
     const list = $("activityLogList");
+    const now = new Date();
+    let cutoff = null;
+    if (activityRange === "today") { cutoff = new Date(now); cutoff.setHours(0, 0, 0, 0); }
+    else if (activityRange === "week") { cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 7); }
+    else if (activityRange === "month") { cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30); }
+
+    const rows = cutoff ? activityLogData.filter((r) => new Date(r.created_at) >= cutoff) : activityLogData;
+    $("logCount").textContent = rows.length ? `${rows.length} event${rows.length === 1 ? "" : "s"}` : "";
+
     list.innerHTML = "";
-    (data || []).forEach((row) => {
+    if (!rows.length) {
+      list.innerHTML = `<div class="log-empty">No activity in this period.</div>`;
+      return;
+    }
+
+    let currentGroupKey = null, groupWrap = null, groupList = null;
+    rows.forEach((row) => {
+      const created = new Date(row.created_at);
+      const groupKey = created.toDateString();
+      if (groupKey !== currentGroupKey) {
+        currentGroupKey = groupKey;
+        groupWrap = document.createElement("div");
+        groupWrap.className = "log-date-group";
+        groupWrap.innerHTML = `<div class="log-date-heading">${activityDateHeading(created)}</div>`;
+        groupList = document.createElement("div");
+        groupList.className = "log-list";
+        groupWrap.appendChild(groupList);
+        list.appendChild(groupWrap);
+      }
       const el = document.createElement("div");
       el.className = "log-item";
-      el.innerHTML = `<div><span class="who">${escapeHtml(row.admin_email)}</span> &middot; ${escapeHtml(row.action)}${row.details ? " &middot; " + escapeHtml(row.details) : ""}</div><div class="when">${new Date(row.created_at).toLocaleString()}</div>`;
-      list.appendChild(el);
+      el.innerHTML = `<div class="log-item-avatar">${escapeHtml(activityInitials(row.admin_email))}</div>
+        <div class="log-item-body">
+          <div class="log-item-main">
+            <div><span class="who">${escapeHtml(row.admin_email)}</span> &middot; ${escapeHtml(row.action)}${row.details ? " &middot; " + escapeHtml(row.details) : ""}</div>
+          </div>
+          <div class="when">${created.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</div>
+        </div>`;
+      groupList.appendChild(el);
     });
+  }
+
+  $("logTabs").addEventListener("click", (e) => {
+    const btn = e.target.closest(".log-tab");
+    if (!btn) return;
+    document.querySelectorAll(".log-tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    activityRange = btn.dataset.range;
+    renderActivityLog();
+  });
+
+  async function loadActivityLog() {
+    const { data } = await supabase.from("champion_activity_log").select("*").order("created_at", { ascending: false }).limit(500);
+    activityLogData = data || [];
+    renderActivityLog();
   }
 
   // ---------------- Data load ----------------
