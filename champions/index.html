@@ -233,17 +233,36 @@ section { padding: 76px 0; }
 @media (min-width: 620px) { .scroll-cards .why-card { flex-basis: 280px; } }
 
 /* ---------- Who can apply ---------- */
-/* ---------- How it works ---------- */
-.steps-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-.step-chip {
-  display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--border);
-  border-radius: 999px; padding: 10px 18px 10px 10px; font-weight: 700; font-size: 0.9rem; color: var(--navy-soft);
-  box-shadow: var(--shadow);
+/* ---------- How it works: animated roadmap ---------- */
+.roadmap { position: relative; max-width: 620px; margin: 0 auto; padding-left: 58px; }
+.roadmap-line {
+  position: absolute; left: 19px; top: 8px; bottom: 8px; width: 4px;
+  background: var(--border); border-radius: 4px; overflow: hidden;
 }
-.step-num {
-  width: 26px; height: 26px; border-radius: 50%; background: var(--grad-blue); color: #fff; font-size: 0.8rem;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.roadmap-line-fill {
+  width: 100%; height: 0%; background: linear-gradient(180deg, var(--blue), var(--green));
+  border-radius: 4px; transition: height .25s ease-out;
 }
+.roadmap-step { position: relative; padding: 0 0 30px; }
+.roadmap-step:last-child { padding-bottom: 0; }
+.roadmap-dot {
+  position: absolute; left: -58px; top: 0; width: 40px; height: 40px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--border); color: var(--text-muted); font-weight: 800;
+  display: flex; align-items: center; justify-content: center; font-size: 0.95rem; z-index: 2;
+  transition: background .3s ease, border-color .3s ease, color .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+.roadmap-step.active .roadmap-dot {
+  background: var(--grad-blue); border-color: var(--blue); color: #fff; transform: scale(1.12);
+  box-shadow: 0 6px 16px rgba(26,86,219,0.35);
+}
+.roadmap-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px;
+  box-shadow: var(--shadow); opacity: 0.55; transform: translateX(-10px);
+  transition: opacity .35s ease, transform .35s ease, border-color .3s ease, box-shadow .3s ease;
+}
+.roadmap-step.active .roadmap-card { opacity: 1; transform: translateX(0); border-color: rgba(26,86,219,0.25); box-shadow: var(--shadow-md); }
+.roadmap-card h4 { margin: 0 0 4px; color: var(--navy); font-size: 1.02rem; }
+.roadmap-card p { margin: 0; color: var(--text-muted); font-size: 0.87rem; }
 
 /* ---------- Deliverables & benefits ---------- */
 .db-grid { display: grid; gap: 24px; }
@@ -520,14 +539,36 @@ section { padding: 76px 0; }
         <span class="eyebrow">How It Works</span>
         <h2>Your Path as a Champion</h2>
       </div>
-      <div class="steps-row">
-        <div class="step-chip"><span class="step-num">1</span>Join</div>
-        <div class="step-chip"><span class="step-num">2</span>Train</div>
-        <div class="step-chip"><span class="step-num">3</span>Certify</div>
-        <div class="step-chip"><span class="step-num">4</span>Choose Your Track</div>
-        <div class="step-chip"><span class="step-num">5</span>Activate</div>
-        <div class="step-chip"><span class="step-num">6</span>Measure Impact</div>
-        <div class="step-chip"><span class="step-num">7</span>Earn Rewards</div>
+      <div class="roadmap" id="roadmap">
+        <div class="roadmap-line"><div class="roadmap-line-fill" id="roadmapFill"></div></div>
+        <div class="roadmap-step" data-step="1">
+          <div class="roadmap-dot">1</div>
+          <div class="roadmap-card"><h4>Join</h4><p>Apply and get accepted into the MTCP Champions programme.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="2">
+          <div class="roadmap-dot">2</div>
+          <div class="roadmap-card"><h4>Train</h4><p>Complete onboarding and Champion training.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="3">
+          <div class="roadmap-dot">3</div>
+          <div class="roadmap-card"><h4>Certify</h4><p>Earn your official Mobihealth Champion certification.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="4">
+          <div class="roadmap-dot">4</div>
+          <div class="roadmap-card"><h4>Choose Your Track</h4><p>Pick the track that matches your strengths and interests.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="5">
+          <div class="roadmap-dot">5</div>
+          <div class="roadmap-card"><h4>Activate</h4><p>Start contributing on campus and across your social platforms.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="6">
+          <div class="roadmap-dot">6</div>
+          <div class="roadmap-card"><h4>Measure Impact</h4><p>Track your activities and report the difference you're making.</p></div>
+        </div>
+        <div class="roadmap-step" data-step="7">
+          <div class="roadmap-dot">7</div>
+          <div class="roadmap-card"><h4>Earn Rewards</h4><p>Redeem tokens for airtime, data, shopping and more.</p></div>
+        </div>
       </div>
     </div>
   </section>
@@ -809,6 +850,39 @@ window.mobihealthSupabase = window.supabase.createClient(
     // Prevent an accidental click on a card right after a drag.
     track.addEventListener("click", (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
   });
+
+  // ---------------- "How It Works" animated roadmap ----------------
+  (function setupRoadmap() {
+    const roadmap = document.getElementById("roadmap");
+    if (!roadmap) return;
+    const fill = document.getElementById("roadmapFill");
+    const steps = Array.from(roadmap.querySelectorAll(".roadmap-step"));
+    let ticking = false;
+
+    function update() {
+      ticking = false;
+      const rect = roadmap.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const total = rect.height + vh * 0.55;
+      const scrolled = vh * 0.75 - rect.top;
+      const progress = Math.max(0, Math.min(1, scrolled / total));
+      fill.style.height = `${progress * 100}%`;
+      steps.forEach((step, i) => {
+        const stepProgress = (i + 0.5) / steps.length;
+        step.classList.toggle("active", progress >= stepProgress);
+      });
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+  })();
 })();
 </script>
 
