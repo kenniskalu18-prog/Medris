@@ -954,6 +954,8 @@ window.mobihealthSupabase = window.supabase.createClient(
       p_primary_track: (form.primary_track && form.primary_track.value) || null,
       p_step: currentStep,
       p_completed: !!completed,
+      p_email: (form.email && form.email.value.trim()) || null,
+      p_phone: (form.phone && form.phone.value.trim()) || null,
     }).catch(() => {});
   }
   form.addEventListener("input", () => trackDraft(false));

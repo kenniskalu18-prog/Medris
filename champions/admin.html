@@ -480,6 +480,18 @@ table.data-table tr:hover td { background: #fbfcfe; }
 
 .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
 
+.info-btn {
+  width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); background: #fff;
+  color: var(--blue); font-weight: 800; font-size: 0.8rem; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 16px;
+}
+.info-btn:hover { background: var(--bg); border-color: var(--blue); }
+.info-popover {
+  display: none; background: #eef2fd; border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; font-size: 0.84rem; color: var(--text-muted); max-width: 560px; margin: -8px 0 16px;
+}
+.info-popover.show { display: block; }
+
 /* Detail drawer */
 .drawer-overlay { position: fixed; inset: 0; background: rgba(10,18,40,0.55); display: none; z-index: 80; }
 .drawer-overlay.open { display: block; }
@@ -777,14 +789,15 @@ table.data-table tr:hover td { background: #fbfcfe; }
 
       <!-- STARTED BUT NOT COMPLETED APPLICATIONS -->
       <section class="admin-view" id="draftsView">
-        <p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 16px;max-width:640px;">
+        <button type="button" class="info-btn" id="draftsInfoBtn" aria-label="What is this?">i</button>
+        <div class="info-popover" id="draftsInfoPopover">
           People who opened the application form and made progress but never submitted it.
-          Only their institution, track and step reached are tracked here, no name, email or
-          other personal detail is captured unless they complete and submit the application.
-        </p>
+          Institution, track, step reached, and email/phone (once they've typed them in) are
+          tracked here. Full name is never captured unless they complete and submit.
+        </div>
         <div class="table-wrap">
           <table class="data-table" id="draftsTable">
-            <thead><tr><th>Session</th><th>Institution</th><th>Track</th><th>Step Reached</th><th>Started</th><th>Last Activity</th></tr></thead>
+            <thead><tr><th>Draft ID</th><th>Email</th><th>Phone</th><th>Institution</th><th>Track</th><th>Step Reached</th><th>Started</th><th>Last Activity</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -1095,7 +1108,9 @@ window.mobihealthSupabase = window.supabase.createClient(
     rows.forEach((d) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${escapeHtml(d.session_id.slice(0, 8))}&hellip;</td>
+        <td>${escapeHtml(d.draft_number || (d.session_id.slice(0, 8) + "…"))}</td>
+        <td>${escapeHtml(d.email || "N/A")}</td>
+        <td>${escapeHtml(d.phone || "N/A")}</td>
         <td>${escapeHtml(d.institution || "N/A")}</td>
         <td>${escapeHtml(d.primary_track || "N/A")}</td>
         <td>${d.current_step != null ? `Step ${escapeHtml(String(d.current_step))} of 5` : "N/A"}</td>
@@ -1104,6 +1119,9 @@ window.mobihealthSupabase = window.supabase.createClient(
       tbody.appendChild(tr);
     });
   }
+
+  const draftsInfoBtn = $("draftsInfoBtn");
+  if (draftsInfoBtn) draftsInfoBtn.addEventListener("click", () => $("draftsInfoPopover").classList.toggle("show"));
 
   async function loadApplications() {
     const { data, error } = await supabase.from("champion_applications").select("*").order("created_at", { ascending: false });

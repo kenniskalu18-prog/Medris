@@ -379,14 +379,18 @@ create policy champion_cvs_admin_read on storage.objects
 -- =========================================================
 -- Started-but-not-completed application tracking
 -- =========================================================
--- Deliberately minimal: a random client-generated session id, the
--- institution/track the applicant picked (if any) and the step they
--- reached. No name, email, phone or any other personal detail is ever
--- written here -- that only happens on a real, completed submission into
--- champion_applications.
+-- A random client-generated session id, a human-readable draft number
+-- (same idea as application numbers), the institution/track picked so
+-- far, the step reached, and email/phone once the applicant has typed
+-- them in -- so admins can follow up with people who started but never
+-- finished. Full name is still never captured here; that only happens
+-- on a real, completed submission into champion_applications.
 create table if not exists public.champion_application_drafts (
   id uuid primary key default gen_random_uuid(),
   session_id text not null unique,
+  draft_number text,
+  email text,
+  phone text,
   institution text,
   primary_track text,
   current_step int,
@@ -397,6 +401,8 @@ create table if not exists public.champion_application_drafts (
 alter table public.champion_application_drafts enable row level security;
 create index if not exists champion_application_drafts_completed_idx
   on public.champion_application_drafts (completed, last_activity_at);
+create unique index if not exists champion_application_drafts_draft_number_idx
+  on public.champion_application_drafts (draft_number) where draft_number is not null;
 
 -- Only admins can read drafts directly. All writes go through the
 -- SECURITY DEFINER function below so a client can only ever touch its own
@@ -406,34 +412,64 @@ create policy champion_application_drafts_select on public.champion_application_
   for select to authenticated
   using (public.champion_is_admin());
 
+-- Draft number generator (DRAFT-YYYY-00001), mirrors champion_next_application_number().
+create sequence if not exists champion_draft_seq;
+
+create or replace function public.champion_next_draft_number()
+returns text
+language sql
+set search_path = public
+as $$
+  select 'DRAFT-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('champion_draft_seq')::text, 5, '0');
+$$;
+
+drop function if exists public.champion_track_draft(text, text, text, int, boolean);
+
 create or replace function public.champion_track_draft(
   p_session_id text,
   p_institution text,
   p_primary_track text,
   p_step int,
-  p_completed boolean
+  p_completed boolean,
+  p_email text default null,
+  p_phone text default null
 )
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_draft_number text;
 begin
   if p_session_id is null or length(trim(p_session_id)) = 0 then
     return;
   end if;
-  insert into public.champion_application_drafts (session_id, institution, primary_track, current_step, completed)
-  values (p_session_id, p_institution, p_primary_track, p_step, coalesce(p_completed, false))
+
+  select draft_number into v_draft_number
+  from public.champion_application_drafts
+  where session_id = p_session_id;
+
+  if v_draft_number is null then
+    v_draft_number := public.champion_next_draft_number();
+  end if;
+
+  insert into public.champion_application_drafts
+    (session_id, draft_number, institution, primary_track, current_step, completed, email, phone)
+  values
+    (p_session_id, v_draft_number, p_institution, p_primary_track, p_step, coalesce(p_completed, false), p_email, p_phone)
   on conflict (session_id) do update
     set institution = coalesce(excluded.institution, public.champion_application_drafts.institution),
         primary_track = coalesce(excluded.primary_track, public.champion_application_drafts.primary_track),
         current_step = greatest(coalesce(excluded.current_step, 0), coalesce(public.champion_application_drafts.current_step, 0)),
         completed = public.champion_application_drafts.completed or excluded.completed,
+        email = coalesce(excluded.email, public.champion_application_drafts.email),
+        phone = coalesce(excluded.phone, public.champion_application_drafts.phone),
         last_activity_at = now();
 end;
 $$;
 
-grant execute on function public.champion_track_draft(text, text, text, int, boolean) to anon, authenticated;
+grant execute on function public.champion_track_draft(text, text, text, int, boolean, text, text) to anon, authenticated;
 
 -- =========================================================
 -- Application submission rate limiting (basic abuse protection)
