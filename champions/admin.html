@@ -656,6 +656,7 @@ table.data-table tr:hover td { background: #fbfcfe; }
       <button data-view="adminsView" id="navAdmins">Manage Administrators <span id="pendingBadge" style="display:none;background:#ff3d78;color:#fff;border-radius:999px;padding:1px 8px;font-size:0.72rem;margin-left:4px;"></span></button>
       <button data-view="settingsView" id="navSettings">Application Settings</button>
       <button data-view="activityView">Activity Log</button>
+      <button data-view="draftsView" id="navDrafts">Started but Not Completed <span id="draftsBadge" style="display:none;background:#1a56db;color:#fff;border-radius:999px;padding:1px 8px;font-size:0.72rem;margin-left:4px;"></span></button>
     </nav>
     <div class="sidebar-footer">
       <div class="me" id="meEmail"></div>
@@ -772,6 +773,22 @@ table.data-table tr:hover td { background: #fbfcfe; }
           <div class="log-count" id="logCount"></div>
         </div>
         <div class="log-scroll" id="activityLogList"></div>
+      </section>
+
+      <!-- STARTED BUT NOT COMPLETED APPLICATIONS -->
+      <section class="admin-view" id="draftsView">
+        <p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 16px;max-width:640px;">
+          People who opened the application form and made progress but never submitted it.
+          Only their institution, track and step reached are tracked here, no name, email or
+          other personal detail is captured unless they complete and submit the application.
+        </p>
+        <div class="table-wrap">
+          <table class="data-table" id="draftsTable">
+            <thead><tr><th>Session</th><th>Institution</th><th>Track</th><th>Step Reached</th><th>Started</th><th>Last Activity</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="draftsEmpty" style="display:none;">No abandoned applications right now.</div>
       </section>
 
     </div>
@@ -948,6 +965,7 @@ window.mobihealthSupabase = window.supabase.createClient(
       toggleSidebar(false);
       if (btn.dataset.view === "activityView") loadActivityLog();
       if (btn.dataset.view === "adminsView") renderAdmins();
+      if (btn.dataset.view === "draftsView") loadDrafts();
     });
   });
   function toggleSidebar(open) {
@@ -1044,11 +1062,47 @@ window.mobihealthSupabase = window.supabase.createClient(
 
   // ---------------- Data load ----------------
   async function loadEverything() {
-    await Promise.all([loadApplications(), loadSettingsForm(), currentAdmin.role === "super_admin" ? loadAdmins() : Promise.resolve()]);
+    await Promise.all([loadApplications(), loadSettingsForm(), currentAdmin.role === "super_admin" ? loadAdmins() : Promise.resolve(), loadDraftsBadge()]);
     renderStats();
     renderRecent();
     populateFilters();
     renderApplicationsTable();
+  }
+
+  // ---------------- Started-but-not-completed applications ----------------
+  async function loadDraftsBadge() {
+    const { count } = await supabase
+      .from("champion_application_drafts")
+      .select("id", { count: "exact", head: true })
+      .eq("completed", false);
+    const badge = $("draftsBadge");
+    const n = count || 0;
+    badge.textContent = n;
+    badge.style.display = n ? "inline-block" : "none";
+  }
+
+  async function loadDrafts() {
+    const { data } = await supabase
+      .from("champion_application_drafts")
+      .select("*")
+      .eq("completed", false)
+      .order("last_activity_at", { ascending: false })
+      .limit(300);
+    const rows = data || [];
+    const tbody = document.querySelector("#draftsTable tbody");
+    tbody.innerHTML = "";
+    $("draftsEmpty").style.display = rows.length ? "none" : "block";
+    rows.forEach((d) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(d.session_id.slice(0, 8))}&hellip;</td>
+        <td>${escapeHtml(d.institution || "N/A")}</td>
+        <td>${escapeHtml(d.primary_track || "N/A")}</td>
+        <td>${d.current_step != null ? `Step ${escapeHtml(String(d.current_step))} of 5` : "N/A"}</td>
+        <td>${new Date(d.started_at).toLocaleString()}</td>
+        <td>${new Date(d.last_activity_at).toLocaleString()}</td>`;
+      tbody.appendChild(tr);
+    });
   }
 
   async function loadApplications() {
@@ -1233,7 +1287,7 @@ window.mobihealthSupabase = window.supabase.createClient(
           ${pdfRow("Social Media Activity", a.social_media_activity)}
           ${pdfRow("Platforms", (a.social_platforms || []).join(", "))}
           ${pdfRow("Weekly Availability", a.weekly_availability)}
-          ${pdfRow("Comfortable at Events", a.campus_events ? "Yes" : "No")}
+          ${pdfRow("Consented to Represent Mobihealth", a.campus_events ? "Yes" : "No")}
           ${pdfRow("Will Share on Social", a.social_media_sharing)}
           ${pdfRow("Instagram", a.instagram)}
           ${pdfRow("LinkedIn", a.linkedin)}
@@ -1356,7 +1410,7 @@ window.mobihealthSupabase = window.supabase.createClient(
         ${detailRow("Social Media Activity", a.social_media_activity)}
         ${detailRow("Platforms", (a.social_platforms || []).join(", "))}
         ${detailRow("Weekly Availability", a.weekly_availability)}
-        ${detailRow("Comfortable at Events", a.campus_events ? "Yes" : "No")}
+        ${detailRow("Consented to Represent Mobihealth", a.campus_events ? "Yes" : "No")}
         ${detailRow("Will Share on Social", a.social_media_sharing)}
         ${detailRow("Instagram", a.instagram)}
         ${detailRow("LinkedIn", a.linkedin)}

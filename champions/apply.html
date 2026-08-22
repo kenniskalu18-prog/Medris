@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apply | MTCP Telehealth Champions | Mobihealth</title>
+<meta name="description" content="Apply to become an MTCP Telehealth Champion with Mobihealth. Open to students at all universities and tertiary institutions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1a45;
+  --navy-soft: #10254f;
+  --blue: #1a56db;
+  --blue-bright: #2f6bff;
+  --blue-vivid: #3b6bff;
+  --green: #2ea043;
+  --green-bright: #34c759;
+  --green-soft: #e7f7ea;
+  --orange: #ff7a3d;
+  --pink: #ff3d78;
+  --bg: #f6f8fc;
+  --card: #ffffff;
+  --text: #14213d;
+  --text-muted: #5a6b8c;
+  --border: #e2e8f4;
+  --grad-blue: linear-gradient(135deg, var(--blue) 0%, var(--blue-vivid) 55%, #5b8bff 100%);
+  --shadow: 0 2px 10px rgba(10, 26, 69, 0.06);
+  --shadow-md: 0 8px 24px rgba(10, 26, 69, 0.10);
+  --shadow-lg: 0 18px 45px rgba(10, 26, 69, 0.14);
+  --shadow-glow: 0 12px 30px rgba(26, 86, 219, 0.32);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 22px;
+  --max: 1180px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(26,86,219,0.05), transparent 40%),
+    radial-gradient(circle at 0% 30%, rgba(46,160,67,0.04), transparent 40%),
+    var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+.container { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+:focus-visible { outline: 3px solid var(--blue-bright); outline-offset: 2px; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid rgba(226,232,244,0.7);
+}
+.topbar .container { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-mark--logo { width: 40px; height: 40px; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(10,26,69,0.14); padding: 3px; flex-shrink: 0; }
+.brand-mark--logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+.brand-name { font-weight: 800; font-size: 1.15rem; color: var(--navy); letter-spacing: -0.02em; }
+.brand-tag { font-size: 0.72rem; color: var(--blue); font-weight: 600; display: block; margin-top: -2px; }
+.back-link { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.9rem; color: var(--navy-soft); text-decoration: none; padding: 8px 4px; }
+.back-link:hover { color: var(--blue); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: 999px; font-weight: 700; font-size: 0.95rem;
+  padding: 14px 26px; min-height: 48px; text-decoration: none; letter-spacing: -0.01em;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, background .18s ease, border-color .18s ease, filter .18s ease;
+  position: relative;
+}
+.btn:active { transform: translateY(1px) scale(0.98); }
+.btn-primary { background: var(--grad-blue); color: #fff; box-shadow: var(--shadow-glow); background-size: 160% 160%; background-position: 0% 50%; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(26,86,219,0.4); background-position: 100% 50%; }
+.btn-primary:disabled { background: #9fb2d6; box-shadow: none; cursor: not-allowed; transform: none; }
+.btn-outline { background: #fff; color: var(--navy); border: 2px solid var(--border); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn-block { width: 100%; }
+.btn-sm { padding: 9px 16px; min-height: 38px; font-size: 0.85rem; }
+
+/* ---------- Apply page shell ---------- */
+.apply-shell { padding: 36px 16px 70px; }
+.apply-intro { max-width: 760px; margin: 0 auto 22px; text-align: center; }
+.apply-intro h1 { font-size: clamp(1.5rem, 3.6vw, 2rem); color: var(--navy); margin: 0 0 8px; letter-spacing: -0.02em; }
+.apply-intro p { color: var(--text-muted); margin: 0; font-size: 0.98rem; }
+.apply-card { background: var(--card); max-width: 760px; margin: 0 auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid var(--border); overflow: hidden; }
+.apply-card-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+.apply-card-header .step-label { font-weight: 700; color: var(--navy); font-size: 0.95rem; }
+.progress-track { height: 6px; background: var(--border); }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); transition: width .3s ease; width: 20%; }
+.apply-card-body { padding: 26px 20px 10px; }
+.apply-card-footer { display: flex; gap: 12px; padding: 18px 20px 24px; border-top: 1px solid var(--border); }
+.apply-card-footer .btn { flex: 1; }
+@media (min-width: 860px) {
+  .apply-card-header { padding: 22px 40px; }
+  .apply-card-body { padding: 38px 40px 14px; }
+  .apply-card-footer { padding: 20px 40px 30px; }
+}
+
+.step-panel { display: none; }
+.step-panel.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.step-title { margin: 0 0 4px; color: var(--navy); font-size: 1.3rem; }
+.step-sub { margin: 0 0 22px; color: var(--text-muted); font-size: 0.92rem; }
+
+.field { margin-bottom: 18px; }
+.field label { display: block; font-weight: 600; font-size: 0.9rem; color: var(--navy-soft); margin-bottom: 6px; }
+.field label .opt { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
+.field label .req { color: var(--pink); }
+.field input[type=text], .field input[type=email], .field input[type=tel], .field input[type=number],
+.field input[type=url], .field select, .field textarea {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  font-size: 0.98rem; font-family: inherit; background: #fbfcfe; color: var(--text); min-height: 48px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.field textarea { min-height: 110px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(26,86,219,0.12); background: #fff;
+}
+.field .char-count { text-align: right; font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; }
+.autocomplete-field { position: relative; }
+.autocomplete-list {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: #fff;
+  border: 1.5px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); max-height: 240px;
+  overflow-y: auto; z-index: 30;
+}
+.autocomplete-list.open { display: block; }
+.autocomplete-item { padding: 11px 14px; font-size: 0.92rem; color: var(--navy-soft); cursor: pointer; border-bottom: 1px solid var(--bg); }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.active { background: var(--bg); color: var(--blue); }
+.autocomplete-item .match { font-weight: 800; color: var(--blue); }
+.autocomplete-empty { padding: 12px 14px; font-size: 0.85rem; color: var(--text-muted); }
+.autocomplete-field input[type="text"].picked { border-color: var(--green); background: var(--green-soft); }
+.field .error-msg { color: #c62828; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 600; }
+.field.invalid input, .field.invalid select, .field.invalid textarea { border-color: #c62828; }
+.field.invalid .error-msg { display: block; }
+.field-row { display: grid; gap: 16px; }
+@media (min-width: 560px) { .field-row.cols-2 { grid-template-columns: 1fr 1fr; } }
+
+.choice-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice-pill {
+  border: 1.5px solid var(--border); border-radius: 999px; padding: 9px 16px; font-size: 0.86rem;
+  font-weight: 600; background: #fbfcfe; color: var(--navy-soft); cursor: pointer; user-select: none;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.choice-pill input { position: absolute; opacity: 0; pointer-events: none; }
+.choice-pill.checked { background: var(--blue); border-color: var(--blue); color: #fff; }
+@media (hover: hover) { .choice-pill:hover { border-color: var(--blue); } }
+
+.rating-group { display: flex; gap: 8px; }
+.rating-group button { width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--border); background: #fbfcfe; font-weight: 700; color: var(--navy); }
+.rating-group button.checked { background: var(--green); border-color: var(--green); color: #fff; }
+
+.file-drop { border: 2px dashed var(--border); border-radius: 12px; padding: 20px; text-align: center; background: #fbfcfe; cursor: pointer; }
+.file-drop.has-file { border-color: var(--green); background: var(--green-soft); }
+.file-drop input { display: none; }
+.file-drop small { display: block; color: var(--text-muted); margin-top: 4px; }
+.file-name { font-weight: 700; color: var(--navy); font-size: 0.88rem; }
+
+.declaration { display: flex; gap: 12px; align-items: flex-start; background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.declaration input { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; }
+.declaration p { margin: 0; font-size: 0.88rem; color: var(--text-muted); }
+
+.reveal { display: none; }
+.reveal.show { display: block; }
+
+.form-alert { background: #fff3f3; border: 1px solid #ffd2d2; color: #a3272c; border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; font-weight: 600; margin-bottom: 16px; display: none; }
+.form-alert.show { display: block; }
+.form-alert.info { background: #eaf1ff; border-color: #c7d9ff; color: var(--blue); }
+
+/* Success / closed screens */
+.success-screen { text-align: center; padding: 30px 6px; }
+.success-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.success-screen h2 { color: var(--navy); font-size: 1.5rem; margin: 0 0 10px; }
+.success-screen p { color: var(--text-muted); margin: 0 0 6px; }
+.ref-box { background: var(--bg); border: 1.5px dashed var(--border); border-radius: 12px; padding: 16px; margin: 20px 0; }
+.ref-box .ref-num { font-size: 1.3rem; font-weight: 800; color: var(--blue); letter-spacing: 0.03em; }
+.success-social { display: flex; justify-content: center; gap: 14px; margin-top: 18px; }
+.success-social a { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; box-shadow: 0 6px 16px rgba(0,0,0,0.2); transition: transform .15s ease; }
+.success-social a:hover { transform: translateY(-2px); }
+.success-social-icon--ig { background: radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+.success-social-icon--x { background: #000; }
+.success-social-icon--tt { background: #000; }
+
+.closed-screen { text-align: center; padding: 40px 20px; }
+.closed-screen h2 { color: var(--navy); margin: 0 0 10px; }
+.closed-screen p { color: var(--text-muted); margin: 0 0 20px; }
+
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hp-field { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; }
+</style>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <span class="brand-mark--logo" aria-hidden="true">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAMAAAC3Ycb+AAABO1BMVEX///8UmNYAAAD8/Pz8//////3//f8EBAQTl9cVl9X//P/q+Pjg8vz//fkWmNJzweX3//8TmtJYueTh8f////QWldgPDw/4+Pjo6Oj/+f+1tbU8PDzNzc3/+/hBrdyCzOdYWFjc3NwtLS0bGxumpqYdHR2Li4tiYmI0NDTl5eXExMScnJxGRkZ6enomJiZOTk5tbW1eXl6BgYG56PqwsLDI6vSVlZWioqIPk9sTmcwUns0YlMoTleELnN9Wttwtpt/B7/9Gu/DF7POk1u2i4u7f6v9Aqb7t8v8ckeGX3P87stQhqtg9puhuyt9hutpYvee62e00rOuKzfo1pMKt0NYJiM2l4fmVzfK58P/x//iIxt/Y8PCTz+uY1uX//+1bsM0tl79CyOWr2v+J4v94wNjC3e56t+SP1v+12PRsg0BCAAAgAElEQVR4nO19CWPbRpIuQNyQAAIywEskRVI3ddHWRZCi5MSbdSbOONmZjf0UK/PyZsc7/v+/4FV14+gGSYuOSSmS+ktsS2Sj0ajqOru6IUkCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgSOqqqS5ukaQJVs777H8+Shq16jce1ojmbrtuY07ns8AsAQkIsq/u85mn7fw3nyAF3lebaualXHcbyqet/jefJAhti61/BU7RqkRbnv8QjontNoaN6ry6uV/9Ab1/c9HAEVufDdf/ZH1mh4+Tq47+E8eYAZV+2lQd+MovD74X9W73s8Tx7gVjnSmh/Kg8h3zeFf7ns8Tx6qp6r2D27Y903THFkr9z2eJw8N/uhvfDf0XdeV/cv7Ho+AVG1oPw6HI9eUXdMVEnLfUFXdUX8M5dAKZTc0m/c9niePhmZr3htghm+6bmgJhtw3dMmWvL+uvP3pp5WfLldW1u57PE8ejiepgW2Dda96jq2KwHDxwPUOHSRBczRt/Ntrb60JuGzG+OFqzbtuLC7HqNsQ+dDutYamThjRI0fgaLqqqpqn6oQ3eTifht9/fxV+b8UI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" alt="" width="40" height="40">
+      </span>
+      <span>
+        <span class="brand-name">Mobihealth</span>
+        <span class="brand-tag">Telehealth Champions</span>
+      </span>
+    </a>
+    <a class="back-link" href="index.html">&larr; Back to Home</a>
+  </div>
+</header>
+
+<main class="apply-shell">
+  <div class="apply-intro">
+    <h1>Apply to Become an MTCP Telehealth Champion</h1>
+    <p>Takes about 10 minutes. Your progress is saved automatically as you go.</p>
+  </div>
+
+  <div class="apply-card" id="applyCard">
+    <div class="apply-card-header">
+      <span class="step-label" id="stepLabel">Step 1 of 5</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="apply-card-body">
+      <div class="form-alert" id="formAlert"></div>
+      <form id="applicationForm" novalidate>
+
+        <!-- honeypot: real applicants never see or fill this -->
+        <div class="hp-field" aria-hidden="true">
+          <label for="hp_field">Leave this field blank</label>
+          <input type="text" id="hp_field" name="hp_field" tabindex="-1" autocomplete="off">
+        </div>
+
+        <!-- STEP 1 -->
+        <div class="step-panel active" data-step="1">
+          <h3 class="step-title">Let's Get to Know You</h3>
+          <p class="step-sub">Step 1 of 5 &middot; Personal Information</p>
+          <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" name="full_name" required></div>
+          <div class="field"><label>Preferred Name <span class="opt">(optional)</span></label><input type="text" name="preferred_name"></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Email Address <span class="req">*</span></label><input type="email" name="email" required></div>
+            <div class="field"><label>Phone Number <span class="req">*</span></label><input type="tel" name="phone" required></div>
+          </div>
+          <div class="field"><label>WhatsApp Number <span class="req">*</span></label><input type="tel" name="whatsapp" required></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Gender <span class="opt">(optional)</span></label>
+              <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option></select>
+            </div>
+            <div class="field"><label>Age Range <span class="opt">(optional)</span></label>
+              <select name="age_range"><option value="">Select</option><option>Under 18</option><option>18&ndash;20</option><option>21&ndash;23</option><option>24+</option></select>
+            </div>
+          </div>
+          <div class="field autocomplete-field">
+            <label for="institutionSearch">University / Tertiary Institution <span class="req">*</span></label>
+            <input type="text" id="institutionSearch" placeholder="Start typing your school name or abbreviation (e.g. UNILAG)" autocomplete="off">
+            <input type="hidden" name="institution" id="institutionValue" required>
+            <div class="autocomplete-list" id="institutionList"></div>
+          </div>
+          <div class="field"><label>Student ID / Matric Number <span class="req">*</span></label><input type="text" name="matric_number" required></div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Faculty (write in full) <span class="req">*</span></label><input type="text" name="faculty" placeholder="e.g. Faculty of Life Sciences" required></div>
+            <div class="field"><label>Department (write in full) <span class="req">*</span></label><input type="text" name="department" placeholder="e.g. Computer Science" required></div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Current Level <span class="req">*</span></label>
+              <select name="level" required>
+                <option value="">Select</option>
+                <option>100 Level</option><option>200 Level</option><option>300 Level</option>
+                <option>400 Level</option><option>500 Level</option><option>600 Level</option>
+                <option>JUPEB</option><option>IJMB</option><option>Cambridge A-Level</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>Expected Graduation Year <span class="req">*</span></label><input type="text" inputmode="numeric" name="graduation_year" required placeholder="e.g. 2027"></div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-panel" data-step="2">
+          <h3 class="step-title">Tell Us About Yourself</h3>
+          <p class="step-sub">Step 2 of 5 &middot; About You</p>
+          <div class="field">
+            <label>Briefly introduce yourself <span class="req">*</span></label>
+            <textarea name="introduction" maxlength="500" required></textarea>
+            <div class="char-count"><span data-count-for="introduction">0</span>/500</div>
+          </div>
+          <div class="field">
+            <label>What are you passionate about? <span class="req">*</span></label>
+            <div class="choice-group" data-checkbox-group="passions">
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Healthcare">Healthcare</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Technology">Technology</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Health education">Health education</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Public health">Public health</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Entrepreneurship">Entrepreneurship</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Leadership">Leadership</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Social impact">Social impact</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Community development">Community development</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Media & communication">Media &amp; communication</label>
+              <label class="choice-pill"><input type="checkbox" name="passions" value="Other">Other</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Have you previously participated in any student organisation, volunteer programme, campaign or leadership role?</label>
+            <div class="choice-group" data-radio-group="has_prior_experience">
+              <label class="choice-pill"><input type="radio" name="has_prior_experience" value="yes">Yes</label>
+              <label class="choice-pill"><input type="radio" name="has_prior_experience" value="no">No</label>
+            </div>
+          </div>
+          <div class="field reveal" id="priorExperienceReveal">
+            <label>Tell us briefly about your experience</label>
+            <textarea name="previous_experience"></textarea>
+          </div>
+          <div class="field">
+            <label>What leadership or extracurricular roles have you held? <span class="opt">(optional)</span></label>
+            <textarea name="leadership_roles"></textarea>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step-panel" data-step="3">
+          <h3 class="step-title">Choose Your Track</h3>
+          <p class="step-sub">Step 3 of 5 &middot; Motivation &amp; Track</p>
+          <div class="field"><label>Why do you want to become an MTCP Telehealth Champion? <span class="req">*</span></label><textarea name="why_mobihealth" required></textarea></div>
+          <div class="field">
+            <label>Primary Track <span class="opt">(select the track you're most interested in)</span> <span class="req">*</span></label>
+            <select name="primary_track" required>
+              <option value="">Select your primary track</option>
+              <option>Marketing &amp; Growth</option>
+              <option>Digital &amp; Social Media Marketing</option>
+              <option>Content Creation</option>
+              <option>Graphic Design &amp; Creative</option>
+              <option>Campus Outreach &amp; Engagement</option>
+              <option>Medical &amp; Health Programmes</option>
+              <option>Research &amp; Development (R&amp;D)</option>
+              <option>AI, Technology &amp; Innovation</option>
+              <option>Data, Monitoring &amp; Impact</option>
+              <option>Partnerships &amp; Community Engagement</option>
+              <option>Media, PR &amp; Communications</option>
+              <option>Operations &amp; Events</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Secondary Tracks <span class="opt">(optional, choose up to 2 more)</span></label>
+            <div class="choice-group" data-checkbox-group="secondary_tracks" data-max="2">
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Marketing & Growth">Marketing &amp; Growth</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Digital & Social Media Marketing">Digital &amp; Social Media Marketing</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Content Creation">Content Creation</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Graphic Design & Creative">Graphic Design &amp; Creative</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Campus Outreach & Engagement">Campus Outreach &amp; Engagement</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Medical & Health Programmes">Medical &amp; Health Programmes</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Research & Development (R&D)">Research &amp; Development (R&amp;D)</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="AI, Technology & Innovation">AI, Technology &amp; Innovation</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Data, Monitoring & Impact">Data, Monitoring &amp; Impact</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Partnerships & Community Engagement">Partnerships &amp; Community Engagement</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Media, PR & Communications">Media, PR &amp; Communications</label>
+              <label class="choice-pill"><input type="checkbox" name="secondary_tracks" value="Operations & Events">Operations &amp; Events</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step-panel" data-step="4">
+          <h3 class="step-title">Your Experience &amp; Availability</h3>
+          <p class="step-sub">Step 4 of 5 &middot; Experience &amp; Availability</p>
+          <div class="field">
+            <label>How would you rate your communication skills? <span class="opt">(optional, 1&ndash;5)</span></label>
+            <div class="rating-group" data-rating-group="communication_rating">
+              <button type="button" data-value="1">1</button><button type="button" data-value="2">2</button>
+              <button type="button" data-value="3">3</button><button type="button" data-value="4">4</button><button type="button" data-value="5">5</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>How comfortable are you speaking in front of people? <span class="opt">(optional, 1&ndash;5)</span></label>
+            <div class="rating-group" data-rating-group="public_speaking_rating">
+              <button type="button" data-value="1">1</button><button type="button" data-value="2">2</button>
+              <button type="button" data-value="3">3</button><button type="button" data-value="4">4</button><button type="button" data-value="5">5</button>
+            </div>
+          </div>
+          <div class="field"><label>How active are you on social media? <span class="opt">(optional)</span></label>
+            <select name="social_media_activity"><option value="">Select</option><option>Very active</option><option>Active</option><option>Occasionally active</option><option>Not very active</option></select>
+          </div>
+          <div class="field">
+            <label>Which platforms do you actively use? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-checkbox-group="social_platforms">
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Instagram">Instagram</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="TikTok">TikTok</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="X">X</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Facebook">Facebook</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="LinkedIn">LinkedIn</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="WhatsApp">WhatsApp</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="YouTube">YouTube</label>
+              <label class="choice-pill"><input type="checkbox" name="social_platforms" value="Other">Other</label>
+            </div>
+          </div>
+          <div class="field"><label>How many hours per week could you dedicate to the Champion programme? <span class="opt">(optional)</span></label>
+            <select name="weekly_availability"><option value="">Select</option><option>Less than 2 hours</option><option>2&ndash;4 hours</option><option>4&ndash;6 hours</option><option>6+ hours</option></select>
+          </div>
+          <div class="field">
+            <label>Are you comfortable sharing Mobihealth-related content on your social media? <span class="opt">(optional)</span></label>
+            <div class="choice-group" data-radio-group="social_media_sharing">
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="Yes">Yes</label>
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="No">No</label>
+              <label class="choice-pill"><input type="radio" name="social_media_sharing" value="Maybe">Maybe</label>
+            </div>
+          </div>
+
+          <div class="declaration">
+            <input type="checkbox" id="consentRepresent" required>
+            <p><label for="consentRepresent">I understand that, if selected and appointed as a Mobihealth Champion, I am agreeing and consenting to actively represent Mobihealth on my campus, including participating in outreach activities, campus events and campaigns associated with the MTCP Telehealth Champions programme. <span class="req">*</span></label></p>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step-panel" data-step="5">
+          <h3 class="step-title">Almost There!</h3>
+          <p class="step-sub">Step 5 of 5 &middot; Final Details</p>
+          <div class="field"><label>What is one idea you would love to introduce as a Mobihealth Champion? <span class="opt">(optional)</span></label><textarea name="champion_idea"></textarea></div>
+          <div class="field"><label>What makes you different from other applicants? <span class="opt">(optional)</span></label><textarea name="unique_strength"></textarea></div>
+          <div class="field"><label>Where did you hear about this opportunity? <span class="opt">(optional)</span></label>
+            <select name="referral_source"><option value="">Select</option><option>Instagram</option><option>WhatsApp</option><option>Friend</option><option>Campus event</option><option>Mobihealth Champion</option><option>Student organisation</option><option>Other</option></select>
+          </div>
+          <div class="field">
+            <label>Upload a clear profile photograph <span class="req">*</span> <span class="opt">(JPG/PNG, max 5MB)</span></label>
+            <label class="file-drop" id="photoDrop" for="profilePhoto">
+              <span class="file-name" id="photoName">Click to choose a photo</span>
+              <small>JPG, JPEG or PNG &middot; up to 5MB</small>
+              <input type="file" id="profilePhoto" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+            </label>
+          </div>
+          <div class="field">
+            <label>Upload your CV/resume <span class="opt">(optional, PDF/DOC/DOCX, max 10MB)</span></label>
+            <label class="file-drop" id="cvDrop" for="cvUpload">
+              <span class="file-name" id="cvName">Click to choose a file</span>
+              <small>PDF, DOC or DOCX &middot; up to 10MB</small>
+              <input type="file" id="cvUpload" accept=".pdf,.doc,.docx">
+            </label>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field"><label>Instagram username <span class="opt">(optional)</span></label><input type="text" name="instagram"></div>
+            <div class="field"><label>LinkedIn profile <span class="opt">(optional)</span></label><input type="url" name="linkedin"></div>
+          </div>
+          <div class="field"><label>Anything else you'd like us to know? <span class="opt">(optional)</span></label><textarea name="additional_information"></textarea></div>
+
+          <div class="declaration">
+            <input type="checkbox" id="declare1" required>
+            <p><label for="declare1">I confirm that the information provided in this application is accurate to the best of my knowledge. I understand that submitting this application does not guarantee selection as a Mobihealth Campus Champion.</label></p>
+          </div>
+          <div class="declaration">
+            <input type="checkbox" id="declare2" required>
+            <p><label for="declare2">I consent to Mobihealth using the information provided for the purpose of reviewing my application and contacting me regarding the Campus Champions programme.</label></p>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- SUCCESS SCREEN -->
+      <div class="success-screen" id="successScreen" style="display:none;">
+        <div class="success-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h2>Application Submitted!</h2>
+        <p>Thank you for applying to become a Mobihealth Campus Champion.</p>
+        <p>Your application has been successfully received.</p>
+        <div class="ref-box">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">Keep this reference number for your records</div>
+          <div class="ref-num" id="refNumber">MOBI-2026-00000</div>
+        </div>
+        <p style="font-size:0.85rem;">Your default email app should have just opened with a summary pre-filled. Just hit send there. Didn't open?</p>
+        <button type="button" class="btn btn-outline btn-sm" id="resendMailBtn">Open Email App</button>
+        <p>Follow Mobihealth for updates.</p>
+        <div class="success-social">
+          <a href="https://www.instagram.com/mymobihealth" target="_blank" rel="noopener" aria-label="Instagram" class="success-social-icon success-social-icon--ig">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/></svg>
+          </a>
+          <a href="https://x.com/MyMobihealth" target="_blank" rel="noopener" aria-label="X" class="success-social-icon success-social-icon--x">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M18.9 2h3.3l-7.2 8.2L23.5 22h-6.6l-5.2-6.8L5.8 22H2.5l7.7-8.8L2 2h6.8l4.7 6.2L18.9 2zm-1.2 18h1.8L7.4 4h-2l12.3 16z"/></svg>
+          </a>
+          <a href="https://www.tiktok.com/@mymobihealth1" target="_blank" rel="noopener" aria-label="TikTok" class="success-social-icon success-social-icon--tt">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M16.6 5.8a4.3 4.3 0 0 1-3-3.8h-3.1v13.7a2.6 2.6 0 1 1-1.9-2.5v-3.2a5.8 5.8 0 1 0 5 5.7V9.4a7.2 7.2 0 0 0 4 1.2V7.5a4.3 4.3 0 0 1-1-.2z"/></svg>
+          </a>
+        </div>
+        <button class="btn btn-primary" style="margin-top:24px" id="successCloseBtn">Done</button>
+      </div>
+
+      <!-- APPLICATIONS CLOSED SCREEN -->
+      <div class="closed-screen" id="closedScreen" style="display:none;">
+        <h2>Applications Are Currently Closed</h2>
+        <p>Thanks for your interest in the MTCP Telehealth Champions programme. Applications are not open right now &mdash; please check back later.</p>
+        <a class="btn btn-primary" href="index.html">Back to Home</a>
+      </div>
+    </div>
+
+    <div class="apply-card-footer" id="cardFooter">
+      <button type="button" class="btn btn-outline" id="backBtn" disabled>Back</button>
+      <button type="button" class="btn btn-primary" id="nextBtn">Continue</button>
+    </div>
+  </div>
+</main>
+
+<script>
+window.MOBIHEALTH_SUPABASE_URL = "https://wwixsbcrpcsthkkdosru.supabase.co";
+window.MOBIHEALTH_SUPABASE_ANON_KEY = "sb_publishable__qMmlxO4SZaXlO9HB7Hu4A_hYBoPaG4";
+
+window.mobihealthSupabase = window.supabase.createClient(
+  window.MOBIHEALTH_SUPABASE_URL,
+  window.MOBIHEALTH_SUPABASE_ANON_KEY
+);
+
+(function () {
+  "use strict";
+
+  const supabase = window.mobihealthSupabase;
+  const pageLoadedAt = Date.now();
+
+  // Nigerian universities & tertiary institutions, with common abbreviations
+  // as aliases so "UNILAG" or "UI" resolves to the full name. Not exhaustive,
+  // "Other University / Tertiary Institution" is always offered as a fallback.
+  const INSTITUTIONS = [
+    { name: "University of Lagos", aliases: ["unilag"] },
+    { name: "University of Ibadan", aliases: ["ui", "uibadan"] },
+    { name: "Obafemi Awolowo University", aliases: ["oau", "ife"] },
+    { name: "University of Benin", aliases: ["uniben"] },
+    { name: "Ahmadu Bello University", aliases: ["abu", "abuzaria"] },
+    { name: "University of Nigeria, Nsukka", aliases: ["unn", "nsukka"] },
+    { name: "University of Ilorin", aliases: ["unilorin"] },
+    { name: "University of Port Harcourt", aliases: ["uniport"] },
+    { name: "Lagos State University", aliases: ["lasu"] },
+    { name: "Covenant University", aliases: ["covenant", "cu"] },
+    { name: "Babcock University", aliases: ["babcock"] },
+    { name: "Federal University of Technology, Akure", aliases: ["futa"] },
+    { name: "Federal University of Technology, Owerri", aliases: ["futo"] },
+    { name: "Federal University of Technology, Minna", aliases: ["futminna"] },
+    { name: "Lagos State University of Science and Technology", aliases: ["lasustech"] },
+    { name: "Nnamdi Azikiwe University", aliases: ["unizik"] },
+    { name: "Bayero University Kano", aliases: ["buk"] },
+    { name: "University of Calabar", aliases: ["unical"] },
+    { name: "University of Uyo", aliases: ["uniuyo"] },
+    { name: "University of Jos", aliases: ["unijos"] },
+    { name: "University of Maiduguri", aliases: ["unimaid"] },
+    { name: "Usmanu Danfodiyo University, Sokoto", aliases: ["udusok", "udus"] },
+    { name: "Federal University, Oye-Ekiti", aliases: ["fuoye"] },
+    { name: "Ekiti State University", aliases: ["eksu"] },
+    { name: "Ladoke Akintola University of Technology", aliases: ["lautech"] },
+    { name: "Olabisi Onabanjo University", aliases: ["oou"] },
+    { name: "Adekunle Ajasin University", aliases: ["aaua"] },
+    { name: "Redeemer's University", aliases: ["run"] },
+    { name: "Bells University of Technology", aliases: ["bellsuniversity"] },
+    { name: "Bowen University", aliases: ["bowen"] },
+    { name: "Pan-Atlantic University", aliases: ["pau"] },
+    { name: "American University of Nigeria", aliases: ["aun"] },
+    { name: "Caleb University", aliases: ["caleb"] },
+    { name: "Landmark University", aliases: ["landmark"] },
+    { name: "Afe Babalola University", aliases: ["abuad"] },
+    { name: "Igbinedion University", aliases: ["iuo"] },
+    { name: "Novena University", aliases: ["novena"] },
+    { name: "Elizade University", aliases: ["elizade"] },
+    { name: "Crawford University", aliases: ["crawford"] },
+    { name: "Crescent University", aliases: ["crescent"] },
+    { name: "Wesley University", aliases: ["wesley"] },
+    { name: "Al-Hikmah University", aliases: ["alhikmah"] },
+    { name: "Fountain University", aliases: ["fountain"] },
+    { name: "Joseph Ayo Babalola University", aliases: ["jabu"] },
+    { name: "Kwara State University", aliases: ["kwasu"] },
+    { name: "Kogi State University", aliases: ["ksu"] },
+    { name: "Benue State University", aliases: ["bsu"] },
+    { name: "Delta State University", aliases: ["delsu"] },
+    { name: "Rivers State University", aliases: ["rsu"] },
+    { name: "Imo State University", aliases: ["imsu"] },
+    { name: "Abia State University", aliases: ["absu"] },
+    { name: "Enugu State University of Science and Technology", aliases: ["esut"] },
+    { name: "Nasarawa State University", aliases: ["nsuk"] },
+    { name: "Niger Delta University", aliases: ["ndu"] },
+    { name: "Osun State University", aliases: ["uniosun"] },
+    { name: "Ondo State University of Science and Technology", aliases: ["osustech"] },
+    { name: "Plateau State University", aliases: ["plasu"] },
+    { name: "Ambrose Alli University", aliases: ["aau"] },
+    { name: "Ebonyi State University", aliases: ["ebsu"] },
+    { name: "Cross River University of Technology", aliases: ["crutech"] },
+    { name: "Akwa Ibom State University", aliases: ["aksu"] },
+    { name: "Adamawa State University", aliases: ["adsu"] },
+    { name: "Gombe State University", aliases: ["gsu"] },
+    { name: "Kaduna State University", aliases: ["kasu"] },
+    { name: "Kebbi State University of Science and Technology", aliases: ["ksust"] },
+    { name: "Sokoto State University", aliases: ["ssu"] },
+    { name: "Taraba State University", aliases: ["tsu"] },
+    { name: "Yobe State University", aliases: ["ysu"] },
+    { name: "Zamfara State University", aliases: [] },
+    { name: "Federal University, Lokoja", aliases: ["fulokoja"] },
+    { name: "Federal University, Lafia", aliases: ["fulafia"] },
+    { name: "Federal University, Dutse", aliases: ["fud"] },
+    { name: "Federal University, Gashua", aliases: ["fugashua"] },
+    { name: "Federal University, Gusau", aliases: ["fugusau"] },
+    { name: "Federal University, Kashere", aliases: ["fukashere"] },
+    { name: "Federal University, Otuoke", aliases: ["fuotuoke"] },
+    { name: "Federal University, Wukari", aliases: ["fuwukari"] },
+    { name: "Federal University, Birnin Kebbi", aliases: [] },
+    { name: "Federal University Dutsin-Ma", aliases: ["fudutsinma"] },
+    { name: "Federal University of Health Sciences, Otukpo", aliases: [] },
+    { name: "Federal University of Petroleum Resources, Effurun", aliases: ["fupre"] },
+    { name: "Federal University of Agriculture, Abeokuta", aliases: ["funaab"] },
+    { name: "Federal University of Agriculture, Makurdi", aliases: ["fuam"] },
+    { name: "Michael Okpara University of Agriculture, Umudike", aliases: ["mouau"] },
+    { name: "National Open University of Nigeria", aliases: ["noun"] },
+    { name: "Lagos State University of Education", aliases: ["laspotech", "lasued"] },
+    { name: "Yaba College of Technology", aliases: ["yabatech"] },
+    { name: "Federal Polytechnic, Ilaro", aliases: ["poliilaro"] },
+    { name: "Federal Polytechnic, Nekede", aliases: ["fpn"] },
+    { name: "Lagos State Polytechnic", aliases: ["laspotech"] },
+    { name: "Kaduna Polytechnic", aliases: ["kadpoly"] },
+    { name: "Auchi Polytechnic", aliases: ["auchipoly"] },
+    { name: "Ibadan Polytechnic", aliases: ["thepoly", "ibadanpoly"] },
+    { name: "Moshood Abiola Polytechnic", aliases: ["mapoly"] },
+    { name: "Federal School of Dental Technology and Therapy", aliases: [] },
+    { name: "Lagos State College of Health Technology", aliases: [] },
+    { name: "College of Medicine, University of Lagos", aliases: ["colamed"] },
+    { name: "Nigerian Defence Academy", aliases: ["nda"] },
+    { name: "Nile University of Nigeria", aliases: ["nile"] },
+    { name: "Veritas University", aliases: ["veritas"] },
+    { name: "Baze University", aliases: ["baze"] },
+    { name: "Baze University Abuja", aliases: ["baze"] },
+    { name: "University of Abuja", aliases: ["uniabuja"] },
+    { name: "Nigerian Turkish Nile University", aliases: [] },
+    { name: "Other University / Tertiary Institution", aliases: ["other"] },
+  ];
+
+  const TOTAL_STEPS = 5;
+  let currentStep = 1;
+  let submitting = false;
+  let settings = { application_status: "open", deadline: "2026-09-05T23:59:59+01:00" };
+
+  const applyCard = document.getElementById("applyCard");
+  const form = document.getElementById("applicationForm");
+  const cardBody = document.querySelector(".apply-card-body");
+  const stepLabel = document.getElementById("stepLabel");
+  const progressFill = document.getElementById("progressFill");
+  const backBtn = document.getElementById("backBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const cardFooter = document.getElementById("cardFooter");
+  const successScreen = document.getElementById("successScreen");
+  const closedScreen = document.getElementById("closedScreen");
+  const formAlert = document.getElementById("formAlert");
+
+  // ---------------- Settings (open/closed) ----------------
+  async function loadSettings() {
+    try {
+      const { data, error } = await supabase
+        .from("champion_settings")
+        .select("application_status, deadline")
+        .eq("id", 1)
+        .single();
+      if (!error && data) settings = data;
+    } catch (e) { /* fall back to defaults */ }
+    if (!isApplicationOpen()) {
+      form.style.display = "none";
+      cardFooter.style.display = "none";
+      closedScreen.style.display = "block";
+    } else {
+      const restored = hasDraft() && restoreDraft();
+      showStep(currentStep || 1);
+      if (restored) showAlert("Picking up where you left off. Your answers were restored. You'll just need to re-select your photo/CV on the last step.", "info");
+    }
+  }
+
+  function isApplicationOpen() {
+    return settings.application_status !== "closed" && Date.now() <= new Date(settings.deadline).getTime();
+  }
+
+  // ---------------- Draft autosave (localStorage) ----------------
+  const DRAFT_KEY = "mobihealth_champion_draft_v1";
+
+  function saveDraft() {
+    try {
+      const fd = new FormData(form);
+      const values = {};
+      for (const key of new Set(fd.keys())) {
+        const all = fd.getAll(key);
+        values[key] = all.length > 1 ? all : all[0];
+      }
+      values.__ratings = {
+        communication_rating: document.querySelector('[data-rating-group="communication_rating"]').dataset.value || "",
+        public_speaking_rating: document.querySelector('[data-rating-group="public_speaking_rating"]').dataset.value || "",
+      };
+      values.__declare1 = document.getElementById("declare1").checked;
+      values.__declare2 = document.getElementById("declare2").checked;
+      values.__consentRepresent = document.getElementById("consentRepresent").checked;
+      values.__step = currentStep;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+    } catch (e) { /* localStorage unavailable (private browsing etc.), fail silently */ }
+  }
+
+  function hasDraft() {
+    try { return !!localStorage.getItem(DRAFT_KEY); } catch (e) { return false; }
+  }
+
+  function restoreDraft() {
+    let values;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      values = JSON.parse(raw);
+    } catch (e) { return false; }
+
+    Object.keys(values).forEach((key) => {
+      if (key.startsWith("__")) return;
+      const fields = form.querySelectorAll(`[name="${CSS.escape(key)}"]`);
+      if (!fields.length) return;
+      const val = values[key];
+      const first = fields[0];
+      if (first.type === "checkbox" || first.type === "radio") {
+        const arr = Array.isArray(val) ? val : [val];
+        fields.forEach((f) => {
+          f.checked = arr.includes(f.value);
+          const pill = f.closest(".choice-pill");
+          if (pill) pill.classList.toggle("checked", f.checked);
+        });
+      } else {
+        first.value = Array.isArray(val) ? val[0] : val;
+      }
+    });
+
+    if (values.__ratings) {
+      Object.entries(values.__ratings).forEach(([name, v]) => {
+        if (!v) return;
+        const group = document.querySelector(`[data-rating-group="${name}"]`);
+        if (!group) return;
+        group.dataset.value = v;
+        group.querySelectorAll("button").forEach((b) => b.classList.toggle("checked", b.dataset.value === v));
+      });
+    }
+    if (typeof values.__declare1 === "boolean") document.getElementById("declare1").checked = values.__declare1;
+    if (typeof values.__declare2 === "boolean") document.getElementById("declare2").checked = values.__declare2;
+    if (typeof values.__consentRepresent === "boolean") document.getElementById("consentRepresent").checked = values.__consentRepresent;
+
+    const priorRadio = form.querySelector('input[name="has_prior_experience"]:checked');
+    document.getElementById("priorExperienceReveal").classList.toggle("show", !!priorRadio && priorRadio.value === "yes");
+
+    form.querySelectorAll("textarea[maxlength]").forEach((ta) => {
+      const counter = document.querySelector(`[data-count-for="${ta.name}"]`);
+      if (counter) counter.textContent = ta.value.length;
+    });
+
+    if (values.__step) currentStep = Math.min(Math.max(Number(values.__step) || 1, 1), TOTAL_STEPS);
+    if (window.__syncInstitutionDisplay) window.__syncInstitutionDisplay();
+    return true;
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+  }
+
+  form.addEventListener("input", saveDraft);
+  form.addEventListener("change", saveDraft);
+
+  document.getElementById("successCloseBtn").addEventListener("click", () => { window.location.href = "index.html"; });
+
+  // ---------------- Choice pills / radios / ratings ----------------
+  form.querySelectorAll(".choice-pill input").forEach((input) => {
+    input.addEventListener("change", () => {
+      const pill = input.closest(".choice-pill");
+      if (input.type === "radio") {
+        form.querySelectorAll(`input[name="${input.name}"]`).forEach((i) => i.closest(".choice-pill").classList.remove("checked"));
+      } else if (input.type === "checkbox") {
+        const group = input.closest("[data-checkbox-group]");
+        const max = group && Number(group.dataset.max);
+        if (max) {
+          const checked = group.querySelectorAll(`input[name="${input.name}"]:checked`);
+          if (checked.length > max) {
+            input.checked = false;
+            showAlert(`You can choose up to ${max} secondary tracks.`);
+            return;
+          }
+        }
+      }
+      pill.classList.toggle("checked", input.checked);
+    });
+  });
+
+  form.querySelectorAll("[data-rating-group]").forEach((group) => {
+    group.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach((b) => b.classList.remove("checked"));
+        btn.classList.add("checked");
+        group.dataset.value = btn.dataset.value;
+        saveDraft();
+      });
+    });
+  });
+
+  form.querySelectorAll('input[name="has_prior_experience"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      document.getElementById("priorExperienceReveal").classList.toggle("show", radio.value === "yes" && radio.checked);
+    });
+  });
+
+  // ---------------- Institution autocomplete ----------------
+  (function setupInstitutionAutocomplete() {
+    const searchInput = document.getElementById("institutionSearch");
+    const hiddenInput = document.getElementById("institutionValue");
+    const list = document.getElementById("institutionList");
+    let activeIndex = -1;
+
+    function normalize(s) { return s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim(); }
+
+    function matches(query) {
+      const q = normalize(query);
+      if (!q) return [];
+      const scored = [];
+      INSTITUTIONS.forEach((inst) => {
+        if (inst.name === "Other University / Tertiary Institution") return;
+        const name = normalize(inst.name);
+        let score = -1;
+        if (name.startsWith(q)) score = 3;
+        else if (inst.aliases.some((a) => a === q)) score = 3;
+        else if (inst.aliases.some((a) => a.startsWith(q))) score = 2;
+        else if (name.includes(q)) score = 1;
+        else if (name.split(" ").some((w) => w.startsWith(q))) score = 1;
+        if (score >= 0) scored.push({ inst, score });
+      });
+      scored.sort((a, b) => b.score - a.score || a.inst.name.localeCompare(b.inst.name));
+      return scored.slice(0, 8).map((s) => s.inst);
+    }
+
+    function renderList(items, query) {
+      activeIndex = -1;
+      if (!items.length) {
+        list.innerHTML = `<div class="autocomplete-empty">No match. Try a different spelling, or pick "Other University / Tertiary Institution" below.</div>
+          <div class="autocomplete-item" data-name="Other University / Tertiary Institution">Other University / Tertiary Institution</div>`;
+      } else {
+        list.innerHTML = items.map((inst) => `<div class="autocomplete-item" data-name="${escAttr(inst.name)}">${highlight(inst.name, query)}</div>`).join("")
+          + `<div class="autocomplete-item" data-name="Other University / Tertiary Institution">Other University / Tertiary Institution</div>`;
+      }
+      list.classList.add("open");
+    }
+
+    function highlight(name, query) {
+      const q = normalize(query);
+      if (!q) return name;
+      const idx = normalize(name).indexOf(q);
+      if (idx === -1) return name;
+      return name.slice(0, idx) + `<span class="match">${name.slice(idx, idx + query.length)}</span>` + name.slice(idx + query.length);
+    }
+
+    function escAttr(s) { return String(s).replace(/"/g, "&quot;"); }
+
+    function pick(name) {
+      searchInput.value = name;
+      hiddenInput.value = name;
+      searchInput.classList.add("picked");
+      list.classList.remove("open");
+      saveDraft();
+      trackDraft();
+    }
+
+    searchInput.addEventListener("input", () => {
+      hiddenInput.value = "";
+      searchInput.classList.remove("picked");
+      const items = matches(searchInput.value);
+      if (searchInput.value.trim()) renderList(items, searchInput.value); else list.classList.remove("open");
+    });
+
+    searchInput.addEventListener("focus", () => {
+      if (searchInput.value.trim() && !hiddenInput.value) renderList(matches(searchInput.value), searchInput.value);
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      const items = list.querySelectorAll(".autocomplete-item");
+      if (!items.length || !list.classList.contains("open")) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); }
+      else if (e.key === "Enter") { e.preventDefault(); if (activeIndex >= 0) items[activeIndex].click(); return; }
+      else return;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIndex));
+    });
+
+    list.addEventListener("click", (e) => {
+      const item = e.target.closest(".autocomplete-item");
+      if (item) pick(item.dataset.name);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".autocomplete-field")) list.classList.remove("open");
+    });
+
+    window.__syncInstitutionDisplay = () => {
+      if (hiddenInput.value) { searchInput.value = hiddenInput.value; searchInput.classList.add("picked"); }
+    };
+  })();
+
+  // character counters
+  form.querySelectorAll("textarea[maxlength]").forEach((ta) => {
+    const counter = document.querySelector(`[data-count-for="${ta.name}"]`);
+    if (!counter) return;
+    ta.addEventListener("input", () => (counter.textContent = ta.value.length));
+  });
+
+  // file uploads
+  let photoFile = null, cvFile = null;
+  const photoInput = document.getElementById("profilePhoto");
+  const cvInput = document.getElementById("cvUpload");
+  photoInput.addEventListener("change", () => {
+    const f = photoInput.files[0];
+    if (!f) return;
+    if (!["image/jpeg", "image/png"].includes(f.type)) { showAlert("Profile photo must be a JPG or PNG file."); photoInput.value = ""; return; }
+    if (f.size > 5 * 1024 * 1024) { showAlert("Profile photo must be under 5MB."); photoInput.value = ""; return; }
+    photoFile = f;
+    document.getElementById("photoName").textContent = f.name;
+    document.getElementById("photoDrop").classList.add("has-file");
+  });
+  cvInput.addEventListener("change", () => {
+    const f = cvInput.files[0];
+    if (!f) return;
+    const okTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    if (!okTypes.includes(f.type) && !/\.(pdf|doc|docx)$/i.test(f.name)) { showAlert("CV must be a PDF, DOC or DOCX file."); cvInput.value = ""; return; }
+    if (f.size > 10 * 1024 * 1024) { showAlert("CV must be under 10MB."); cvInput.value = ""; return; }
+    cvFile = f;
+    document.getElementById("cvName").textContent = f.name;
+    document.getElementById("cvDrop").classList.add("has-file");
+  });
+
+  // ---------------- Abandoned-application tracking ----------------
+  // Minimal, non-identifying progress record so admins can see how many
+  // people start the form without finishing. Only a random session id,
+  // institution/track (if chosen) and step reached are sent, never name,
+  // email, phone or any other personal detail.
+  const SESSION_KEY = "mobihealth_champion_session_v1";
+  function getSessionId() {
+    try {
+      let id = localStorage.getItem(SESSION_KEY);
+      if (!id) { id = crypto.randomUUID(); localStorage.setItem(SESSION_KEY, id); }
+      return id;
+    } catch (e) { return null; }
+  }
+  let lastTrackedAt = 0;
+  function trackDraft(completed) {
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    const now = Date.now();
+    if (!completed && now - lastTrackedAt < 15000) return; // throttle to avoid spamming updates
+    lastTrackedAt = now;
+    supabase.rpc("champion_track_draft", {
+      p_session_id: sessionId,
+      p_institution: document.getElementById("institutionValue").value || null,
+      p_primary_track: (form.primary_track && form.primary_track.value) || null,
+      p_step: currentStep,
+      p_completed: !!completed,
+    }).catch(() => {});
+  }
+  form.addEventListener("input", () => trackDraft(false));
+
+  // ---------------- Step navigation ----------------
+  function showStep(n) {
+    form.querySelectorAll(".step-panel").forEach((p) => p.classList.toggle("active", Number(p.dataset.step) === n));
+    stepLabel.textContent = `Step ${n} of ${TOTAL_STEPS}`;
+    progressFill.style.width = `${(n / TOTAL_STEPS) * 100}%`;
+    backBtn.disabled = n === 1;
+    nextBtn.textContent = n === TOTAL_STEPS ? "Submit Application" : "Continue";
+    hideAlert();
+    window.scrollTo({ top: applyCard.offsetTop - 90, behavior: "smooth" });
+  }
+
+  function showAlert(msg, type) {
+    formAlert.textContent = msg;
+    formAlert.classList.toggle("info", type === "info");
+    formAlert.classList.add("show");
+  }
+  function hideAlert() { formAlert.classList.remove("show"); formAlert.classList.remove("info"); }
+
+  function markInvalid(field, msg) {
+    field.closest(".field").classList.add("invalid");
+    const err = field.closest(".field").querySelector(".error-msg") || document.createElement("div");
+    if (!field.closest(".field").querySelector(".error-msg")) {
+      err.className = "error-msg";
+      field.closest(".field").appendChild(err);
+    }
+    err.textContent = msg;
+  }
+  function clearInvalid(field) {
+    const f = field.closest(".field");
+    if (f) f.classList.remove("invalid");
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PHONE_RE = /^[+\d][\d\s-]{6,}$/;
+
+  function validateStep(n) {
+    let valid = true;
+    const panel = form.querySelector(`.step-panel[data-step="${n}"]`);
+    panel.querySelectorAll("input[required], select[required], textarea[required]").forEach((field) => {
+      clearInvalid(field);
+      if (!field.value.trim()) { markInvalid(field, "This field is required."); valid = false; }
+    });
+
+    if (n === 1) {
+      const email = form.email;
+      if (email.value && !EMAIL_RE.test(email.value)) { markInvalid(email, "Enter a valid email address."); valid = false; }
+      const phone = form.phone;
+      if (phone.value && !PHONE_RE.test(phone.value)) { markInvalid(phone, "Enter a valid phone number."); valid = false; }
+      const whatsapp = form.whatsapp;
+      if (whatsapp.value && !PHONE_RE.test(whatsapp.value)) { markInvalid(whatsapp, "Enter a valid WhatsApp number."); valid = false; }
+    }
+
+    if (n === 2) {
+      const passions = form.querySelectorAll('input[name="passions"]:checked');
+      if (passions.length === 0) { showAlert("Please select at least one thing you're passionate about."); valid = false; }
+    }
+
+    if (n === 4) {
+      if (!document.getElementById("consentRepresent").checked) {
+        showAlert("Please confirm the consent to represent Mobihealth before continuing.");
+        valid = false;
+      }
+    }
+
+    if (n === 5) {
+      if (!photoFile) { showAlert("Please upload a profile photograph."); valid = false; }
+      if (!document.getElementById("declare1").checked || !document.getElementById("declare2").checked) {
+        showAlert("Please confirm both declaration checkboxes before submitting.");
+        valid = false;
+      }
+    }
+
+    if (!valid && n !== 2 && n !== 4 && n !== 5) showAlert("Please complete all required fields before continuing.");
+    return valid;
+  }
+
+  backBtn.addEventListener("click", () => { if (currentStep > 1) { currentStep--; showStep(currentStep); saveDraft(); } });
+  nextBtn.addEventListener("click", async () => {
+    if (!validateStep(currentStep)) return;
+    if (currentStep < TOTAL_STEPS) {
+      currentStep++;
+      showStep(currentStep);
+      saveDraft();
+      trackDraft(false);
+    } else {
+      await submitApplication();
+    }
+  });
+
+  // ---------------- Submission ----------------
+  function collectData() {
+    const fd = new FormData(form);
+    const get = (name) => (fd.get(name) || "").toString().trim();
+    const getAll = (name) => fd.getAll(name).map(String);
+
+    return {
+      full_name: get("full_name"),
+      preferred_name: get("preferred_name") || null,
+      email: get("email").toLowerCase(),
+      phone: get("phone"),
+      whatsapp: get("whatsapp"),
+      gender: get("gender") || null,
+      age_range: get("age_range") || null,
+      matric_number: get("matric_number"),
+      institution: get("institution"),
+      faculty: get("faculty"),
+      department: get("department"),
+      level: get("level"),
+      graduation_year: get("graduation_year") || null,
+
+      introduction: get("introduction"),
+      passions: getAll("passions"),
+      has_prior_experience: (form.querySelector('input[name="has_prior_experience"]:checked') || {}).value === "yes",
+      previous_experience: get("previous_experience") || null,
+      leadership_roles: get("leadership_roles") || null,
+
+      why_mobihealth: get("why_mobihealth"),
+      primary_track: get("primary_track"),
+      secondary_tracks: getAll("secondary_tracks"),
+
+      communication_rating: Number(document.querySelector('[data-rating-group="communication_rating"]').dataset.value || 0) || null,
+      public_speaking_rating: Number(document.querySelector('[data-rating-group="public_speaking_rating"]').dataset.value || 0) || null,
+      social_media_activity: get("social_media_activity") || null,
+      social_platforms: getAll("social_platforms"),
+      weekly_availability: get("weekly_availability") || null,
+      campus_events: document.getElementById("consentRepresent").checked,
+      social_media_sharing: (form.querySelector('input[name="social_media_sharing"]:checked') || {}).value || null,
+
+      champion_idea: get("champion_idea") || null,
+      unique_strength: get("unique_strength") || null,
+      referral_source: get("referral_source") || null,
+      instagram: get("instagram") || null,
+      linkedin: get("linkedin") || null,
+      additional_information: get("additional_information") || null,
+    };
+  }
+
+  async function uploadFile(bucket, file, prefix) {
+    const ext = file.name.split(".").pop();
+    const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from(bucket).upload(path, file, { cacheControl: "3600", upsert: false });
+    if (error) throw error;
+    return path;
+  }
+
+  const INTERNAL_MAIL_TO = "HR@mobihealthinternational.com";
+
+  function buildInternalMailtoLink(data, applicationNumber) {
+    const subject = `New MTCP Champion Application: ${data.full_name} (${applicationNumber})`;
+    const lines = [
+      `New MTCP Telehealth Champion application received.`,
+      ``,
+      `Reference: ${applicationNumber}`,
+      `Full Name: ${data.full_name}`,
+      `Email: ${data.email}`,
+      `Phone: ${data.phone}`,
+      `Institution: ${data.institution}`,
+      `Level: ${data.level}`,
+      `Faculty: ${data.faculty}`,
+      `Department: ${data.department}`,
+      `Primary Track: ${data.primary_track}`,
+      `Secondary Tracks: ${(data.secondary_tracks || []).join(", ") || "None"}`,
+      ``,
+      `Full application details (including photo/CV and long-form answers) are in the admin dashboard.`,
+    ];
+    const body = lines.join("\n");
+    return `mailto:${encodeURIComponent(INTERNAL_MAIL_TO)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  async function submitApplication() {
+    if (submitting) return;
+
+    // Honeypot: a real applicant never fills a visually hidden field.
+    // Silently pretend to succeed so bots don't learn to avoid it.
+    if (form.hp_field.value.trim()) {
+      clearDraft();
+      form.style.display = "none";
+      cardFooter.style.display = "none";
+      document.getElementById("refNumber").textContent = "MOBI-2026-00000";
+      successScreen.style.display = "block";
+      return;
+    }
+    // Basic bot/automation speed bump: a human takes more than a few
+    // seconds to reach the final step of a 5-step form.
+    if (Date.now() - pageLoadedAt < 4000) {
+      showAlert("Please take a moment to review your application before submitting.");
+      return;
+    }
+
+    submitting = true;
+    nextBtn.disabled = true;
+    backBtn.disabled = true;
+    nextBtn.innerHTML = '<span class="spinner"></span>';
+    hideAlert();
+
+    try {
+      // Server-side rate limit: caps how many application attempts a single
+      // browser/device can make in a short window. Real abuse protection
+      // (the part a browser can't fake its way around) lives in this
+      // SECURITY DEFINER function, not in the client-side checks above.
+      try {
+        await supabase.rpc("champion_check_submission_rate", { p_client_id: getSessionId() || "unknown" });
+      } catch (rateErr) {
+        showAlert((rateErr && rateErr.message) || "Too many attempts. Please try again later.");
+        submitting = false;
+        resetSubmitBtn();
+        return;
+      }
+
+      const data = collectData();
+
+      const { data: existing } = await supabase
+        .from("champion_applications")
+        .select("id")
+        .or(`email.eq.${data.email},matric_number.eq.${data.matric_number}`)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        showAlert("An application already exists with these details. If you believe this is an error, please contact the Mobihealth team.");
+        submitting = false;
+        resetSubmitBtn();
+        return;
+      }
+
+      const photoPath = await uploadFile("champion-photos", photoFile, "photos");
+      let cvPath = null;
+      if (cvFile) cvPath = await uploadFile("champion-cvs", cvFile, "cvs");
+
+      const { data: numRow, error: numErr } = await supabase.rpc("champion_next_application_number");
+      if (numErr) throw numErr;
+      const applicationNumber = numRow;
+
+      const { error: insertErr } = await supabase.from("champion_applications").insert({
+        ...data,
+        application_number: applicationNumber,
+        profile_photo_path: photoPath,
+        cv_path: cvPath,
+      });
+      if (insertErr) {
+        if (insertErr.code === "23505") {
+          showAlert("An application already exists with these details. If you believe this is an error, please contact the Mobihealth team.");
+          submitting = false;
+          resetSubmitBtn();
+          return;
+        }
+        throw insertErr;
+      }
+
+      trackDraft(true);
+
+      supabase.functions.invoke("champions-notify", {
+        body: {
+          email: data.email, name: data.full_name, applicationNumber,
+          institution: data.institution, level: data.level, phone: data.phone,
+          primaryTrack: data.primary_track,
+        },
+      }).catch(() => {});
+
+      const mailtoLink = buildInternalMailtoLink(data, applicationNumber);
+      document.getElementById("resendMailBtn").addEventListener("click", () => { window.location.href = mailtoLink; });
+      window.location.href = mailtoLink;
+
+      clearDraft();
+      document.getElementById("refNumber").textContent = applicationNumber;
+      form.style.display = "none";
+      cardFooter.style.display = "none";
+      successScreen.style.display = "block";
+    } catch (err) {
+      console.error(err);
+      showAlert("Something went wrong submitting your application. Please check your connection and try again.");
+      resetSubmitBtn();
+    }
+    submitting = false;
+  }
+
+  function resetSubmitBtn() {
+    nextBtn.disabled = false;
+    backBtn.disabled = currentStep === 1;
+    nextBtn.textContent = currentStep === TOTAL_STEPS ? "Submit Application" : "Continue";
+  }
+
+  loadSettings();
+})();
+</script>
+</body>
+</html>
