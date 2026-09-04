@@ -314,6 +314,28 @@
   .segmented-tabs button.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-float); }
   @media (max-width: 420px) { .segmented-tabs button { font-size: 0.72rem; padding: 0.5rem 0.2rem; } }
   .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 0.4rem; }
+  .product-gallery { position:relative; }
+  .product-gallery-main { position:relative; width:100%; aspect-ratio:1/1; border-radius:0.9rem; overflow:hidden; background:var(--border); cursor:zoom-in; }
+  .product-gallery-main img { width:100%; height:100%; object-fit:contain; display:block; background:var(--input-bg); }
+  .product-gallery-nav { position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 0.55rem; pointer-events:none; }
+  .product-gallery-nav button { pointer-events:auto; width:2.2rem; height:2.2rem; border-radius:50%; border:1px solid rgba(255,255,255,.35); background:rgba(0,0,0,.48); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(5px); }
+  .product-gallery-thumbs { display:flex; gap:0.55rem; overflow-x:auto; padding:0.65rem 0.1rem 0.2rem; scrollbar-width:thin; }
+  .product-gallery-thumb { flex:0 0 4.5rem; width:4.5rem; height:4.5rem; border:2px solid transparent; border-radius:0.65rem; padding:0; overflow:hidden; background:var(--border); cursor:pointer; }
+  .product-gallery-thumb.active { border-color:var(--primary); box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 18%,transparent); }
+  .product-gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .product-gallery-count { position:absolute; right:0.7rem; bottom:0.7rem; padding:0.25rem 0.55rem; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; font-size:0.72rem; backdrop-filter:blur(5px); }
+  .product-variants { margin-top:1rem; }
+  .variant-chips { display:flex; flex-wrap:wrap; gap:0.55rem; }
+  .variant-chip { display:inline-flex; align-items:center; gap:0.45rem; padding:0.48rem 0.75rem; border:1px solid var(--border); border-radius:999px; background:var(--card); color:var(--text); cursor:pointer; font:inherit; }
+  .variant-chip.active { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 10%,var(--card)); color:var(--primary); font-weight:700; }
+  .variant-swatch { width:0.85rem; height:0.85rem; border-radius:50%; border:1px solid rgba(0,0,0,.16); flex-shrink:0; }
+  .variant-row { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(90px,.8fr) auto; gap:0.55rem; align-items:center; margin-bottom:0.55rem; }
+  .variant-row input { margin:0; }
+  .variant-remove { width:2.25rem; height:2.25rem; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--danger); cursor:pointer; }
+  .image-lightbox { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .image-lightbox.hidden { display:none; }
+  .image-lightbox img { max-width:96vw; max-height:90vh; object-fit:contain; border-radius:0.5rem; }
+  .image-lightbox-close { position:absolute; top:1rem; right:1rem; width:2.6rem; height:2.6rem; border:0; border-radius:50%; background:rgba(255,255,255,.14); color:#fff; font-size:1.2rem; cursor:pointer; }
   .photo-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.5rem 0; }
   .photo-grid:empty { display: none; }
   .photo-thumb { position: relative; width: 5rem; height: 5rem; border-radius: 0.9rem; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border: 1px solid var(--border); transition: transform 0.15s ease; }
@@ -1144,11 +1166,24 @@
     </label>
     <input type="file" id="prodPhotoFiles" accept="image/*" multiple class="hidden" onchange="previewNewProductPhotos()" />
     <div class="photo-grid" id="prodNewPhotoPreviews"></div>
+    <div style="margin-top:0.9rem;">
+      <div class="flex" style="justify-content:space-between;align-items:center;gap:0.6rem;">
+        <label style="margin:0;">Available variations <span class="muted" style="font-weight:400;">(e.g. Blue, White, Purple)</span></label>
+        <button type="button" class="btn btn-sm btn-outline" onclick="addProductVariantRow()"><i class="fa-solid fa-plus"></i> Add variation</button>
+      </div>
+      <p class="muted" style="font-size:0.78rem;margin:0.25rem 0 0.5rem;">Use this for colours, sizes or other options buyers can choose from. Your product photos can show the front, back, side or any other view.</p>
+      <div id="prodVariantsList"></div>
+    </div>
     <div class="flex" style="justify-content: flex-end; margin-top:0.8rem;">
       <button class="btn btn-sm" style="background:#6b7280;" onclick="closeProductModal()">Cancel</button>
       <button class="btn" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
     </div>
   </div>
+</div>
+
+<div id="productImageLightbox" class="image-lightbox hidden" onclick="closeProductImageLightbox(event)">
+  <button type="button" class="image-lightbox-close" onclick="closeProductImageLightbox(event)"><i class="fa-solid fa-xmark"></i></button>
+  <img id="productLightboxImage" src="" alt="Product image" />
 </div>
 
 <div id="packageModal" class="modal hidden">
@@ -4617,6 +4652,89 @@ async function handleChatFileSelected(evt, conversationId) {
   }
 }
 
+// Product variations are stored as a small, hidden metadata marker inside the
+// existing description field so this feature works without requiring a new
+// database table. The visible description is always cleaned before display.
+const PRODUCT_VARIANT_MARKER = "<!--LEVROMART_VARIANTS:";
+function encodeProductVariantMeta(variants) {
+  const json = JSON.stringify(variants || []);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+function decodeProductVariantMeta(encoded) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(encoded)))); } catch (_) { return []; }
+}
+function parseProductVariants(description) {
+  const text = String(description || "");
+  const start = text.indexOf(PRODUCT_VARIANT_MARKER);
+  if (start < 0) return [];
+  const end = text.indexOf("-->", start);
+  if (end < 0) return [];
+  const encoded = text.slice(start + PRODUCT_VARIANT_MARKER.length, end);
+  const parsed = decodeProductVariantMeta(encoded);
+  return Array.isArray(parsed) ? parsed.filter(v => v && v.name) : [];
+}
+function stripProductVariantMeta(description) {
+  return String(description || "").replace(/\s*<!--LEVROMART_VARIANTS:[\s\S]*?-->/, "").trim();
+}
+function descriptionWithProductVariants(description, variants) {
+  const clean = stripProductVariantMeta(description);
+  if (!variants?.length) return clean || null;
+  return `${clean}${clean ? "\n\n" : ""}${PRODUCT_VARIANT_MARKER}${encodeProductVariantMeta(variants)}-->`;
+}
+function renderProductVariantRows(variants) {
+  const wrap = byId("prodVariantsList");
+  if (!wrap) return;
+  wrap.innerHTML = (variants || []).map((v, i) => `<div class="variant-row" data-variant-index="${i}">\n    <input type="text" class="prod-variant-name" value="${esc(v.name || "")}" placeholder="Variation name e.g. Blue" />\n    <input type="text" class="prod-variant-color" value="${esc(v.color || "")}" placeholder="Colour (optional)" />\n    <button type="button" class="variant-remove" onclick="removeProductVariantRow(${i})" title="Remove variation"><i class="fa-solid fa-xmark"></i></button>\n  </div>`).join("");
+}
+function getProductVariantRows() {
+  return [...document.querySelectorAll("#prodVariantsList .variant-row")].map(row => ({
+    name: row.querySelector(".prod-variant-name")?.value.trim() || "",
+    color: row.querySelector(".prod-variant-color")?.value.trim() || "",
+  })).filter(v => v.name);
+}
+function addProductVariantRow() {
+  const variants = getProductVariantRows();
+  variants.push({ name: "", color: "" });
+  renderProductVariantRows(variants);
+  setTimeout(() => document.querySelector("#prodVariantsList .variant-row:last-child .prod-variant-name")?.focus(), 0);
+}
+function removeProductVariantRow(index) {
+  const variants = getProductVariantRows();
+  variants.splice(index, 1);
+  renderProductVariantRows(variants);
+}
+let productGalleryIndex = 0;
+function setProductGalleryPhoto(index) {
+  const photos = window.__productGalleryPhotos || [];
+  if (!photos.length) return;
+  productGalleryIndex = (index + photos.length) % photos.length;
+  const main = byId("productGalleryMain");
+  if (main) main.src = photos[productGalleryIndex];
+  const count = byId("productGalleryCount");
+  if (count) count.textContent = String(productGalleryIndex + 1);
+  document.querySelectorAll("#productDetail .product-gallery-thumb, .product-gallery-thumb").forEach((el) => el.classList.toggle("active", Number(el.dataset.galleryIndex) === productGalleryIndex));
+}
+function changeProductGalleryPhoto(delta) { setProductGalleryPhoto(productGalleryIndex + delta); }
+function openProductImageLightbox() {
+  const photos = window.__productGalleryPhotos || [];
+  if (!photos.length) return;
+  const img = byId("productLightboxImage");
+  if (img) img.src = photos[productGalleryIndex || 0];
+  byId("productImageLightbox")?.classList.remove("hidden");
+}
+function closeProductImageLightbox(event) {
+  if (event && event.target?.id !== "productImageLightbox" && !event.target?.closest?.(".image-lightbox-close")) return;
+  byId("productImageLightbox")?.classList.add("hidden");
+}
+function selectProductVariant(index) {
+  const variants = parseProductVariants(currentProductDetail?.description);
+  const v = variants[index];
+  if (!v) return;
+  document.querySelectorAll(".variant-chip").forEach((el, i) => el.classList.toggle("active", i === index));
+  const label = byId("selectedProductVariantLabel");
+  if (label) label.textContent = `Selected: ${v.name}`;
+}
+
 // ---------- PRODUCT DETAIL ----------
 async function renderProductDetail(productId) {
   const { data: product, error } = await sb
@@ -4637,11 +4755,20 @@ async function renderProductDetail(productId) {
 
   const canRent = product.listing_type === "rent" || product.listing_type === "both";
   const canBuy = product.listing_type === "sale" || product.listing_type === "both";
-  const photosHtml = (product.photos && product.photos.length > 0)
-    ? product.photos.length === 1
-      ? `<img src="${esc(product.photos[0])}" style="width:100%;border-radius:0.7rem;object-fit:cover;aspect-ratio:1;">`
-      : `<div class="grid" style="grid-template-columns:repeat(2,1fr);">${product.photos.map((u) => `<img src="${esc(u)}" style="width:100%;border-radius:0.5rem;object-fit:cover;aspect-ratio:1;">`).join("")}</div>`
+  const productPhotos = Array.isArray(product.photos) ? product.photos.filter(Boolean) : [];
+  const productVariants = parseProductVariants(product.description);
+  const cleanDescription = stripProductVariantMeta(product.description || "");
+  const photosHtml = productPhotos.length
+    ? `<div class="product-gallery">
+        <div class="product-gallery-main" onclick="openProductImageLightbox()">
+          <img id="productGalleryMain" src="${esc(productPhotos[0])}" alt="${esc(product.name)}" />
+          ${productPhotos.length > 1 ? `<div class="product-gallery-nav"><button type="button" onclick="event.stopPropagation();changeProductGalleryPhoto(-1)" aria-label="Previous image"><i class="fa-solid fa-chevron-left"></i></button><button type="button" onclick="event.stopPropagation();changeProductGalleryPhoto(1)" aria-label="Next image"><i class="fa-solid fa-chevron-right"></i></button></div><span class="product-gallery-count"><i class="fa-solid fa-images"></i> <span id="productGalleryCount">1</span>/${productPhotos.length}</span>` : ""}
+        </div>
+        ${productPhotos.length > 1 ? `<div class="product-gallery-thumbs">${productPhotos.map((u,i) => `<button type="button" class="product-gallery-thumb ${i===0 ? "active" : ""}" data-gallery-index="${i}" onclick="setProductGalleryPhoto(${i})"><img src="${esc(u)}" alt="View ${i+1}" loading="lazy" /></button>`).join("")}</div>` : ""}
+      </div>`
     : `<div class="product-img" style="height:220px;"><i class='fa-solid fa-camera'></i> No image</div>`;
+  window.__productGalleryPhotos = productPhotos;
+  window.__productGalleryIndex = 0;
   const isFav = favoriteIds.has(product.id);
 
   const statItems = [
@@ -4663,7 +4790,8 @@ async function renderProductDetail(productId) {
     <div class="product-detail-info">
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
       ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
-      <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(product.description || "No description"))}</p>
+      <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(cleanDescription || "No description"))}</p>
+    ${productVariants.length ? `<div class="product-variants"><strong>Available variations</strong><div class="variant-chips" style="margin-top:0.55rem;">${productVariants.map((v,i) => `<button type="button" class="variant-chip ${i===0 ? "active" : ""}" onclick="selectProductVariant(${i})">${v.color ? `<span class="variant-swatch" style="background:${esc(v.color)}"></span>` : ""}${esc(v.name)}</button>`).join("")}</div><p class="muted" id="selectedProductVariantLabel" style="font-size:0.78rem;margin:0.5rem 0 0;">Selected: ${esc(productVariants[0].name)}</p></div>` : ""}
     </div>
     ${statItems.length ? `<div class="product-detail-stats">${statItems.map((s) => `<div><span class="muted">${esc(s.label)}</span><strong>${s.value}</strong></div>`).join("")}</div>` : ""}
   </div>`;
@@ -6325,6 +6453,7 @@ async function showProductModal() {
   byId("productError").classList.add("hidden");
   byId("prodExistingPhotos").innerHTML = "";
   byId("prodNewPhotoPreviews").innerHTML = "";
+  byId("prodVariantsList").innerHTML = "";
   byId("prodPhotoFiles").value = "";
   byId("prodCategoryOther").value = "";
   byId("prodCategoryOther").classList.add("hidden");
@@ -6335,7 +6464,7 @@ async function showProductModal() {
     const { data: p } = await sb.from("products").select("*").eq("id", editingProductId).single();
     byId("productModalTitle").textContent = "Edit Product";
     byId("prodName").value = p.name;
-    byId("prodDesc").value = p.description || "";
+    byId("prodDesc").value = stripProductVariantMeta(p.description || "");
     byId("prodCondition").value = p.condition;
     byId("prodListingType").value = p.listing_type;
     byId("prodSalePrice").value = p.sale_price ?? "";
@@ -6347,6 +6476,7 @@ async function showProductModal() {
     byId("prodServiceUnit").value = p.service_price_unit || "flat";
     window.__existingPhotos = p.photos || [];
     renderExistingPhotos();
+    renderProductVariantRows(parseProductVariants(p.description));
     const currentCat = productModalCategories.find((c) => c.id === p.category_id);
     sectorSelect.value = currentCat?.sector_id || vendor.sector_id || productModalSectors[0]?.id || "";
     presetCategoryId = p.category_id || "";
@@ -6357,6 +6487,7 @@ async function showProductModal() {
     byId("prodListingType").value = "rent";
     byId("prodIsService").checked = false;
     byId("prodServiceUnit").value = "flat";
+    renderProductVariantRows([]);
     sectorSelect.value = vendor.sector_id || productModalSectors[0]?.id || "";
   }
   // Fires the custom dropdown's own resync (see enhanceSelect) as well as
@@ -6499,9 +6630,10 @@ async function saveProduct() {
       category_id = newCategoryId;
     }
 
+    const variants = getProductVariantRows();
     const fields = {
       name,
-      description: byId("prodDesc").value.trim() || null,
+      description: descriptionWithProductVariants(byId("prodDesc").value.trim(), variants),
       category_id,
       condition: byId("prodCondition").value,
       listing_type,
