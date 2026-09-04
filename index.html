@@ -875,6 +875,224 @@
   .leaflet-control-attribution { background: color-mix(in srgb, var(--card) 85%, transparent) !important; color: var(--text-muted) !important; font-size: 0.62rem !important; padding: 0.1rem 0.4rem !important; border-radius: 0.4rem 0 0 0; }
   .leaflet-control-attribution a { color: var(--text-muted) !important; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card) !important; color: var(--text) !important; }
+
+/* ================================================================
+   LEVROMART UI REFRESH — restrained, product-led, professional
+   ================================================================ */
+:root {
+  --ui-radius: 16px;
+  --ui-radius-sm: 12px;
+  --ui-border: color-mix(in srgb, var(--border) 78%, transparent);
+  --ui-surface: color-mix(in srgb, var(--card) 92%, transparent);
+  --ui-glass: color-mix(in srgb, var(--card) 76%, transparent);
+  --ui-shadow: 0 8px 28px rgba(0,0,0,.08);
+  --ui-shadow-lg: 0 20px 60px rgba(0,0,0,.16);
+}
+[data-theme="dark"], [data-theme="black"] {
+  --ui-surface: color-mix(in srgb, var(--card) 88%, transparent);
+  --ui-glass: color-mix(in srgb, var(--card) 72%, transparent);
+  --ui-shadow: 0 8px 28px rgba(0,0,0,.22);
+  --ui-shadow-lg: 0 22px 64px rgba(0,0,0,.42);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background-image:
+    radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 30%),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--primary-light) 6%, transparent), transparent 28%);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+header {
+  min-height: 64px;
+  padding: calc(.7rem + env(safe-area-inset-top, 0px)) max(1rem, 3vw) .7rem;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border-bottom: 1px solid var(--ui-border);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03);
+}
+header h1 { font-size: 1.2rem; font-weight: 750; letter-spacing: -.035em; }
+.header-nav-links { gap: 1.25rem; }
+.header-nav-link { font-size: .86rem; font-weight: 600; }
+
+.container { max-width: 1180px; margin: 1.1rem auto 2rem; padding: 0 clamp(1rem, 3vw, 1.5rem); }
+
+.card {
+  background: var(--ui-surface);
+  padding: 1.15rem;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--ui-shadow);
+  margin-bottom: .9rem;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.card:hover { transform: none !important; box-shadow: var(--ui-shadow); }
+.grid { gap: .9rem; }
+
+h1,h2,h3,h4 { letter-spacing: -.025em; }
+h2 { font-size: clamp(1.25rem, 2.8vw, 1.55rem); font-weight: 750; }
+h3 { font-size: 1.08rem; font-weight: 700; }
+.muted { color: var(--text-muted); }
+
+.btn {
+  min-height: 42px;
+  padding: .62rem 1rem;
+  border-radius: 11px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.btn:hover { filter: brightness(1.03); box-shadow: 0 5px 18px color-mix(in srgb, var(--primary) 16%, transparent); }
+.btn:active { transform: translateY(1px) !important; }
+.btn-outline { border-width: 1px; }
+.btn-sm { min-height: 36px; padding: .48rem .82rem; border-radius: 9px; }
+
+input, select, textarea {
+  border-radius: 10px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: color-mix(in srgb, var(--input-bg) 94%, transparent) !important;
+  min-height: 42px;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.025);
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 68%, var(--border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Stop the catalogue from floating around like a template animation. */
+.product-card-wrap, .vendor-card { animation: none !important; }
+.product-card-wrap .card { box-shadow: var(--ui-shadow); }
+.product-card-wrap:hover .card, .vendor-card:hover { transform: translateY(-2px) !important; box-shadow: var(--ui-shadow-lg); }
+.fav-btn, .card-cart-btn { box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.cat-chip { box-shadow: none; border-radius: 12px; padding: .65rem .85rem; transition: border-color .15s ease, background-color .15s ease; }
+.cat-chip:hover { transform: none; }
+
+/* Hero: keep the glass depth, remove the over-animated / AI-template feel. */
+.hero-aurora { animation: none !important; opacity: .24; filter: blur(80px); }
+.hero-photo-collage { opacity: .48; border-radius: var(--ui-radius); }
+.hero { padding-top: .6rem; }
+
+/* Drawer system: fixed, stable, scrollable, never draggable. */
+.drawer-backdrop {
+  background: rgba(2, 8, 23, .44);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: opacity .2s ease;
+}
+.side-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: min(390px, 91vw) !important;
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+  background: color-mix(in srgb, var(--card) 84%, transparent) !important;
+  backdrop-filter: blur(30px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(150%) !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  will-change: transform;
+}
+.side-drawer.left { left: 0 !important; }
+.side-drawer.right { right: 0 !important; }
+.side-drawer.open { transform: translateX(0) !important; }
+.side-drawer.left:not(.open) { transform: translateX(-102%) !important; }
+.side-drawer.right:not(.open) { transform: translateX(102%) !important; }
+.drawer-header { min-height: 44px; margin-bottom: .9rem; }
+.drawer-header h4 { font-size: 1.08rem; font-weight: 750; }
+.drawer-close-btn { width: 38px !important; height: 38px !important; border-radius: 10px !important; background: transparent !important; color: var(--text-muted); }
+.drawer-close-btn:hover { background: color-mix(in srgb, var(--text) 7%, transparent) !important; color: var(--text); }
+
+/* Profile drawer — clean list, no decorative icon blocks. */
+.profile-panel-header {
+  display: flex !important;
+  align-items: center !important;
+  padding: .7rem 0 1.15rem !important;
+  gap: .9rem !important;
+}
+.profile-panel-header strong { font-size: 1.12rem !important; font-weight: 750 !important; }
+.profile-panel-header .badge { border-radius: 7px !important; padding: .22rem .5rem !important; font-weight: 650 !important; }
+.profile-nav-link {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 48px !important;
+  padding: .72rem .25rem !important;
+  border-radius: 10px !important;
+  color: var(--text) !important;
+  text-decoration: none !important;
+  font-size: .94rem !important;
+  font-weight: 560 !important;
+  cursor: pointer;
+  transition: background-color .14s ease, color .14s ease;
+}
+.profile-nav-link:hover { background: color-mix(in srgb, var(--text) 5%, transparent) !important; }
+.profile-nav-link:active { background: color-mix(in srgb, var(--text) 8%, transparent) !important; }
+.profile-nav-link-danger { color: var(--danger) !important; }
+.profile-panel .divider { height: 1px; background: var(--ui-border); margin: .65rem 0 !important; border: 0; }
+.profile-nav-text { width: 100%; min-width: 0; }
+
+/* Simplify all accordion surfaces and admin navigation. */
+.accordion-section { border-radius: 12px !important; box-shadow: none !important; border-color: var(--ui-border) !important; }
+.accordion-trigger { min-height: 48px; }
+.table-wrap { border-radius: 12px; box-shadow: none; }
+.data-table th { font-weight: 650; }
+
+/* Bottom navigation: quiet glass, consistent with the drawer. */
+@media (max-width: 720px) {
+  body { padding-bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav {
+    left: .75rem !important; right: .75rem !important; bottom: calc(.7rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding: .42rem .3rem !important;
+    border-radius: 18px !important;
+    background: color-mix(in srgb, var(--card) 76%, transparent) !important;
+    backdrop-filter: blur(26px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
+    border: 1px solid var(--ui-border) !important;
+    box-shadow: 0 14px 40px rgba(0,0,0,.18) !important;
+  }
+  .bottom-nav-item { font-size: .61rem; min-height: 42px; border-radius: 11px; }
+  .bottom-nav-item.active { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+  .bottom-nav-item i, .bottom-nav-item .bn-icon { font-size: 1.1rem; }
+}
+
+/* Floating actions should be stable, not pulsing or draggable-looking. */
+.ai-chat-fab { animation: none !important; cursor: pointer !important; box-shadow: 0 10px 28px rgba(0,0,0,.18) !important; }
+.ai-chat-fab.dragging { cursor: pointer !important; }
+.cart-fab { cursor: pointer !important; box-shadow: 0 10px 28px rgba(0,0,0,.16) !important; }
+.cart-fab.dragging { cursor: pointer !important; }
+.ai-chat-panel .drawer-header { cursor: default !important; touch-action: pan-y !important; }
+
+/* Modals: one consistent visual language. */
+.modal { background: rgba(2,8,23,.52); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.modal-content {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  background: color-mix(in srgb, var(--card) 94%, transparent) !important;
+}
+
+/* Remove excessive motion globally; keep only purposeful drawer/modal transitions. */
+@media (prefers-reduced-motion: no-preference) {
+  .card, .cat-chip, .vendor-card, .product-card-wrap, .fav-btn, .card-cart-btn { animation: none !important; }
+}
+
+/* Small screens: prevent horizontal overflow and clipped drawer content. */
+@media (max-width: 520px) {
+  .container { padding-left: .9rem; padding-right: .9rem; }
+  .side-drawer { width: min(380px, 91vw) !important; }
+  .profile-panel-header { align-items: flex-start !important; }
+  .profile-panel-header > div:last-child { overflow-wrap: anywhere; }
+}
+
 </style>
 </head>
 <body>
@@ -2451,27 +2669,13 @@ function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) {
-  let startX = null, dx = 0, dragging = false;
-  drawer.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-    dragging = true;
-    drawer.style.transition = "none";
-  }, { passive: true });
-  drawer.addEventListener("touchmove", (e) => {
-    if (!dragging || startX === null) return;
-    const delta = e.touches[0].clientX - startX;
-    const closingDir = side === "right" ? delta > 0 : delta < 0;
-    dx = closingDir ? delta : 0;
-    drawer.style.transform = `translateX(${dx}px)`;
-  }, { passive: true });
-  drawer.addEventListener("touchend", () => {
-    dragging = false;
-    startX = null;
-    drawer.style.transition = "";
-    drawer.style.transform = "";
-    if (Math.abs(dx) > 70) closeAllPanels();
-    dx = 0;
-  }, { passive: true });
+  // Side drawers are intentionally stationary while open. The previous
+  // touch-drag implementation directly overwrote transform during a gesture,
+  // which made the profile/settings panels drift diagonally or appear to jump.
+  // Keep this function as a compatibility no-op because older initialization
+  // code still calls it. Closing is handled by the close button, backdrop, or
+  // Escape key, while the drawer itself remains vertically scrollable.
+  return;
 }
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
