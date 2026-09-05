@@ -1813,17 +1813,15 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 .tour-content .install-modal-badge{animation:none !important}
 .tour-dots{margin:.6rem 0 1rem}
 
-/* Remove draggable behaviour from Levi's FAB; keep it anchored predictably */
+/* Levi FAB — draggable and touch-friendly. Position is managed by setupDraggableFab(). */
 .ai-chat-fab{
-  right:18px !important;
-  left:auto !important;
-  top:auto !important;
-  bottom:calc(5.9rem + env(safe-area-inset-bottom,0px)) !important;
-  cursor:pointer !important;
-  touch-action:manipulation !important;
+  position:fixed !important;
+  cursor:grab !important;
+  touch-action:none !important;
   animation:none !important;
+  z-index:470 !important;
 }
-.ai-chat-fab.dragging{cursor:pointer !important}
+.ai-chat-fab.dragging{cursor:grabbing !important}
 
 /* Reduce decorative motion */
 .product-card-wrap,.vendor-card,.brand-logo-circle,.ai-chat-fab{animation:none !important}
@@ -2176,7 +2174,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 html { scroll-padding-top: 86px !important; }
 #app > *:first-child { scroll-margin-top: 86px !important; }
 
-/* Levi: never draggable, never repositioned by stale legacy styles. */
+/* Levi panel remains a centered chat surface. The FAB itself is draggable. */
 .ai-chat-panel {
   left: 50% !important;
   top: 50% !important;
@@ -2344,6 +2342,40 @@ html { scroll-padding-top: 86px !important; }
 .storefront-packages-collapsed.open .storefront-packages-body { display:block !important; }
 .storefront-packages-collapsed.open .storefront-packages-chevron { transform:rotate(180deg) !important; color:var(--primary) !important; }
 .storefront-packages-body > .grid { gap:.8rem !important; max-height:min(48dvh,520px) !important; overflow-y:auto !important; padding:.05rem .05rem .2rem !important; }
+/* Vendor-details dropdown: opaque, above the storefront content, never a transparent overlap. */
+.storefront-profile { position:relative !important; z-index:20 !important; overflow:visible !important; }
+.storefront-profile-body { position:relative !important; z-index:2 !important; overflow:visible !important; }
+.storefront-profile-actions { position:relative !important; z-index:30 !important; }
+.storefront-profile-actions .ms-wrap { position:relative !important; z-index:40 !important; }
+.storefront-profile-actions .ms-list,
+#storefrontMoreMenu {
+  position:absolute !important;
+  top:calc(100% + .45rem) !important;
+  right:0 !important;
+  left:auto !important;
+  z-index:9999 !important;
+  min-width:220px !important;
+  max-width:min(320px,calc(100vw - 2rem)) !important;
+  background:var(--card) !important;
+  opacity:1 !important;
+  backdrop-filter:blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(145%) !important;
+  box-shadow:0 18px 48px rgba(0,0,0,.28) !important;
+  border:1px solid var(--ui-border) !important;
+  overflow:hidden !important;
+}
+.storefront-profile-actions .ms-list .ms-item {
+  position:relative !important;
+  z-index:1 !important;
+  background:var(--card) !important;
+}
+@media (max-width:600px){
+  .storefront-profile-actions .ms-list, #storefrontMoreMenu {
+    min-width:250px !important;
+    max-width:calc(100vw - 1.5rem) !important;
+    right:-.15rem !important;
+  }
+}
 
 /* Product expansion: do not let Safari's sticky :hover state, content
    visibility placeholders, or transforms create the "grow then snap back"
@@ -2414,6 +2446,19 @@ html { scroll-padding-top: 86px !important; }
   -webkit-overflow-scrolling:touch !important;
 }
 
+
+/* FINAL: draggable Levi FAB wins over all legacy fixed-position rules. */
+.ai-chat-fab {
+  position:fixed !important;
+  left:auto !important;
+  top:auto !important;
+  right:auto !important;
+  bottom:auto !important;
+  touch-action:none !important;
+  cursor:grab !important;
+  z-index:470 !important;
+}
+.ai-chat-fab.dragging { cursor:grabbing !important; }
 
 /* ================================================================
    TOUR MOBILE FIT — keep Levi's guide compact and keep the highlighted
@@ -5945,6 +5990,11 @@ async function checkoutCartVendor(vendorId) {
       }
     } catch (e) {}
   }
+  await persistOrderItemVariants(orderId, items.map((item) => ({
+    productId: item.product_id,
+    variantName: item.variant_name,
+    variantColor: item.variant_color,
+  })));
   await sb.from("cart_items").delete().in("id", group.items.map((it) => it.id));
   refreshNotifications();
   navigate("orderDetail", { orderId });
@@ -7088,6 +7138,9 @@ async function buyNow(vendorId, productId) {
       }
       try { localStorage.removeItem(productVariantStorageKey(productId)); } catch (e) {}
     } catch (e) { console.warn("Variant stock sync after purchase failed", e); }
+  }
+  if (chosenVariant?.name) {
+    await persistOrderItemVariants(orderId, [{ productId, variantName: chosenVariant.name, variantColor: chosenVariant.color || null }]);
   }
   navigate("orderDetail", { orderId });
 }
@@ -8971,7 +9024,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   dateTo = dateTo || "";
   vendorOrderStatsPeriod = "today";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(product:products(is_service)), payments(payment_type, status)").eq("vendor_id", vendor.id);
+  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(variant_name,variant_color,product:products(is_service,name)), payments(payment_type, status)").eq("vendor_id", vendor.id);
   if (status !== "all") query = query.eq("status", status);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
@@ -9031,7 +9084,7 @@ async function renderBuyerOrders(status, type, payment, dateFrom, dateTo) {
   dateFrom = dateFrom || "";
   dateTo = dateTo || "";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name), items:order_items(product:products(is_service)), payments(payment_type, status)").eq("buyer_id", session.user.id);
+  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name), items:order_items(variant_name,variant_color,product:products(is_service,name)), payments(payment_type, status)").eq("buyer_id", session.user.id);
   if (status !== "all") query = query.eq("status", status);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
@@ -9184,6 +9237,28 @@ function renderOrderListWrap() {
   if (!wrap) return;
   wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
 }
+function orderVariantSummary(order) {
+  const names = (order?.items || []).map((it) => it?.variant_name || it?.variant?.name).filter(Boolean);
+  return [...new Set(names)].join(", ");
+}
+
+async function persistOrderItemVariants(orderId, selections) {
+  if (!orderId || !Array.isArray(selections) || !selections.length) return;
+  for (const item of selections) {
+    if (!item?.productId || !item?.variantName) continue;
+    try {
+      await sb.rpc("set_order_item_variant", {
+        p_order_id: orderId,
+        p_product_id: item.productId,
+        p_variant_name: item.variantName,
+        p_variant_color: item.variantColor || null,
+      });
+    } catch (e) {
+      console.warn("Variant order metadata sync failed", e);
+    }
+  }
+}
+
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
   const total = orders.length;
@@ -9197,7 +9272,7 @@ function orderListHtml(orders, isBuyerView) {
     </tr></thead><tbody>${shown.map((o) => `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
       <td>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</td>
       <td style="text-transform:capitalize;">${esc(o.order_type)}</td>
-      <td>${naira(o.total_amount)}</td>
+      <td>${naira(o.total_amount)}${orderVariantSummary(o) ? `<div class="muted" style="font-size:.72rem;margin-top:.15rem;">${esc(orderVariantSummary(o))}</div>` : ""}</td>
       <td>${o.created_at ? orderDateTimeStr(o.created_at) : ""}</td>
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
@@ -9207,6 +9282,7 @@ function orderListHtml(orders, isBuyerView) {
       <div>
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
+        ${orderVariantSummary(o) ? `<p class="muted" style="font-size:0.76rem;margin:.12rem 0 0;"><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</p>` : ""}
         ${o.created_at ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-solid fa-calendar-days"></i> ${orderDateTimeStr(o.created_at)}</p>` : ""}
       </div>
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
@@ -9241,7 +9317,7 @@ async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
     .from("orders")
-    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id, lat, lng), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
+    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id, lat, lng), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, variant_name, variant_color, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
     .eq("id", orderId)
     .maybeSingle();
   if (error || !order) return '<div class="empty-state">Order not found.</div>';
@@ -9283,6 +9359,7 @@ async function renderOrderDetail(orderId) {
     ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
+      ${item.variant_name ? `<p style="margin:.2rem 0 0;font-size:.82rem;"><i class="fa-solid fa-sliders"></i> <strong>Variation:</strong> ${esc(item.variant_name)}${item.variant_color ? ` <span class="muted">(${esc(item.variant_color)})</span>` : ""}</p>` : ""}
     </div>`).join("")}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
@@ -11579,6 +11656,44 @@ async function resolveLeviLocalAction(text) {
     : [target];
 
   const results = [];
+
+  // Fast path for removals: use the buyer's actual cart as the source of truth
+  // and match names locally. This avoids an extra search RPC + products query,
+  // which was the main reason "remove X from my cart" could feel slow.
+  if (mode === "remove") {
+    const { data: cartRows, error: cartErr } = await sb.from("cart_items")
+      .select("id,product_id,product:products(id,name,listing_type,sale_price,rental_rate,quantity_available,status,is_service,vendor:vendors(business_name))")
+      .eq("buyer_id", session.user.id);
+    if (!cartErr) {
+      const cart = cartRows || [];
+      for (const part of parts.slice(0, 5)) {
+        const needle = leviNormaliseText(part);
+        const matches = cart.filter((row) => {
+          const name = leviNormaliseText(row.product?.name || "");
+          return name === needle || name.includes(needle) || needle.includes(name);
+        });
+        if (!matches.length) { results.push({ part, error: "not-found" }); continue; }
+        if (matches.length > 1) { results.push({ part, error: "ambiguous", matches: matches.map(r => r.product).filter(Boolean) }); continue; }
+        const product = matches[0].product;
+        const del = await sb.from("cart_items").delete().eq("id", matches[0].id).eq("buyer_id", session.user.id);
+        results.push({ product, error: del.error ? "failed" : null });
+      }
+      refreshNotifications(); updateCartFab();
+      const ok = results.filter(r => !r.error);
+      const failed = results.filter(r => r.error === "failed");
+      const missing = results.filter(r => r.error === "not-found");
+      if (results.some(r => r.error === "ambiguous")) {
+        const names = results.filter(r => r.error === "ambiguous").flatMap(r => r.matches || []).map(p => p?.name).filter(Boolean).slice(0, 6);
+        return { handled: true, reply: `I found more than one cart match: ${names.join(", ")}. Tell me which one you mean.` };
+      }
+      return { handled: true, reply: [
+        ok.length ? `Done — I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "",
+        failed.length ? `I couldn't remove ${failed.map(r => r.product.name).join(", ")} right now.` : "",
+        missing.length ? `I couldn't find ${missing.map(r => `“${r.part}”`).join(", ")} in your cart.` : "",
+      ].filter(Boolean).join(" ") || "I couldn't find that item in your cart." };
+    }
+  }
+
   for (const part of parts.slice(0, 5)) {
     const resolved = await resolveLeviProduct(part);
     if (!resolved.product) { results.push({ part, error: "not-found" }); continue; }
@@ -11706,12 +11821,7 @@ function setupDraggableFab(fab, storageKey, onTap) {
 (function setupLeviFab() {
   const fab = byId("aiChatFab");
   if (!fab) return;
-  try { localStorage.removeItem("levromart_ai_fab_pos"); } catch (e) {}
-  fab.style.left = "";
-  fab.style.top = "";
-  fab.style.right = "";
-  fab.style.bottom = "";
-  fab.onclick = () => toggleAiChat();
+  setupDraggableFab(fab, "levromart_ai_fab_pos", () => toggleAiChat());
 })();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
