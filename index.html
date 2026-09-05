@@ -4170,13 +4170,14 @@ body { min-width:0 !important; }
 </div>
 
 <div id="locationPromptModal" class="modal hidden">
-  <div class="modal-content install-modal-content">
+  <div class="modal-content install-modal-content location-recovery-modal">
     <div class="install-modal-badge"><i class="fa-solid fa-location-dot" style="font-size:1.7rem;color:#fff;"></i></div>
-    <h3>Share your location</h3>
-    <p class="muted">See how far each vendor is and get results sorted nearest-first. Your browser will ask separately to confirm, this only stays on your device and is never stored on our servers.</p>
+    <h3 id="locationPromptTitle">Show distances automatically</h3>
+    <p class="muted" id="locationPromptCopy">Allow Levromart to use your current location. You only need to make this choice once. After that, vendor distances will refresh automatically whenever you refresh or return to Vendors.</p>
+    <p class="muted location-prompt-state" id="locationPromptState"></p>
     <div class="install-modal-actions">
-      <button class="btn btn-sm btn-outline" onclick="resolveLocationPrompt(false)">Not now</button>
-      <button class="btn" onclick="resolveLocationPrompt(true)"><i class="fa-solid fa-location-crosshairs"></i> Share location</button>
+      <button class="btn btn-sm btn-outline" id="locationPromptSecondary">Not now</button>
+      <button class="btn" id="locationPromptPrimary"><i class="fa-solid fa-location-crosshairs"></i> Enable distances</button>
     </div>
   </div>
 </div>
@@ -4707,99 +4708,118 @@ const LIVE_TOUR_STEPS = [
 let liveTourStep = 0;
 let liveTourRunToken = 0;
 let liveTourBusy = false;
-async function waitForTourTarget(selector, maxMs = 4500) {
-  const start = Date.now();
-  while (Date.now() - start < maxMs) {
+async function waitForTourTarget(selector, maxMs = 3200) {
+  if (!selector) return null;
+  const started = performance.now();
+  while (performance.now() - started < maxMs) {
     const el = document.querySelector(selector);
-    if (el && el.offsetParent !== null) return el;
-    await new Promise((r) => setTimeout(r, 120));
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const visible = cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity || 1) > 0 && r.width > 0 && r.height > 0;
+      if (visible) return el;
+    }
+    await new Promise(requestAnimationFrame);
   }
   return null;
 }
-async function showTour() {
-  liveTourStep = 0;
-  liveTourRunToken++;
-  liveTourBusy = false;
-  const token = liveTourRunToken;
-  closeAllPanels();
-  await navigate("home", {});
-  if (token !== liveTourRunToken) return;
-  byId("tourModal").classList.remove("hidden");
-  trackModalOpened("tourModal");
-  await runTourStep(token);
+
+let tourTransitionTimer = null;
+function cancelTourTransition() {
+  if (tourTransitionTimer) { clearTimeout(tourTransitionTimer); tourTransitionTimer = null; }
 }
+
+async function showTour() {
+  cancelTourTransition();
+  liveTourRunToken++;
+  const token = liveTourRunToken;
+  liveTourStep = 0;
+  liveTourBusy = true;
+  closeAllPanels();
+  const modal = byId("tourModal");
+  modal?.classList.remove("hidden");
+  trackModalOpened("tourModal");
+  try {
+    if (currentView !== "home") await navigate("home", {});
+    if (token !== liveTourRunToken) return;
+    await runTourStep(token);
+  } finally {
+    if (token === liveTourRunToken) liveTourBusy = false;
+  }
+}
+
 async function runTourStep(token = liveTourRunToken) {
   if (token !== liveTourRunToken) return;
   const step = LIVE_TOUR_STEPS[liveTourStep];
+  if (!step) return;
+
   if (step.view && step.view !== currentView) {
     await navigate(step.view, {});
     if (token !== liveTourRunToken) return;
-    // Let the destination render settle before measuring it.
-    await new Promise((r) => setTimeout(r, 120));
-    if (token !== liveTourRunToken) return;
+    // Wait for the destination DOM to commit before measuring anything.
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
   }
-  // Levi "points" toward wherever the tour is about to highlight next --
-  // the same flourish used when Levi navigates you somewhere from chat,
-  // so it reads as Levi actually guiding the tour rather than a generic
-  // slideshow.
-  animateAiFabPointing();
 
-  byId("tourIcon").className = `fa-solid ${step.icon}`;
-  byId("tourTitle").textContent = step.title;
-  byId("tourBody").textContent = step.body;
-  byId("tourDots").innerHTML = LIVE_TOUR_STEPS.map((_, i) => `<span class="tour-dot ${i === liveTourStep ? "active" : ""}"></span>`).join("");
-  byId("tourBackBtn").classList.toggle("hidden", liveTourStep === 0);
-  byId("tourNextBtn").textContent = liveTourStep === LIVE_TOUR_STEPS.length - 1 ? "Get started" : "Next";
+  const icon = byId("tourIcon");
+  const title = byId("tourTitle");
+  const body = byId("tourBody");
+  const dots = byId("tourDots");
+  const back = byId("tourBackBtn");
+  const next = byId("tourNextBtn");
+  if (!icon || !title || !body || !dots || !back || !next) return;
 
-  let rect = null;
+  icon.className = `fa-solid ${step.icon}`;
+  title.textContent = step.title;
+  body.textContent = step.body;
+  dots.replaceChildren(...LIVE_TOUR_STEPS.map((_, i) => {
+    const d = document.createElement("span");
+    d.className = `tour-dot${i === liveTourStep ? " active" : ""}`;
+    return d;
+  }));
+  back.classList.toggle("hidden", liveTourStep === 0);
+  next.textContent = liveTourStep === LIVE_TOUR_STEPS.length - 1 ? "Get started" : "Next";
+
+  const callout = byId("tourCallout");
+  const hole = byId("tourSpotlightHole");
+  callout?.classList.remove("tour-enter");
+  hole?.classList.remove("tour-enter");
+
+  let el = null;
   if (step.selector) {
-    // Some targets (e.g. the vendor directory grid) render "Loading…" first
-    // and fill in via a deferred fetch — wait for the real element rather
-    // than judging it missing off the very first frame after navigating.
-    const el = await waitForTourTarget(step.selector);
-    if (!el) {
-      // Genuinely not there right now (logged out, no vendors yet, etc) —
-      // still show this step's message centered, same as a selector-less
-      // step, instead of silently vanishing it. A step that's merely slow
-      // to appear no longer looks like a skipped/broken tour.
-      positionTourSpotlight(null);
-      const content = byId("tourCallout");
-      content.classList.remove("tour-content");
-      void content.offsetWidth;
-      content.classList.add("tour-content");
-      return;
+    el = await waitForTourTarget(step.selector);
+    if (token !== liveTourRunToken) return;
+
+    if (el) {
+      const cs = getComputedStyle(el);
+      const isFixed = cs.position === "fixed" || cs.position === "sticky" || el === byId("bottomNav");
+      // Fixed UI must never be scrolled. For normal content, place the target
+      // predictably in the viewport before measuring the spotlight.
+      if (!isFixed) {
+        el.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+        await new Promise(requestAnimationFrame);
+      }
     }
-    // Fixed/sticky controls (especially the bottom navigation) must NEVER be
-    // sent through scrollIntoView(). Doing that scrolls the page underneath
-    // a fixed control and makes the spotlight appear to land in the middle.
-    const cs = getComputedStyle(el);
-    const isFixedTarget = cs.position === "fixed" || cs.position === "sticky" || el === byId("bottomNav");
-    if (!isFixedTarget) {
-      const targetRectBefore = el.getBoundingClientRect();
-      const targetCenter = targetRectBefore.top + targetRectBefore.height / 2;
-      const preferredBlock = targetCenter < window.innerHeight * 0.48 ? "start" : "end";
-      el.scrollIntoView({ behavior: "smooth", block: preferredBlock, inline: "nearest" });
-      await new Promise((r) => setTimeout(r, 260));
-      if (token !== liveTourRunToken) return;
-    }
-    rect = el.getBoundingClientRect();
   }
-  positionTourSpotlight(rect);
 
   if (token !== liveTourRunToken) return;
-  const content = byId("tourCallout");
-  content.classList.remove("tour-enter");
-  requestAnimationFrame(() => {
-    if (token === liveTourRunToken) content.classList.add("tour-enter");
-  });
+  const rect = el?.getBoundingClientRect?.() || null;
+  positionTourSpotlight(rect, step.selector === "#bottomNav");
+
+  // One controlled fade per step. No transform animation is allowed to fight
+  // the absolute positioning used by positionTourSpotlight().
+  if (callout) {
+    void callout.offsetWidth;
+    callout.classList.add("tour-enter");
+  }
 }
-function positionTourSpotlight(rect) {
+
+function positionTourSpotlight(rect, forceAbove = false) {
   const hole = byId("tourSpotlightHole");
   const callout = byId("tourCallout");
   if (!hole || !callout) return;
   const vh = window.innerHeight, vw = window.innerWidth;
 
-  // Intro/outro steps have no target, so centre the compact guide.
   if (!rect) {
     hole.classList.add("centered");
     callout.classList.add("centered");
@@ -4809,89 +4829,85 @@ function positionTourSpotlight(rect) {
     return;
   }
 
-  const pad = 8;
-  const safeRect = {
-    top: Math.max(6, rect.top - pad),
-    left: Math.max(6, rect.left - pad),
-    right: Math.min(vw - 6, rect.right + pad),
-    bottom: Math.min(vh - 6, rect.bottom + pad)
-  };
+  const pad = 7;
+  const top = Math.max(5, rect.top - pad);
+  const left = Math.max(5, rect.left - pad);
+  const right = Math.min(vw - 5, rect.right + pad);
+  const bottom = Math.min(vh - 5, rect.bottom + pad);
 
   hole.classList.remove("centered");
-  hole.style.top = `${safeRect.top}px`;
-  hole.style.left = `${safeRect.left}px`;
-  hole.style.width = `${Math.max(0, safeRect.right - safeRect.left)}px`;
-  hole.style.height = `${Math.max(0, safeRect.bottom - safeRect.top)}px`;
+  hole.style.top = `${top}px`;
+  hole.style.left = `${left}px`;
+  hole.style.width = `${Math.max(1, right-left)}px`;
+  hole.style.height = `${Math.max(1, bottom-top)}px`;
 
-  // Measure after the compact CSS has applied. Prefer the free side of the
-  // highlighted element. Only use the middle of the screen as a last resort.
   callout.classList.remove("centered");
   callout.style.transform = "none";
-  const calloutWidth = Math.min(callout.offsetWidth || 286, vw - 24);
-  const calloutHeight = Math.min(callout.offsetHeight || 220, vh - 24);
-  const gap = 12;
-  const edge = 12;
-  const roomAbove = safeRect.top - edge;
-  const roomBelow = vh - safeRect.bottom - edge;
-
-  let top;
-  if (roomBelow >= calloutHeight + gap) {
-    top = safeRect.bottom + gap;
-  } else if (roomAbove >= calloutHeight + gap) {
-    top = safeRect.top - gap - calloutHeight;
+  const width = Math.min(callout.offsetWidth || 286, vw - 24);
+  const height = Math.min(callout.offsetHeight || 220, vh - 24);
+  const gap = 14, edge = 12;
+  const above = top - edge;
+  const below = vh - bottom - edge;
+  let y;
+  if (forceAbove || below < height + gap) {
+    y = top - gap - height;
+    if (y < edge && below >= height + gap) y = bottom + gap;
   } else {
-    // If the target is large (or a fixed bottom bar consumes the free space),
-    // place the guide in the largest remaining vertical region rather than
-    // directly over the thing Levi is describing.
-    const candidateBelow = Math.max(edge, vh - calloutHeight - edge);
-    const candidateAbove = Math.max(edge, safeRect.top - gap - calloutHeight);
-    top = roomAbove > roomBelow ? candidateAbove : candidateBelow;
+    y = bottom + gap;
   }
-  top = Math.max(edge, Math.min(top, vh - calloutHeight - edge));
+  if (y < edge) y = Math.max(edge, Math.min(vh - height - edge, (vh - height) / 2));
+  if (y > vh - height - edge) y = vh - height - edge;
 
-  let left = safeRect.left + (safeRect.right - safeRect.left) / 2 - calloutWidth / 2;
-  left = Math.max(edge, Math.min(left, vw - calloutWidth - edge));
-
-  callout.style.top = `${top}px`;
-  callout.style.left = `${left}px`;
+  let x = left + ((right-left) / 2) - (width / 2);
+  x = Math.max(edge, Math.min(x, vw - width - edge));
+  callout.style.top = `${Math.round(y)}px`;
+  callout.style.left = `${Math.round(x)}px`;
 }
+
 function tourReposition() {
   if (byId("tourModal")?.classList.contains("hidden")) return;
   const step = LIVE_TOUR_STEPS[liveTourStep];
-  positionTourSpotlight(step.selector ? document.querySelector(step.selector)?.getBoundingClientRect() : null);
+  const el = step?.selector ? document.querySelector(step.selector) : null;
+  positionTourSpotlight(el?.getBoundingClientRect?.() || null, step?.selector === "#bottomNav");
 }
-window.addEventListener("resize", tourReposition);
+window.addEventListener("resize", () => {
+  cancelTourTransition();
+  requestAnimationFrame(tourReposition);
+});
+
 async function tourNext() {
   if (liveTourBusy) return;
-  if (liveTourStep === LIVE_TOUR_STEPS.length - 1) { finishTour(); return; }
+  if (liveTourStep >= LIVE_TOUR_STEPS.length - 1) { finishTour(); return; }
   liveTourBusy = true;
   const token = ++liveTourRunToken;
-  liveTourStep++;
-  try { await runTourStep(token); } finally { if (token === liveTourRunToken) liveTourBusy = false; }
+  liveTourStep += 1;
+  try { await runTourStep(token); }
+  finally { if (token === liveTourRunToken) liveTourBusy = false; }
 }
+
 async function tourBack() {
-  if (liveTourBusy || liveTourStep === 0) return;
+  if (liveTourBusy || liveTourStep <= 0) return;
   liveTourBusy = true;
   const token = ++liveTourRunToken;
-  liveTourStep--;
-  try { await runTourStep(token); } finally { if (token === liveTourRunToken) liveTourBusy = false; }
+  liveTourStep -= 1;
+  try { await runTourStep(token); }
+  finally { if (token === liveTourRunToken) liveTourBusy = false; }
 }
+
 function finishTour() {
+  cancelTourTransition();
   liveTourRunToken++;
   liveTourBusy = false;
-  byId("tourModal").classList.add("hidden");
+  byId("tourModal")?.classList.add("hidden");
   localStorage.setItem("levromart-tour-seen", "1");
   if (dismissibleModalId === "tourModal") dismissibleModalId = null;
-  // Levi was the one giving the tour, so ending it by opening his chat
-  // with his normal greeting is the natural handoff -- "that's me, and
-  // I'm right here if you need anything" -- instead of just vanishing.
   if (session) {
     const panel = byId("aiChatPanel");
     if (panel && panel.classList.contains("hidden")) {
       panel.classList.remove("hidden");
       playSound("open");
       if (aiChatMessages.length === 0) showAiChatGreeting();
-      }
+    }
   }
 }
 function skipTour() { finishTour(); }
@@ -5246,62 +5262,226 @@ function getCurrentPositionOnce() {
     );
   });
 }
-// Cached for the session once granted, so we don't re-prompt on every page.
+// Buyer location is deliberately refreshed from the browser instead of being
+// treated as a session-only value. Once the buyer has opted into automatic
+// distances, every fresh Vendors render/page refresh asks the browser for the
+// current position. A granted browser permission makes this silent; a revoked
+// permission simply falls back to the recovery button in the Vendors page.
 let buyerLocation = null; // { lat, lng } | null
-function getBuyerLocation() {
-  if (buyerLocation) return Promise.resolve(buyerLocation);
-  return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; return loc; });
+let buyerLocationRequest = null;
+let buyerLocationLastUpdatedAt = 0;
+let buyerLocationLastError = null;
+let buyerDistanceAutoEnabled = false;
+
+function getBuyerLocation(forceRefresh = false) {
+  if (!forceRefresh && buyerLocation) return Promise.resolve(buyerLocation);
+  if (buyerLocationRequest) return buyerLocationRequest;
+  buyerLocationRequest = getCurrentPositionOnce()
+    .then((loc) => {
+      buyerLocation = loc;
+      buyerLocationLastUpdatedAt = Date.now();
+      buyerLocationLastError = null;
+      return loc;
+    })
+    .catch((err) => {
+      buyerLocationLastError = err;
+      throw err;
+    })
+    .finally(() => { buyerLocationRequest = null; });
+  return buyerLocationRequest;
 }
-// Shows our own explanatory modal BEFORE the browser's native permission
-// dialog, so buyers know why we're asking instead of being ambushed by an
-// OS-level popup out of nowhere (which tends to get reflexively blocked).
-// Only used for buyer-initiated distance features; a vendor tapping "Use my
-// current location" already knows exactly what that button does.
-let pendingLocationResolve = null;
-function showLocationPrompt() {
-  return new Promise((resolve) => {
-    pendingLocationResolve = resolve;
-    byId("locationPromptModal")?.classList.remove("hidden");
-    trackModalOpened("locationPromptModal");
-  });
+
+function hasAutomaticDistancePreference() {
+  try { return localStorage.getItem("medris-distance-auto") === "1"; } catch (e) { return false; }
 }
+function setAutomaticDistancePreference(enabled) {
+  buyerDistanceAutoEnabled = !!enabled;
+  try { localStorage.setItem("medris-distance-auto", enabled ? "1" : "0"); } catch (e) {}
+}
+
+// The browser owns the real location permission. This helper lets us tell the
+// difference between an already-granted permission and a permission that has
+// been blocked/revoked, without inventing a location.
+async function getBrowserLocationPermission() {
+  try {
+    if (!navigator.permissions?.query) return "unknown";
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status?.state || "unknown";
+  } catch (e) { return "unknown"; }
+}
+
+function locationRecoveryText(permissionState) {
+  if (permissionState === "denied") return "Location access is off for Levromart. Turn it back on in your browser/device location settings, then tap Try again.";
+  if (!locationSharingEnabled) return "Location sharing is off in Levromart Settings. Turn it on, then try again.";
+  return "Allow location access once and Levromart will remember your choice and show distances automatically from then on.";
+}
+
+// Best-effort jump to the operating-system settings. Browsers do not expose a
+// universal web API for opening their exact permission screen, so we attempt
+// the platform settings URI and keep a clear fallback in the modal if the
+// browser refuses the hand-off.
+function openLocationSettings() {
+  const ua = navigator.userAgent || "";
+  try {
+    if (/iPad|iPhone|iPod/i.test(ua)) {
+      window.location.href = "app-settings:";
+      return;
+    }
+    if (/Android/i.test(ua)) {
+      window.location.href = "intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end";
+      return;
+    }
+  } catch (e) {}
+  showToast("Open your browser/device Settings and allow Location for Levromart, then return here and tap Try again.", "info");
+}
+
+function showLocationPrompt(mode = "first-use", errorMessage = "") {
+  const modal = byId("locationPromptModal");
+  if (!modal) return;
+  const title = byId("locationPromptTitle");
+  const copy = byId("locationPromptCopy");
+  const primary = byId("locationPromptPrimary");
+  const secondary = byId("locationPromptSecondary");
+  const badge = modal.querySelector(".install-modal-badge i");
+  const denied = mode === "recovery";
+
+  if (title) title.textContent = denied ? "Turn on location" : "Show distances automatically";
+  if (copy) copy.textContent = errorMessage || (denied
+    ? ""
+    : "Allow Levromart to use your current location. You only need to make this choice once. After that, vendor distances will refresh automatically whenever you refresh or return to Vendors.");
+  if (denied) {
+    const stateText = byId("locationPromptState");
+    if (stateText) stateText.textContent = locationRecoveryText("denied");
+    if (primary) { primary.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Try again'; primary.onclick = () => retryBuyerLocationFromPrompt(); }
+    if (secondary) { secondary.textContent = "Open Settings"; secondary.onclick = openLocationSettings; secondary.classList.remove("hidden"); }
+    if (badge) badge.className = "fa-solid fa-location-crosshairs";
+  } else {
+    const stateText = byId("locationPromptState");
+    if (stateText) stateText.textContent = "Your location is used only to calculate nearby-vendor distances and delivery estimates. It is not stored on our servers.";
+    if (primary) { primary.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Enable distances'; primary.onclick = () => enableAutomaticDistances(); }
+    if (secondary) { secondary.textContent = "Not now"; secondary.onclick = () => resolveLocationPrompt(false); secondary.classList.remove("hidden"); }
+    if (badge) badge.className = "fa-solid fa-location-dot";
+  }
+  modal.classList.remove("hidden");
+  trackModalOpened("locationPromptModal");
+}
+
 function resolveLocationPrompt(granted) {
   byId("locationPromptModal")?.classList.add("hidden");
   if (dismissibleModalId === "locationPromptModal") dismissibleModalId = null;
-  const resolve = pendingLocationResolve;
-  pendingLocationResolve = null;
-  resolve?.(granted);
-}
-async function requestBuyerLocation() {
-  if (!locationSharingEnabled) throw new Error("Location sharing is off. Turn it on in Settings to use this.");
-  if (buyerLocation) return buyerLocation;
-  // Location is a standing app preference. Do not show a second in-app
-  // confirmation card: when the browser has permission, this resolves
-  // immediately; when it does not, the browser handles its own permission UI.
-  return getBuyerLocation();
+  if (granted) setAutomaticDistancePreference(true);
 }
 
+async function requestBuyerLocation(forceRefresh = buyerDistanceAutoEnabled) {
+  if (!locationSharingEnabled) throw new Error("Location sharing is off. Turn it on in Levromart Settings to use distance features.");
+  return getBuyerLocation(forceRefresh);
+}
 
-// Settings-level kill switch, separate from per-request browser permission —
-// lets a buyer turn location features off entirely without having to keep
-// declining the browser's own prompt every time.
+async function enableAutomaticDistances() {
+  // Tapping the recovery/enable control is an explicit opt-in, so it may
+  // re-enable Levromart's own location switch if the user had turned that
+  // switch off. The browser/device permission remains authoritative.
+  if (!locationSharingEnabled) {
+    locationSharingEnabled = true;
+    try { localStorage.setItem("medris-location-enabled", "1"); } catch (e) {}
+    renderLocationToggle();
+  }
+  try {
+    await requestBuyerLocation(true);
+    setAutomaticDistancePreference(true);
+    updateVendorsLocationUI();
+    filterVendorsDirectory();
+    byId("locationPromptModal")?.classList.add("hidden");
+    showToast("Distances enabled. They'll refresh automatically from now on.", "success");
+    return true;
+  } catch (err) {
+    const state = await getBrowserLocationPermission();
+    if (state === "denied") {
+      showLocationPrompt("recovery", locationRecoveryText("denied"));
+    } else {
+      // The browser may still be in its permission prompt or may not expose
+      // permission state. Keep the recovery UI useful without claiming why it failed.
+      showLocationPrompt("recovery", err?.message || "We couldn't get your location yet. Allow location access and try again.");
+    }
+    return false;
+  }
+}
+
+async function retryBuyerLocationFromPrompt() {
+  byId("locationPromptModal")?.classList.add("hidden");
+  try {
+    await requestBuyerLocation(true);
+    setAutomaticDistancePreference(true);
+    updateVendorsLocationUI();
+    filterVendorsDirectory();
+    showToast("Location is on. Distances will now refresh automatically.", "success");
+  } catch (err) {
+    const state = await getBrowserLocationPermission();
+    showLocationPrompt("recovery", state === "denied" ? locationRecoveryText("denied") : (err?.message || "Location is still unavailable."));
+  }
+}
+
+// Settings-level kill switch. Turning this off clears the live location but
+// does not destroy the one-time automatic-distance preference, so turning it
+// back on can resume the feature without another onboarding choice.
 let locationSharingEnabled = true;
 function initLocationSetting() {
   locationSharingEnabled = localStorage.getItem("medris-location-enabled") !== "0";
+  buyerDistanceAutoEnabled = hasAutomaticDistancePreference();
   renderLocationToggle();
 }
 function toggleLocationSetting() {
   locationSharingEnabled = !locationSharingEnabled;
   localStorage.setItem("medris-location-enabled", locationSharingEnabled ? "1" : "0");
-  if (!locationSharingEnabled) buyerLocation = null;
+  if (!locationSharingEnabled) {
+    buyerLocation = null;
+    buyerLocationLastError = new Error("Location sharing is off.");
+  } else if (buyerDistanceAutoEnabled) {
+    refreshBuyerLocationAutomatically();
+  }
   renderLocationToggle();
-  showToast(locationSharingEnabled ? "Location sharing turned on. You'll be asked to share your location the next time a feature needs it." : "Location sharing turned off.", "success");
+  showToast(locationSharingEnabled ? "Location sharing turned on. Distances will refresh automatically." : "Location sharing turned off.", "success");
+  updateVendorsLocationUI();
 }
 function renderLocationToggle() {
   const el = byId("locationToggleOption");
   if (!el) return;
   el.innerHTML = `<i class='fa-solid ${locationSharingEnabled ? "fa-location-dot" : "fa-location-crosshairs"}'></i> Location sharing: ${locationSharingEnabled ? "On" : "Off"}`;
 }
+
+async function refreshBuyerLocationAutomatically() {
+  if (!buyerDistanceAutoEnabled || !locationSharingEnabled || !navigator.geolocation) return null;
+  try {
+    const loc = await requestBuyerLocation(true);
+    updateVendorsLocationUI();
+    // Only redraw the directory if it is actually on screen. This prevents
+    // background refreshes from disturbing another page or resetting scroll.
+    if (byId("vendorsGrid")) filterVendorsDirectory();
+    return loc;
+  } catch (err) {
+    buyerLocation = null;
+    buyerLocationLastError = err;
+    updateVendorsLocationUI();
+    return null;
+  }
+}
+
+let lastAutomaticLocationRefreshAt = 0;
+function scheduleAutomaticLocationRefresh() {
+  if (!buyerDistanceAutoEnabled || !locationSharingEnabled || !navigator.geolocation) return;
+  const now = Date.now();
+  // Avoid duplicate refreshes caused by the initial render + visibility/focus
+  // events firing together, while still getting a fresh position on reload.
+  if (now - lastAutomaticLocationRefreshAt < 2500) return;
+  lastAutomaticLocationRefreshAt = now;
+  refreshBuyerLocationAutomatically().catch(() => {});
+}
+
+window.addEventListener("pageshow", () => setTimeout(scheduleAutomaticLocationRefresh, 80));
+window.addEventListener("focus", () => setTimeout(scheduleAutomaticLocationRefresh, 80));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") setTimeout(scheduleAutomaticLocationRefresh, 80);
+});
 
 // ---------- AUDIO COMPATIBILITY ----------
 // Levromart UI sounds are disabled. Levi read-aloud voice remains separate.
@@ -6733,14 +6913,11 @@ async function submitAuth() {
 async function finishLoginSuccess(view) {
   await refreshAuthStateOnce();
 
-  // Warm Levi's location context once per app session. This is intentionally
-  // silent at the app level: there is no "Share your location" card in Levi.
-  // If the browser already granted location, Levi has it immediately; if the
-  // browser still needs permission, only the native browser permission UI may
-  // appear. Location is cached for the session and reused for nearby-vendor
-  // and distance questions.
-  if (locationSharingEnabled && navigator.geolocation) {
-    getBuyerLocation().catch(() => {});
+  // Only refresh buyer location automatically after the buyer has explicitly
+  // opted into the one-time automatic-distance preference. This prevents a
+  // fresh login from unexpectedly triggering a browser location prompt.
+  if (buyerDistanceAutoEnabled && locationSharingEnabled && navigator.geolocation) {
+    scheduleAutomaticLocationRefresh();
   }
   hideLogin();
   navigate(view);
@@ -7458,7 +7635,7 @@ async function renderCart() {
     .order("created_at", { ascending: true });
   if (error) return errorStateHtml(error);
 
-  let html = `<h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>`;
+  let html = `<h2 class="cart-page-title"><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>`;
   if (!items || items.length === 0) {
     return html + `<div class="empty-state">Your cart is empty. Add items from any product page, or tell Levi what you want and it'll add them for you.</div>`;
   }
@@ -7476,7 +7653,7 @@ async function renderCart() {
 
   [...byVendor.values()].forEach(({ vendor: v, items: vItems }) => {
     const subtotal = vItems.reduce((s, it) => s + Number(it.product.sale_price || 0) * it.quantity, 0);
-    html += `<div class="card" style="margin-bottom:1rem;">
+    html += `<div class="card cart-vendor-card" style="margin-bottom:1rem;">
       <h3 style="margin-top:0;"><a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">${vendorNameWithFormerly(v)}</a></h3>
       ${vItems.map(cartItemRowHtml).join("")}
       <div class="divider"></div>
@@ -8844,14 +9021,18 @@ function renderVendorsDirectory() {
     <select id="vendorSectorFilter" onchange="filterVendorsDirectory()"><option value="">All sectors</option></select>
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
     <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
-    ${!buyerLocation ? `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Show distances</button>` : ""}
+    <div id="vendorsLocationAction" class="vendors-location-action" aria-live="polite"></div>
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   html += `<div id="vendorsMapWrap" class="hidden">
     <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;"></p>
     <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);position:relative;isolation:isolate;z-index:0;"></div>
   </div>`;
-  setTimeout(loadVendorsDirectory, 0);
+  setTimeout(async () => {
+    await loadVendorsDirectory();
+    if (buyerDistanceAutoEnabled) scheduleAutomaticLocationRefresh();
+    else updateVendorsLocationUI();
+  }, 0);
   return html;
 }
 
@@ -8922,17 +9103,30 @@ function filterVendorsDirectory() {
 }
 
 async function showDistancesInVendorsList() {
-  const btn = byId("vendorsShowDistanceBtn");
-  if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating…`; }
-  try {
-    await requestBuyerLocation();
-    filterVendorsDirectory();
-    btn?.remove();
-  } catch (err) {
-    if (err.message !== "Location sharing declined.") showToast(err.message, "error");
-    if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> Show distances`; }
+  // First use is an explicit one-time opt-in. After success the preference is
+  // persisted, so this control disappears on future refreshes unless the
+  // browser/device location permission has been revoked.
+  if (!buyerDistanceAutoEnabled) {
+    showLocationPrompt("first-use");
+    return false;
   }
+  return enableAutomaticDistances();
 }
+
+function updateVendorsLocationUI() {
+  const el = byId("vendorsLocationAction");
+  if (!el) return;
+  if (buyerLocation) {
+    el.innerHTML = `<span class="vendors-location-live"><i class="fa-solid fa-location-dot"></i> Distances updating automatically</span>`;
+    return;
+  }
+  if (!buyerDistanceAutoEnabled) {
+    el.innerHTML = `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Show distances</button>`;
+    return;
+  }
+  el.innerHTML = `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Turn on location</button>`;
+}
+
 
 let vendorsViewMode = "list";
 let vendorsMap = null;
@@ -8959,7 +9153,7 @@ async function renderVendorsMap() {
 
   let center = [6.5244, 3.3792]; // Lagos, used until/unless we know better
   let zoom = 11;
-  if (!buyerLocation && statusEl) statusEl.textContent = "Share your location to see vendors near you.";
+  if (!buyerLocation && statusEl) statusEl.textContent = buyerDistanceAutoEnabled ? "Turn on location to see distances." : "Enable automatic distances to see vendors near you.";
   try {
     const loc = await requestBuyerLocation();
     center = [loc.lat, loc.lng];
@@ -13758,5 +13952,30 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+<style id="automatic-location-distance-ui">
+  .vendors-location-action{display:flex;align-items:center;min-height:2.5rem;gap:.5rem;}
+  .vendors-location-live{display:inline-flex;align-items:center;gap:.4rem;padding:.48rem .72rem;border:1px solid color-mix(in srgb,var(--primary) 28%,var(--border));border-radius:999px;color:var(--primary);font-size:.78rem;font-weight:700;background:color-mix(in srgb,var(--primary) 7%,transparent);}
+  .vendors-location-live i{font-size:.72rem;}
+  .location-recovery-modal{max-width:430px;}
+  .location-prompt-state{margin-top:.55rem;font-size:.82rem;line-height:1.5;}
+  @media(max-width:720px){.vendors-location-action{width:100%;}.vendors-location-action .btn{width:100%;}.vendors-location-live{width:100%;justify-content:center;}}
+</style>
 </body>
 </html>
+
+/* FINAL TOUR STABILITY + CART BREATHING SPACE */
+#tourCallout{
+  transform:none !important;
+  transition:opacity .16s ease, top .20s ease, left .20s ease !important;
+  animation:none !important;
+  will-change:top,left,opacity;
+}
+#tourCallout.centered{transform:translate(-50%,-50%) !important;}
+#tourCallout.tour-enter{animation:tourFadeOnly .16s ease both !important;}
+@keyframes tourFadeOnly{from{opacity:0}to{opacity:1}}
+#tourSpotlightHole{transition:top .20s ease,left .20s ease,width .20s ease,height .20s ease,opacity .16s ease !important;}
+#tourSpotlightHole.centered{opacity:0 !important;}
+.cart-page-title{margin:0 0 1.15rem !important;padding:0 .1rem !important;line-height:1.2 !important;}
+.cart-vendor-card{margin-top:.15rem !important;}
+@media(max-width:720px){.cart-page-title{margin-bottom:1.25rem !important}.cart-vendor-card{margin-top:.1rem !important}}
