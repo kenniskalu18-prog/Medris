@@ -4331,7 +4331,7 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
     <div id="authError" class="error-text hidden"></div>
 
     <div id="googleAuthWrap">
-      <button type="button" class="btn btn-sm btn-outline" id="googleAuthBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;"><i class="fa-brands fa-google"></i> Google sign-in (existing accounts)</button>
+      <button type="button" class="btn btn-sm btn-outline" id="googleAuthBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;"><i class="fa-brands fa-google"></i> Google sign-in</button>
       <div class="flex" style="align-items:center;gap:0.6rem;margin:0.9rem 0;"><div style="flex:1;height:1px;background:var(--border);"></div><span class="muted" style="font-size:0.78rem;">or</span><div style="flex:1;height:1px;background:var(--border);"></div></div>
     </div>
 
@@ -4346,12 +4346,12 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
       <label>City</label>
       <input type="text" id="loginCity" placeholder="City" value="Lagos" />
       <label>Phone</label>
-      <input type="tel" id="loginPhone" placeholder="Phone (required)" />
+      <input type="tel" id="loginPhone" placeholder="Phone" />
       <p class="muted" style="font-size:.75rem;margin:.15rem 0 .55rem;">Email is optional. Your phone number can be used to sign in if you do not add an email.</p>
     </div>
 
-    <label>Email <span class="muted" style="font-weight:400;font-size:.75em;">(optional when registering)</span></label>
-    <input type="email" id="loginEmail" placeholder="Email address (optional when registering)" />
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="Email address" />
     <div id="loginPasswordWrap">
       <label>Password</label>
       <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
@@ -7018,63 +7018,15 @@ async function enforceSingleSession() {
 // same as leaving "I am a…" on its default during a normal signup --
 // anyone who actually wants to sell can still apply as a vendor
 // afterward, same as always.
-function normalizeAuthPhone(phone) {
-  const raw = String(phone || "").trim();
-  let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("0") && digits.length === 11) digits = "234" + digits.slice(1);
-  return digits;
-}
-function authAliasFromPhone(phone) {
-  const digits = normalizeAuthPhone(phone);
-  return digits ? `p${digits}@accounts.levromart.app` : "";
-}
-function looksLikePhoneIdentifier(value) {
-  const raw = String(value || "").trim();
-  return !!raw && !raw.includes("@") && /^[+()\d\s-]{7,}$/.test(raw);
-}
-
-async function accountExistsForGoogle(email) {
-  const res = await fetch("/api/account-exists", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || "Could not verify that account.");
-  return !!json.exists;
-}
-
 async function signInWithGoogle() {
-  const email = byId("loginEmail").value.trim();
-  const errorEl = byId("authError");
-  errorEl.classList.add("hidden");
-  if (!email || !email.includes("@")) {
-    errorEl.textContent = "Enter the email already registered to your Levromart account before using Google sign-in.";
-    errorEl.classList.remove("hidden");
-    return;
-  }
-  const btn = byId("googleAuthBtn");
-  btn.disabled = true;
-  try {
-    const exists = await accountExistsForGoogle(email);
-    if (!exists) {
-      throw new Error("No Levromart account was found for that email. Register first, then you can use Google sign-in.");
-    }
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { login_hint: email } },
-    });
-    if (error) throw error;
-  } catch (err) {
-    errorEl.textContent = err.message || "Could not start Google sign-in.";
-    errorEl.classList.remove("hidden");
-  } finally {
-    btn.disabled = false;
-  }
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) showToast(error.message, "error");
 }
 async function submitAuth() {
-  let email = byId("loginEmail").value.trim();
+  const email = byId("loginEmail").value.trim();
   const password = byId("loginPassword").value;
   const errorEl = byId("authError");
   errorEl.classList.add("hidden");
@@ -7087,7 +7039,7 @@ async function submitAuth() {
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
       if (error) throw error;
       hideLogin();
-      showToast("If that email has a Levromart account, the reset link has been requested.", "success");
+      showToast("Check your email for a password reset link.", "success");
     } catch (err) {
       errorEl.textContent = err.message;
       errorEl.classList.remove("hidden");
@@ -7096,6 +7048,8 @@ async function submitAuth() {
     }
     return;
   }
+
+  if (!email || !password) { errorEl.textContent = "Email and password are required."; errorEl.classList.remove("hidden"); return; }
 
   const btn = byId("authSubmitBtn");
   btn.disabled = true;
@@ -7107,34 +7061,31 @@ async function submitAuth() {
       const city = byId("loginCity").value.trim();
       const phone = byId("loginPhone").value.trim();
       if (!name) throw new Error("Full name is required.");
-      if (!phone) throw new Error("Phone is required when creating a Levromart account. Email is optional.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
       if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
-      const normalizedPhone = normalizeAuthPhone(phone);
-      if (normalizedPhone.length < 10) throw new Error("Enter a valid phone number.");
 
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email || null, password, name, phone, city, role }),
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { name, phone, city, role } },
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Could not create your account.");
+      if (error) throw error;
 
-      // The server creates the Supabase Auth user with email confirmation
-      // already marked complete. No confirmation email is sent.
-      const authIdentifier = email || authAliasFromPhone(phone);
-      const { error: loginError } = await sb.auth.signInWithPassword({ email: authIdentifier, password });
-      if (loginError) throw loginError;
+      if (!data.session) {
+        hideLogin();
+        showToast("Check your email for a confirmation link, then log in.", "success");
+        return;
+      }
       await enforceSingleSession();
       await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
-      if (!email || !password) { throw new Error("Email or phone and password are required."); }
-      const authIdentifier = looksLikePhoneIdentifier(email) ? authAliasFromPhone(email) : email;
-      if (!authIdentifier) throw new Error("Enter your email or phone number.");
-      const { error } = await sb.auth.signInWithPassword({ email: authIdentifier, password });
+      const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
       await enforceSingleSession();
+      // The OTP check (and role-select / set-password, if either is still
+      // pending on this account) all now run from inside finishLoginSuccess
+      // -> refreshAuthStateOnce -> runPostAuthChecks, one shared sequence
+      // for every sign-in path (password, Google, and a returning session
+      // past its 7-day OTP window) instead of duplicating the check here.
       await finishLoginSuccess("home");
     }
   } catch (err) {
