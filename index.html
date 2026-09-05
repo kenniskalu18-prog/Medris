@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
@@ -1502,6 +1503,467 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
 .about-meta-grid span { display:block; color:var(--text-muted); font-size:.65rem; margin-bottom:.2rem; }
 .about-meta-grid strong { font-size:.78rem; }
 
+
+/* =========================================================
+   LEVROMART FINAL POLISH — clean, native-feeling marketplace
+   ========================================================= */
+:root{
+  --ui-radius: 16px;
+  --ui-border: color-mix(in srgb, var(--border) 76%, transparent);
+  --ui-surface: color-mix(in srgb, var(--card) 90%, transparent);
+  --ui-glass: color-mix(in srgb, var(--card) 72%, transparent);
+  --ui-shadow: 0 10px 30px rgba(0,0,0,.12);
+  --ui-shadow-lg: 0 24px 72px rgba(0,0,0,.30);
+}
+[data-theme="dark"], [data-theme="black"]{
+  --ui-border: color-mix(in srgb, var(--border) 86%, transparent);
+  --ui-surface: color-mix(in srgb, var(--card) 92%, transparent);
+  --ui-glass: color-mix(in srgb, var(--card) 78%, transparent);
+  --ui-shadow: 0 10px 30px rgba(0,0,0,.30);
+  --ui-shadow-lg: 0 26px 80px rgba(0,0,0,.48);
+}
+
+/* Typography, hierarchy and surfaces */
+body{
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  letter-spacing:-.012em;
+}
+h1,h2,h3,h4,h5,strong{letter-spacing:-.028em}
+.container{max-width:1180px;padding-inline:clamp(16px,3vw,28px)}
+.card{
+  background:var(--ui-surface);
+  border:1px solid var(--ui-border);
+  border-radius:var(--ui-radius);
+  box-shadow:var(--ui-shadow);
+  backdrop-filter:blur(18px) saturate(130%);
+  -webkit-backdrop-filter:blur(18px) saturate(130%);
+}
+.btn{
+  min-height:44px;
+  border-radius:12px;
+  padding:.68rem 1rem;
+  font-weight:650;
+  box-shadow:0 2px 7px rgba(0,0,0,.07);
+}
+.btn:hover{filter:none;transform:none;box-shadow:0 8px 22px color-mix(in srgb,var(--primary) 16%,transparent)}
+.btn:active{transform:translateY(1px) !important}
+.btn-outline{border:1px solid color-mix(in srgb,var(--primary) 68%,var(--border));background:transparent}
+
+/* Header: quiet, crisp, not toy-like */
+header{
+  background:color-mix(in srgb,var(--bg) 86%,transparent);
+  border-bottom:1px solid var(--ui-border);
+  box-shadow:0 1px 0 rgba(255,255,255,.025);
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+.header-right .icon-btn,
+#profileWrap .icon-btn{width:42px;height:42px}
+
+/* Search alignment — never let the glyph collide with input text */
+.hero-search{position:relative;overflow:visible;padding:.25rem}
+.hero-search-icon{left:1.05rem !important;z-index:2}
+.hero-search input{
+  padding-left:3.15rem !important;
+  padding-right:1.05rem !important;
+  min-height:46px;
+}
+.search-suggest{margin-top:.15rem;border-radius:14px;box-shadow:var(--ui-shadow-lg)}
+
+/* Sections / chips */
+.section-title{align-items:center;margin-top:1.9rem}
+.section-title > *{min-width:0}
+.cat-row{gap:.65rem;padding-top:.5rem}
+.cat-chip{
+  min-width:92px;
+  padding:.72rem .9rem;
+  border-radius:14px;
+  box-shadow:none;
+  background:color-mix(in srgb,var(--card) 90%,transparent);
+}
+.cat-chip .cat-icon{font-size:1.15rem}
+.hscroll{gap:.85rem}
+
+/* Product / vendor cards: more ecommerce, less "AI demo" */
+.product-card-wrap .card,
+.vendor-card{
+  border-radius:16px;
+  overflow:hidden;
+}
+.product-card-wrap .product-img{
+  border-radius:12px;
+  aspect-ratio:1 / 1.03;
+  height:auto;
+}
+.fav-btn,.card-cart-btn{
+  box-shadow:0 3px 12px rgba(0,0,0,.14);
+}
+
+/* Drawers — compact like a real app side sheet */
+.side-drawer{
+  width:min(360px,84vw) !important;
+  max-width:360px !important;
+  padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px)) !important;
+  border-radius:0 !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  touch-action:pan-y !important;
+  overscroll-behavior:contain;
+  transform-origin:center;
+}
+.side-drawer.right{right:0}
+.side-drawer.left{left:0}
+.drawer-backdrop{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.drawer-header{min-height:48px;margin-bottom:1.1rem}
+.drawer-header h4{font-size:1.22rem;font-weight:760}
+.drawer-close-btn{
+  width:40px !important;height:40px !important;border-radius:11px !important;
+}
+@media (max-width:720px){
+  .side-drawer{width:min(330px,84vw) !important}
+}
+
+/* Profile + settings: no icon boxes, no giant rows */
+.profile-panel-header{padding:.3rem 0 1.15rem !important}
+.profile-nav-link{
+  min-height:46px !important;
+  padding:.72rem .15rem !important;
+  border-radius:10px !important;
+  gap:.78rem !important;
+  background:transparent !important;
+}
+.profile-nav-link:hover{
+  background:color-mix(in srgb,var(--text) 5%,transparent) !important;
+}
+.profile-nav-link .profile-nav-icon,
+.profile-nav-link i:first-child{
+  width:1.25rem !important;
+  min-width:1.25rem !important;
+  height:auto !important;
+  padding:0 !important;
+  border-radius:0 !important;
+  background:none !important;
+  box-shadow:none !important;
+  filter:none !important;
+  color:var(--text-muted) !important;
+  font-size:1rem !important;
+}
+.profile-nav-link:hover .profile-nav-icon,
+.profile-nav-link:hover i:first-child,
+.profile-nav-link.active .profile-nav-icon,
+.profile-nav-link.active i:first-child{color:var(--primary) !important}
+.profile-nav-link span:last-child{flex:1;min-width:0}
+.profile-nav-link::after{content:"›";font-size:1.35rem;line-height:1;color:var(--text-muted);margin-left:auto}
+
+/* Settings rows: clean list, subtle separators */
+.accordion-section,.settings-row-card{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  margin:0 !important;
+  border-bottom:1px solid var(--ui-border) !important;
+}
+.accordion-trigger{
+  min-height:54px;
+  padding:.75rem .05rem;
+  border-radius:10px;
+  font-size:.96rem;
+}
+.accordion-trigger:hover{background:color-mix(in srgb,var(--text) 5%,transparent)}
+.accordion-trigger span{gap:.78rem}
+.accordion-trigger span i,
+.accordion-trigger > span > i{
+  width:1.25rem !important;
+  min-width:1.25rem !important;
+  height:auto !important;
+  padding:0 !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  background:none !important;
+  box-shadow:none !important;
+  filter:none !important;
+  color:var(--text-muted) !important;
+  font-size:1rem !important;
+}
+.accordion-section.open .accordion-trigger span i{color:var(--primary) !important}
+.accordion-chevron{margin-left:auto}
+.accordion-body{
+  padding-left:2.03rem !important;
+  padding-right:.1rem !important;
+}
+.settings-row-card .theme-option{padding:.75rem .05rem;border-radius:10px}
+
+/* Better theme/accent controls */
+.theme-option{min-height:44px}
+.theme-option.active{background:color-mix(in srgb,var(--primary) 9%,transparent)}
+.accent-swatches{gap:.55rem}
+.accent-swatch{width:30px;height:30px}
+
+/* Info markers never sit on text */
+.info-popover-wrap{margin-left:.28rem;vertical-align:middle}
+.info-btn{margin-left:.15rem;transform:translateY(-1px)}
+
+/* Vendor edit & package sections */
+#pkgBuyWrap-*{scroll-margin-top:90px}
+.package-card,.pkg-card{margin-top:.9rem}
+h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
+
+/* Sticky mobile nav — cleaner, lighter */
+@media (max-width:720px){
+  body{padding-bottom:calc(5.6rem + env(safe-area-inset-bottom,0px))}
+  .bottom-nav{
+    left:14px !important;right:14px !important;bottom:calc(12px + env(safe-area-inset-bottom,0px)) !important;
+    border-radius:22px !important;
+    padding:.55rem .35rem !important;
+    background:color-mix(in srgb,var(--card) 88%,transparent) !important;
+    border:1px solid var(--ui-border) !important;
+    box-shadow:0 18px 44px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+  .bottom-nav-item{font-size:.6rem !important}
+  .bottom-nav-item i,.bottom-nav-item .bn-icon{font-size:1.08rem !important}
+}
+
+/* Levi — centered, non-draggable, comfortable */
+.ai-chat-panel{
+  position:fixed !important;
+  left:50% !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:translate(-50%,-50%) !important;
+  width:min(680px,calc(100vw - 32px)) !important;
+  height:min(700px,calc(100vh - 48px)) !important;
+  max-height:calc(100dvh - 48px) !important;
+  padding:0 !important;
+  border-radius:22px !important;
+  overflow:hidden !important;
+  background:color-mix(in srgb,var(--card) 90%,transparent) !important;
+  border:1px solid var(--ui-border) !important;
+  box-shadow:0 30px 90px rgba(0,0,0,.34) !important;
+  touch-action:auto !important;
+}
+.ai-chat-panel .drawer-header{
+  cursor:default !important;
+  touch-action:auto !important;
+  padding:16px 18px 13px !important;
+  margin:0 !important;
+  min-height:68px !important;
+  border-bottom:1px solid var(--ui-border);
+}
+.ai-chat-messages{
+  padding:18px 18px 12px !important;
+  gap:.75rem !important;
+}
+.ai-chat-msg{
+  max-width:min(82%,620px) !important;
+  padding:.78rem .95rem !important;
+  border-radius:16px !important;
+  font-size:.95rem !important;
+  line-height:1.48 !important;
+}
+.ai-chat-msg.user{border-bottom-right-radius:6px !important}
+.ai-chat-msg.assistant{border-bottom-left-radius:6px !important}
+.ai-chat-input-row{
+  padding:13px 15px 15px !important;
+  border-top:1px solid var(--ui-border);
+  background:color-mix(in srgb,var(--card) 72%,transparent);
+}
+.ai-chat-input-row textarea{
+  min-height:48px !important;
+  border-radius:15px !important;
+  padding:.8rem .95rem !important;
+}
+.ai-chat-mic-btn{width:44px;height:44px}
+.ai-chat-panel.expanded{
+  width:min(900px,calc(100vw - 24px)) !important;
+  height:min(820px,calc(100dvh - 24px)) !important;
+}
+@media (max-width:720px){
+  .ai-chat-panel{
+    width:calc(100vw - 20px) !important;
+    height:min(78dvh,680px) !important;
+    max-height:calc(100dvh - 22px) !important;
+    border-radius:20px !important;
+  }
+}
+
+/* Tour — no jumpy resize/restart, no accidental overlap */
+.tour-callout{
+  width:min(360px,calc(100vw - 28px)) !important;
+  max-height:min(72dvh,560px) !important;
+  overflow-y:auto !important;
+  animation:none !important;
+  transform:translate(-50%,-50%);
+  transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1),top .30s cubic-bezier(.22,1,.36,1),left .30s cubic-bezier(.22,1,.36,1) !important;
+}
+.tour-callout.tour-enter{animation:leviTourEnter .32s cubic-bezier(.22,1,.36,1) both !important}
+@keyframes leviTourEnter{
+  from{opacity:0;transform:translate(-50%,-46%) scale(.985)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+.tour-spotlight-hole{
+  transition:top .28s cubic-bezier(.22,1,.36,1),left .28s cubic-bezier(.22,1,.36,1),width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1),opacity .2s ease !important;
+}
+.tour-content .install-modal-badge{animation:none !important}
+.tour-dots{margin:.6rem 0 1rem}
+
+/* Remove draggable behaviour from Levi's FAB; keep it anchored predictably */
+.ai-chat-fab{
+  right:18px !important;
+  left:auto !important;
+  top:auto !important;
+  bottom:calc(5.9rem + env(safe-area-inset-bottom,0px)) !important;
+  cursor:pointer !important;
+  touch-action:manipulation !important;
+  animation:none !important;
+}
+.ai-chat-fab.dragging{cursor:pointer !important}
+
+/* Reduce decorative motion */
+.product-card-wrap,.vendor-card,.brand-logo-circle,.ai-chat-fab{animation:none !important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto !important;animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+
+
+
+/* ================================================================
+   LEVROMART POLISH PASS — profile-style storefront + calmer sheets
+   ================================================================ */
+:root{
+  --sheet-mobile-w:min(304px,78vw);
+  --sheet-desktop-w:min(360px,34vw);
+  --surface-soft:color-mix(in srgb,var(--card) 94%,var(--primary) 6%);
+}
+
+/* Side sheets: closer to X/ChatGPT proportions, never page-dominating. */
+.side-drawer{
+  width:var(--sheet-desktop-w) !important;
+  max-width:360px !important;
+  overflow:hidden !important;
+  display:flex;
+  flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px)) !important;
+}
+@media (max-width:720px){
+  .side-drawer{width:var(--sheet-mobile-w) !important;max-width:304px !important;}
+}
+
+/* Profile header stays still while only the menu beneath it scrolls. */
+#profilePanel{overflow:hidden !important;}
+#profilePanel .profile-panel-static{
+  flex:0 0 auto;
+  position:relative;
+  z-index:2;
+  background:color-mix(in srgb,var(--glass-bg) 88%,var(--bg) 12%);
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+}
+#profilePanel .profile-panel-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:.25rem 0 .9rem;
+  scrollbar-width:thin;
+}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar{width:4px}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-muted) 28%,transparent);border-radius:999px}
+#profilePanel .drawer-header{margin-bottom:.55rem}
+#profilePanel .profile-panel-header{padding:.45rem 0 1rem !important;align-items:center !important;}
+#profilePanel .profile-panel-header .avatar-lg{width:60px !important;height:60px !important;}
+#profilePanel .profile-nav-link{
+  min-height:48px !important;
+  padding:.78rem .28rem !important;
+  gap:.85rem !important;
+  border-radius:9px !important;
+  font-size:.94rem !important;
+  font-weight:620 !important;
+}
+#profilePanel .profile-item-icon{
+  width:1.35rem !important;min-width:1.35rem !important;height:1.35rem !important;
+  display:inline-flex !important;align-items:center !important;justify-content:center !important;
+  padding:0 !important;background:none !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;
+}
+#profilePanel .profile-item-icon i{font-size:1.05rem !important;color:var(--text-muted) !important;filter:none !important;background:none !important;}
+#profilePanel .profile-nav-arrow{font-size:.72rem !important;color:color-mix(in srgb,var(--text-muted) 68%,transparent) !important;}
+#profilePanel .profile-nav-link:hover .profile-item-icon i{color:var(--text) !important;}
+#profilePanel .profile-nav-link-danger .profile-item-icon i,#profilePanel .profile-nav-link-danger .profile-nav-text{color:var(--danger) !important;}
+
+/* Vendor storefront — social profile hierarchy, marketplace actions. */
+.storefront-profile{max-width:980px;margin:0 auto 1.25rem;}
+.storefront-cover{
+  position:relative;height:176px;border-radius:22px 22px 0 0;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 26%,#111),color-mix(in srgb,var(--card) 82%,#111));
+  border:1px solid var(--border);border-bottom:0;
+}
+.storefront-cover .hero-photo-row{height:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;opacity:.9;}
+.storefront-cover .hero-photo-row img{width:100%;height:100%;object-fit:cover;min-width:0;}
+.storefront-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,.5));pointer-events:none;}
+.storefront-profile-body{
+  position:relative;padding:0 1.15rem 1rem;background:var(--card);border:1px solid var(--border);border-top:0;border-radius:0 0 22px 22px;
+}
+.storefront-avatar-row{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:.25rem;}
+.storefront-avatar{
+  width:88px;height:88px;border-radius:50%;object-fit:cover;margin-top:-44px;position:relative;z-index:2;
+  border:4px solid var(--card);background:var(--primary-grad);box-shadow:0 5px 18px rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.55rem;font-weight:800;
+}
+.storefront-profile-actions{display:flex;gap:.55rem;align-items:center;padding-top:.65rem;flex-wrap:wrap;justify-content:flex-end;}
+.storefront-profile-actions .btn{min-height:38px;padding:.5rem .9rem;border-radius:999px;box-shadow:none;}
+.storefront-profile-actions .btn-outline{border-width:1px;}
+.storefront-profile-name{font-size:1.65rem;line-height:1.12;margin:.3rem 0 .18rem;font-weight:820;letter-spacing:-.025em;}
+.storefront-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;color:var(--text-muted);font-size:.85rem;}
+.storefront-bio{font-size:.94rem;line-height:1.55;margin:.7rem 0 0;color:var(--text);max-width:70ch;}
+.storefront-stats{display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:.75rem;font-size:.83rem;color:var(--text-muted);}
+.storefront-stats strong{color:var(--text);font-weight:760;}
+.storefront-featured{margin:1.25rem 0;}
+.storefront-section-head{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.7rem;}
+.storefront-section-head h3{margin:0;font-size:1.18rem;letter-spacing:-.015em;}
+.storefront-product-strip{display:flex;gap:.7rem;overflow-x:auto;padding:.1rem .05rem .45rem;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.storefront-product-mini{flex:0 0 126px;scroll-snap-align:start;cursor:pointer;}
+.storefront-product-mini img,.storefront-product-mini .mini-placeholder{width:126px;height:94px;border-radius:14px;object-fit:cover;background:var(--border);display:flex;align-items:center;justify-content:center;}
+.storefront-product-mini strong{display:block;font-size:.82rem;margin-top:.38rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.storefront-product-mini span{display:block;color:var(--text-muted);font-size:.72rem;margin-top:.08rem;}
+.storefront-packages{margin:1.35rem 0 1.5rem;}
+.storefront-packages .grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.85rem;}
+.storefront-products-shell{margin-top:1.4rem;}
+.storefront-products-toolbar{display:flex;align-items:center;gap:.55rem;justify-content:space-between;flex-wrap:wrap;margin-bottom:.75rem;}
+.storefront-products-toolbar .storefront-search-wrap{position:relative;flex:1 1 250px;}
+.storefront-products-toolbar .storefront-search-wrap i{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;}
+.storefront-products-toolbar input{margin:0 !important;padding-left:2.65rem !important;min-height:44px;border-radius:999px;}
+.storefront-view-buttons{display:flex;gap:.35rem;}
+.storefront-view-buttons .btn{width:42px;height:42px;padding:0;justify-content:center;border-radius:12px;}
+.storefront-view-more{display:flex;justify-content:center;margin:1rem 0 .25rem;}
+.storefront-view-more .btn{min-width:190px;justify-content:center;}
+@media(max-width:620px){
+  .storefront-cover{height:148px;border-radius:18px 18px 0 0;}
+  .storefront-profile-body{padding:0 .9rem .9rem;border-radius:0 0 18px 18px;}
+  .storefront-avatar{width:76px;height:76px;margin-top:-38px;border-width:3px;}
+  .storefront-avatar-row{align-items:flex-start;}
+  .storefront-profile-actions{padding-top:.6rem;gap:.4rem;}
+  .storefront-profile-actions .btn{padding:.45rem .68rem;font-size:.78rem;}
+  .storefront-profile-name{font-size:1.35rem;}
+}
+
+/* Fewer expensive effects on scrolling surfaces = smoother mobile UI. */
+.product-card-wrap,.vendor-card,.review-card{content-visibility:auto;contain-intrinsic-size:280px;}
+@media (prefers-reduced-motion:no-preference){
+  .storefront-profile,.storefront-featured,.storefront-packages,.storefront-products-shell{animation:uiSoftIn .34s cubic-bezier(.2,.75,.25,1) both;}
+  @keyframes uiSoftIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+
+/* Voice controls */
+.voice-preset-row{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.65rem;}
+.voice-preset-btn{border:1px solid var(--border);background:transparent;color:var(--text-muted);border-radius:999px;padding:.42rem .75rem;font:inherit;font-size:.76rem;font-weight:650;cursor:pointer;}
+.voice-preset-btn.active{border-color:var(--primary);color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,transparent);}
+.voice-quality-hint{margin:.45rem 0 0;font-size:.72rem;color:var(--text-muted);line-height:1.4;}
+
 </style>
 </head>
 <body>
@@ -1569,6 +2031,12 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
     <div class="accordion-body">
       <p class="muted" style="font-size:0.78rem;margin:0.2rem 0 0.7rem;">Picked from the voices already on this device. Quality depends on what your phone/browser offers.</p>
       <select id="voiceSelect" onchange="setAiVoice(this.value)"></select>
+      <div class="voice-preset-row" id="voicePresetRow">
+        <button class="voice-preset-btn" data-voice-preset="natural" onclick="setAiVoicePreset('natural')">Natural</button>
+        <button class="voice-preset-btn" data-voice-preset="warm" onclick="setAiVoicePreset('warm')">Warm</button>
+        <button class="voice-preset-btn" data-voice-preset="clear" onclick="setAiVoicePreset('clear')">Clear</button>
+      </div>
+      <p class="voice-quality-hint" id="voiceQualityHint">Levi automatically prefers the most natural English voice installed on this device.</p>
       <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
     </div>
   </div>
@@ -2248,35 +2716,51 @@ async function runTourStep() {
   positionTourSpotlight(rect);
 
   const content = byId("tourCallout");
-  content.classList.remove("tour-content");
-  void content.offsetWidth; // restart the fade-in animation on every step
-  content.classList.add("tour-content");
+  content.classList.remove("tour-enter");
+  requestAnimationFrame(() => content.classList.add("tour-enter"));
 }
 function positionTourSpotlight(rect) {
   const hole = byId("tourSpotlightHole");
   const callout = byId("tourCallout");
+  if (!hole || !callout) return;
+  const vh = window.innerHeight, vw = window.innerWidth;
   if (!rect) {
     hole.classList.add("centered");
     callout.classList.add("centered");
     return;
   }
-  hole.classList.remove("centered");
-  callout.classList.remove("centered");
   const pad = 10;
-  hole.style.top = `${rect.top - pad}px`;
-  hole.style.left = `${rect.left - pad}px`;
-  hole.style.width = `${rect.width + pad * 2}px`;
-  hole.style.height = `${rect.height + pad * 2}px`;
+  const safeRect = {
+    top: Math.max(8, rect.top - pad),
+    left: Math.max(8, rect.left - pad),
+    right: Math.min(vw - 8, rect.right + pad),
+    bottom: Math.min(vh - 8, rect.bottom + pad)
+  };
+  hole.classList.remove("centered");
+  hole.style.top = `${safeRect.top}px`;
+  hole.style.left = `${safeRect.left}px`;
+  hole.style.width = `${Math.max(0, safeRect.right - safeRect.left)}px`;
+  hole.style.height = `${Math.max(0, safeRect.bottom - safeRect.top)}px`;
 
-  const calloutWidth = callout.offsetWidth || 300;
-  const calloutHeight = callout.offsetHeight || 220;
-  const placeBelow = window.innerHeight - rect.bottom > calloutHeight + 30 || rect.top < calloutHeight + 30;
-  let top = placeBelow ? rect.bottom + pad + 14 : rect.top - pad - 14 - calloutHeight;
-  top = Math.max(12, Math.min(top, window.innerHeight - calloutHeight - 12));
-  let left = rect.left + rect.width / 2 - calloutWidth / 2;
-  left = Math.max(12, Math.min(left, window.innerWidth - calloutWidth - 12));
+  callout.classList.remove("centered");
+  const calloutWidth = Math.min(callout.offsetWidth || 340, vw - 28);
+  const calloutHeight = Math.min(callout.offsetHeight || 240, vh - 28);
+  const gap = 18;
+  const roomAbove = safeRect.top - 12;
+  const roomBelow = vh - safeRect.bottom - 12;
+  let top;
+  if (roomBelow >= calloutHeight + gap) {
+    top = safeRect.bottom + gap;
+  } else if (roomAbove >= calloutHeight + gap) {
+    top = safeRect.top - gap - calloutHeight;
+  } else {
+    top = Math.max(14, Math.min((vh - calloutHeight) / 2, vh - calloutHeight - 14));
+  }
+  let left = safeRect.left + (safeRect.right - safeRect.left) / 2 - calloutWidth / 2;
+  left = Math.max(14, Math.min(left, vw - calloutWidth - 14));
   callout.style.top = `${top}px`;
   callout.style.left = `${left}px`;
+  callout.style.transform = "none";
 }
 function tourReposition() {
   if (byId("tourModal")?.classList.contains("hidden")) return;
@@ -3648,23 +4132,27 @@ function updateAuthUI() {
     if (vendor) links.push({ label: `Suggestions${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('vendorSuggestionsInbox')" });
 
     panel.innerHTML = `
-      <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
-      <div class="profile-panel-header">
-        <div class="avatar-edit-wrap">
-          ${profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" />` : `<div class="avatar-circle avatar-lg">${initials(profile.name, profile.email)}</div>`}
-          <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
-          <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
+      <div class="profile-panel-static">
+        <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()" aria-label="Close profile"><i class='fa-solid fa-xmark'></i></button></div>
+        <div class="profile-panel-header">
+          <div class="avatar-edit-wrap">
+            ${profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" />` : `<div class="avatar-circle avatar-lg">${initials(profile.name, profile.email)}</div>`}
+            <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
+            <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
+          </div>
+          <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${profile.role === "admin" ? "admin" : vendor ? "vendor" : "buyer"}</span></div>
         </div>
-        <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${profile.role === "admin" ? "admin" : vendor ? "vendor" : "buyer"}</span></div>
+        <div class="divider" style="margin:.15rem 0 .35rem;"></div>
       </div>
-      <div class="divider"></div>
-      ${links.map((l) => {
-        const raw = String(l.label).replace(/<[^>]*>/g, '').trim().toLowerCase();
-        const icon = raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
-        return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>`;
-      }).join("")}
-      <div class="divider"></div>
-      <a class="profile-nav-link profile-nav-link-danger" onclick="closeAllPanels();logout();"><span class="profile-item-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span><span class="profile-nav-text">Log out</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>
+      <div class="profile-panel-scroll">
+        ${links.map((l) => {
+          const raw = String(l.label).replace(/<[^>]*>/g, '').trim().toLowerCase();
+          const icon = raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
+          return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>`;
+        }).join("")}
+        <div class="divider" style="margin:.45rem 0;"></div>
+        <a class="profile-nav-link profile-nav-link-danger" onclick="closeAllPanels();logout();"><span class="profile-item-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span><span class="profile-nav-text">Log out</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>
+      </div>
     `;
     byId("accountDangerSection")?.classList.remove("hidden");
     byId("changePasswordSection")?.classList.remove("hidden");
@@ -5957,93 +6445,90 @@ async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
   if (!v.is_active) return '<div class="empty-state"><i class="fa-solid fa-store-slash" style="font-size:1.6rem;display:block;margin-bottom:0.6rem;"></i>This shop is currently paused. Check back later.</div>';
+
   const [{ data: products }, { data: stats }, { data: reviews }, { data: packages }] = await Promise.all([
     sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
     sb.rpc("get_vendor_stats", { p_vendor_id: v.id }),
     sb.from("reviews").select("id, rating, comment, buyer_name, buyer_avatar_url, created_at").eq("vendor_id", v.id).order("created_at", { ascending: false }).limit(10),
     sb.from("vendor_packages").select("*, items:package_items(quantity, product:products(name))").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
   ]);
+
   const st = (stats && stats[0]) || {};
-  window.__storefrontProducts = products || [];
+  const allProducts = products || [];
+  window.__storefrontProducts = allProducts;
+  window.__storefrontExpanded = false;
 
-  const storefrontPhotos = [...new Set((products || []).map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 6);
+  const coverPhotos = [...new Set(allProducts.map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 4);
+  const logo = v.logo_url
+    ? `<img src="${esc(v.logo_url)}" class="storefront-avatar" alt="${esc(v.business_name || "Vendor")}" loading="eager" />`
+    : `<div class="storefront-avatar">${esc((v.business_name || "?")[0].toUpperCase())}</div>`;
+  const location = [v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online business";
 
-  let html = `<div class="storefront-hero">
-    ${storefrontPhotos.length >= 3 ? `<div class="hero-photo-collage" style="height:100%;border-radius:1.1rem;"><div class="hero-photo-row">${storefrontPhotos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy" />`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
-    <div class="storefront-hero-content">
-      <div class="flex" style="justify-content:space-between;">
-        <div class="flex">
-          ${v.logo_url ? `<img src="${esc(v.logo_url)}" class="avatar-circle" style="width:3rem;height:3rem;object-fit:cover;" />` : `<div class="avatar-circle" style="width:3rem;height:3rem;">${esc((v.business_name || "?")[0].toUpperCase())}</div>`}
-          <div><h2 style="margin:0;">${vendorNameWithFormerly(v)}</h2><p class="muted">${[v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online-only business"}</p></div>
-        </div>
-        <span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>
-      </div>
-    </div>
-  </div>`;
-  if (v.bio) html += `<p style="margin:0.6rem 0;">${esc(v.bio)}</p>`;
-  // Everything a buyer actually needs to decide "message this vendor" --
-  // message, call, and rating -- lives on one row now instead of a
-  // separate badges row above a separate buttons row. The rest (sector,
-  // CAC, years active, opening hours) is one tap away in "...".
   const storefrontMoreItems = [
     v.sector?.name ? `<div class="ms-item"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</div>` : "",
     v.cac_number ? `<div class="ms-item"><i class='fa-solid fa-building-columns'></i> CAC verified</div>` : "",
-    yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-cake-candles"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
+    yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-calendar-check"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
     v.opening_hours ? `<div class="ms-item"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</div>` : "",
     profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
   ].filter(Boolean).join("");
-  html += `<div class="contact-actions" style="align-items:center;">
-    ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-solid fa-comment-dots'></i> Message</button>` : ""}
-    ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}" onclick="callVendorGated(event,'${esc(v.phone)}','${v.id}')"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
-    ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
-    ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;">
-      <button class="btn btn-sm btn-outline" type="button" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button>
-      <div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:170px;">${storefrontMoreItems}</div>
-    </div>` : ""}
-  </div>`;
-  if (packages && packages.length > 0) {
-    html += `<h3 style="margin-top:1.2rem;"><i class="fa-solid fa-boxes-packing"></i> Special packages</h3>`;
-    html += `<div class="grid">${packages.map((pkg) => packageCardHtml(pkg, v.delivery_fee)).join("")}</div>`;
+
+  let html = `<section class="storefront-profile">
+    <div class="storefront-cover">
+      ${coverPhotos.length ? `<div class="hero-photo-row">${coverPhotos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy" />`).join("")}</div>` : ""}
+    </div>
+    <div class="storefront-profile-body">
+      <div class="storefront-avatar-row">
+        ${logo}
+        <div class="storefront-profile-actions">
+          ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-regular fa-comment'></i> Message</button>` : ""}
+          ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}" onclick="callVendorGated(event,'${esc(v.phone)}','${v.id}')"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
+          ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm btn-outline" type="button" aria-label="More vendor details" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button><div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:180px;">${storefrontMoreItems}</div></div>` : ""}
+        </div>
+      </div>
+      <h1 class="storefront-profile-name">${vendorNameWithFormerly(v)}</h1>
+      <div class="storefront-meta"><span><i class="fa-solid fa-location-dot"></i> ${location}</span><span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span></div>
+      ${v.bio ? `<p class="storefront-bio">${esc(v.bio)}</p>` : ""}
+      <div class="storefront-stats">
+        <span><strong>${allProducts.length}</strong> listing${allProducts.length === 1 ? "" : "s"}</span>
+        <span><strong>${st.review_count || 0}</strong> review${Number(st.review_count || 0) === 1 ? "" : "s"}</span>
+        ${st.avg_rating ? `<span><strong>★ ${Number(st.avg_rating).toFixed(1)}</strong> rating</span>` : ""}
+        ${v.sector?.name ? `<span>${esc(v.sector.name)}</span>` : ""}
+      </div>
+    </div>
+  </section>`;
+
+  if (allProducts.length) {
+    const featured = allProducts.slice(0, 6);
+    html += `<section class="storefront-featured">
+      <div class="storefront-section-head"><h3>Latest from ${esc(v.business_name || "this shop")}</h3>${allProducts.length > 6 ? `<button class="btn btn-sm btn-outline" onclick="document.getElementById('storefrontProductsShell')?.scrollIntoView({behavior:'smooth',block:'start'})">View products</button>` : ""}</div>
+      <div class="storefront-product-strip">${featured.map((p) => {
+        const img = p.photos?.[0];
+        const price = p.is_service ? `${naira(p.sale_price)}${servicePriceSuffix(p)}` : p.sale_price != null ? naira(p.sale_price) : p.rental_rate != null ? `${naira(p.rental_rate)}/${p.rental_rate_unit}` : "View details";
+        return `<div class="storefront-product-mini" onclick="navigate('productDetail',{productId:'${p.id}'})">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="mini-placeholder"><i class="fa-solid fa-box"></i></div>`}<strong>${esc(p.name)}</strong><span>${price}</span></div>`;
+      }).join("")}</div>
+    </section>`;
   }
 
-  html += `<div class="flex" style="justify-content:space-between;align-items:center;margin-top:1.2rem;flex-wrap:wrap;gap:0.5rem;">
-    <h3 style="margin:0;">What we offer</h3>
-    ${(products && products.length > 0) ? `<div class="flex" style="gap:0.5rem;">
-      <button class="btn btn-sm btn-outline active" id="storefrontViewGridBtn" onclick="switchStorefrontView('grid')" title="Grid view"><i class="fa-solid fa-grip"></i></button>
-      <button class="btn btn-sm btn-outline" id="storefrontViewTableBtn" onclick="switchStorefrontView('table')" title="Table view"><i class="fa-solid fa-list"></i></button>
-    </div>` : ""}
-  </div>`;
-  if (products && products.length > 0) {
-    html += `<input type="text" id="storefrontSearch" placeholder="Search this vendor's products…" oninput="filterStorefrontProducts()" style="margin-bottom:0.8rem;" />`;
+  if (packages && packages.length > 0) {
+    html += `<section class="storefront-packages"><div class="storefront-section-head"><h3>Special packages</h3></div><div class="grid">${packages.map((pkg) => packageCardHtml(pkg, v.delivery_fee)).join("")}</div></section>`;
   }
-  html += `<div id="storefrontGrid" class="grid">${(products && products.length > 0) ? "<p class='muted'>Loading…</p>" : '<div class="empty-state">No products listed yet.</div>'}</div>`;
-  html += `<div id="storefrontTable" class="hidden" style="overflow-x:auto;max-height:26rem;overflow-y:auto;"></div>`;
-  storefrontViewMode = "grid";
-  if (products && products.length > 0) setTimeout(filterStorefrontProducts, 0);
+
+  html += `<section class="storefront-products-shell" id="storefrontProductsShell">
+    <div class="storefront-section-head"><h3>Products & services</h3></div>
+    ${allProducts.length ? `<div class="storefront-products-toolbar"><div class="storefront-search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="storefrontSearch" placeholder="Search this shop" oninput="filterStorefrontProducts()" /></div><div class="storefront-view-buttons"><button class="btn btn-sm btn-outline active" id="storefrontViewGridBtn" onclick="switchStorefrontView('grid')" title="Grid view"><i class="fa-solid fa-grip"></i></button><button class="btn btn-sm btn-outline" id="storefrontViewTableBtn" onclick="switchStorefrontView('table')" title="List view"><i class="fa-solid fa-list"></i></button></div></div>` : ""}
+    <div id="storefrontGrid" class="grid">${allProducts.length ? "<p class='muted'>Loading…</p>" : '<div class="empty-state">No products listed yet.</div>'}</div>
+    <div id="storefrontTable" class="hidden" style="overflow-x:auto;max-height:30rem;overflow-y:auto;"></div>
+    <div class="storefront-view-more" id="storefrontViewMoreWrap"></div>
+  </section>`;
 
   if (reviews && reviews.length > 0) {
-    html += `<div class="flex" style="justify-content:space-between;cursor:pointer;margin-top:1.5rem;" onclick="toggleReviewsList()">
-      <h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3>
-      <i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i>
-    </div>
-    <div id="reviewsList" class="hidden">
-      ${reviews.map((r) => `<div class="card review-card">
-        ${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}
-        <div>
-          <div class="flex" style="justify-content:space-between;gap:1rem;">
-            <strong>${esc(r.buyer_name || "A buyer")}</strong>
-            <span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
-          </div>
-          ${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}
-          <p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p>
-        </div>
-      </div>`).join("")}
-    </div>`;
+    html += `<div class="flex" style="justify-content:space-between;cursor:pointer;margin-top:1.5rem;" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></div><div id="reviewsList" class="hidden">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div>`;
   } else {
     html += `<h3 style="margin-top:1.5rem;">Reviews</h3><p class="muted">No reviews yet.</p>`;
   }
 
-  html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Back to Marketplace</button>`;
+  storefrontViewMode = "grid";
+  if (allProducts.length) setTimeout(filterStorefrontProducts, 0);
   return html;
 }
 
@@ -6060,11 +6545,24 @@ function switchStorefrontView(mode) {
 function filterStorefrontProducts() {
   const q = (byId("storefrontSearch")?.value || "").trim().toLowerCase();
   const all = window.__storefrontProducts || [];
-  const list = q ? all.filter((p) => p.name.toLowerCase().includes(q) || (p.category?.name || "").toLowerCase().includes(q)) : all;
+  const filtered = q ? all.filter((p) => p.name.toLowerCase().includes(q) || (p.category?.name || "").toLowerCase().includes(q)) : all;
+  const expanded = Boolean(window.__storefrontExpanded) || Boolean(q);
+  const visible = expanded ? filtered : filtered.slice(0, 6);
   const gridEl = byId("storefrontGrid");
-  if (gridEl) gridEl.innerHTML = list.length ? list.map(productCardHtml).join("") : '<div class="empty-state">No matching items.</div>';
+  if (gridEl) gridEl.innerHTML = visible.length ? visible.map(productCardHtml).join("") : '<div class="empty-state">No matching items.</div>';
   const tableEl = byId("storefrontTable");
-  if (tableEl) tableEl.innerHTML = list.length ? storefrontTableHtml(list) : '<div class="empty-state">No matching items.</div>';
+  if (tableEl) tableEl.innerHTML = visible.length ? storefrontTableHtml(visible) : '<div class="empty-state">No matching items.</div>';
+  const wrap = byId("storefrontViewMoreWrap");
+  if (wrap) {
+    if (!q && filtered.length > 6) {
+      wrap.innerHTML = `<button class="btn btn-outline" onclick="toggleStorefrontProducts()">${expanded ? "Show fewer products" : `View more products (${filtered.length - 6})`}</button>`;
+    } else wrap.innerHTML = "";
+  }
+}
+function toggleStorefrontProducts() {
+  window.__storefrontExpanded = !window.__storefrontExpanded;
+  filterStorefrontProducts();
+  if (!window.__storefrontExpanded) byId("storefrontProductsShell")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function storefrontTableHtml(list) {
@@ -9828,7 +10326,9 @@ function speakAiChatMessage(text, btn) {
   if (wasSpeakingThis) return; // clicking/tapping an already-speaking control stops it
   if (!("speechSynthesis" in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 1.02;
+  const preset = getAiVoicePreset();
+  utter.rate = preset.rate;
+  utter.pitch = preset.pitch;
   const voice = getSelectedBrowserVoice();
   if (voice) utter.voice = voice;
   btn?.classList.add("speaking");
@@ -9841,17 +10341,39 @@ function speakAiChatMessage(text, btn) {
 // just take the browser's arbitrary first voice. Still limited by whatever
 // the phone/browser actually ships — there's no code-side way to make the
 // built-in engine itself sound more human than that.
+const AI_VOICE_PRESETS = {
+  natural: { rate: 0.96, pitch: 1.0 },
+  warm: { rate: 0.92, pitch: 0.94 },
+  clear: { rate: 1.0, pitch: 1.03 },
+};
+function getAiVoicePreset() {
+  const key = localStorage.getItem("levi-voice-preset") || "natural";
+  return AI_VOICE_PRESETS[key] || AI_VOICE_PRESETS.natural;
+}
+function setAiVoicePreset(key) {
+  if (!AI_VOICE_PRESETS[key]) return;
+  localStorage.setItem("levi-voice-preset", key);
+  renderAiVoicePreset();
+  previewAiVoice();
+}
+function renderAiVoicePreset() {
+  const key = localStorage.getItem("levi-voice-preset") || "natural";
+  document.querySelectorAll("[data-voice-preset]").forEach((b) => b.classList.toggle("active", b.dataset.voicePreset === key));
+}
+function scoreAiVoice(v) {
+  const name = `${v.name || ""} ${v.voiceURI || ""}`;
+  let score = 0;
+  if (!v.localService) score += 5;
+  if (/Natural|Neural|Enhanced|Premium|Online|Cloud/i.test(name)) score += 8;
+  if (/Samantha|Ava|Serena|Daniel|Moira|Karen|Tessa|Rishi|Aaron|Nicky|Eddy|Flo|Reed|Rocko|Shelley|Grandma|Grandpa/i.test(name)) score += 4;
+  if (/Google|Microsoft|Apple|Siri/i.test(name)) score += 3;
+  if (/en-NG|en_GB|en-GB|en-US|en_US/i.test(v.lang)) score += 2;
+  if (/compact|espeak|robot|novelty|whisper|bad news|bells|boing|bubbles|cellos|organ|trinoids|zarvox/i.test(name)) score -= 12;
+  return score;
+}
 function pickDefaultAiVoice(voices) {
   if (!voices.length) return null;
-  const scored = voices.map((v) => {
-    let score = 0;
-    if (!v.localService) score += 2; // network-backed voices are usually the higher-quality ones
-    if (/en-US|en_US/i.test(v.lang)) score += 1;
-    if (/Google|Natural|Enhanced|Premium/i.test(v.name)) score += 1;
-    return { v, score };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  return scored[0].v;
+  return [...voices].sort((a,b) => scoreAiVoice(b) - scoreAiVoice(a) || String(a.name).localeCompare(String(b.name)))[0] || null;
 }
 function getSelectedBrowserVoice() {
   const uri = localStorage.getItem("levi-voice");
@@ -9867,19 +10389,29 @@ function loadAiVoices() {
     if (def) localStorage.setItem("levi-voice", def.voiceURI);
   }
   populateVoiceSelect();
+  renderAiVoicePreset();
 }
 function populateVoiceSelect() {
   byId("voiceSettingsSection")?.classList.remove("hidden");
   const sel = byId("voiceSelect");
   if (!sel) return;
   const activeURI = localStorage.getItem("levi-voice");
-  sel.innerHTML = aiVoices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  const sorted = [...aiVoices].sort((a,b) => scoreAiVoice(b) - scoreAiVoice(a) || String(a.name).localeCompare(String(b.name)));
+  const bestScore = sorted.length ? scoreAiVoice(sorted[0]) : 0;
+  sel.innerHTML = sorted.map((v, i) => {
+    const natural = scoreAiVoice(v) >= Math.max(5, bestScore - 2);
+    return `<option value="${esc(v.voiceURI)}" ${v.voiceURI === activeURI ? "selected" : ""}>${natural ? "★ " : ""}${esc(v.name)} (${esc(v.lang)})</option>`;
+  }).join("");
+  const chosen = getSelectedBrowserVoice();
+  const hint = byId("voiceQualityHint");
+  if (hint && chosen) hint.textContent = scoreAiVoice(chosen) >= 5 ? `Recommended natural voice: ${chosen.name}.` : `Using ${chosen.name}. Your browser controls the underlying voice quality.`;
 }
 function setAiVoice(id) {
   localStorage.setItem("levi-voice", id);
+  populateVoiceSelect();
   previewAiVoice();
 }
-function previewAiVoice() { speakAiChatMessage("Hi, I'm Levi. This is what I sound like.", null); }
+function previewAiVoice() { speakAiChatMessage("Hi, I'm Levi. How can I help you today?", null); }
 if ("speechSynthesis" in window) {
   loadAiVoices();
   speechSynthesis.onvoiceschanged = loadAiVoices;
@@ -10033,78 +10565,158 @@ function leviExtractCartTarget(text, mode) {
 async function resolveLeviProduct(target) {
   // "this" / "that" / "current item" means the product currently open.
   if (currentView === "productDetail" && currentViewParams?.productId) {
-    const { data, error } = await sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("id", currentViewParams.productId).maybeSingle();
-    if (!error && data) return { product: data, exact: true };
+    const { data, error } = await sb.from("products")
+      .select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,is_service,vendor:vendors(business_name)")
+      .eq("id", currentViewParams.productId).maybeSingle();
+    if (!error && data) return { product: data, exact: true, matches: [data] };
   }
+
   const q = String(target || "").trim();
   if (!q) return { product: null, exact: false, empty: true };
+
+  // Use the same typo/word-aware database search used by the marketplace.
+  try {
+    const { data: idRows, error: rpcError } = await sb.rpc("search_product_ids", { p_query: q });
+    const ids = (idRows || []).slice(0, 8).map((r) => r.id).filter(Boolean);
+    if (!rpcError && ids.length) {
+      const { data: found, error } = await sb.from("products")
+        .select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,is_service,vendor:vendors(business_name)")
+        .eq("status", "active").in("id", ids);
+      if (!error && found?.length) {
+        const ordered = [...found].sort((a,b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+        return { product: ordered[0], matches: ordered, exact: ordered.length === 1 };
+      }
+    }
+  } catch (e) {}
+
   const words = q.split(/\s+/).filter(Boolean).slice(0, 8);
   const phrase = words.join(" ");
-  let query = sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("status", "active").limit(8);
-  // Name matching is intentionally first: it avoids accidentally selecting a
-  // product just because its description happens to contain one common word.
+  let query = sb.from("products")
+    .select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,is_service,vendor:vendors(business_name)")
+    .eq("status", "active").limit(8);
   const { data: byName, error: nameError } = await query.ilike("name", `%${phrase}%`);
   if (!nameError && byName?.length) return { product: byName[0], matches: byName };
   const first = words[0];
-  const { data: fallback, error: fallbackError } = await sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("status", "active").ilike("name", `%${first}%`).limit(8);
+  const { data: fallback, error: fallbackError } = await sb.from("products")
+    .select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,is_service,vendor:vendors(business_name)")
+    .eq("status", "active").ilike("name", `%${first}%`).limit(8);
   if (!fallbackError && fallback?.length) return { product: fallback[0], matches: fallback };
   return { product: null, matches: [] };
 }
+
+async function addCartWithFallback(productId, quantity) {
+  const qty = Math.max(1, Math.min(20, Number(quantity) || 1));
+  const { error: rpcError } = await sb.rpc("add_to_cart", { p_product_id: productId, p_quantity: qty });
+  if (!rpcError) return null;
+
+  // Some deployments have the cart table but an out-of-date/missing RPC.
+  // Fall back only after verifying the real listing is active and sellable.
+  const { data: p, error: pErr } = await sb.from("products")
+    .select("id,listing_type,sale_price,quantity_available,status,is_service")
+    .eq("id", productId).maybeSingle();
+  if (pErr || !p || p.status !== "active" || p.is_service || p.sale_price == null || !["sale","both"].includes(p.listing_type)) {
+    return rpcError;
+  }
+  const { data: existing, error: readErr } = await sb.from("cart_items")
+    .select("id,quantity").eq("buyer_id", session.user.id).eq("product_id", productId).maybeSingle();
+  if (readErr) return rpcError;
+
+  const currentQty = Number(existing?.quantity || 0);
+  const nextQty = Math.min(currentQty + qty, Math.max(1, Number(p.quantity_available || 1)));
+  if (existing?.id) {
+    const { error } = await sb.from("cart_items").update({ quantity: nextQty }).eq("id", existing.id);
+    return error || null;
+  }
+  const { error } = await sb.from("cart_items").insert({ buyer_id: session.user.id, product_id: productId, quantity: Math.min(qty, Math.max(1, Number(p.quantity_available || 1))) });
+  return error || null;
+}
+
 
 async function resolveLeviLocalAction(text) {
   const q = leviNormaliseText(text);
   if (!session) return null;
 
-  // Deterministic navigation intents. These are intentionally conservative;
-  // ordinary questions continue through the AI model.
+  // Deterministic navigation.
   if (/^(open|show|take me to|go to|view)\s+(my\s+)?cart$/.test(q) || /\b(show|open)\s+my\s+cart\b/.test(q)) {
-    toggleAiChat();
-    await navigate("cart");
-    return { handled: true, reply: "Done — I opened your cart." };
+    toggleAiChat(); await navigate("cart"); return { handled: true, reply: "Done — I opened your cart." };
   }
   if (/^(open|show|go to|take me to)\s+vendors?$/.test(q)) {
-    toggleAiChat();
-    await navigate("vendors");
-    return { handled: true, reply: "Done — here are the vendors." };
+    toggleAiChat(); await navigate("vendors"); return { handled: true, reply: "Done — here are the vendors." };
   }
   if (/^(open|show|go to|take me to)\s+(my\s+)?shop$/.test(q) && vendor) {
-    toggleAiChat();
-    await navigate("vendorDashboard");
-    return { handled: true, reply: "Done — I opened your shop dashboard." };
+    toggleAiChat(); await navigate("vendorDashboard"); return { handled: true, reply: "Done — I opened your shop dashboard." };
   }
 
-  const addIntent = /\b(add|put|place)\b.*\b(cart|basket)\b/.test(q) || /\b(add|put|place)\b.*\bthis\b/.test(q) || /\b(buy|purchase)\s+this\b/.test(q);
-  const removeIntent = /\b(remove|delete|take)\b.*\bcart\b/.test(q);
-  if (!addIntent && !removeIntent) return null;
+  const addIntent = /\b(add|put|place)\b[\s\S]*\b(cart|basket)\b/.test(q) || /\b(add|put|place)\b.*\b(this|that)\b/.test(q);
+  const removeIntent = /\b(remove|delete|take)\b[\s\S]*\bcart\b/.test(q);
+  const wishIntent = /\b(save|add|put)\b[\s\S]*\b(wishlist|wish list)\b/.test(q) || /\b(favourite|favorite|wishlist)\b/.test(q);
+  if (!addIntent && !removeIntent && !wishIntent) return null;
+
+  let mode = addIntent ? "add" : removeIntent ? "remove" : "wishlist";
+  let target = mode === "wishlist" ? q.replace(/\b(save|add|put|to|my|the|wishlist|wish|list|please|levi)\b/g, " ").trim()
+                                   : leviExtractCartTarget(q, mode === "remove" ? "remove" : "add");
+  target = target.replace(/\s{2,}/g, " ").trim();
 
   const qtyMatch = addIntent ? q.match(/\b(\d+)\s*(?:x|of)?\b/) : null;
   const quantity = Math.max(1, Math.min(20, qtyMatch ? parseInt(qtyMatch[1], 10) : 1));
-  const target = leviExtractCartTarget(q, addIntent ? "add" : "remove").replace(/^\d+\s*(?:x|of)?\s+/i, "").trim();
-  const resolved = await resolveLeviProduct(target);
-  if (!resolved.product) {
-    return { handled: true, reply: addIntent
-      ? (target ? `I couldn't find an active product matching “${target}”. Tell me the product name and I'll look again.` : "Tell me which product you want added, or open the product first and say “add this to my cart”.")
-      : (target ? `I couldn't find “${target}” in the marketplace. Tell me the exact product name and I'll try again.` : "Tell me which product you want removed from your cart.") };
-  }
-  if (resolved.matches?.length > 1 && target && !resolved.matches.some((p) => leviNormaliseText(p.name) === target)) {
-    const names = resolved.matches.slice(0, 4).map((p) => p.name).join(", ");
-    return { handled: true, reply: `I found a few matches: ${names}. Tell me which one you mean.` };
+
+  // Support "shoe and shirt", comma-separated requests, and natural lists.
+  const parts = (mode !== "remove" && /\s+and\s+|,/.test(target))
+    ? target.split(/\s+and\s+|,/).map(s => s.trim()).filter(Boolean)
+    : [target];
+
+  const results = [];
+  for (const part of parts.slice(0, 5)) {
+    const resolved = await resolveLeviProduct(part);
+    if (!resolved.product) { results.push({ part, error: "not-found" }); continue; }
+
+    if (resolved.matches?.length > 1 && !resolved.exact) {
+      results.push({ part, error: "ambiguous", matches: resolved.matches.slice(0,4) }); continue;
+    }
+
+    const product = resolved.product;
+    if (mode === "add") {
+      if (Number(product.quantity_available ?? 1) < 1) { results.push({ product, error: "out-of-stock" }); continue; }
+      const error = await addCartWithFallback(product.id, quantity);
+      results.push({ product, error: error ? "failed" : null });
+    } else if (mode === "remove") {
+      const { error } = await sb.from("cart_items").delete()
+        .eq("buyer_id", session.user.id).eq("product_id", product.id);
+      results.push({ product, error: error ? "failed" : null });
+    } else {
+      const { error } = favoriteIds.has(product.id)
+        ? { error: null }
+        : await sb.from("favorites").insert({ buyer_id: session.user.id, product_id: product.id });
+      if (!error) favoriteIds.add(product.id);
+      results.push({ product, error: error ? "failed" : null });
+    }
   }
 
-  const product = resolved.product;
-  if (addIntent) {
-    if (Number(product.quantity_available ?? 1) < 1) return { handled: true, reply: `${product.name} is currently out of stock, so I didn't add it.` };
-    const { error } = await sb.rpc("add_to_cart", { p_product_id: product.id, p_quantity: quantity });
-    if (error) return { handled: true, reply: `I found ${product.name}, but I couldn't add it to your cart just now. ${error.message || "Please try again."}` };
-    refreshNotifications();
-    updateCartFab();
-    return { handled: true, reply: `Done — I added ${quantity > 1 ? `${quantity} × ` : ""}${product.name} to your cart.` };
+  if (results.some(r => r.error === "ambiguous")) {
+    const names = results.filter(r => r.error === "ambiguous").flatMap(r => r.matches || []).map(p => p.name).slice(0,6);
+    return { handled: true, reply: `I found more than one match: ${names.join(", ")}. Tell me which one you mean.` };
   }
-  const { error } = await sb.from("cart_items").delete().eq("buyer_id", session.user.id).eq("product_id", product.id);
-  if (error) return { handled: true, reply: `I found ${product.name}, but I couldn't remove it just now.` };
-  refreshNotifications();
-  updateCartFab();
-  return { handled: true, reply: `Done — I removed ${product.name} from your cart.` };
+
+  const ok = results.filter(r => !r.error);
+  const failed = results.filter(r => r.error && r.error !== "out-of-stock" && r.error !== "not-found");
+  const missing = results.filter(r => r.error === "not-found");
+  const empty = results.filter(r => r.error === "out-of-stock");
+
+  refreshNotifications(); updateCartFab();
+
+  if (mode === "add") {
+    const lines = [];
+    if (ok.length) lines.push(`Done — I added ${ok.map(r => `${quantity > 1 ? `${quantity} × ` : ""}${r.product.name}`).join(", ")} to your cart.`);
+    if (empty.length) lines.push(`${empty.map(r => r.product.name).join(", ")} ${empty.length === 1 ? "is" : "are"} out of stock.`);
+    if (failed.length) lines.push(`I couldn't add ${failed.map(r => r.product.name).join(", ")} right now.`);
+    if (missing.length) lines.push(`I couldn't find ${missing.map(r => `“${r.part}”`).join(", ")}.`);
+    if (ok.length) await navigate("cart");
+    return { handled: true, reply: lines.join(" ") || "Tell me the product name, or open the product and say “add this to my cart”." };
+  }
+  if (mode === "remove") {
+    return { handled: true, reply: ok.length ? `Done — I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "I couldn't find that item in your cart." };
+  }
+  return { handled: true, reply: ok.length ? `Done — ${ok.map(r => r.product.name).join(", ")} ${ok.length === 1 ? "is" : "are"} on your wishlist.` : "I couldn't save that item right now." };
 }
 
 
@@ -10178,7 +10790,16 @@ function setupDraggableFab(fab, storageKey, onTap) {
     applyPosition(x, y);
   });
 }
-setupDraggableFab(byId("aiChatFab"), "levromart_ai_fab_pos", toggleAiChat);
+(function setupLeviFab() {
+  const fab = byId("aiChatFab");
+  if (!fab) return;
+  try { localStorage.removeItem("levromart_ai_fab_pos"); } catch (e) {}
+  fab.style.left = "";
+  fab.style.top = "";
+  fab.style.right = "";
+  fab.style.bottom = "";
+  fab.onclick = () => toggleAiChat();
+})();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
 // Levi's open chat is intentionally NOT draggable. A chat window is an
@@ -10194,6 +10815,15 @@ setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("car
   panel.style.right = "";
   panel.style.bottom = "";
   panel.style.transform = "";
+  const recenter = () => {
+    panel.style.left = "50%";
+    panel.style.top = "50%";
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    panel.style.transform = "translate(-50%, -50%)";
+  };
+  recenter();
+  window.addEventListener("resize", recenter);
 })();
 
 // ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
