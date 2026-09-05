@@ -7016,6 +7016,21 @@ async function enforceSingleSession() {
 // same as leaving "I am a…" on its default during a normal signup --
 // anyone who actually wants to sell can still apply as a vendor
 // afterward, same as always.
+function normalizeAuthPhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 11) digits = "234" + digits.slice(1);
+  return digits;
+}
+function authAliasFromPhone(phone) {
+  const digits = normalizeAuthPhone(phone);
+  return digits ? `p${digits}@accounts.levromart.app` : "";
+}
+function looksLikePhoneIdentifier(value) {
+  const raw = String(value || "").trim();
+  return !!raw && !raw.includes("@") && /^[+()\d\s-]{7,}$/.test(raw);
+}
+
 async function signInWithGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: "google",
@@ -7047,7 +7062,8 @@ async function submitAuth() {
     return;
   }
 
-  if (!email || !password) { errorEl.textContent = "Email and password are required."; errorEl.classList.remove("hidden"); return; }
+  if (!password) { errorEl.textContent = "Password is required."; errorEl.classList.remove("hidden"); return; }
+  if (authMode !== "register" && !email) { errorEl.textContent = "Email or phone number is required."; errorEl.classList.remove("hidden"); return; }
 
   const btn = byId("authSubmitBtn");
   btn.disabled = true;
@@ -7060,7 +7076,7 @@ async function submitAuth() {
       const phone = byId("loginPhone").value.trim();
 
       if (!name) throw new Error("Full name is required.");
-      if (!phone) throw new Error("Phone is required.");
+      if (!phone) throw new Error("Phone is required when creating an account.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
       if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
 
@@ -7087,8 +7103,9 @@ async function submitAuth() {
       }
 
       // The account is already confirmed by the server, so sign in immediately.
+      const loginIdentifier = email || authAliasFromPhone(phone);
       const { error: loginError } = await sb.auth.signInWithPassword({
-        email,
+        email: loginIdentifier,
         password
       });
       if (loginError) throw loginError;
@@ -7096,7 +7113,8 @@ async function submitAuth() {
       await enforceSingleSession();
       await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+      const loginIdentifier = looksLikePhoneIdentifier(email) ? authAliasFromPhone(email) : email;
+      const { error } = await sb.auth.signInWithPassword({ email: loginIdentifier, password });
       if (error) throw error;
       await enforceSingleSession();
       // The OTP check (and role-select / set-password, if either is still
@@ -7267,7 +7285,17 @@ async function confirmDeleteAccount() {
       body: JSON.stringify({ accessToken: freshAccessToken }),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Could not delete account.");
+    if (!res.ok) {
+      // Never expose raw PostgreSQL, PostgREST, foreign-key, or schema-cache
+      // errors to customers. Those are implementation details, not user-facing
+      // messages. Keep the detailed error in the browser console for debugging.
+      console.error("Account deletion failed:", json.error || json);
+      const technical = String(json.error || "").toLowerCase();
+      if (technical.includes("foreign key") || technical.includes("constraint") || technical.includes("schema cache") || technical.includes("postgrest") || technical.includes("delete_my_account")) {
+        throw new Error("We couldn't complete the account deletion. Please try again in a moment.");
+      }
+      throw new Error(json.error || "We couldn't complete the account deletion. Please try again.");
+    }
 
     byId("deleteAccountModal").classList.add("hidden");
     await sb.auth.signOut();
