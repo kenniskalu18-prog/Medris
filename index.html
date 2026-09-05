@@ -20,6 +20,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
+
+  /* Clean page-heading rhythm: headings must never visually collide with the
+     card/content block that follows them. */
+  main > h2, main > .page-title { margin-bottom: 1rem !important; }
+  main > h2 + .card, main > .page-title + .card { margin-top: 0.9rem !important; }
+  .order-selected-variant { margin-top: .45rem !important; padding: .55rem .7rem; border-radius: .7rem; background: color-mix(in srgb, var(--primary) 9%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
+  .order-selected-variant strong { color: var(--primary); }
+  #settingsAiConsentPageRow .settings-inline-btn { min-width: 4.25rem; justify-content:center; }
   :root {
     --brand-grad: linear-gradient(135deg, #14a894, #075c52);
     --primary: #0f766e;
@@ -4757,7 +4765,6 @@ const LIVE_TOUR_STEPS = [
   { icon: "fa-rotate", title: "Rent, buy, or request", body: "These quick actions take you straight into renting, buying, or requesting something you can't find.", selector: ".hero-quick-actions", view: "home" },
   { icon: "fa-border-all", title: "Browse by sector", body: "Tap a sector to narrow the marketplace down to just what's relevant to you: Healthcare, Food, Electronics, and more.", selector: ".sector-row", view: "home" },
   { icon: "fa-compass", title: "Get around from here", body: "The bottom bar is always one tap away, wherever you are on the site.", selector: "#bottomNav", view: "home" },
-  { icon: "fa-store", title: "This is a vendor", body: "Every card like this is a real, verified vendor. Tap one any time to see their storefront, products, and reviews.", selector: ".vendor-card", view: "vendors" },
   { icon: "fa-comments", title: "That's me, right there", body: "Tap this any time to talk to me. Ask what to buy, and I'll point you straight to a vendor, or explain how anything on here works.", selector: "#aiChatFab", view: "home" },
   { icon: "fa-bell", title: "Stay in the loop", body: "Turn on notifications so you're pinged the moment there's an order, offer, or update, right on your device.", selector: "#notifWrap", view: "home" },
 ];
@@ -4853,14 +4860,12 @@ async function runTourStep(token = liveTourRunToken) {
 
   let el = null;
   if (step.selector) {
-    el = await waitForTourTarget(step.selector, step.selector === ".vendor-card" ? 6500 : 5000);
+    el = await waitForTourTarget(step.selector, 5000);
     if (token !== liveTourRunToken) return;
     if (el) {
       const cs = getComputedStyle(el);
       const isFixed = cs.position === "fixed" || cs.position === "sticky" || el === byId("bottomNav");
       if (!isFixed) {
-        // For the vendor step, center the actual card and lock its animation so
-        // the spotlight cannot chase a moving card.
         el.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
         await new Promise(requestAnimationFrame);
         await new Promise(requestAnimationFrame);
@@ -4951,7 +4956,7 @@ function tourReposition() {
   if (byId("tourModal")?.classList.contains("hidden")) return;
   const step = LIVE_TOUR_STEPS[liveTourStep];
   const el = step?.selector ? [...document.querySelectorAll(step.selector)].find(tourIsVisible) : null;
-  if (el && step.selector === ".vendor-card") lockTourTarget(el);
+  if (el && step.selector) lockTourTarget(el);
   positionTourSpotlight(el?.getBoundingClientRect?.() || null, step?.selector === "#bottomNav");
 }
 window.addEventListener("resize", () => {
@@ -5922,10 +5927,24 @@ function renderAiConsentRow() {
     : `<span><i class="fa-solid fa-robot"></i> Help improve Levi</span><button class="btn btn-sm" onclick="setAiDataConsent(true)">Turn on</button>`;
 }
 async function setAiDataConsent(value) {
-  const { error } = await sb.from("users").update({ ai_data_consent: value }).eq("id", session.user.id);
-  if (error) { showToast(error.message, "error"); return; }
+  value = !!value;
+  if (!session?.user?.id || !profile) return;
+  // Update local state immediately so the toggle never remains visually stale.
+  const previous = !!profile.ai_data_consent;
   profile.ai_data_consent = value;
   renderAiConsentRow();
+  const pageRow = byId("settingsAiConsentPageRow");
+  if (pageRow) {
+    pageRow.innerHTML = `<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${value ? 'active' : ''}" onclick="setAiDataConsent(${!value})">${value ? 'On' : 'Off'}</button>`;
+  }
+  const { error } = await sb.from("users").update({ ai_data_consent: value }).eq("id", session.user.id);
+  if (error) {
+    profile.ai_data_consent = previous;
+    renderAiConsentRow();
+    hydrateSettingsPage();
+    showToast(error.message, "error");
+    return;
+  }
   showToast(value ? "Thanks, your chats may now be reviewed to improve Levi." : "Turned off. Your chats stay private again.", "success");
 }
 function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); }
@@ -6736,7 +6755,7 @@ function hydrateSettingsPage(){
   const vis=byId("leviVisibleSettingRow");
   if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
   const consent=byId("settingsAiConsentPageRow");
-  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent});setTimeout(hydrateSettingsPage,0)">${profile.ai_data_consent?'On':'Off'}</button>`;
+  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent})">${profile.ai_data_consent?'On':'Off'}</button>`;
   const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
   if(install&&oldInstall) install.innerHTML=oldInstall.innerHTML;if(notif&&oldNotif) notif.innerHTML=oldNotif.innerHTML;
   const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'} settings-row-icon"></i><span class="settings-row-copy"><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} — nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
@@ -6746,7 +6765,7 @@ function hydrateSettingsPage(){
 // ---------- MY DETAILS (any logged-in buyer/vendor's own contact info) ----------
 function renderEditProfile() {
   if (!session || !profile) return '<div class="empty-state">Please log in.</div>';
-  return `<h2><i class="fa-solid fa-id-card"></i> My details ${infoPopoverHtml("editProfileInfo", "Keep this up to date. It's what fills in automatically at checkout, so a typo here won't follow you into every future order.")}</h2>
+  return `<h2 class="page-title"><i class="fa-solid fa-id-card"></i> My details ${infoPopoverHtml("editProfileInfo", "Keep this up to date. It's what fills in automatically at checkout, so a typo here won't follow you into every future order.")}</h2>
   <div class="card" style="max-width:480px;">
     <div id="editProfileError" class="error-text hidden"></div>
     <label>Full name</label>
@@ -9078,8 +9097,8 @@ async function buyNow(vendorId, productId) {
       try { localStorage.removeItem(productVariantStorageKey(productId)); } catch (e) {}
     } catch (e) { console.warn("Variant stock sync after purchase failed", e); }
   }
-  if (chosenVariant?.name) {
-    await persistOrderItemVariants(orderId, [{ productId, variantName: chosenVariant.name, variantColor: chosenVariant.color || null }]);
+  if (chosenVariant && (chosenVariant.name || chosenVariant.color)) {
+    await persistOrderItemVariants(orderId, [{ productId, variantName: chosenVariant.name || null, variantColor: chosenVariant.color || null }]);
   }
   navigate("orderDetail", { orderId });
 }
@@ -11254,40 +11273,55 @@ async function persistOrderItemVariants(orderId, selections) {
         p_variant_color: item.variantColor || null,
       });
       if (!error) rpcOk = true;
-      else console.warn("Variant order metadata RPC failed; using direct sync", error);
+      else console.warn("Variant metadata RPC failed; continuing with direct sync", error);
     } catch (e) {
-      console.warn("Variant order metadata RPC failed; using direct sync", e);
+      console.warn("Variant metadata RPC failed; continuing with direct sync", e);
     }
 
-    // Always perform a direct sync as well. This makes the selected variation
-    // durable even on deployments where the RPC exists but does not update
-    // the newer variant columns. The same order_items row is then visible to
-    // both the buyer and vendor order pages.
     try {
-      const { data: rows, error: findErr } = await sb.from("order_items")
-        .select("id")
+      // Prefer the exact product row. For a one-item order, fall back to the
+      // only order_items row so the buyer/vendor view still gets the choice
+      // even when an older RPC used a different product_id mapping.
+      const { data: exactRows, error: exactErr } = await sb.from("order_items")
+        .select("id,product_id")
         .eq("order_id", orderId)
         .eq("product_id", item.productId);
-      if (findErr) throw findErr;
-      if (!rows?.length) throw new Error("Order item was not found for variant sync.");
+      if (exactErr) throw exactErr;
+
+      let rows = exactRows || [];
+      if (!rows.length) {
+        const { data: allRows, error: allErr } = await sb.from("order_items")
+          .select("id,product_id")
+          .eq("order_id", orderId);
+        if (allErr) throw allErr;
+        if ((allRows || []).length === 1) rows = allRows;
+      }
+      if (!rows.length) throw new Error("The order item could not be matched for variant sync.");
+
+      const ids = rows.map(r => r.id);
       const { error: updateErr } = await sb.from("order_items")
         .update({
           variant_name: item.variantName || null,
           variant_color: item.variantColor || null,
         })
-        .in("id", rows.map(r => r.id));
+        .in("id", ids);
       if (updateErr) throw updateErr;
+
       const { data: verifyRows, error: verifyErr } = await sb.from("order_items")
         .select("id,variant_name,variant_color")
-        .in("id", rows.map(r => r.id));
+        .in("id", ids);
       if (verifyErr) throw verifyErr;
-      const verified = (verifyRows || []).some(r => (r.variant_name || null) === (item.variantName || null) && (r.variant_color || null) === (item.variantColor || null));
-      if (!verified && (item.variantName || item.variantColor)) throw new Error("Order variation was not persisted by the database.");
+      const verified = (verifyRows || []).every(r =>
+        (r.variant_name || null) === (item.variantName || null) &&
+        (r.variant_color || null) === (item.variantColor || null)
+      );
+      if (!verified) throw new Error("The selected product variation was not persisted.");
     } catch (e) {
       allOk = false;
       console.warn("Direct order variant sync failed", e);
     }
-    if (!rpcOk && allOk === false) console.warn("Variant metadata could not be persisted", item);
+
+    if (!rpcOk && !allOk) console.warn("Variant metadata could not be persisted", item);
   }
   return allOk;
 }
@@ -11384,7 +11418,7 @@ async function renderOrderDetail(orderId) {
     ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
-      ${(item.variant_name || item.variant_color) ? `<p style="margin:.2rem 0 0;font-size:.82rem;"><i class="fa-solid fa-sliders"></i> <strong>Selected:</strong> ${esc(item.variant_name || "Variation")}${item.variant_color ? ` <span class="muted">· ${esc(item.variant_color)}</span>` : ""}</p>` : ""}
+      ${(item.variant_name || item.variant_color) ? `<div class="order-selected-variant"><i class="fa-solid fa-sliders"></i> <strong>Selected:</strong> ${esc(item.variant_name || "Variation")}${item.variant_color ? ` <span class="muted">· ${esc(item.variant_color)}</span>` : ""}</div>` : ""}
     </div>`).join("")}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
