@@ -88,21 +88,24 @@
     transition: background-color 0.25s ease, color 0.25s ease; touch-action: pan-x pan-y;
   }
   /* Clean branded refresh splash: no green skeleton/bar during boot.
-     Built from CSS only (white center + two accent arcs sliding inward)
-     so it always renders instantly, with no dependency on an image asset
-     ever failing to load or paint. Uses the app's live accent variables,
-     so it follows whatever accent color the user has chosen. */
+     Built from CSS only (white center + two accent arcs sliding inward
+     from opposite edges) so it always renders instantly, with no
+     dependency on an image asset ever failing to load or paint. Each arc
+     is a half of the same ring -- clipped to its own side -- so they are
+     unmistakably on opposite sides of the circle, not stacked together.
+     Uses the app's live accent variables, so it follows whatever accent
+     color the user has chosen. */
   #levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:var(--bg);opacity:1;visibility:visible;pointer-events:auto;transition:opacity .32s ease,visibility .32s ease;}
   #levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
   .levromart-splash-mark{position:relative;width:6.4rem;height:6.4rem;display:grid;place-items:center;}
-  .levromart-splash-mark .lrs-arc{position:absolute;inset:0;border-radius:50%;border:0.5rem solid transparent;box-sizing:border-box;opacity:0;}
-  .levromart-splash-mark .lrs-arc-a{border-top-color:var(--primary);border-right-color:var(--primary);transform:rotate(-135deg) translateX(-160%);animation:lrsArcAIn .62s cubic-bezier(.22,1,.36,1) .05s forwards;}
-  .levromart-splash-mark .lrs-arc-b{border-bottom-color:var(--primary-light,var(--primary));border-left-color:var(--primary-light,var(--primary));transform:rotate(45deg) translateX(160%);animation:lrsArcBIn .62s cubic-bezier(.22,1,.36,1) .16s forwards;}
+  .levromart-splash-mark .lrs-ring{position:absolute;inset:0;border-radius:50%;box-sizing:border-box;opacity:0;}
+  .levromart-splash-mark .lrs-ring-left{border:0.5rem solid var(--primary);clip-path:inset(0 50% 0 0);transform:translateX(-160%);animation:lrsRingLeftIn .62s cubic-bezier(.22,1,.36,1) .05s forwards;}
+  .levromart-splash-mark .lrs-ring-right{border:0.5rem solid var(--primary-light,var(--primary));clip-path:inset(0 0 0 50%);transform:translateX(160%);animation:lrsRingRightIn .62s cubic-bezier(.22,1,.36,1) .16s forwards;}
   .levromart-splash-mark .lrs-center{width:42%;height:42%;border-radius:50%;background:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--primary) 30%,transparent);z-index:1;opacity:0;transform:scale(.55);animation:lrsCenterIn .45s cubic-bezier(.22,1,.36,1) .32s forwards;}
-  @keyframes lrsArcAIn{0%{opacity:0;transform:rotate(-135deg) translateX(-160%);}45%{opacity:1;}100%{opacity:1;transform:rotate(-135deg) translateX(0);}}
-  @keyframes lrsArcBIn{0%{opacity:0;transform:rotate(45deg) translateX(160%);}45%{opacity:1;}100%{opacity:1;transform:rotate(45deg) translateX(0);}}
+  @keyframes lrsRingLeftIn{0%{opacity:0;transform:translateX(-160%);}45%{opacity:1;}100%{opacity:1;transform:translateX(0);}}
+  @keyframes lrsRingRightIn{0%{opacity:0;transform:translateX(160%);}45%{opacity:1;}100%{opacity:1;transform:translateX(0);}}
   @keyframes lrsCenterIn{from{opacity:0;transform:scale(.55);}to{opacity:1;transform:scale(1);}}
-  @media(prefers-reduced-motion:reduce){#levromartSplash{transition:none}.levromart-splash-mark .lrs-arc,.levromart-splash-mark .lrs-center{animation:none;opacity:1;transform:none;}}
+  @media(prefers-reduced-motion:reduce){#levromartSplash{transition:none}.levromart-splash-mark .lrs-ring,.levromart-splash-mark .lrs-center{animation:none;opacity:1;transform:none;}}
   header {
     background: var(--glass-bg); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
     color: var(--text); padding: calc(0.8rem + env(safe-area-inset-top, 0px)) 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
@@ -3793,22 +3796,6 @@ body { min-width:0 !important; }
 .notif-swipe-bg {
   transition: opacity .08s linear !important;
 }
-.swipe-intent-bar {
-  width:72px !important;
-  height:4px !important;
-  margin-top:.24rem !important;
-  border-radius:999px !important;
-  background:color-mix(in srgb,currentColor 18%,transparent) !important;
-  overflow:hidden !important;
-}
-.swipe-intent-bar > span {
-  display:block !important;
-  width:0 !important;
-  height:100% !important;
-  border-radius:inherit !important;
-  background:currentColor !important;
-  transition:width .04s linear !important;
-}
 .conv-swipe-action,
 #notifPanel .notif-swipe-bg {
   justify-content:center !important;
@@ -3868,8 +3855,6 @@ body { min-width:0 !important; }
 .conv-swipe-action,.notif-swipe-bg{width:150px!important;min-width:150px!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;z-index:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:.35rem!important;padding:.45rem .55rem!important;box-sizing:border-box!important;transition:opacity .04s linear,filter .12s ease!important;}
 .conv-swipe-action i,.notif-swipe-bg i{font-size:1.25rem!important;line-height:1!important;}
 .conv-swipe-action span:not(.swipe-intent-bar),.notif-swipe-bg span:not(.swipe-intent-bar){font-size:.72rem!important;font-weight:850!important;white-space:nowrap!important;}
-.swipe-intent-bar{width:92px!important;height:6px!important;margin-top:.18rem!important;border-radius:999px!important;overflow:hidden!important;background:rgba(255,255,255,.32)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 1px 5px rgba(0,0,0,.12)!important;}
-.swipe-intent-bar>span{width:0!important;height:100%!important;display:block!important;border-radius:inherit!important;background:#fff!important;box-shadow:0 0 12px rgba(255,255,255,.9)!important;}
 .conv-list-item,.notif-item{z-index:2!important;will-change:transform!important;touch-action:pan-y!important;-webkit-user-select:none!important;user-select:none!important;}
 .leaflet-container,.map,.map-container,#vendorMap,[data-map]{touch-action:none!important;overscroll-behavior:contain!important;}
 /* ================================================================
@@ -3933,32 +3918,30 @@ body { min-width:0 !important; }
   background:#16a34a !important;
   color:#fff !important;
 }
+/* The swipe reveal is now led by a real loading bar, not the icon: a big
+   determinate progress track that fills as the finger drags, so "this is
+   about to be archived/trashed/marked unread" reads as a loading bar
+   filling up rather than an icon popping in. */
 .conv-swipe-action i,
 .notif-swipe-bg i{
-  font-size:1.15rem !important;
+  font-size:.92rem !important;
   line-height:1 !important;
   width:auto !important;
   height:auto !important;
   margin:0 !important;
   color:inherit !important;
   background:none !important;
-}
-.conv-swipe-action span,
-.notif-swipe-bg > span:not(.swipe-intent-bar){
-  display:block !important;
-  white-space:nowrap !important;
-  font-size:.66rem !important;
-  font-weight:850 !important;
-  color:inherit !important;
+  opacity:.85 !important;
 }
 .swipe-intent-bar{
-  width:88px !important;
-  height:5px !important;
-  margin:.08rem 0 0 !important;
+  width:100% !important;
+  max-width:84px !important;
+  height:10px !important;
+  margin:.3rem 0 0 !important;
   border-radius:999px !important;
-  background:rgba(255,255,255,.28) !important;
+  background:rgba(255,255,255,.25) !important;
   overflow:hidden !important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35) !important;
 }
 .swipe-intent-bar > span{
   display:block !important;
@@ -3968,6 +3951,14 @@ body { min-width:0 !important; }
   background:#fff !important;
   box-shadow:0 0 10px rgba(255,255,255,.75) !important;
   transition:width .03s linear !important;
+}
+.conv-swipe-action span,
+.notif-swipe-bg > span:not(.swipe-intent-bar){
+  display:block !important;
+  white-space:nowrap !important;
+  font-size:.66rem !important;
+  font-weight:850 !important;
+  color:inherit !important;
 }
 .conv-swipe-action.active-intent,
 .notif-swipe-bg.active-intent{
@@ -4110,7 +4101,7 @@ body { min-width:0 !important; }
 
 </head>
 <body>
-<div id="levromartSplash" aria-hidden="true"><div class="levromart-splash-mark"><div class="lrs-arc lrs-arc-a"></div><div class="lrs-arc lrs-arc-b"></div><div class="lrs-center"></div></div></div>
+<div id="levromartSplash" aria-hidden="true"><div class="levromart-splash-mark"><div class="lrs-ring lrs-ring-left"></div><div class="lrs-ring lrs-ring-right"></div><div class="lrs-center"></div></div></div>
 <header>
   <div class="header-left">
     <div class="icon-wrap" id="profileWrap">
@@ -7721,6 +7712,18 @@ async function toggleChatArchived(conversationId) {
   setArchivedChatIds(ids);
   navigate("messages", {}, false);
 }
+async function handleSwipeMarkUnread(conversationId) {
+  const c = (window.__conversations || []).find((x) => x.conversation_id === conversationId);
+  const wasUnread = Number(c?.unread_count || 0) > 0;
+  try {
+    await sb.rpc("toggle_conversation_unread", { p_conversation_id: conversationId });
+    showToast(wasUnread ? "Marked as read." : "Marked as unread.", "success");
+  } catch (e) {
+    showToast("Couldn't update that chat. Try again.", "error");
+  }
+  await refreshNotifications();
+  navigate("messages", {}, false);
+}
 function convRowHtml(c) {
   const name = c.other_name || "User";
   const isUnread = c.unread_count > 0;
@@ -7959,7 +7962,11 @@ function onConvSwipeEnd(e) {
       state.item.style.transform = "translateX(-118%)";
       setTimeout(() => toggleChatArchived(state.item.dataset.conversationId), 160);
     } else if (actionDx >= 108) {
-      state.item.style.transform = "translateX(118%)";
+      // Marking read/unread doesn't remove the row from the "all" list, so
+      // it must snap back into place -- flying it off-screen (like archive
+      // does) left the row permanently gone with nothing ever bringing it
+      // back, since the re-render that follows replaces this exact node.
+      state.item.style.transform = "translateX(0)";
       setTimeout(() => handleSwipeMarkUnread(state.item.dataset.conversationId), 160);
     } else {
       state.item.style.transform = "translateX(0)";
