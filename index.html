@@ -1804,24 +1804,6 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   }
 }
 
-/* Levi panel: centered by default, but the header is a real drag handle.
-   Once the user moves it, left/top positioning takes over cleanly. */
-.ai-chat-panel.draggable-panel {
-  cursor: default !important;
-}
-.ai-chat-panel.draggable-panel .drawer-header {
-  cursor: grab !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  touch-action: none !important;
-}
-.ai-chat-panel.draggable-panel.dragging .drawer-header { cursor: grabbing !important; }
-.ai-chat-panel.draggable-panel.is-positioned {
-  transform: none !important;
-}
-.ai-chat-panel.draggable-panel.dragging {
-  transition: none !important;
-}
 
 /* Tour — no jumpy resize/restart, no accidental overlap */
 .tour-callout{
@@ -2225,7 +2207,7 @@ html { scroll-padding-top: 86px !important; }
   transform: translate(-50%,-50%) !important;
   touch-action: auto !important;
 }
-.ai-chat-panel .drawer-header { cursor: default !important; user-select: none !important; }
+.ai-chat-panel .drawer-header { cursor: default !important; user-select: none !important; -webkit-user-select:none !important; }
 
 @media (max-width: 720px) {
   #settingsPanel, #profilePanel, #notifPanel { width: min(304px,78vw) !important; max-width: 304px !important; }
@@ -3757,10 +3739,6 @@ body { min-width:0 !important; }
 /* Confirmation must sit over the Levi panel and every other application layer. */
 #confirmModal { z-index:2000 !important; }
 #confirmModal .modal-content { position:relative !important; z-index:2001 !important; }
-/* Levi's chat panel can be dragged from its header. */
-.ai-chat-panel.draggable-panel { cursor:default !important; }
-.ai-chat-panel.draggable-panel .drawer-header { cursor:grab !important; user-select:none !important; -webkit-user-select:none !important; }
-.ai-chat-panel.draggable-panel.dragging { transition:none !important; }
 /* Never let page-level profile gestures steal horizontal UI gestures. */
 .hscroll, .cat-row, .range-tabs, .product-gallery-thumbs, .table-wrap,
 .conv-row-wrap, .notif-item-wrap, [data-horizontal-scroll] {
@@ -3883,6 +3861,10 @@ body { min-width:0 !important; }
 #payCommissionBtn{margin-top:1.15rem!important;}
 @media(max-width:720px){.package-card .flex{flex-wrap:wrap!important;align-items:stretch!important}.package-card .flex .btn{min-height:42px!important}#payCommissionBtn{width:100%!important;justify-content:center!important;margin-top:1.15rem!important}}
 /* Payment cards: keep the heading, helper/info control and payment CTA visually separated. */
+.order-buyer-card{margin-bottom:1.15rem!important;}
+.order-buyer-contact-actions{margin-top:.55rem!important;}
+.order-action-wrap{margin-bottom:1rem!important;}
+.order-action-wrap .btn{margin:0!important;}
 #payOnlineBtn{display:flex!important;align-items:center!important;justify-content:center!important;width:fit-content!important;max-width:100%!important;margin-top:1.05rem!important;}
 #payOnlineError{margin-bottom:.15rem!important;}
 .card h3 + #payOnlineError + #payOnlineBtn{margin-top:1rem!important;}
@@ -5791,6 +5773,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPa
 
 // ---------- NOTIFICATIONS (real, persisted, realtime) ----------
 let notifChannel = null;
+let notifRenderEpoch = 0;
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
   if (diff < 60) return "just now";
@@ -5803,7 +5786,7 @@ let notifViewMode = "inbox"; // inbox | archived | trash
 let notifSelectMode = false;
 let notifSelectedIds = new Set();
 
-async function refreshNotifications() {
+async function refreshNotifications(renderPanel = true) {
   notifCount = 0;
   const notifWrap = byId("notifWrap");
   if (!session || !profile) { notifWrap?.classList.add("hidden"); return; }
@@ -5865,15 +5848,17 @@ async function refreshNotifications() {
 
   renderBottomNav();
 
-  if (byId("notifPanel")) await renderNotifPanel();
+  if (renderPanel && byId("notifPanel")) await renderNotifPanel();
 }
 
 async function renderNotifPanel() {
+  const renderToken = ++notifRenderEpoch;
   const panel = byId("notifPanel");
   if (!panel) return;
   let q = sb.from("notifications").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(30);
   q = notifViewMode === "trash" ? q.not("deleted_at", "is", null) : q.is("deleted_at", null).eq("archived", notifViewMode === "archived");
   const { data: items } = await q;
+  if (renderToken !== notifRenderEpoch) return;
   window.__notifPanelIds = (items || []).map((n) => n.id);
 
   const modeLabel = { inbox: "Notifications", archived: "Archived", trash: "Recently deleted" }[notifViewMode];
@@ -5990,6 +5975,18 @@ function toggleNotifSelect(id) {
   updateNotifSelectionActions();
 }
 
+// Tap outside the selected rows (or use browser back) to cancel batch selection.
+// Toolbar controls remain interactive and are excluded from this dismissal.
+function clearBatchSelectionOnOutsideTap(e) {
+  const t = e?.target;
+  if (!t || !msgSelectMode && !notifSelectMode) return;
+  if (t.closest?.(".conv-list-item, .notif-item, .messages-selection-toolbar, .notif-select-bar")) return;
+  if (t.closest?.(".modal, .drawer, .ai-chat-panel, input, textarea, select")) return;
+  if (msgSelectMode) { msgSelectMode = false; msgSelectedIds.clear(); filterMsgList(); updateMsgSelectionBar(); }
+  if (notifSelectMode) { notifSelectMode = false; notifSelectedIds.clear(); renderNotifPanel(); }
+}
+document.addEventListener("click", clearBatchSelectionOnOutsideTap);
+
 function updateNotifSelectionActions() {
   const bar = byId("notifPanel")?.querySelector(".notif-select-bar");
   if (!bar) return;
@@ -6022,16 +6019,19 @@ function exitNotifSelectMode(rerender = true) {
 }
 
 async function batchMarkNotifsRead(read) {
-  const ids = [...notifSelectedIds];
+  const ids = [...notifSelectedIds].map(String);
   if (!ids.length) { showToast(`Select at least one notification first.`, "info"); return; }
+  notifRenderEpoch++;
   const { error } = await sb.from("notifications").update({ read }).in("id", ids);
   if (error) { showToast(error.message || "Couldn't update notifications.", "error"); return; }
-  const count = ids.length;
   const panel = byId("notifPanel");
-  ids.forEach(id => { const row = panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`); if (row) row.classList.toggle("unread", !read); });
+  ids.forEach(id => {
+    const row = panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`);
+    if (row) row.classList.toggle("unread", !read);
+  });
+  const count = ids.length;
   exitNotifSelectMode(false);
-  renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false);
   showToast(`${count} notification${count === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
 }
 
@@ -6042,16 +6042,19 @@ async function batchMarkNotifsRead(read) {
 // selected with no easy way back -- hence a confirm first, sized to the
 // actual count involved.
 async function batchArchiveOrRestoreSelected() {
-  const ids = [...notifSelectedIds];
+  const ids = [...notifSelectedIds].map(String);
   if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
   const restoring = notifViewMode === "archived";
   const verb = restoring ? "Restore" : "Archive";
   const { error } = await sb.from("notifications").update({ archived: !restoring }).in("id", ids);
   if (error) { showToast(error.message || `Couldn't ${verb.toLowerCase()} notifications.`, "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
   const count = ids.length;
   exitNotifSelectMode(false);
-  renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false);
   showToast(restoring ? `${count} restored.` : `${count} archived.`, "success");
 }
 async function quickArchiveNotif(id) {
@@ -6067,14 +6070,18 @@ async function quickUnarchiveNotif(id) {
 
 // ---- inbox/archive -> trash (soft delete) ----
 async function batchTrashSelected() {
-  const ids = [...notifSelectedIds];
+  const ids = [...notifSelectedIds].map(String);
   if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
-  const { error } = await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+  notifRenderEpoch++;
+  const now = new Date().toISOString();
+  const { error } = await sb.from("notifications").update({ deleted_at: now }).in("id", ids);
   if (error) { showToast(error.message || "Couldn't move notifications to trash.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
   const count = ids.length;
   exitNotifSelectMode(false);
-  renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false);
   showToast(`${count} moved to trash.`, "success");
 }
 async function quickTrashNotif(id) {
@@ -6085,14 +6092,17 @@ async function quickTrashNotif(id) {
 
 // ---- trash -> restore ----
 async function batchRestoreSelected() {
-  const ids = [...notifSelectedIds];
+  const ids = [...notifSelectedIds].map(String);
   if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
   const { error } = await sb.from("notifications").update({ deleted_at: null }).in("id", ids);
   if (error) { showToast(error.message || "Couldn't restore notifications.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
   const count = ids.length;
   exitNotifSelectMode(false);
-  renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false);
   showToast(`${count} restored.`, "success");
 }
 async function quickRestoreFromTrash(id) {
@@ -6108,15 +6118,18 @@ async function confirmPurgeOne(id) {
   refreshNotifications();
 }
 async function batchPurgeSelected() {
-  const ids = [...notifSelectedIds];
+  const ids = [...notifSelectedIds].map(String);
   if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
   if (!(await showConfirmDialog(`Permanently delete ${ids.length} notification${ids.length === 1 ? "" : "s"}? This can't be undone.`, { title: "Delete forever", okLabel: "Delete forever", danger: true }))) return;
+  notifRenderEpoch++;
   const { error } = await sb.from("notifications").delete().in("id", ids);
   if (error) { showToast(error.message || "Couldn't delete notifications.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
   const count = ids.length;
   exitNotifSelectMode(false);
-  renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false);
   showToast(`${count} deleted permanently.`, "success");
 }
 
@@ -11002,6 +11015,12 @@ async function persistOrderItemVariants(orderId, selections) {
         })
         .in("id", rows.map(r => r.id));
       if (updateErr) throw updateErr;
+      const { data: verifyRows, error: verifyErr } = await sb.from("order_items")
+        .select("id,variant_name,variant_color")
+        .in("id", rows.map(r => r.id));
+      if (verifyErr) throw verifyErr;
+      const verified = (verifyRows || []).some(r => (r.variant_name || null) === (item.variantName || null) && (r.variant_color || null) === (item.variantColor || null));
+      if (!verified && (item.variantName || item.variantColor)) throw new Error("Order variation was not persisted by the database.");
     } catch (e) {
       allOk = false;
       console.warn("Direct order variant sync failed", e);
@@ -11123,9 +11142,9 @@ async function renderOrderDetail(orderId) {
   if (isVendor) {
     const { data: contact } = await sb.rpc("get_order_buyer_contact", { p_order_id: orderId });
     const c = (contact && contact[0]) || {};
-    html += `<div class="card"><h3><i class="fa-solid fa-address-card"></i> Buyer</h3>
-      <p>${esc(c.name || "Buyer")}</p>
-      <div class="flex" style="gap:.5rem;flex-wrap:wrap;">
+    html += `<div class="card order-buyer-card"><h3><i class="fa-solid fa-address-card"></i> Buyer</h3>
+      <p style="margin-bottom:.45rem;">${esc(c.name || "Buyer")}</p>
+      <div class="flex order-buyer-contact-actions" style="gap:.7rem;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-sm" type="button" onclick="messageBuyerFromOrder('${orderId}')"><i class="fa-solid fa-comment-dots"></i> Message buyer</button>
         ${c.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(c.phone)}"><i class="fa-solid fa-phone"></i> ${esc(c.phone)}</a>` : `<span class="muted" style="font-size:0.85rem;align-self:center;">No phone on file</span>`}
       </div>
@@ -11176,7 +11195,7 @@ async function renderOrderDetail(orderId) {
     </div>`;
   }
 
-  html += `<div class="flex" style="margin-top:1rem;">${orderActionButtonsHtml(order, isBuyer, isVendor, feePaid)}</div>`;
+  html += `<div class="order-action-wrap" style="margin-top:1.35rem;display:flex;gap:.85rem;flex-wrap:wrap;align-items:center;">${orderActionButtonsHtml(order, isBuyer, isVendor, feePaid)}</div>`;
 
   if (isBuyer && order.status === "completed" && !order.review) {
     html += `<div class="card"><h3>Leave a review</h3>
@@ -13567,57 +13586,8 @@ function setupDraggableFab(fab, storageKey, onTap) {
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
 // Levi's chat panel stays centered; only the FAB itself is draggable.
-(function setupAiChatPanelDrag(){
-  const panel = byId("aiChatPanel");
-  const header = panel?.querySelector(".drawer-header");
-  if(!panel || !header || panel.dataset.dragReady === "1") return;
-  panel.dataset.dragReady = "1";
-  panel.classList.add("draggable-panel");
-  let dragging=false, moved=false, pointerId=null, sx=0, sy=0, sl=0, st=0;
-  const key="levromart_ai_panel_pos";
-  const clamp=(x,y)=>{
-    const margin=8, topMin=8;
-    const maxX=Math.max(margin,window.innerWidth-panel.offsetWidth-margin);
-    const maxY=Math.max(topMin,window.innerHeight-panel.offsetHeight-margin);
-    return {x:Math.min(Math.max(x,margin),maxX),y:Math.min(Math.max(y,topMin),maxY)};
-  };
-  const apply=(x,y)=>{
-    panel.classList.add("is-positioned");
-    panel.style.left=`${x}px`; panel.style.top=`${y}px`; panel.style.right="auto"; panel.style.bottom="auto"; panel.style.transform="none";
-  };
-  try{
-    const saved=JSON.parse(localStorage.getItem(key)||"null");
-    if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)){ const p=clamp(saved.x,saved.y); apply(p.x,p.y); }
-  }catch(_){}
-  header.addEventListener("pointerdown",e=>{
-    if(e.target.closest("button,a,input,select,textarea")) return;
-    dragging=true; moved=false; pointerId=e.pointerId; sx=e.clientX; sy=e.clientY;
-    const r=panel.getBoundingClientRect(); sl=r.left; st=r.top;
-    try{ header.setPointerCapture(e.pointerId); }catch(_){}
-  });
-  header.addEventListener("pointermove",e=>{
-    if(!dragging||e.pointerId!==pointerId) return;
-    const dx=e.clientX-sx,dy=e.clientY-sy;
-    if(!moved&&Math.hypot(dx,dy)>5){ moved=true; panel.classList.add("dragging"); }
-    if(!moved)return;
-    const p=clamp(sl+dx,st+dy); apply(p.x,p.y);
-    e.preventDefault();
-  });
-  const end=e=>{
-    if(!dragging||e.pointerId!==pointerId)return;
-    dragging=false; panel.classList.remove("dragging");
-    if(moved){const r=panel.getBoundingClientRect();try{localStorage.setItem(key,JSON.stringify({x:r.left,y:r.top}));}catch(_){} }
-    pointerId=null;
-  };
-  header.addEventListener("pointerup",end);
-  header.addEventListener("pointercancel",end);
-  window.addEventListener("resize",()=>{
-    const r=panel.getBoundingClientRect();
-    if(!Number.isFinite(r.left)||!Number.isFinite(r.top))return;
-    const p=clamp(r.left,r.top); apply(p.x,p.y);
-  });
-})();
-
+// Levi chat panel is intentionally NOT draggable. It always opens centered.
+try { localStorage.removeItem('levromart_ai_panel_pos'); } catch (_) {}
 function closeLeviAfterCartAction(){
   const panel=byId("aiChatPanel");
   if(panel) panel.classList.add("hidden");
@@ -13653,6 +13623,8 @@ document.addEventListener("click", (e) => {
 });
 
 window.addEventListener("popstate", (e) => {
+  if (msgSelectMode) { msgSelectMode = false; msgSelectedIds.clear(); }
+  if (notifSelectMode) { notifSelectMode = false; notifSelectedIds.clear(); }
   if (dismissibleModalId) {
     DISMISSIBLE_MODAL_CLOSERS[dismissibleModalId]?.();
     return;
