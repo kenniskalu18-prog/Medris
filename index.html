@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- LEVROMART REAL FIX BUILD: orders-live-2026-09-05T10:54+01 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Levromart</title>
@@ -2423,6 +2424,7 @@ html { scroll-padding-top: 86px !important; }
 .hero-search input { padding-left:3.1rem !important; }
 .info-popover-wrap { display:inline-flex !important; align-items:center !important; flex:0 0 auto !important; margin-left:.45rem !important; }
 .info-btn { flex:0 0 auto !important; margin:0 !important; }
+.info-popover { position:fixed !important; z-index:10000 !important; }
 
 /* Compact, consistent sheet width on phones. */
 @media (max-width:720px) {
@@ -2447,16 +2449,19 @@ html { scroll-padding-top: 86px !important; }
 }
 
 
-/* FINAL: draggable Levi FAB wins over all legacy fixed-position rules. */
+/* FINAL: Levi FAB is genuinely draggable. JavaScript writes left/top with
+   !important so no legacy right/bottom rule can lock it in place. */
 .ai-chat-fab {
   position:fixed !important;
   left:auto !important;
   top:auto !important;
-  right:auto !important;
-  bottom:auto !important;
+  right:1rem !important;
+  bottom:calc(5.3rem + env(safe-area-inset-bottom, 0px)) !important;
   touch-action:none !important;
   cursor:grab !important;
   z-index:470 !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
 }
 .ai-chat-fab.dragging { cursor:grabbing !important; }
 
@@ -3818,17 +3823,28 @@ function toggleInfoPopover(id, evt) {
 // so after showing it, nudge it back on-screen instead of letting it run
 // off either side or the bottom.
 function positionInfoPopover(el) {
-  el.style.left = "0px";
+  const wrap = el?.closest?.(".info-popover-wrap");
+  const btn = wrap?.querySelector?.(".info-btn");
+  if (!el || !btn) return;
+  const margin = 12;
+  const btnRect = btn.getBoundingClientRect();
+  const width = Math.min(300, window.innerWidth - margin * 2);
   el.classList.remove("info-popover-above");
-  const margin = 10;
-  const rect = el.getBoundingClientRect();
-  const overflowRight = rect.right - (window.innerWidth - margin);
-  if (overflowRight > 0) el.style.left = `-${overflowRight}px`;
-  const rect2 = el.getBoundingClientRect();
-  if (rect2.left < margin) el.style.left = `${parseFloat(el.style.left) + (margin - rect2.left)}px`;
-
-  const rect3 = el.getBoundingClientRect();
-  if (rect3.bottom > window.innerHeight - margin) el.classList.add("info-popover-above");
+  el.style.position = "fixed";
+  el.style.width = `${width}px`;
+  el.style.maxWidth = `calc(100vw - ${margin * 2}px)`;
+  el.style.zIndex = "10000";
+  let left = btnRect.left;
+  if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
+  if (left < margin) left = margin;
+  el.style.left = `${left}px`;
+  // Measure after width/position are applied, then choose above/below.
+  el.style.top = `${btnRect.bottom + 8}px`;
+  let r = el.getBoundingClientRect();
+  if (r.bottom > window.innerHeight - margin) {
+    el.classList.add("info-popover-above");
+    el.style.top = `${Math.max(margin, btnRect.top - r.height - 8)}px`;
+  }
 }
 function byId(id) { return document.getElementById(id); }
 
@@ -4715,6 +4731,38 @@ function subscribeNotifications() {
     .subscribe();
 }
 
+// ---------- LIVE ORDERS ----------
+let ordersLiveChannel = null;
+let ordersLiveTimer = null;
+let ordersLiveRefreshTimer = null;
+function refreshVisibleOrderView() {
+  if (!["vendorOrders", "buyerOrders", "orderDetail"].includes(currentView)) return;
+  clearTimeout(ordersLiveRefreshTimer);
+  ordersLiveRefreshTimer = setTimeout(() => {
+    navigate(currentView, currentViewParams || {}, false);
+  }, 180);
+}
+function subscribeOrderUpdates() {
+  if (ordersLiveChannel) { try { sb.removeChannel(ordersLiveChannel); } catch (e) {} ordersLiveChannel = null; }
+  if (ordersLiveTimer) { clearInterval(ordersLiveTimer); ordersLiveTimer = null; }
+  if (!session) return;
+
+  const channelName = `orders-live-${session.user.id}-${Date.now()}`;
+  ordersLiveChannel = sb.channel(channelName);
+  if (profile?.role === "vendor" && vendor?.id) {
+    ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `vendor_id=eq.${vendor.id}` }, refreshVisibleOrderView);
+  } else if (profile?.role !== "admin") {
+    ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `buyer_id=eq.${session.user.id}` }, refreshVisibleOrderView);
+  }
+  // Also catch item-level changes (including selected variation metadata).
+  ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, refreshVisibleOrderView);
+  ordersLiveChannel.subscribe();
+
+  // Fallback for projects where the orders table has not been added to the
+  // Supabase Realtime publication. This is deliberately light.
+  ordersLiveTimer = setInterval(refreshVisibleOrderView, 5000);
+}
+
 // ---------- AUTH ----------
 async function refreshAuthState() {
   const { data } = await sb.auth.getSession();
@@ -4734,6 +4782,7 @@ async function refreshAuthState() {
   renderBottomNav();
   await refreshNotifications();
   subscribeNotifications();
+  subscribeOrderUpdates();
   loadAiVoices();
   // Google sign-in creates the account straight away with no chance to
   // pick buyer vs vendor first (unlike the manual signup form, which asks
@@ -5890,6 +5939,8 @@ async function addToCart(productId, qty, variant) {
   showToast(variant ? `Added ${variant.name} to your cart.` : "Added to cart.", "success");
   updateCartFab();
   refreshNotifications();
+  // A successful add always takes the buyer straight to the cart.
+  await navigate("cart");
 }
 // One-tap add straight from a product card's grid/rail listing, without
 // opening the product page first -- same RPC as addToCart, just with a
@@ -5906,6 +5957,9 @@ async function quickAddToCart(evt, productId, btn) {
   btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
   btn.classList.add("added");
   setTimeout(() => { btn.innerHTML = original; btn.classList.remove("added"); }, 1200);
+  // Quick-add follows the same rule as the full product page: go directly
+  // to the cart after the item is successfully added.
+  await navigate("cart");
 }
 async function updateCartQty(cartItemId, newQty) {
   if (newQty < 1) return;
@@ -9024,26 +9078,46 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   dateTo = dateTo || "";
   vendorOrderStatsPeriod = "today";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, buyer:users(name), items:order_items(variant_name,variant_color,product:products(is_service,name)), payments(payment_type, status)").eq("vendor_id", vendor.id);
+  // Use order_items(*) so this page keeps working before/after the optional
+  // variation columns are added. A missing variant column must never make the
+  // entire Orders page look empty.
+  let query = sb.from("orders").select("*, buyer:users(name), items:order_items(*,product:products(is_service,name)), payments(payment_type,status)").eq("vendor_id", vendor.id);
   if (status !== "all") query = query.eq("status", status);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
   // Stats always reflect the vendor's full order history, not whatever
   // status/type/payment/date filters the list below happens to be set to
   // -- run both queries together instead of one after the other.
-  const [{ data: allOrders }, { data: statsOrders }] = await Promise.all([
+  const [{ data: allOrders, error: allOrdersError }, { data: statsOrders, error: statsError }] = await Promise.all([
     query.order("created_at", { ascending: false }),
-    sb.from("orders").select("status, created_at").eq("vendor_id", vendor.id),
+    sb.from("orders").select("status, created_at, status_changed_at, completed_at, cancelled_at, updated_at").eq("vendor_id", vendor.id),
   ]);
-  let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
+  // If the timestamp migration has not been run yet, fall back to the base
+  // order query instead of rendering an empty page.
+  let safeAllOrders = allOrders;
+  if (allOrdersError) {
+    console.warn("Rich vendor order query failed; using compatibility query", allOrdersError);
+    let fallback = sb.from("orders").select("*, buyer:users(name), items:order_items(*,product:products(is_service,name)), payments(payment_type,status)").eq("vendor_id", vendor.id);
+    if (status !== "all") fallback = fallback.eq("status", status);
+    if (dateFrom) fallback = fallback.gte("created_at", `${dateFrom}T00:00:00`);
+    if (dateTo) fallback = fallback.lte("created_at", `${dateTo}T23:59:59`);
+    const r = await fallback.order("created_at", { ascending: false });
+    safeAllOrders = r.data || [];
+  }
+  let orders = type === "all" ? safeAllOrders : (safeAllOrders || []).filter((o) => orderCategory(o) === type);
   if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
-  window.__orderStatsOrders = statsOrders || [];
+  let safeStatsOrders = statsOrders || [];
+  if (statsError) {
+    const { data: fallbackStats } = await sb.from("orders").select("status, created_at").eq("vendor_id", vendor.id);
+    safeStatsOrders = fallbackStats || [];
+  }
+  window.__orderStatsOrders = safeStatsOrders;
 
   // Three rows of tab pills used to wrap into an unreadable jumble on
   // narrow screens — compact dropdowns plus a date range say the same
   // thing in a fraction of the space.
   let html = `<h2>Orders</h2>`;
-  html += orderStatsHtml(statsOrders || []);
+  html += orderStatsHtml(safeStatsOrders);
   html += `<div class="flex" style="gap:0.6rem;flex-wrap:wrap;margin:0.8rem 0;">
     <select onchange="navigate('vendorOrders',{status:this.value,type:'${type}',payment:'${payment}',dateFrom:'${dateFrom}',dateTo:'${dateTo}'})" style="flex:1;min-width:150px;">
       ${ORDER_TABS.map((t) => `<option value="${t}" ${t === status ? "selected" : ""}>${t === "all" ? "All statuses" : esc(t.replace("_", " ").replace(/^./, (c) => c.toUpperCase()))}</option>`).join("")}
@@ -9084,12 +9158,24 @@ async function renderBuyerOrders(status, type, payment, dateFrom, dateTo) {
   dateFrom = dateFrom || "";
   dateTo = dateTo || "";
 
-  let query = sb.from("orders").select("id, order_type, status, total_amount, created_at, vendor:vendors(business_name), items:order_items(variant_name,variant_color,product:products(is_service,name)), payments(payment_type, status)").eq("buyer_id", session.user.id);
+  // order_items(*) is intentionally used here so the buyer Orders page is
+  // compatible whether or not the optional variation columns exist yet.
+  let query = sb.from("orders").select("*, vendor:vendors(business_name), items:order_items(*,product:products(is_service,name)), payments(payment_type,status)").eq("buyer_id", session.user.id);
   if (status !== "all") query = query.eq("status", status);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
-  const { data: allOrders } = await query.order("created_at", { ascending: false });
-  let orders = type === "all" ? allOrders : (allOrders || []).filter((o) => orderCategory(o) === type);
+  const { data: allOrders, error: allOrdersError } = await query.order("created_at", { ascending: false });
+  let safeAllOrders = allOrders;
+  if (allOrdersError) {
+    console.warn("Rich buyer order query failed; using compatibility query", allOrdersError);
+    let fallback = sb.from("orders").select("*, vendor:vendors(business_name), items:order_items(*,product:products(is_service,name)), payments(payment_type,status)").eq("buyer_id", session.user.id);
+    if (status !== "all") fallback = fallback.eq("status", status);
+    if (dateFrom) fallback = fallback.gte("created_at", `${dateFrom}T00:00:00`);
+    if (dateTo) fallback = fallback.lte("created_at", `${dateTo}T23:59:59`);
+    const r = await fallback.order("created_at", { ascending: false });
+    safeAllOrders = r.data || [];
+  }
+  let orders = type === "all" ? safeAllOrders : (safeAllOrders || []).filter((o) => orderCategory(o) === type);
   if (payment !== "all") orders = (orders || []).filter((o) => (payment === "paid" ? isOrderPaid(o) : !isOrderPaid(o)));
 
   let html = `<h2><i class='fa-solid fa-clipboard-list'></i> My Orders</h2>`;
@@ -9139,18 +9225,25 @@ function orderStatusBadgeClass(status) {
 // the bottom with cancelled — a dispute needs an admin's attention, not
 // day-to-day action from the vendor, so it doesn't need to compete for
 // top-of-list space. Everything stays newest-first within its own group.
+function orderActivityIso(order) {
+  if (!order) return null;
+  if (order.status === "completed" && order.completed_at) return order.completed_at;
+  if (order.status === "cancelled" && order.cancelled_at) return order.cancelled_at;
+  return order.status_changed_at || order.updated_at || order.created_at || null;
+}
+function orderActivityLabel(order) {
+  const iso = orderActivityIso(order);
+  if (!iso) return "";
+  if (order.status === "completed") return `Completed ${orderDateTimeStr(iso)}`;
+  if (order.status === "cancelled") return `Cancelled ${orderDateTimeStr(iso)}`;
+  if (order.status !== "pending" && iso !== order.created_at) return `Updated ${orderDateTimeStr(iso)}`;
+  return `Placed ${orderDateTimeStr(order.created_at || iso)}`;
+}
+// No artificial status ranking. Orders appear in the order their latest
+// status activity happened. Completed does not permanently sit above
+// cancelled, and cancelled does not permanently sit above completed.
 function sortOrdersForList(orders) {
-  const rank = (o) => {
-    if (o.status === "pending" || o.status === "confirmed") return 0;
-    if (o.status === "handed_over" || o.status === "returned") return 1;
-    if (o.status === "completed") return 2;
-    return 3; // disputed, cancelled
-  };
-  return [...(orders || [])].sort((a, b) => {
-    const ra = rank(a), rb = rank(b);
-    if (ra !== rb) return ra - rb;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+  return [...(orders || [])].sort((a, b) => new Date(orderActivityIso(b) || 0) - new Date(orderActivityIso(a) || 0));
 }
 
 // Generic search-any-table helper — hides <tr> rows (and, if a table ends
@@ -9196,7 +9289,7 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   if (!historyOrders || !historyOrders.length) return "";
   const byDate = new Map();
   historyOrders.forEach((o) => {
-    const key = new Date(o.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    const key = new Date(orderActivityIso(o) || o.created_at).toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key).push(o);
   });
@@ -9207,6 +9300,7 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
       <div>
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
+        <p class="muted" style="font-size:.76rem;margin:.15rem 0 0;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>
       </div>
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
     </div>`).join("");
@@ -9273,7 +9367,7 @@ function orderListHtml(orders, isBuyerView) {
       <td>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</td>
       <td style="text-transform:capitalize;">${esc(o.order_type)}</td>
       <td>${naira(o.total_amount)}${orderVariantSummary(o) ? `<div class="muted" style="font-size:.72rem;margin-top:.15rem;">${esc(orderVariantSummary(o))}</div>` : ""}</td>
-      <td>${o.created_at ? orderDateTimeStr(o.created_at) : ""}</td>
+      <td>${orderActivityIso(o) ? esc(orderActivityLabel(o)) : ""}</td>
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
@@ -9283,7 +9377,7 @@ function orderListHtml(orders, isBuyerView) {
         <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
         <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
         ${orderVariantSummary(o) ? `<p class="muted" style="font-size:0.76rem;margin:.12rem 0 0;"><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</p>` : ""}
-        ${o.created_at ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-solid fa-calendar-days"></i> ${orderDateTimeStr(o.created_at)}</p>` : ""}
+        ${orderActivityIso(o) ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>` : ""}
       </div>
       <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
     </div>`).join("") + moreBtn;
@@ -9317,7 +9411,7 @@ async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
     .from("orders")
-    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id, lat, lng), items:order_items(id, quantity, unit_price, rental_start_date, rental_end_date, variant_name, variant_color, product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
+    .select("*, vendor:vendors(id, business_name, phone, whatsapp_number, address, city, opening_hours, user_id, lat, lng), items:order_items(*,product:products(name)), payments(*), review:reviews(id), disputes(id, reason, status, admin_notes, vendor_response, created_at), package:vendor_packages(name)")
     .eq("id", orderId)
     .maybeSingle();
   if (error || !order) return '<div class="empty-state">Order not found.</div>';
@@ -9344,6 +9438,7 @@ async function renderOrderDetail(orderId) {
       <span class="badge ${orderStatusBadgeClass(order.status)}" style="text-transform:capitalize;flex-shrink:0;">${order.status.replace("_", " ")}</span>
     </div>
     ${order.created_at ? `<p class="muted" style="font-size:0.8rem;margin-top:0.7rem;"><i class="fa-solid fa-calendar-days"></i> Placed ${orderDateTimeStr(order.created_at)}</p>` : ""}
+    ${(order.status === "completed" || order.status === "cancelled") && orderActivityIso(order) ? `<p class="muted" style="font-size:0.8rem;margin-top:0.25rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(order))}</p>` : ""}
     ${ORDER_STATUS_HELP[order.status]
       ? order.status === "pending"
         ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
@@ -11769,10 +11864,10 @@ function setupDraggableFab(fab, storageKey, onTap) {
     return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, minY), maxY) };
   }
   function applyPosition(x, y) {
-    fab.style.left = `${x}px`;
-    fab.style.top = `${y}px`;
-    fab.style.right = "auto";
-    fab.style.bottom = "auto";
+    fab.style.setProperty("left", `${x}px`, "important");
+    fab.style.setProperty("top", `${y}px`, "important");
+    fab.style.setProperty("right", "auto", "important");
+    fab.style.setProperty("bottom", "auto", "important");
   }
   function savePosition() {
     const rect = fab.getBoundingClientRect();
@@ -11787,7 +11882,15 @@ function setupDraggableFab(fab, storageKey, onTap) {
     }
   } catch (e) {}
 
-  fab.addEventListener("pointerdown", (e) => {
+    // Re-clamp once the header and bottom navigation have their final
+  // mobile layout. This also repairs any old saved top-left coordinate.
+  requestAnimationFrame(() => {
+    const r = fab.getBoundingClientRect();
+    const { x, y } = clamp(r.left, r.top);
+    applyPosition(x, y);
+  });
+
+fab.addEventListener("pointerdown", (e) => {
     dragging = true; moved = false; pointerId = e.pointerId;
     startClientX = e.clientX; startClientY = e.clientY;
     const rect = fab.getBoundingClientRect();
