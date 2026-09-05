@@ -517,7 +517,7 @@
   #appealsAccordion.open .accordion-body { max-height: 2000px; overflow-y: auto; }
   /* Order history can run to dozens/hundreds of orders over time — scroll
      inside a capped height instead of clipping content past 320px. */
-  #orderHistoryAccordion.open .accordion-body { max-height: 60vh; overflow-y: auto; }
+  #orderHistoryAccordion.open .accordion-body { max-height: 12000px; overflow: visible; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -3116,6 +3116,367 @@ body:has(#settings-page) #app{overflow-x:clip;}
   .settings-page-swatches .accent-swatch{width:34px;height:34px;flex-basis:34px;}
 }
 
+
+/* ===== FINAL STANDARD UI PASS — valid CSS only ===== */
+
+/* ================================================================
+   FINAL ORDER LIST / HISTORY UI — clean responsive cards
+   The order page must use real card layout; never let inline content
+   collapse into a text stream on narrow screens.
+   ================================================================ */
+#orderListWrap,
+#orderHistoryAccordion { width:100%; min-width:0; }
+
+#orderListWrap {
+  display:flex;
+  flex-direction:column;
+  gap:.72rem;
+}
+
+.order-list-card,
+.order-history-card {
+  appearance:none;
+  -webkit-appearance:none;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  border-radius:1.05rem;
+  box-shadow:0 7px 24px rgba(15,23,42,.07);
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.order-list-card:hover,
+.order-history-card:hover {
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--primary) 28%,var(--border));
+  box-shadow:0 10px 28px rgba(15,23,42,.10);
+}
+.order-list-card:active,
+.order-history-card:active { transform:none; }
+.order-list-card:focus-visible,
+.order-history-card:focus-visible {
+  outline:3px solid color-mix(in srgb,var(--primary) 28%,transparent);
+  outline-offset:2px;
+}
+
+.order-list-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:1rem;
+  padding:1rem 1.05rem;
+}
+.order-list-main,
+.order-history-main {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  gap:.22rem;
+}
+.order-list-main strong,
+.order-history-main strong {
+  display:block;
+  min-width:0;
+  color:var(--text);
+  font-size:.98rem;
+  line-height:1.25;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+.order-list-main > span,
+.order-history-meta {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.28rem;
+  min-width:0;
+  color:var(--text-muted);
+  font-size:.84rem;
+  line-height:1.35;
+}
+.order-list-main small,
+.order-history-main small {
+  display:flex;
+  align-items:center;
+  gap:.34rem;
+  min-width:0;
+  color:var(--text-muted);
+  font-size:.76rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.order-list-main small i,
+.order-history-main small i { color:var(--primary); flex:none; }
+.order-list-status,
+.order-history-status {
+  justify-self:end;
+  align-self:center;
+  flex:none;
+  white-space:nowrap;
+  min-width:0;
+}
+
+#orderHistoryAccordion { margin-top:1.2rem !important; }
+#orderHistoryAccordion > .accordion-trigger {
+  width:100%;
+  box-sizing:border-box;
+  margin:0;
+  min-height:58px;
+  padding:.85rem 1rem;
+  border-radius:1rem;
+  background:color-mix(in srgb,var(--card) 88%,var(--primary) 4%);
+  border:1px solid var(--border);
+}
+#orderHistoryAccordion > .accordion-trigger > span {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:.7rem;
+}
+#orderHistoryAccordion > .accordion-trigger > span > i { color:var(--primary); }
+#orderHistoryAccordion > .accordion-body {
+  padding:0 !important;
+  margin:0;
+}
+#orderHistoryAccordion.open > .accordion-body {
+  padding:.1rem 0 .9rem !important;
+}
+.order-history-date {
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin:1.2rem .15rem .65rem;
+  color:var(--text-muted);
+  font-size:.92rem;
+  font-weight:750;
+}
+.order-history-date i { color:var(--primary); }
+.order-history-day {
+  display:flex;
+  flex-direction:column;
+  gap:.65rem;
+}
+.order-history-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:1rem;
+  padding:.95rem 1rem;
+}
+.order-history-separator { opacity:.6; }
+
+/* Status badges stay in exactly one column. They never drop below the
+   order text merely because the description is long. */
+.order-list-card .badge,
+.order-history-card .badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  max-width:8rem;
+  padding:.38rem .7rem;
+  border-radius:999px;
+  font-size:.76rem;
+  line-height:1.1;
+  font-weight:750;
+}
+
+@media (max-width:600px) {
+  #orderListWrap { gap:.62rem; }
+  .order-list-card,
+  .order-history-card {
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:.7rem;
+    border-radius:.95rem;
+  }
+  .order-list-card { padding:.82rem .85rem; }
+  .order-history-card { padding:.82rem .85rem; }
+  .order-list-main strong,
+  .order-history-main strong { font-size:.9rem; }
+  .order-list-main > span,
+  .order-history-meta { font-size:.78rem; }
+  .order-list-main small,
+  .order-history-main small { font-size:.7rem; }
+  .order-list-card .badge,
+  .order-history-card .badge { font-size:.7rem; padding:.34rem .58rem; }
+  .order-history-date { margin:.95rem .1rem .55rem; font-size:.85rem; }
+}
+
+/* Never allow long vendor/buyer names or timestamps to force a second
+   status row. Text wraps only inside the left content column. */
+.order-list-main,
+.order-history-main { overflow:hidden; }
+.order-list-main strong,
+.order-list-main span,
+.order-list-main small,
+.order-history-main strong,
+.order-history-main span,
+.order-history-main small { overflow-wrap:anywhere; word-break:normal; }
+
+/* The page itself owns vertical scrolling. Do not create a second history
+   scroller that fights touch scrolling on iOS. */
+#orderHistoryAccordion .accordion-body { overflow:visible !important; }
+
+/* During live order refreshes, avoid transitions that can make the list
+   appear to twitch as cards are replaced. */
+body.orders-refreshing .order-list-card,
+body.orders-refreshing .order-history-card { transition:none !important; }
+
+
+
+/* Interactive hero backdrop */
+.hero-photo-row{position:relative;z-index:1;}
+.hero-photo-link{flex:1 1 0;min-width:0;height:100%;padding:0;border:0;background:none;display:block;cursor:pointer;overflow:hidden;}
+.hero-photo-link img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s ease,filter .25s ease;}
+.hero-photo-link:hover img,.hero-photo-link:focus-visible img{transform:scale(1.025);filter:saturate(1.06);}
+.hero-photo-scrim{z-index:2;pointer-events:none;}
+
+
+
+
+/* ================================================================
+   FINAL 2026-09-05 STABILITY PASS
+   One source of truth for viewport width, settings rows, orders and hero.
+   ================================================================ */
+html, body {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:hidden !important;
+}
+body { box-sizing:border-box !important; }
+*, *::before, *::after { box-sizing:border-box; }
+img, svg, video, canvas, iframe { max-width:100%; }
+#app {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:clip !important;
+}
+#app > * { min-width:0 !important; max-width:100% !important; }
+
+.settings-page {
+  width:min(100%, 760px) !important;
+  max-width:760px !important;
+  min-width:0 !important;
+  margin:0 auto !important;
+  padding:1rem max(0px, env(safe-area-inset-left)) 7.5rem max(0px, env(safe-area-inset-right)) !important;
+  overflow:visible !important;
+}
+.settings-page-header { min-width:0 !important; }
+.settings-page-section {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+.settings-page-section h3,
+.settings-page-section p,
+.settings-control-copy,
+.settings-control-copy strong,
+.settings-control-copy span,
+.settings-simple-row span,
+.settings-toggle-row span,
+.settings-action-row span { min-width:0 !important; max-width:100% !important; overflow-wrap:anywhere !important; }
+.settings-choice,
+.settings-toggle-row,
+.settings-simple-row,
+.settings-action-row { width:100% !important; max-width:100% !important; min-width:0 !important; }
+.settings-simple-row,
+.settings-toggle-row {
+  grid-template-columns:1.35rem minmax(0,1fr) auto !important;
+  align-items:center !important;
+}
+.settings-status-pill {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:58px !important;
+  min-height:32px !important;
+  padding:.35rem .7rem !important;
+  border:1px solid var(--border) !important;
+  border-radius:999px !important;
+  color:var(--text-muted) !important;
+  font-size:.68rem !important;
+  font-weight:750 !important;
+  white-space:nowrap !important;
+}
+.settings-status-pill.active { color:var(--primary) !important; border-color:color-mix(in srgb,var(--primary) 45%,var(--border)) !important; background:color-mix(in srgb,var(--primary) 9%,transparent) !important; }
+
+@media (max-width:600px) {
+  .settings-page { padding-left:.75rem !important; padding-right:.75rem !important; }
+  .settings-page-header { gap:.65rem !important; }
+  .settings-page-header h2 { font-size:1.45rem !important; }
+  .settings-page-header p { font-size:.75rem !important; }
+  .settings-page-section { padding:.9rem !important; border-radius:16px !important; margin-bottom:.7rem !important; }
+  .settings-page-section h3 { font-size:.98rem !important; }
+  .settings-section-note { font-size:.72rem !important; }
+  .settings-choice { min-height:52px !important; padding:.65rem 0 !important; }
+  .settings-choice strong { font-size:.82rem !important; }
+  .settings-choice small { font-size:.67rem !important; }
+  .settings-control-row.levi-size-control { grid-template-columns:minmax(0,1fr) auto !important; }
+  .settings-control-copy strong { font-size:.82rem !important; }
+  .settings-control-copy span { font-size:.68rem !important; }
+  .settings-toggle-row,.settings-simple-row,.settings-action-row { gap:.55rem !important; }
+  .settings-inline-btn { min-width:54px !important; min-height:34px !important; }
+  .settings-status-pill { min-width:52px !important; padding:.32rem .55rem !important; }
+  .settings-voice-wrap .settings-select { font-size:.72rem !important; }
+}
+
+/* Order cards: authoritative layout, including history. */
+#orderListWrap,
+#orderHistoryAccordion,
+#orderHistoryAccordion .accordion-body,
+.order-history-day { width:100% !important; min-width:0 !important; max-width:100% !important; }
+#orderHistoryAccordion .accordion-body { overflow:visible !important; }
+.order-list-card,
+.order-history-card {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) max-content !important;
+  align-items:center !important;
+  gap:.8rem !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  padding:.9rem 1rem !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+.order-list-main,
+.order-history-main { min-width:0 !important; overflow:hidden !important; }
+.order-list-main > span,
+.order-history-meta { min-width:0 !important; display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:.25rem !important; }
+.order-list-main small,
+.order-history-main small { min-width:0 !important; overflow-wrap:anywhere !important; }
+.order-list-status,
+.order-history-status { grid-column:2 !important; grid-row:1 !important; align-self:center !important; justify-self:end !important; white-space:nowrap !important; }
+.order-history-card .order-history-main strong { font-size:.92rem !important; }
+.order-history-card .order-history-meta { font-size:.78rem !important; }
+.order-history-card .order-history-main small { font-size:.7rem !important; }
+.order-list-card .badge,
+.order-history-card .badge { width:max-content !important; max-width:100% !important; white-space:nowrap !important; }
+@media (max-width:430px) {
+  .order-list-card,.order-history-card { grid-template-columns:minmax(0,1fr) max-content !important; gap:.55rem !important; padding:.78rem .78rem !important; }
+  .order-list-status,.order-history-status { font-size:.66rem !important; padding:.32rem .5rem !important; }
+}
+
+/* Hero backdrop: always three equal interactive slots when three photos exist. */
+.hero-photo-collage { position:absolute !important; inset:0 !important; overflow:hidden !important; }
+.hero-photo-row { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; width:100% !important; height:100% !important; gap:2px !important; }
+.hero-photo-link { display:block !important; width:100% !important; height:100% !important; min-width:0 !important; overflow:hidden !important; padding:0 !important; margin:0 !important; border:0 !important; background:none !important; cursor:pointer !important; }
+.hero-photo-link img { display:block !important; width:100% !important; height:100% !important; min-width:0 !important; max-width:none !important; object-fit:cover !important; }
+.hero-photo-scrim { position:absolute !important; inset:0 !important; z-index:2 !important; pointer-events:none !important; }
+.hero-photo-link { position:relative !important; z-index:3 !important; }
+
+/* No horizontal page pan on mobile; horizontal rails remain independently scrollable. */
+.hero, .settings-page, .container, .card, section, main { min-width:0 !important; }
+.hscroll, .cat-row, .storefront-product-strip { max-width:100% !important; }
+
 </style>
 
 </head>
@@ -4124,7 +4485,10 @@ function toggleInlineMenu(id, evt) {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   if (willOpen) list.classList.remove("hidden");
 }
-document.addEventListener("click", () => {
+document.addEventListener("click", (event) => {
+  // Info controls and the floating popover own their clicks. Do not let this
+  // global outside-click handler immediately close a popover that just opened.
+  if (event.target.closest?.(".info-btn, .info-popover")) return;
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
   document.querySelectorAll(".info-popover").forEach((p) => {
@@ -4158,20 +4522,23 @@ function toggleReviewsList() {
   if (chevron) chevron.style.transform = willOpen ? "rotate(180deg)" : "rotate(0deg)";
 }
 function toggleInfoPopover(id, evt) {
-  evt?.stopPropagation();
+  evt?.preventDefault?.();
+  evt?.stopPropagation?.();
   const el = byId(id);
   if (!el) return;
+  const sourceButton = evt?.currentTarget || evt?.target?.closest?.(".info-btn");
   const willOpen = el.classList.contains("hidden");
   document.querySelectorAll(".info-popover").forEach((p) => {
-    p.classList.add("hidden");
-    p.style.left = ""; p.style.top = "";
+    if (p !== el) { p.classList.add("hidden"); p.style.left = ""; p.style.top = ""; }
   });
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
-  if (!willOpen) return;
-  const sourceButton = evt?.currentTarget || evt?.target?.closest?.(".info-btn");
+  if (!willOpen) {
+    el.classList.add("hidden");
+    return;
+  }
   if (!el._infoOriginParent) { el._infoOriginParent = el.parentElement; el._infoOriginNext = el.nextSibling; }
   el._infoButton = sourceButton || el._infoButton || el._infoOriginParent?.querySelector?.(".info-btn");
-  document.body.appendChild(el);
+  if (el.parentElement !== document.body) document.body.appendChild(el);
   el.classList.remove("hidden");
   positionInfoPopover(el);
 }
@@ -4660,32 +5027,39 @@ function toggleSettingsPanel() { navigate("settings"); }
 // were ready) still has a way to install the app / turn on notifications
 // later, instead of only ever getting one shot at it.
 function renderSettingsAppRows() {
-  const installRow = byId("settingsInstallRow");
-  if (installRow) {
+  const renderInstall = (targetId) => {
+    const row = byId(targetId);
+    if (!row) return;
     if (isStandalone()) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> App</span><span class="badge success">Installed</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>App installation</strong><small>Levromart is installed on this device.</small></span><span class="settings-status-pill">Installed</span>`;
     } else if (deferredInstallPrompt) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><button class="btn btn-sm" onclick="runInstallPrompt().then(renderSettingsAppRows)">Install</button>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Install Levromart for a faster app-like experience.</small></span><button class="settings-inline-btn active" onclick="runInstallPrompt().then(() => renderSettingsAppRows())">Install</button>`;
     } else if (isIos()) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><span class="muted" style="font-size:0.78rem;text-align:right;">Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> → "Add to Home Screen"</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> then choose “Add to Home Screen”.</small></span>`;
     } else {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><span class="muted" style="font-size:0.78rem;">Not available in this browser</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Install from your browser when the install option becomes available.</small></span>`;
     }
-  }
-  const notifRow = byId("settingsNotifRow");
-  if (notifRow) {
+  };
+  const renderNotif = (targetId) => {
+    const row = byId(targetId);
+    if (!row) return;
     if (!pushSupported()) {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;">Not supported here</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Notifications are not supported in this browser.</small></span>`;
     } else if (Notification.permission === "granted") {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="badge success">On</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Levromart notifications are enabled.</small></span><span class="settings-status-pill active">On</span>`;
     } else if (Notification.permission === "denied") {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;text-align:right;">Blocked. Enable in your browser's site settings</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Blocked by your browser. Enable them in site settings.</small></span>`;
     } else {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><button class="btn btn-sm" onclick="enablePushNotifications().then(renderSettingsAppRows)">Turn on</button>`;
+      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Get updates about orders and important activity.</small></span><button class="settings-inline-btn" onclick="enablePushNotifications().then(() => renderSettingsAppRows())">Turn on</button>`;
     }
-  }
+  };
+  renderInstall("settingsInstallRow");
+  renderNotif("settingsNotifRow");
+  renderInstall("settingsInstallPageRow");
+  renderNotif("settingsNotifPageRow");
   renderAiConsentRow();
 }
+
 function renderAiConsentRow() {
   const row = byId("settingsAiConsentRow");
   if (!row || !profile) return;
@@ -5091,40 +5465,42 @@ function subscribeNotifications() {
 let ordersLiveChannel = null;
 let ordersLiveTimer = null;
 let ordersLiveRefreshTimer = null;
+let lastOrderScrollAt = 0;
+let orderScrollWatchBound = false;
+function ensureOrderScrollWatch() {
+  if (orderScrollWatchBound) return;
+  window.addEventListener("scroll", () => { lastOrderScrollAt = performance.now(); }, { passive:true });
+  orderScrollWatchBound = true;
+}
 function refreshVisibleOrderView() {
   if (!["vendorOrders", "buyerOrders", "orderDetail"].includes(currentView)) return;
+  ensureOrderScrollWatch();
   clearTimeout(ordersLiveRefreshTimer);
 
   const savedView = currentView;
   const savedParams = { ...(currentViewParams || {}) };
-  const savedScrollY = window.scrollY;
-  const historyEl = byId("orderHistoryAccordion");
-  const savedHistoryOpen = !!historyEl?.classList.contains("open");
-  const savedListExpanded = !!orderListExpanded;
-  const savedListMode = orderListViewMode;
-
-  ordersLiveRefreshTimer = setTimeout(async () => {
+  const waitForScrollToSettle = () => {
     if (currentView !== savedView) return;
-
-    // Preserve UI state while still refreshing the underlying order data.
-    const beforeRefresh = window.scrollY;
-    await navigate(savedView, savedParams, false);
-
-    orderListExpanded = savedListExpanded;
-    orderListViewMode = savedListMode;
-
-    requestAnimationFrame(() => {
-      const freshHistory = byId("orderHistoryAccordion");
-      if (savedHistoryOpen && freshHistory && !freshHistory.classList.contains("open")) {
-        freshHistory.classList.add("open");
+    const elapsed = performance.now() - lastOrderScrollAt;
+    if (elapsed < 550) {
+      ordersLiveRefreshTimer = setTimeout(waitForScrollToSettle, Math.max(120, 550 - elapsed));
+      return;
+    }
+    ordersLiveRefreshTimer = setTimeout(async () => {
+      if (currentView !== savedView) return;
+      document.body.classList.add("orders-refreshing");
+      try {
+        // navigate() captures the scroll position immediately before replacing
+        // #app, rather than using a stale value captured when the realtime
+        // event first arrived. This prevents iOS from jumping upward while
+        // the user is actively reading history.
+        await navigate(savedView, savedParams, false);
+      } finally {
+        requestAnimationFrame(() => document.body.classList.remove("orders-refreshing"));
       }
-
-      // Restore after the new DOM has laid out. This is the important part:
-      // realtime refresh must never fling the buyer/vendor back to page top.
-      const targetY = Math.max(0, savedScrollY ?? beforeRefresh ?? 0);
-      window.scrollTo({ top: targetY, behavior: "auto" });
-    });
-  }, 180);
+    }, 120);
+  };
+  waitForScrollToSettle();
 }
 let ordersVisibilityRefreshBound = false;
 function handleOrdersVisibilityRefresh() {
@@ -5811,13 +6187,22 @@ function toggleSettingsMoreSection() {
   row?.classList.toggle("open", open);
   row?.querySelector(".settings-more-chevron")?.classList.toggle("open", open);
 }
-function resetLevromartPreferences() {
-  ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+async function resetLevromartPreferences() {
+  const confirmed = await showConfirmDialog(
+    "Reset Levromart preferences? Your appearance, Levi size, visibility, voice and interface preferences on this device will return to their defaults.",
+    { title: "Reset preferences", okLabel: "Reset", danger: true }
+  );
+  if (!confirmed) return;
+  ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "medris-levi-fab-size", "medris-levi-visible", "medris-ai-voice", "medris-ai-voice-preset", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
   currentAccentIndex = 0;
+  leviVisible = true;
   setTheme("light");
   setAccent(0);
+  applyLeviFabSize();
+  applyLeviVisibility();
   const panel = byId("settingsMoreMenu");
   panel?.classList.add("hidden");
+  hydrateSettingsPage();
   showToast("Preferences restored to default.", "success");
 }
 function showLevromartAbout() {
@@ -5939,6 +6324,8 @@ async function navigate(view, params = {}, pushHistory = true) {
     html = errorStateHtml(err);
     lastRenderError = err.message;
   }
+  const preserveSameViewScroll = !pushHistory && previousView === view;
+  const sameViewScrollY = preserveSameViewScroll ? window.scrollY : 0;
   app.innerHTML = html;
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
@@ -5946,7 +6333,11 @@ async function navigate(view, params = {}, pushHistory = true) {
   if (view === "settings") setTimeout(hydrateSettingsPage, 0);
   // A same-view, non-history refresh (notably live order updates) must keep
   // the user's scroll position. Real navigation still starts at the top.
-  if (pushHistory || previousView !== view) window.scrollTo(0, 0);
+  if (preserveSameViewScroll) {
+    requestAnimationFrame(() => window.scrollTo({ top: sameViewScrollY, behavior: "auto" }));
+  } else if (pushHistory || previousView !== view) {
+    window.scrollTo(0, 0);
+  }
 }
 
 // ---------- AUTO-SLIDING CAROUSELS (category row + horizontal product/vendor rails) ----------
@@ -6012,10 +6403,20 @@ async function renderHome() {
   const [{ data: trending }, { data: topVendors }, { data: recentProducts }] = await Promise.all([
     vendorQuery.order("view_count", { ascending: false }).limit(6),
     topVendorsQuery.order("avg_rating", { ascending: false }).limit(6),
-    recentPhotosQuery.order("created_at", { ascending: false }).limit(3),
+    recentPhotosQuery.order("created_at", { ascending: false }).limit(12),
   ]);
 
-  const heroPhotos = (recentProducts || []).map((p) => ({ id:p.id, name:p.name || "Product", url:p.photos?.[0] })).filter((p) => p.url).filter((p,i,a) => a.findIndex(x => x.url === p.url) === i).slice(0, 3);
+  const heroPhotos = [];
+  const seenHeroUrls = new Set();
+  for (const product of (recentProducts || [])) {
+    for (const url of (Array.isArray(product.photos) ? product.photos : [])) {
+      if (!url || seenHeroUrls.has(url)) continue;
+      seenHeroUrls.add(url);
+      heroPhotos.push({ id: product.id, name: product.name || "Product", url });
+      if (heroPhotos.length === 3) break;
+    }
+    if (heroPhotos.length === 3) break;
+  }
 
   let html = `<div class="hero">
     ${heroPhotos.length >= 1 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((p) => `<button type="button" class="hero-photo-link" onclick="navigate(\'productDetail\',{productId:\'${esc(p.id)}\'})" aria-label="View ${esc(p.name)}"><img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy" /></button>`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
@@ -9733,8 +10134,8 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   });
   let inner = "";
   byDate.forEach((dayOrders, dateKey) => {
-    inner += `<div class="category-group-header">${esc(dateKey)}</div>`;
-    inner += dayOrders.map((o) => `<div class="order-history-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><div class="order-history-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${o.order_type} · ${naira(o.total_amount)}</span><small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small></div><span class="badge ${orderStatusBadgeClass(o.status)} order-history-status">${o.status.replace("_", " ")}</span></div>`).join("");
+    inner += `<div class="order-history-date"><i class="fa-regular fa-calendar"></i><span>${esc(dateKey)}</span></div>`;
+    inner += `<div class="order-history-day">${dayOrders.map((o) => `<button type="button" class="order-history-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-history-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span class="order-history-meta"><span>${esc(o.order_type)}</span><span class="order-history-separator">·</span><span>${naira(o.total_amount)}</span></span><small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small></span><span class="badge ${orderStatusBadgeClass(o.status)} order-history-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("")}</div>`;
   });
   return `<div class="accordion-section" id="orderHistoryAccordion" style="margin-top:1.2rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-clock-rotate-left"></i> Order history (${historyOrders.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -9802,7 +10203,7 @@ function orderListHtml(orders, isBuyerView) {
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
-  return shown.map((o) => `<div class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><div class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${o.order_type} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</div><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status.replace("_", " ")}</span></div>`).join("") + moreBtn;
+  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -10082,6 +10483,13 @@ const PAYOUT_STATUS_SHORT_LABEL = {
 };
 
 async function updateOrderStatus(orderId, newStatus) {
+  if (newStatus === "cancelled") {
+    const confirmed = await showConfirmDialog(
+      "Decline this order? The buyer will be notified and the order cannot be restored through this action.",
+      { title: "Decline order", okLabel: "Yes, decline", danger: true }
+    );
+    if (!confirmed) return;
+  }
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
   navigate("orderDetail", { orderId });
@@ -10986,8 +11394,7 @@ function exportFinancePdf() {
       th{background:#f3f8f7;} .stats{display:flex;gap:1.5rem;margin:1.2rem 0;}
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
-    /* ===== FINAL STANDARD UI PASS — valid CSS only ===== */
-</style></head><body>
+    </style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
@@ -12529,9 +12936,3 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
-.hero-photo-row{position:relative;z-index:1;}
-.hero-photo-link{flex:1 1 0;min-width:0;height:100%;padding:0;border:0;background:none;display:block;cursor:pointer;overflow:hidden;}
-.hero-photo-link img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s ease,filter .25s ease;}
-.hero-photo-link:hover img,.hero-photo-link:focus-visible img{transform:scale(1.025);filter:saturate(1.06);}
-.hero-photo-scrim{z-index:2;pointer-events:none;}
-
