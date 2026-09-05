@@ -1315,6 +1315,193 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
   #settingsPanel .accordion-trigger span i { width:29px !important; height:29px !important; font-size:.72rem !important; }
 }
 
+
+/* ========================================================================
+   LEVROMART 3.0 — PRODUCT-GRADE MOBILE UI
+   Calm hierarchy, generous reading width, unboxed iconography, predictable
+   sheets and a centered assistant. This block intentionally supersedes the
+   older experimental drawer rules above rather than requiring a risky rewrite
+   of the rendering code.
+   ======================================================================== */
+:root {
+  --ui-sheet-width: min(66vw, 540px);
+  --ui-sheet-radius: 24px;
+  --ui-hairline: color-mix(in srgb, var(--text) 10%, transparent);
+  --ui-soft: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+/* --- stable sheets --- */
+.side-drawer {
+  width: var(--ui-sheet-width) !important;
+  max-width: 540px !important;
+  min-width: 340px !important;
+  padding: calc(1.25rem + env(safe-area-inset-top,0px)) 1.35rem calc(1.25rem + env(safe-area-inset-bottom,0px)) !important;
+  background: color-mix(in srgb, var(--bg) 92%, var(--card)) !important;
+  backdrop-filter: blur(34px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(155%) !important;
+  border-color: var(--ui-hairline) !important;
+  box-shadow: 0 20px 80px rgba(0,0,0,.28) !important;
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
+}
+.side-drawer * { touch-action: pan-y; }
+.side-drawer button, .side-drawer a, .side-drawer input, .side-drawer select, .side-drawer textarea { touch-action: manipulation; }
+.side-drawer.left { border-radius: 0 var(--ui-sheet-radius) var(--ui-sheet-radius) 0 !important; }
+.side-drawer.right { border-radius: var(--ui-sheet-radius) 0 0 var(--ui-sheet-radius) !important; }
+.drawer-header { margin-bottom: 1.25rem !important; }
+.drawer-header h4 { font-size: 1.55rem !important; letter-spacing: -.045em; }
+.drawer-close-btn { width: 42px !important; height: 42px !important; border-radius: 14px !important; border: 1px solid var(--ui-hairline) !important; background: transparent !important; }
+.drawer-close-btn:hover { background: var(--ui-soft) !important; }
+
+/* --- settings header + unboxed icon language --- */
+.settings-drawer-header { align-items: flex-end !important; }
+.settings-kicker { display:block; color:var(--text-muted); font-size:.78rem; font-weight:600; letter-spacing:.01em; margin-bottom:.2rem; }
+.settings-header-actions { display:flex; align-items:center; gap:.35rem; }
+.settings-more-btn { width:42px; height:42px; border:0; background:transparent; color:var(--text-muted); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; font-size:1.1rem; cursor:pointer; }
+.settings-more-btn:hover { background:var(--ui-soft); color:var(--text); }
+.settings-more-menu { position:absolute; top:calc(1.25rem + env(safe-area-inset-top,0px) + 56px); right:1.35rem; width:min(300px,calc(100% - 2.7rem)); z-index:20; padding:.45rem; border:1px solid var(--ui-hairline); border-radius:18px; background:color-mix(in srgb,var(--card) 96%,transparent); box-shadow:0 20px 55px rgba(0,0,0,.24); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); }
+.settings-more-menu button { width:100%; display:flex; gap:.75rem; align-items:center; text-align:left; border:0; background:transparent; color:var(--text); padding:.75rem; border-radius:13px; cursor:pointer; font-family:inherit; }
+.settings-more-menu button:hover { background:var(--ui-soft); }
+.settings-more-menu button > i { width:24px; color:var(--primary); text-align:center; }
+.settings-more-menu span { display:flex; flex-direction:column; gap:.12rem; }
+.settings-more-menu strong { font-size:.84rem; }
+.settings-more-menu small { color:var(--text-muted); font-size:.7rem; line-height:1.35; }
+
+#settingsPanel .accordion-section, #settingsPanel .settings-row-card {
+  border:0 !important;
+  border-bottom:1px solid var(--ui-hairline) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  margin:0 !important;
+}
+#settingsPanel .accordion-trigger {
+  min-height:62px !important;
+  padding:.72rem .1rem !important;
+  font-size:.98rem !important;
+  font-weight:650 !important;
+}
+#settingsPanel .accordion-trigger span { gap:.85rem !important; }
+#settingsPanel .accordion-trigger span i {
+  width:auto !important; height:auto !important; min-width:1.35rem; background:none !important; color:var(--primary) !important; border-radius:0 !important; filter:none !important; font-size:1.05rem !important;
+}
+#settingsPanel .accordion-trigger:hover span i { transform:none !important; }
+#settingsPanel .accordion-chevron { width:auto !important; height:auto !important; background:none !important; border-radius:0 !important; font-size:.82rem !important; color:var(--text-muted); }
+#settingsPanel .accordion-section.open .accordion-body { padding:0 0 1rem !important; }
+#settingsPanel .accordion-body { padding:0 !important; }
+#settingsPanel .theme-option {
+  min-height:46px; margin:0 !important; padding:.65rem 0 !important; border-radius:0 !important; background:transparent !important; font-size:.9rem; font-weight:550;
+}
+#settingsPanel .theme-option:hover { background:transparent !important; color:var(--primary); }
+#settingsPanel .theme-option.active { color:var(--primary); background:transparent !important; }
+#settingsPanel .theme-option i { width:1.25rem; margin-right:.65rem; color:currentColor; }
+#settingsPanel .settings-row-card { padding:0 !important; }
+#settingsPanel .settings-row-card > .theme-option { min-height:62px; display:flex; align-items:center; }
+#settingsPanel .settings-row-card > p { padding:.8rem 0 0 !important; }
+#settingsPanel .settings-row-card .flex { padding:.15rem 0 .8rem; }
+#settingsPanel .accent-swatches { padding:.65rem 0 1rem; display:flex; flex-wrap:wrap; gap:.65rem; }
+#settingsPanel .accent-swatch { width:32px !important; height:32px !important; border:0 !important; box-shadow:0 0 0 1px var(--ui-hairline) !important; }
+#settingsPanel .accent-swatch.active { box-shadow:0 0 0 2px var(--primary), 0 5px 15px color-mix(in srgb,var(--primary) 25%,transparent) !important; }
+
+/* More settings is a single clean row, not another boxed card. */
+.settings-more-section { border-bottom:1px solid var(--ui-hairline); }
+.settings-more-row { width:100%; min-height:70px; display:flex; align-items:center; justify-content:space-between; border:0; background:transparent; color:var(--text); padding:.75rem .1rem; cursor:pointer; font-family:inherit; text-align:left; }
+.settings-more-row > span { display:flex; align-items:center; gap:.85rem; }
+.settings-more-row > span > i { color:var(--primary); font-size:1.05rem; width:1.35rem; text-align:center; }
+.settings-more-row strong, .settings-subrow strong { display:block; font-size:.94rem; }
+.settings-more-row small, .settings-subrow small { display:block; color:var(--text-muted); font-size:.7rem; margin-top:.18rem; }
+.settings-more-chevron { color:var(--text-muted); transition:transform .2s ease; }
+.settings-more-chevron.open { transform:rotate(180deg); }
+.settings-more-content { padding:0 0 .8rem 2.2rem; }
+.settings-subrow { width:100%; display:flex; align-items:center; gap:.75rem; border:0; background:transparent; color:var(--text); padding:.75rem 0; text-align:left; cursor:pointer; font-family:inherit; }
+.settings-subrow > i:first-child { width:1.25rem; color:var(--primary); text-align:center; }
+.settings-subrow > span { flex:1; }
+.settings-subrow > i:last-child { color:var(--text-muted); font-size:.72rem; }
+.settings-info-note { display:flex; gap:.65rem; padding:.75rem 0 0; color:var(--text-muted); font-size:.7rem; line-height:1.45; }
+.settings-info-note i { color:var(--primary); padding-top:.1rem; }
+
+/* --- profile: elegant account hub --- */
+#profilePanel { padding-left:1.35rem !important; padding-right:1.35rem !important; }
+.profile-panel-header { padding:.65rem 0 1.2rem !important; gap:1rem !important; }
+.profile-panel-header::after { background:var(--ui-hairline) !important; }
+.profile-panel-header .avatar-lg { width:58px !important; height:58px !important; }
+.profile-panel-header strong { font-size:1.12rem !important; }
+.profile-panel-header .muted { font-size:.78rem !important; }
+.profile-panel-header .badge { font-size:.68rem !important; padding:.26rem .58rem !important; }
+.profile-nav-link {
+  min-height:58px !important; margin:0 !important; padding:.5rem 0 !important; border-radius:0 !important; gap:.85rem !important; font-size:.92rem !important; font-weight:600 !important; border-bottom:1px solid var(--ui-hairline);
+}
+.profile-nav-link:hover, .profile-nav-link:active { background:transparent !important; color:var(--primary) !important; }
+.profile-nav-link .profile-item-icon {
+  width:auto !important; height:auto !important; flex:0 0 1.45rem !important; background:transparent !important; border-radius:0 !important; color:var(--text-muted); font-size:1.02rem; display:inline-flex !important;
+}
+.profile-nav-link:hover .profile-item-icon { background:transparent !important; color:var(--primary); }
+.profile-nav-link .profile-nav-arrow { font-size:.72rem; opacity:.45; }
+.profile-panel .divider { margin:.3rem 0 !important; background:var(--ui-hairline) !important; }
+.profile-nav-link-danger { border-bottom:0 !important; color:var(--danger) !important; margin-top:.25rem !important; }
+.profile-nav-link-danger .profile-item-icon { background:transparent !important; color:var(--danger); }
+
+/* --- assistant: centered, spacious, not draggable --- */
+.ai-chat-panel {
+  position:fixed !important; left:50% !important; top:50% !important; right:auto !important; bottom:auto !important;
+  transform:translate(-50%,-50%) !important;
+  width:min(620px,calc(100vw - 32px)) !important;
+  height:min(760px,calc(100dvh - 42px)) !important;
+  padding:1rem !important;
+  border-radius:26px !important;
+  background:color-mix(in srgb,var(--bg) 90%,var(--card)) !important;
+  border:1px solid color-mix(in srgb,var(--text) 12%,transparent) !important;
+  box-shadow:0 30px 100px rgba(0,0,0,.38) !important;
+  overflow:hidden !important;
+  will-change:auto !important;
+}
+.ai-chat-panel.expanded { width:min(860px,calc(100vw - 24px)) !important; height:min(88dvh,900px) !important; }
+.ai-chat-panel .drawer-header { cursor:default !important; touch-action:auto !important; padding:.25rem .2rem .8rem; border-bottom:1px solid var(--ui-hairline); }
+.ai-chat-panel .drawer-header h4 { font-size:1.1rem !important; }
+.ai-chat-panel .drawer-header .icon-btn { background:transparent; border:0; width:38px; height:38px; }
+.ai-chat-panel .drawer-header .icon-btn:hover { background:var(--ui-soft); }
+.ai-chat-messages { padding:.5rem .15rem .8rem; gap:.85rem; }
+.ai-chat-msg { max-width:82% !important; padding:.8rem .95rem !important; border-radius:17px !important; font-size:.91rem !important; line-height:1.5 !important; }
+.ai-chat-msg.assistant { background:transparent !important; border:0 !important; padding-left:0 !important; }
+.ai-chat-msg.user { border-bottom-right-radius:6px !important; box-shadow:0 8px 24px color-mix(in srgb,var(--primary) 15%,transparent); }
+.ai-chat-location-row { border-radius:14px !important; }
+.ai-chat-input-row { border-top:1px solid var(--ui-hairline); padding:.75rem .15rem .15rem !important; }
+.ai-chat-input-row textarea { min-height:48px; border-radius:17px !important; padding:.78rem .9rem !important; }
+.ai-chat-input-row .icon-btn { width:46px; height:46px; border-radius:50%; background:var(--primary-grad); color:#fff; box-shadow:0 8px 20px color-mix(in srgb,var(--primary) 22%,transparent); }
+
+/* --- bottom navigation: smaller, quieter and thumb-friendly --- */
+@media (max-width:720px) {
+  .bottom-nav { left:1rem !important; right:1rem !important; bottom:calc(.65rem + env(safe-area-inset-bottom,0px)) !important; border-radius:20px !important; padding:.35rem .25rem !important; min-height:64px; background:color-mix(in srgb,var(--bg) 78%,transparent) !important; border:1px solid var(--ui-hairline) !important; box-shadow:0 16px 45px rgba(0,0,0,.25) !important; }
+  .bottom-nav-item { min-height:50px !important; font-size:.6rem !important; }
+  .bottom-nav-item i, .bottom-nav-item .bn-icon { font-size:1.08rem !important; }
+  .bottom-nav-item.active .bn-icon { background:transparent !important; padding:0 !important; margin:0 !important; }
+  .bottom-nav-add { width:52px !important; height:52px !important; box-shadow:0 10px 28px color-mix(in srgb,var(--primary) 28%,transparent) !important; }
+}
+
+@media (max-width:600px) {
+  :root { --ui-sheet-width: min(92vw, 390px); }
+  .side-drawer { min-width:0 !important; max-width:none !important; }
+  .side-drawer.left, .side-drawer.right { border-radius:0 22px 22px 0 !important; }
+  .side-drawer.right { border-radius:22px 0 0 22px !important; }
+  .profile-panel-header > div:last-child { overflow-wrap:anywhere; }
+  .ai-chat-panel { width:calc(100vw - 20px) !important; height:min(760px,calc(100dvh - 28px)) !important; border-radius:22px !important; }
+  .ai-chat-panel.expanded { width:calc(100vw - 12px) !important; height:calc(100dvh - 14px) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-drawer, .ai-chat-panel, .settings-more-chevron { transition:none !important; }
+}
+
+
+.about-modal-content { max-width:420px !important; text-align:center; padding:1.6rem !important; }
+.about-brand-mark { width:64px; height:64px; margin:0 auto .8rem; border-radius:20px; overflow:hidden; background:var(--primary-grad); display:grid; place-items:center; box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
+.about-brand-mark img { width:54px; height:54px; object-fit:contain; }
+.about-modal-content h3 { font-size:1.35rem; margin-bottom:.4rem; }
+.about-modal-content > .muted { line-height:1.55; }
+.about-meta-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem; margin-top:1rem; text-align:left; }
+.about-meta-grid > div { padding:.75rem; border:1px solid var(--ui-hairline); border-radius:13px; background:var(--ui-soft); }
+.about-meta-grid span { display:block; color:var(--text-muted); font-size:.65rem; margin-bottom:.2rem; }
+.about-meta-grid strong { font-size:.78rem; }
+
 </style>
 </head>
 <body>
@@ -1343,7 +1530,12 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
 <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeAllPanels()"></div>
 <div class="side-drawer right" id="notifPanel"></div>
 <div class="side-drawer right" id="settingsPanel">
-  <div class="drawer-header"><h4>Settings</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
+  <div class="drawer-header settings-drawer-header"><div><span class="settings-kicker">Preferences</span><h4>Settings</h4></div><div class="settings-header-actions"><button class="settings-more-btn" id="settingsMoreBtn" onclick="toggleSettingsMoreMenu(event)" title="More settings"><i class='fa-solid fa-ellipsis'></i></button><button class="drawer-close-btn" onclick="closeAllPanels()" title="Close settings"><i class='fa-solid fa-xmark'></i></button></div></div>
+  <div class="settings-more-menu hidden" id="settingsMoreMenu">
+    <button onclick="resetLevromartPreferences()"><i class='fa-solid fa-arrow-rotate-left'></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span></button>
+    <button onclick="showLevromartAbout()"><i class='fa-solid fa-circle-info'></i><span><strong>About Levromart</strong><small>App version and platform information</small></span></button>
+    <button onclick="toggleSettingsMoreMenu(event)"><i class='fa-solid fa-sliders'></i><span><strong>Interface preferences</strong><small>Fine-tune the experience below</small></span></button>
+  </div>
   <div class="accordion-section">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-palette'></i> Appearance</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
@@ -1391,6 +1583,17 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-key'></i> Security</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
       <button class="btn btn-sm btn-outline" style="width:100%;" onclick="showChangePassword()"><i class="fa-solid fa-key"></i> Change password</button>
+    </div>
+  </div>
+  <div class="settings-more-section" id="settingsMoreSection">
+    <button class="settings-more-row" type="button" onclick="toggleSettingsMoreSection()">
+      <span><i class="fa-solid fa-ellipsis"></i><span><strong>More settings</strong><small>Privacy, accessibility and app information</small></span></span>
+      <i class="fa-solid fa-chevron-down settings-more-chevron"></i>
+    </button>
+    <div class="settings-more-content hidden" id="settingsMoreContent">
+      <button type="button" class="settings-subrow" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and app information</small></span><i class="fa-solid fa-chevron-right"></i></button>
+      <button type="button" class="settings-subrow" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore your local interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button>
+      <div class="settings-info-note"><i class="fa-solid fa-shield-halved"></i><span>Your account data and marketplace permissions are controlled separately from these device preferences.</span></div>
     </div>
   </div>
   <div class="accordion-section hidden" id="accountDangerSection">
@@ -1676,6 +1879,20 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
       <button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
       <button class="btn btn-sm" id="confirmModalOk">Confirm</button>
     </div>
+  </div>
+</div>
+
+<div id="aboutLevromartModal" class="modal hidden" onclick="if(event.target===this) closeLevromartAbout()">
+  <div class="modal-content about-modal-content">
+    <div class="about-brand-mark"><img src="" id="aboutLevromartLogo" alt="Levromart" /></div>
+    <h3>Levromart</h3>
+    <p class="muted">A modern marketplace for buying, renting and requesting products — with Levi as your in-app assistant.</p>
+    <div class="about-meta-grid">
+      <div><span>Assistant</span><strong>Levi</strong></div>
+      <div><span>Year</span><strong id="aboutYear"></strong></div>
+      <div><span>Platform</span><strong>Web app / PWA</strong></div>
+    </div>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:1rem;" onclick="closeLevromartAbout()">Done</button>
   </div>
 </div>
 
@@ -3870,6 +4087,46 @@ async function confirmDeleteAccount() {
     btn.disabled = false;
   }
 }
+
+// ---------- SETTINGS EXTRAS ----------
+function toggleSettingsMoreMenu(evt) {
+  evt?.stopPropagation();
+  const menu = byId("settingsMoreMenu");
+  if (!menu) return;
+  menu.classList.toggle("hidden");
+}
+function toggleSettingsMoreSection() {
+  const content = byId("settingsMoreContent");
+  const row = document.querySelector(".settings-more-row");
+  if (!content) return;
+  const open = content.classList.toggle("hidden") === false;
+  row?.classList.toggle("open", open);
+  row?.querySelector(".settings-more-chevron")?.classList.toggle("open", open);
+}
+function resetLevromartPreferences() {
+  ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+  currentAccentIndex = 0;
+  setTheme("light");
+  setAccent(0);
+  const panel = byId("settingsMoreMenu");
+  panel?.classList.add("hidden");
+  showToast("Preferences restored to default.", "success");
+}
+function showLevromartAbout() {
+  const modal = byId("aboutLevromartModal");
+  if (!modal) return;
+  const logo = byId("aboutLevromartLogo");
+  if (logo && typeof MEDRIS_LOGO !== "undefined") logo.src = MEDRIS_LOGO;
+  const year = byId("aboutYear");
+  if (year) year.textContent = new Date().getFullYear();
+  byId("settingsMoreMenu")?.classList.add("hidden");
+  modal.classList.remove("hidden");
+}
+function closeLevromartAbout() { byId("aboutLevromartModal")?.classList.add("hidden"); }
+document.addEventListener("click", (e) => {
+  const menu = byId("settingsMoreMenu");
+  if (menu && !menu.classList.contains("hidden") && !e.target.closest("#settingsMoreMenu, #settingsMoreBtn")) menu.classList.add("hidden");
+});
 
 // ---------- NAVIGATION ----------
 let currentView = "home";
@@ -9700,10 +9957,27 @@ async function sendAiChatMessage() {
   const wasVoice = aiChatLastInputVoice;
   aiChatLastInputVoice = false;
   if (!text) return;
-  if (aiChatListening) aiChatRecognizer?.stop(); // still-listening mic can otherwise refill the box right after this clears it
+  if (aiChatListening) aiChatRecognizer?.stop();
   resetChatInput(input);
   appendAiChatMessage("user", text);
   persistAiMessage("user", text);
+
+  // Levi has a local action layer for deterministic, low-risk tasks. This
+  // means explicit commands such as "add this to my cart" do not depend on
+  // the language model remembering a private tag format. The normal AI
+  // conversation still goes to /api/chat for everything else.
+  try {
+    const action = await resolveLeviLocalAction(text);
+    if (action?.handled) {
+      appendAiChatMessage("assistant", action.reply, wasVoice);
+      persistAiMessage("assistant", action.reply);
+      playSound("notify");
+      return;
+    }
+  } catch (err) {
+    console.warn("Levi local action failed; continuing with AI:", err);
+  }
+
   appendAiChatMessage("typing", "");
   try {
     const res = await fetch("/api/chat", {
@@ -9712,13 +9986,7 @@ async function sendAiChatMessage() {
       body: JSON.stringify({
         messages: aiChatMessages.filter((m) => m.role !== "typing"),
         accessToken: session?.access_token,
-        // Only sent if the buyer already granted location elsewhere in the
-        // app (map view, "Show distances") — Levi never triggers its own
-        // location prompt mid-conversation, that'd be jarring.
         lat: buyerLocation?.lat, lng: buyerLocation?.lng,
-        // Levi can't see pixels, but knowing which screen someone's on (and
-        // whether it just crashed) turns "why is my page showing this" from
-        // a guessing game into a real answer.
         currentView, currentViewParams, lastRenderError,
       }),
     });
@@ -9736,6 +10004,109 @@ async function sendAiChatMessage() {
     appendAiChatMessage("assistant", "Levi is unavailable right now. Please try again in a moment.");
   }
 }
+
+function leviNormaliseText(text) {
+  return String(text || "").toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+}
+
+function leviExtractCartTarget(text, mode) {
+  let q = leviNormaliseText(text);
+  if (mode === "add") {
+    q = q.replace(/\b(please|levi|can you|could you|would you|kindly|help me)\b/g, " ")
+      .replace(/\b(add|put|place|throw|move)\b/g, " ")
+      .replace(/\b(this|that|the|item|product|one)\b/g, " ")
+      .replace(/\b(to|into|in|on)\b/g, " ")
+      .replace(/\b(my|me|a|an)\b/g, " ")
+      .replace(/\bcart\b/g, " ")
+      .trim();
+  } else {
+    q = q.replace(/\b(please|levi|can you|could you|would you|kindly|help me)\b/g, " ")
+      .replace(/\b(remove|delete|take|drop)\b/g, " ")
+      .replace(/\b(this|that|the|item|product|one)\b/g, " ")
+      .replace(/\b(from|out of|out|in|my)\b/g, " ")
+      .replace(/\bcart\b/g, " ")
+      .trim();
+  }
+  return q.replace(/\s{2,}/g, " ").trim();
+}
+
+async function resolveLeviProduct(target) {
+  // "this" / "that" / "current item" means the product currently open.
+  if (currentView === "productDetail" && currentViewParams?.productId) {
+    const { data, error } = await sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("id", currentViewParams.productId).maybeSingle();
+    if (!error && data) return { product: data, exact: true };
+  }
+  const q = String(target || "").trim();
+  if (!q) return { product: null, exact: false, empty: true };
+  const words = q.split(/\s+/).filter(Boolean).slice(0, 8);
+  const phrase = words.join(" ");
+  let query = sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("status", "active").limit(8);
+  // Name matching is intentionally first: it avoids accidentally selecting a
+  // product just because its description happens to contain one common word.
+  const { data: byName, error: nameError } = await query.ilike("name", `%${phrase}%`);
+  if (!nameError && byName?.length) return { product: byName[0], matches: byName };
+  const first = words[0];
+  const { data: fallback, error: fallbackError } = await sb.from("products").select("id,name,listing_type,sale_price,rental_rate,quantity_available,status,vendor:vendors(business_name)").eq("status", "active").ilike("name", `%${first}%`).limit(8);
+  if (!fallbackError && fallback?.length) return { product: fallback[0], matches: fallback };
+  return { product: null, matches: [] };
+}
+
+async function resolveLeviLocalAction(text) {
+  const q = leviNormaliseText(text);
+  if (!session) return null;
+
+  // Deterministic navigation intents. These are intentionally conservative;
+  // ordinary questions continue through the AI model.
+  if (/^(open|show|take me to|go to|view)\s+(my\s+)?cart$/.test(q) || /\b(show|open)\s+my\s+cart\b/.test(q)) {
+    toggleAiChat();
+    await navigate("cart");
+    return { handled: true, reply: "Done — I opened your cart." };
+  }
+  if (/^(open|show|go to|take me to)\s+vendors?$/.test(q)) {
+    toggleAiChat();
+    await navigate("vendors");
+    return { handled: true, reply: "Done — here are the vendors." };
+  }
+  if (/^(open|show|go to|take me to)\s+(my\s+)?shop$/.test(q) && vendor) {
+    toggleAiChat();
+    await navigate("vendorDashboard");
+    return { handled: true, reply: "Done — I opened your shop dashboard." };
+  }
+
+  const addIntent = /\b(add|put|place)\b.*\b(cart|basket)\b/.test(q) || /\b(add|put|place)\b.*\bthis\b/.test(q) || /\b(buy|purchase)\s+this\b/.test(q);
+  const removeIntent = /\b(remove|delete|take)\b.*\bcart\b/.test(q);
+  if (!addIntent && !removeIntent) return null;
+
+  const qtyMatch = addIntent ? q.match(/\b(\d+)\s*(?:x|of)?\b/) : null;
+  const quantity = Math.max(1, Math.min(20, qtyMatch ? parseInt(qtyMatch[1], 10) : 1));
+  const target = leviExtractCartTarget(q, addIntent ? "add" : "remove").replace(/^\d+\s*(?:x|of)?\s+/i, "").trim();
+  const resolved = await resolveLeviProduct(target);
+  if (!resolved.product) {
+    return { handled: true, reply: addIntent
+      ? (target ? `I couldn't find an active product matching “${target}”. Tell me the product name and I'll look again.` : "Tell me which product you want added, or open the product first and say “add this to my cart”.")
+      : (target ? `I couldn't find “${target}” in the marketplace. Tell me the exact product name and I'll try again.` : "Tell me which product you want removed from your cart.") };
+  }
+  if (resolved.matches?.length > 1 && target && !resolved.matches.some((p) => leviNormaliseText(p.name) === target)) {
+    const names = resolved.matches.slice(0, 4).map((p) => p.name).join(", ");
+    return { handled: true, reply: `I found a few matches: ${names}. Tell me which one you mean.` };
+  }
+
+  const product = resolved.product;
+  if (addIntent) {
+    if (Number(product.quantity_available ?? 1) < 1) return { handled: true, reply: `${product.name} is currently out of stock, so I didn't add it.` };
+    const { error } = await sb.rpc("add_to_cart", { p_product_id: product.id, p_quantity: quantity });
+    if (error) return { handled: true, reply: `I found ${product.name}, but I couldn't add it to your cart just now. ${error.message || "Please try again."}` };
+    refreshNotifications();
+    updateCartFab();
+    return { handled: true, reply: `Done — I added ${quantity > 1 ? `${quantity} × ` : ""}${product.name} to your cart.` };
+  }
+  const { error } = await sb.from("cart_items").delete().eq("buyer_id", session.user.id).eq("product_id", product.id);
+  if (error) return { handled: true, reply: `I found ${product.name}, but I couldn't remove it just now.` };
+  refreshNotifications();
+  updateCartFab();
+  return { handled: true, reply: `Done — I removed ${product.name} from your cart.` };
+}
+
 
 // Draggable floating action button — tap to fire onTap, drag to reposition
 // (and it remembers where you leave it). Shared by the Levi FAB and the
@@ -9810,74 +10181,19 @@ function setupDraggableFab(fab, storageKey, onTap) {
 setupDraggableFab(byId("aiChatFab"), "levromart_ai_fab_pos", toggleAiChat);
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
-// Dragging the open chat panel itself (not just the collapsed round FAB) --
-// grabbed by its header only, so buttons up there and scrolling the message
-// list underneath still work normally.
-(function setupAiChatPanelDrag() {
+// Levi's open chat is intentionally NOT draggable. A chat window is an
+// interaction surface, not a floating object: opening it always returns it to
+// a predictable centered position so typing, keyboard resize and touch scrolling
+// never inherit a stale left/top coordinate from an earlier session.
+(function stabilizeAiChatPanel() {
   const panel = byId("aiChatPanel");
-  const header = panel?.querySelector(".drawer-header");
-  if (!panel || !header) return;
-  const STORAGE_KEY = "levromart_ai_panel_pos";
-  const MOVE_THRESHOLD = 6;
-  let dragging = false, moved = false, pointerId = null;
-  let startClientX = 0, startClientY = 0, startLeft = 0, startTop = 0;
-
-  function clamp(x, y) {
-    const margin = 8;
-    const maxX = window.innerWidth - panel.offsetWidth - margin;
-    const maxY = window.innerHeight - panel.offsetHeight - margin;
-    return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
-  }
-  function applyPosition(x, y) {
-    panel.style.left = `${x}px`;
-    panel.style.top = `${y}px`;
-    panel.style.right = "auto";
-    panel.style.bottom = "auto";
-    // Cancels the CSS default's translate(-50%,-50%) centering -- once
-    // moved, left/top are real screen coordinates, not a centering offset.
-    panel.style.transform = "none";
-  }
-  function savePosition() {
-    const rect = panel.getBoundingClientRect();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top })); } catch (e) {}
-  }
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-      const { x, y } = clamp(saved.x, saved.y);
-      applyPosition(x, y);
-    }
-  } catch (e) {}
-
-  header.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("button")) return; // let header buttons (new chat, history, close) work untouched
-    dragging = true; moved = false; pointerId = e.pointerId;
-    startClientX = e.clientX; startClientY = e.clientY;
-    const rect = panel.getBoundingClientRect();
-    startLeft = rect.left; startTop = rect.top;
-    header.setPointerCapture(e.pointerId);
-  });
-  header.addEventListener("pointermove", (e) => {
-    if (!dragging || e.pointerId !== pointerId) return;
-    const dx = e.clientX - startClientX, dy = e.clientY - startClientY;
-    if (!moved && Math.hypot(dx, dy) > MOVE_THRESHOLD) moved = true;
-    if (!moved) return;
-    const { x, y } = clamp(startLeft + dx, startTop + dy);
-    applyPosition(x, y);
-  });
-  function endDrag(e) {
-    if (!dragging || (e && e.pointerId !== pointerId)) return;
-    dragging = false;
-    if (moved) savePosition();
-  }
-  header.addEventListener("pointerup", endDrag);
-  header.addEventListener("pointercancel", endDrag);
-  window.addEventListener("resize", () => {
-    if (!panel.style.left) return; // still at its default right/bottom anchor — nothing to clamp
-    const rect = panel.getBoundingClientRect();
-    const { x, y } = clamp(rect.left, rect.top);
-    applyPosition(x, y);
-  });
+  if (!panel) return;
+  try { localStorage.removeItem("levromart_ai_panel_pos"); } catch (e) {}
+  panel.style.left = "";
+  panel.style.top = "";
+  panel.style.right = "";
+  panel.style.bottom = "";
+  panel.style.transform = "";
 })();
 
 // ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
