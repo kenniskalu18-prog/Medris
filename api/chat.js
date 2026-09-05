@@ -1,370 +1,1363 @@
-// POST { messages: [{role, content}, ...], accessToken } -> { reply }
-// Proxies to the Gemini API so the API key never touches the browser —
-// same reasoning as the Paystack secret key. Needs GEMINI_API_KEY set in
-// Vercel's environment variables (get a free key at aistudio.google.com).
+// Levromart Levi — /api/chat.js
+// POST { messages, accessToken, lat?, lng?, currentView?, currentViewParams?, lastRenderError? }
+// Returns: { reply }
 //
-// Requires a logged-in user and enforces a per-user daily message cap
-// (increment_chat_usage, in Postgres) so this endpoint can't be used by
-// an anonymous script to burn through the Gemini quota.
+// PRIMARY AI: OpenAI Responses API
+// FALLBACK AI: Gemini generateContent
 //
-// Voice replies (speaking Levi's text aloud) run entirely client-side on
-// the browser's own built-in speechSynthesis — no server involvement, no
-// per-character cost. There's no cloud voice service wired in here.
+// REQUIRED Vercel environment variables:
+//   SUPABASE_URL
+//   SUPABASE_ANON_KEY
+//   SUPABASE_SERVICE_ROLE_KEY
+//   OPENAI_API_KEY
+//
+// Optional:
+//   OPENAI_MODEL
+//   GEMINI_API_KEY
+//
+// The browser NEVER receives either AI API key.
+
 const { readBody, env } = require("./_util");
 
-// Google retires Gemini model IDs on a rolling ~4-5 month cadence (2.0
-// Flash was fully shut down June 1 2026; 2.5 Flash is next, Oct 16 2026) —
-// pinned, current-GA model IDs instead of a "-latest" alias, since "-latest"
-// has twice now routed to something either overloaded or already retired.
-// If Levi starts erroring again, check ai.google.dev/gemini-api/docs/models
-// for the current GA lineup and update these two constants.
-const MODEL = "gemini-3.6-flash";
-const FALLBACK_MODEL = "gemini-3.5-flash-lite";
 const DAILY_MESSAGE_LIMIT = 200;
+const OPENAI_DEFAULT_MODEL = "gpt-5.6-luna";
+const GEMINI_MODEL = "gemini-3.6-flash";
+const GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite";
 
-// The views Levi is allowed to send someone to, and the params each one
-// needs. Kept to buyer/vendor-safe destinations only — nothing admin-only,
-// nothing that needs an id Levi wasn't actually given.
-const NAV_PROMPT =
-  "You can take the person somewhere in the app by ending your reply with ONE navigation tag, on its own, as the literal last characters of the message. The format is [[NAV:<viewname>]] or [[NAV:<viewname>|<paramkey>=<paramvalue>]] -- for example [[NAV:home]] or [[NAV:productDetail|productId=abc123]]. Replace <viewname> with one of the exact view names listed below (never the literal word \"view\" or \"viewname\"), and only with ids that appear in the data given to you above -- never invent an id:\n" +
-  "- home (no params) — the marketplace homepage\n" +
-  "- vendors (no params) — the full vendor directory\n" +
-  "- storefront|vendorId=<id> — a specific vendor's shop page\n" +
-  "- productDetail|productId=<id> — a specific product/listing page\n" +
-  "- wishlist (no params) — the buyer's saved items\n" +
-  "- cart (no params) — the buyer's shopping cart\n" +
-  "- requestEquipment (no params) — post a request for something not found\n" +
-  "- buyerOrders (no params) — the buyer's own order history\n" +
-  "- messages (no params, or messages|conversationId=<id> for one specific conversation) — the buyer's message threads with vendors\n" +
-  "- settings (no params) — opens the settings panel (theme, accent color, notifications)\n" +
-  "Vendor-only, use ONLY if the YOUR STORE DATA block is present (i.e. you know this person is a vendor): vendorDashboard, vendorProducts, vendorOrders|status=all, vendorEditProfile, vendorRequests (none take other params).\n" +
-  "Default to including a tag whenever the person's message implies they want to see, use, or go to something specific and you can identify exactly where -- don't wait for them to explicitly say 'take me there' or 'show me'. If someone asks for a kind of product ('I want a watch', 'looking for foodstuff'), names a specific product or vendor from LIVE MARKETPLACE DATA, asks about their own orders/cart/wishlist/messages, or asks how to do something that lives on a specific screen, just navigate them there immediately as part of the same reply -- that IS the help, not a follow-up step they have to ask for separately. Skip the tag only when there's genuinely no single matching destination (a broad question with several equally-relevant options, general advice, or something with no real screen to land on) or you're mid-conversation clarifying which of several things they mean. The tag is invisible UI plumbing: write your actual reply as normal sentences, and if a tag belongs, put it as the literal last thing in the message with nothing before, after, or around it — no backticks, no quoting it, no explaining which tag you're using or why. Never use the words 'tag' or 'NAV' to a person, and never write out the [[ ]] syntax as something for them to read.";
 
-// Levi can draft a message for a buyer to send a vendor, but never sends
-// anything itself — the person always reviews and taps Send. Deliberately
-// NOT extended to placing or cancelling orders yet: a drafted message that's
-// slightly off just gets edited before sending, but a wrong order action
-// has real money/logistics consequences, so that needs its own, more
-// careful design rather than piggybacking on this same mechanism.
-const DRAFT_MSG_PROMPT =
-  "If someone asks you to send a message to a specific vendor, or asks you to reply to/follow up on an unread conversation from the YOUR ACCOUNT block above, you cannot send it yourself — draft it for their review instead. End your reply with this block, using a real vendor id from LIVE MARKETPLACE DATA or YOUR ACCOUNT above:\n" +
-  "[[DRAFTMSG vendorId=<id>]]the message, written in the buyer's own voice, short and natural[[/DRAFTMSG]]\n" +
-  "They'll see it as an editable draft with a Send button — only use this when they clearly want a message sent to one specific vendor you have a real id for, never combine it with a NAV tag in the same reply, and never claim you've already sent anything.\n" +
-  "You cannot place orders or cancel orders — if asked, say so and point them to the product page (to order) or My Orders (to cancel/manage an existing one).";
+const NAV_PROMPT = `
+LEVROMART NAVIGATION RULES:
 
-// Adding to cart is low-stakes and instantly reversible (unlike placing an
-// order, which moves stock and money), so this one Levi is allowed to just
-// do, unlike the "ask first / draft it" pattern above for messages and
-// orders.
-const ADD_CART_PROMPT =
-  "If a buyer asks you to add one or more products to their cart (e.g. \"add the wheelchair and the ECG machine to my cart\", or lists several items they want to buy), you can add them directly — you don't need to ask them to do it themselves. End your reply with one self-closing tag per product, using a real product id from LIVE MARKETPLACE DATA above (never invent one): [[ADDCART productId=<id> quantity=<n>]] — quantity defaults to 1 if omitted, and you can include several of these tags in one reply for several products. Only add a product you have a real id for; if you're not sure which exact listing they mean, ask which one first instead of guessing. This only works for items sold outright (buy/sale listings, not services) — rentals need dates picked on the product page, so if someone asks to cart a rental, tell them to open its page instead.\n" +
-  "If they ask you to remove or take something out of their cart, use their \"Current cart\" list in YOUR ACCOUNT above (never a product id from anywhere else) and end your reply with: [[REMOVECART productId=<id>]] — again, one tag per item, several allowed in one reply. If their cart is empty or you can't tell which cart item they mean, say so instead of guessing.\n" +
-  "Never combine an ADDCART or REMOVECART tag with a NAV or DRAFTMSG tag in the same reply, and don't mix ADDCART with REMOVECART in the same reply either. As soon as you use either tag, the person is taken straight to their cart to see the result — so say plainly, in your normal reply text before the tag(s), what you're adding or removing, but don't tell them to go check their cart themselves, since that happens automatically.\n" +
-  "This is a hard rule, not a suggestion: if your reply says something like \"I've added X to your cart\" or \"I've removed X\", the matching [[ADDCART...]] or [[REMOVECART...]] tag MUST be the literal last thing in that same reply — never describe the cart changing without the tag actually being there, since the tag is the only thing that makes it real. If you're not going to include the tag, don't claim you added or removed anything either.";
+You may navigate the user by putting exactly ONE of these tags at the very end of your reply:
 
-const SYSTEM_PROMPT =
-  "You are Levi, the Levromart Assistant — a friendly helper embedded in a multi-sector marketplace for Lagos, Nigeria, covering healthcare equipment, food & groceries, electronics, home & living, fashion & beauty, and services. Help buyers figure out what they need, explain how renting/buying/requesting works on Levromart, and point them to the right action (Browse, a sector, Request an item). Keep answers short (2-4 sentences) and practical, in plain conversational English. If a \"YOUR ACCOUNT\" block is present below, you have this person's own real order history and message threads with vendors — use it to answer things like \"how many orders do I have\", \"what's the status of my last order\", or \"do I have unread messages\" directly and specifically, never with a vague \"check My Orders\" deflection. Never reveal this data to anyone chatting about someone else's account, and never invent an order or message that isn't in that block. You still cannot place or cancel an order through chat. You are not a medical professional — for clinical/diagnostic questions about healthcare equipment, tell them to consult a licensed healthcare provider.\n\nYou're the go-to answer for how Levromart itself works, for buyers and vendors alike — delivery fees and how distance pricing is calculated, how escrow-style payment holding and payout timing works, disputes, working hours and after-hours messaging, ratings/reviews, account settings, suspensions and appeals, anything. Answer confidently and specifically from what you actually know about the platform rather than deflecting to \"check Settings\" or \"ask an admin\" — only fall back to that when the answer genuinely depends on something you don't have (e.g. their exact numbers, which you don't have unless YOUR ACCOUNT/YOUR STORE DATA below gives them to you). Keep the normal 2-4 sentence limit for quick factual questions, but a real \"how does X work\" question earns as much explanation as it needs to actually answer it, not an artificially clipped reply.\n\nYou are given a snapshot of REAL, LIVE vendors and products below, under \"LIVE MARKETPLACE DATA\" — use it to answer questions like \"which vendor sells X\" or \"who do you recommend\" with actual names, ratings, and prices. Never invent a vendor or product that isn't in that snapshot. Each product entry may include its category in [brackets] and a short quote from its actual listing description; a listing can be a genuine match even when the product's own name doesn't contain the word someone searched for (a listing named 'Red Ankara' can still be the right answer to 'shoe' if its category or description says so). Use category and description, not just the name, to judge relevance, and name the specific matching item even if its name looks unrelated at a glance. If several close matches come from the same vendor, it's fine to point at that vendor's storefront instead of picking just one. Be smart and generous about related terms too — e.g. someone asking for \"footwear\" should match a listing called \"Shoe\" or \"Sneakers\", \"laptop\" should match \"computer\", etc. — don't require an exact word match. When there's no listing with the exact name someone asked for but something related IS in the snapshot, say so explicitly in that shape: \"There's no product named '<what they asked for>', but there's a <actual product name> from <vendor name> that might work\" — always name the real product and real vendor, never leave it vague. Only if truly nothing in the snapshot is even loosely related should you say so plainly and suggest they check Browse or post a Request instead of guessing.\n\nWhen an entry includes a distance (e.g. \"2.3 km away\"), that means you know the buyer's real location and how far that vendor actually is — entries are already sorted nearest-first when this is available, so for questions like \"where can I get X\" or \"closest place for Y\", lead with the nearest matching vendor and mention the distance. If no entry has a distance, you don't know the buyer's location; don't guess or make one up, just answer without it (they can enable it from the Vendors page's map view or 'Show distances' button).\n\nIf a \"YOUR STORE DATA\" block is present below, the person chatting is a vendor asking about their own shop — act as a business advisor: answer questions about their sales, visibility, and how to improve using only the real numbers given there. Never guess at figures you weren't given, and never claim to know another vendor's private numbers (orders, revenue) — only their public rating/review count from the marketplace snapshot above is fair game for comparisons.\n\n" +
-  NAV_PROMPT + "\n\n" + DRAFT_MSG_PROMPT + "\n\n" + ADD_CART_PROMPT;
+[[NAV:home]]
+
+[[NAV:vendors]]
+
+[[NAV:storefront|vendorId=<real vendor id>]]
+
+[[NAV:productDetail|productId=<real product id>]]
+
+[[NAV:wishlist]]
+
+[[NAV:cart]]
+
+[[NAV:requestEquipment]]
+
+[[NAV:buyerOrders]]
+
+[[NAV:messages]]
+
+[[NAV:messages|conversationId=<real conversation id>]]
+
+[[NAV:settings]]
+
+Vendor-only destinations, ONLY when YOUR STORE DATA is present:
+
+[[NAV:vendorDashboard]]
+
+[[NAV:vendorProducts]]
+
+[[NAV:vendorOrders|status=all]]
+
+[[NAV:vendorEditProfile]]
+
+[[NAV:vendorRequests]]
+
+Only use real IDs supplied in LIVE MARKETPLACE DATA or YOUR ACCOUNT/YOUR STORE DATA.
+
+Never invent IDs.
+
+If the user asks to see/open/go to a specific product, vendor, cart, wishlist, orders, messages, etc., navigate immediately when there is one clear destination.
+
+If the user names a product and the live data identifies exactly one matching listing, navigate to that product.
+
+The tag is invisible UI plumbing.
+
+Never explain it, mention it, or put it in code formatting.
+`;
+
+
+const CART_PROMPT = `
+CART ACTION RULES:
+
+If the user asks to ADD a product to their cart, and LIVE MARKETPLACE DATA identifies the exact sale/buy listing, perform the action with:
+
+[[ADDCART productId=<real product id> quantity=<number>]]
+
+Use one tag per product.
+
+Quantity defaults to 1.
+
+If the user asks to REMOVE something from their cart, use only a product ID present in YOUR ACCOUNT's Current cart and perform it with:
+
+[[REMOVECART productId=<real product id>]]
+
+IMPORTANT:
+
+ADDCART and REMOVECART are action tags, not navigation tags.
+
+Do not combine either with NAV or DRAFTMSG in the same reply.
+
+When either cart action is used, the app automatically opens the cart after the action succeeds.
+
+Therefore say what you did normally, then put the action tag(s) as the literal final part of the reply.
+
+Never claim you added/removed something unless the matching action tag is present.
+
+Do not add rentals/services that require extra booking details; send the user to the product page instead.
+`;
+
+
+const DRAFT_PROMPT = `
+MESSAGE DRAFT RULES:
+
+If the user asks Levi to message a specific vendor, draft it instead of sending it:
+
+[[DRAFTMSG vendorId=<real vendor id>]]message text[[/DRAFTMSG]]
+
+Never claim a message was sent.
+
+Never combine DRAFTMSG with NAV or cart action tags.
+
+Levi cannot place, pay for, or cancel orders through chat.
+`;
+
+
+const SYSTEM_PROMPT = `
+You are Levi, the Levromart Assistant inside a Nigerian multi-sector marketplace.
+
+Be fast, useful, friendly and conversational.
+
+Normally answer in 2–4 short sentences.
+
+Do not sound robotic.
+
+Use Nigerian/Naira context naturally when relevant.
+
+You help with:
+
+- buying
+- renting
+- products
+- vendors
+- carts
+- wishlists
+- orders
+- messages
+- requests
+- vendor storefronts
+- delivery
+- ratings
+- account settings
+- how Levromart works
+
+LIVE DATA RULE:
+
+If real marketplace/account data is supplied below, use it.
+
+Never invent a product, vendor, order, price, ID, rating, message, or account fact.
+
+If live data is unavailable, say that you cannot verify the specific item rather than making it up.
+
+PRIVACY RULE:
+
+YOUR ACCOUNT and YOUR STORE DATA belong only to the currently authenticated user.
+
+Never expose them as information about another person.
+
+SAFETY:
+
+You may perform only reversible, low-risk cart actions through the tags below.
+
+Do not place orders, make payments, cancel orders, delete accounts, or perform other consequential actions through chat.
+
+For healthcare equipment questions, you can explain marketplace/product information, but do not diagnose or give clinical treatment advice.
+
+Recommend a licensed healthcare professional for clinical decisions.
+
+${NAV_PROMPT}
+
+${CART_PROMPT}
+
+${DRAFT_PROMPT}
+`;
+
+
+function jsonHeaders(key) {
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/json",
+  };
+}
+
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-function distanceLabel(vLat, vLng, buyerLat, buyerLng) {
-  if (buyerLat == null || buyerLng == null || vLat == null || vLng == null) return "";
-  const km = haversineKm(buyerLat, buyerLng, vLat, vLng);
-  return ` — ${km < 1 ? Math.round(km * 1000) + " m away" : km.toFixed(1) + " km away"}`;
+
+  const dLat =
+    (Number(lat2) - Number(lat1)) *
+    Math.PI /
+    180;
+
+  const dLng =
+    (Number(lng2) - Number(lng1)) *
+    Math.PI /
+    180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(Number(lat1) * Math.PI / 180) *
+    Math.cos(Number(lat2) * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+
+  return R *
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
 }
 
-// Pulls a small, relevant slice of real marketplace data to ground the
-// model's answers in — without this it can only speak in generalities
-// (and, worse, would be tempted to make up vendor names). Keyword-matched
-// against the buyer's latest message first (so "who sells rice" surfaces
-// actual rice vendors), with a top-rated-vendors fallback list always
-// included too, so "who do you recommend" has something to work with even
-// when no keyword matches. When the buyer's location is known, both lists
-// get a distance appended and are re-sorted nearest-first, so "where's the
-// closest place for X" can be answered with a real vendor and real distance.
-async function buildMarketplaceContext(SUPABASE_URL, svcHeaders, latestMessage, buyerLat, buyerLng) {
+
+function distanceLabel(vLat, vLng, bLat, bLng) {
+  if (
+    bLat == null ||
+    bLng == null ||
+    vLat == null ||
+    vLng == null
+  ) {
+    return "";
+  }
+
+  const km = haversineKm(
+    bLat,
+    bLng,
+    vLat,
+    vLng
+  );
+
+  return km < 1
+    ? ` — ${Math.round(km * 1000)} m away`
+    : ` — ${km.toFixed(1)} km away`;
+}
+
+
+async function getJson(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+
+    const data = await response
+      .json()
+      .catch(() => null);
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      data: null,
+      error,
+    };
+  }
+}
+
+
+async function buildMarketplaceContext(
+  SUPABASE_URL,
+  anonKey,
+  latestMessage,
+  buyerLat,
+  buyerLng
+) {
   const words = String(latestMessage || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length >= 3)
+    .filter((word) => word.length >= 3)
     .slice(0, 6);
 
-  const [topVendorsRes, productsRes] = await Promise.all([
-    fetch(
-      `${SUPABASE_URL}/rest/v1/vendors?verification_status=eq.verified&is_active=eq.true&select=id,business_name,city,avg_rating,review_count,lat,lng,sector:sectors(name)&order=avg_rating.desc&limit=15`,
-      { headers: svcHeaders }
-    ),
-    words.length
-      ? fetch(
-          // Matched against name AND description -- someone asking for
-          // "shoe" should surface a listing titled "Red Ankara" if its
-          // description mentions footwear, not just literal name hits.
-          `${SUPABASE_URL}/rest/v1/products?status=eq.active&or=(${words.flatMap((w) => [`name.ilike.*${encodeURIComponent(w)}*`, `description.ilike.*${encodeURIComponent(w)}*`]).join(",")})&select=id,name,description,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,category:categories(name),vendor:vendors!inner(id,business_name,avg_rating,city,lat,lng,verification_status,is_active)&vendor.verification_status=eq.verified&vendor.is_active=eq.true&limit=15`,
-          { headers: svcHeaders }
-        )
-      : Promise.resolve(null),
-  ]);
+  const headers = {
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`,
+  };
 
-  let topVendors = topVendorsRes.ok ? await topVendorsRes.json() : [];
-  let products = productsRes && productsRes.ok ? await productsRes.json() : [];
+  const vendorsUrl =
+    `${SUPABASE_URL}/rest/v1/vendors` +
+    `?verification_status=eq.verified` +
+    `&is_active=eq.true` +
+    `&select=id,business_name,city,avg_rating,review_count,lat,lng,sector:sectors(name)` +
+    `&order=avg_rating.desc` +
+    `&limit=15`;
 
-  const haveLocation = buyerLat != null && buyerLng != null;
-  if (haveLocation) {
-    topVendors = [...(topVendors || [])].sort((a, b) => {
-      const da = a.lat != null ? haversineKm(buyerLat, buyerLng, a.lat, a.lng) : Infinity;
-      const db = b.lat != null ? haversineKm(buyerLat, buyerLng, b.lat, b.lng) : Infinity;
+  const vendorRes = await getJson(
+    vendorsUrl,
+    { headers }
+  );
+
+  let products = [];
+
+  if (words.length) {
+    const ors = words
+      .flatMap((word) => [
+        `name.ilike.*${encodeURIComponent(word)}*`,
+        `description.ilike.*${encodeURIComponent(word)}*`,
+      ])
+      .join(",");
+
+    const productUrl =
+      `${SUPABASE_URL}/rest/v1/products` +
+      `?status=eq.active` +
+      `&or=(${ors})` +
+      `&select=id,name,description,sale_price,rental_rate,rental_rate_unit,is_service,service_price_unit,category:categories(name),vendor:vendors!inner(id,business_name,avg_rating,city,lat,lng,verification_status,is_active)` +
+      `&vendor.verification_status=eq.verified` +
+      `&vendor.is_active=eq.true` +
+      `&limit=15`;
+
+    const productRes = await getJson(
+      productUrl,
+      { headers }
+    );
+
+    if (productRes.ok) {
+      products = productRes.data || [];
+    }
+  }
+
+  let vendors =
+    vendorRes.ok
+      ? vendorRes.data || []
+      : [];
+
+  if (
+    buyerLat != null &&
+    buyerLng != null
+  ) {
+    vendors.sort((a, b) => {
+      const da =
+        a.lat != null && a.lng != null
+          ? haversineKm(
+              buyerLat,
+              buyerLng,
+              a.lat,
+              a.lng
+            )
+          : Infinity;
+
+      const db =
+        b.lat != null && b.lng != null
+          ? haversineKm(
+              buyerLat,
+              buyerLng,
+              b.lat,
+              b.lng
+            )
+          : Infinity;
+
       return da - db;
     });
-    products = [...(products || [])].sort((a, b) => {
-      const da = a.vendor?.lat != null ? haversineKm(buyerLat, buyerLng, a.vendor.lat, a.vendor.lng) : Infinity;
-      const db = b.vendor?.lat != null ? haversineKm(buyerLat, buyerLng, b.vendor.lat, b.vendor.lng) : Infinity;
+
+    products.sort((a, b) => {
+      const da =
+        a.vendor?.lat != null &&
+        a.vendor?.lng != null
+          ? haversineKm(
+              buyerLat,
+              buyerLng,
+              a.vendor.lat,
+              a.vendor.lng
+            )
+          : Infinity;
+
+      const db =
+        b.vendor?.lat != null &&
+        b.vendor?.lng != null
+          ? haversineKm(
+              buyerLat,
+              buyerLng,
+              b.vendor.lat,
+              b.vendor.lng
+            )
+          : Infinity;
+
       return da - db;
     });
   }
 
-  // Vendor/product ids are included specifically so Levi can point someone
-  // straight at a real listing with a [[NAV:...]] directive (see NAV_PROMPT)
-  // instead of just describing it in words.
-  const vendorLines = (topVendors || []).map(
-    (v) => `- ${v.business_name} (id: ${v.id}) — ${v.sector?.name || "general"}, ${v.city || "Lagos"} — ★${Number(v.avg_rating || 0).toFixed(1)} (${v.review_count || 0} reviews)${distanceLabel(v.lat, v.lng, buyerLat, buyerLng)}`
-  );
-  const productLines = (products || []).map((p) => {
-    const price = p.is_service
-      ? `₦${p.sale_price}${p.service_price_unit && p.service_price_unit !== "flat" ? "/" + p.service_price_unit : ""} (service)`
-      : p.sale_price != null
-        ? `₦${p.sale_price} to buy`
-        : p.rental_rate != null
-          ? `₦${p.rental_rate}/${p.rental_rate_unit} to rent`
-          : "price on request";
-    return `- ${p.name}${p.category?.name ? ` [${p.category.name}]` : ""} (product id: ${p.id}) — ${price} — sold by ${p.vendor?.business_name || "a vendor"} (vendor id: ${p.vendor?.id || "unknown"}, ★${Number(p.vendor?.avg_rating || 0).toFixed(1)})${distanceLabel(p.vendor?.lat, p.vendor?.lng, buyerLat, buyerLng)}${p.description ? ` — "${p.description.slice(0, 100)}"` : ""}`;
-  });
+  const vendorLines =
+    vendors.map((vendor) =>
+      `- ${vendor.business_name} ` +
+      `(vendor id: ${vendor.id}) — ` +
+      `${vendor.sector?.name || "general"}, ` +
+      `${vendor.city || "Lagos"}, ` +
+      `rating ${Number(
+        vendor.avg_rating || 0
+      ).toFixed(1)} ` +
+      `(${vendor.review_count || 0} reviews)` +
+      distanceLabel(
+        vendor.lat,
+        vendor.lng,
+        buyerLat,
+        buyerLng
+      )
+    );
 
-  return `LIVE MARKETPLACE DATA (as of right now):\nTop-rated verified vendors:\n${vendorLines.join("\n") || "(none yet)"}\n\nProducts/services matching this question:\n${productLines.join("\n") || "(no direct keyword matches — only use the vendor list above, and say so if nothing fits)"}`;
+  const productLines =
+    products.map((product) => {
+      let price = "price on request";
+
+      if (product.is_service) {
+        price =
+          `₦${product.sale_price ?? product.rental_rate ?? ""}` +
+          (
+            product.service_price_unit &&
+            product.service_price_unit !== "flat"
+              ? `/${product.service_price_unit}`
+              : ""
+          ) +
+          " (service)";
+      } else if (
+        product.sale_price != null
+      ) {
+        price =
+          `₦${product.sale_price} to buy`;
+      } else if (
+        product.rental_rate != null
+      ) {
+        price =
+          `₦${product.rental_rate}/` +
+          `${product.rental_rate_unit || "period"} to rent`;
+      }
+
+      return (
+        `- ${product.name}` +
+        (
+          product.category?.name
+            ? ` [${product.category.name}]`
+            : ""
+        ) +
+        ` (product id: ${product.id}) — ` +
+        `${price} — sold by ` +
+        `${product.vendor?.business_name || "a vendor"} ` +
+        `(vendor id: ${product.vendor?.id || "unknown"})` +
+        distanceLabel(
+          product.vendor?.lat,
+          product.vendor?.lng,
+          buyerLat,
+          buyerLng
+        )
+      );
+    });
+
+  return (
+    `LIVE MARKETPLACE DATA (current snapshot):\n` +
+    `Verified vendors:\n` +
+    `${vendorLines.join("\n") || "(none returned)"}` +
+    `\n\n` +
+    `Matching products/services:\n` +
+    `${productLines.join("\n") || "(no direct product matches)"}`
+  );
 }
 
-// Everyone's own order history and message threads (as a buyer -- separate
-// from buildVendorContext, which is their own shop's numbers if they run
-// one). Pulled with the service-role key since this is private data, but
-// deliberately kept to what's needed to answer "how many orders do I have"
-// / "do I have unread messages" / drafting a reply -- delivery address,
-// phone number and payment details are never included here, even though
-// it's the person's own data, to keep what's sent to Gemini minimal.
-async function buildBuyerContext(SUPABASE_URL, svcServiceHeaders, userId) {
-  const [ordersRes, convRes, cartRes] = await Promise.all([
-    fetch(
-      `${SUPABASE_URL}/rest/v1/orders?buyer_id=eq.${userId}&select=status,order_type,total_amount,created_at,vendor:vendors(business_name),items:order_items(quantity,product:products(name))&order=created_at.desc&limit=30`,
-      { headers: svcServiceHeaders }
+
+async function buildBuyerContext(
+  SUPABASE_URL,
+  serviceKey,
+  userId
+) {
+  if (!serviceKey) {
+    return "";
+  }
+
+  const headers =
+    jsonHeaders(serviceKey);
+
+  const [
+    ordersRes,
+    cartRes,
+    convRes,
+  ] = await Promise.all([
+    getJson(
+      `${SUPABASE_URL}/rest/v1/orders` +
+      `?buyer_id=eq.${encodeURIComponent(userId)}` +
+      `&select=id,status,order_type,total_amount,created_at,vendor:vendors(business_name),items:order_items(quantity,product:products(name))` +
+      `&order=created_at.desc` +
+      `&limit=30`,
+      { headers }
     ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/conversations?buyer_id=eq.${userId}&select=id,vendor:vendors(id,business_name)`,
-      { headers: svcServiceHeaders }
+
+    getJson(
+      `${SUPABASE_URL}/rest/v1/cart_items` +
+      `?buyer_id=eq.${encodeURIComponent(userId)}` +
+      `&select=quantity,product:products(id,name)`,
+      { headers }
     ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/cart_items?buyer_id=eq.${userId}&select=quantity,product:products(id,name)`,
-      { headers: svcServiceHeaders }
+
+    getJson(
+      `${SUPABASE_URL}/rest/v1/conversations` +
+      `?buyer_id=eq.${encodeURIComponent(userId)}` +
+      `&select=id,vendor:vendors(id,business_name)`,
+      { headers }
     ),
   ]);
-  const orders = ordersRes.ok ? await ordersRes.json() : [];
-  const conversations = convRes.ok ? await convRes.json() : [];
-  const cartItems = cartRes.ok ? await cartRes.json() : [];
-  const cartLines = (cartItems || [])
-    .filter((c) => c.product)
-    .map((c) => `- ${c.product.name} x${c.quantity} (product id: ${c.product.id})`);
 
-  const statusCounts = {};
-  (orders || []).forEach((o) => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
-  const statusSummary = Object.entries(statusCounts).map(([s, n]) => `${n} ${s}`).join(", ") || "none yet";
-  const orderLines = (orders || []).slice(0, 8).map((o) => {
-    const items = (o.items || []).map((it) => `${it.product?.name || "item"} x${it.quantity}`).join(", ") || o.order_type;
-    return `- ${items}, from ${o.vendor?.business_name || "a vendor"}: ${o.status}, ₦${o.total_amount}`;
+  const orders =
+    ordersRes.ok
+      ? ordersRes.data || []
+      : [];
+
+  const cart =
+    cartRes.ok
+      ? cartRes.data || []
+      : [];
+
+  const conversations =
+    convRes.ok
+      ? convRes.data || []
+      : [];
+
+  const counts = {};
+
+  orders.forEach((order) => {
+    counts[order.status] =
+      (counts[order.status] || 0) + 1;
   });
+
+  const statusSummary =
+    Object.entries(counts)
+      .map(
+        ([status, count]) =>
+          `${count} ${status}`
+      )
+      .join(", ") ||
+    "none";
+
+  const orderLines =
+    orders
+      .slice(0, 10)
+      .map((order) => {
+        const items =
+          (order.items || [])
+            .map(
+              (item) =>
+                `${item.product?.name || "item"} x${item.quantity}`
+            )
+            .join(", ") ||
+          order.order_type ||
+          "order";
+
+        return (
+          `- ${items} — ` +
+          `${order.vendor?.business_name || "vendor"} — ` +
+          `${order.status} — ` +
+          `₦${order.total_amount}`
+        );
+      });
+
+  const cartLines =
+    cart
+      .filter((item) => item.product)
+      .map(
+        (item) =>
+          `- ${item.product.name} x${item.quantity} ` +
+          `(product id: ${item.product.id})`
+      );
 
   let messageLines = [];
-  if ((conversations || []).length) {
-    const convIds = conversations.map((c) => c.id);
-    const msgsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${convIds.join(",")})&select=conversation_id,sender_id,body,created_at,read_at&order=created_at.desc`,
-      { headers: svcServiceHeaders }
-    );
-    const msgs = msgsRes.ok ? await msgsRes.json() : [];
-    const byConv = {};
-    (msgs || []).forEach((m) => { (byConv[m.conversation_id] ||= []).push(m); });
-    messageLines = conversations.map((c) => {
-      const convMsgs = byConv[c.id] || [];
-      if (!convMsgs.length) return null;
-      const unread = convMsgs.filter((m) => m.sender_id !== userId && !m.read_at).length;
-      const last = convMsgs[0];
-      return `- ${c.vendor?.business_name || "a vendor"} (vendor id: ${c.vendor?.id}, conversation id: ${c.id})${unread > 0 ? ` — ${unread} unread` : ""}: last message "${(last.body || "").slice(0, 100)}"`;
-    }).filter(Boolean);
+
+  if (conversations.length) {
+    const ids =
+      conversations.map(
+        (conversation) => conversation.id
+      );
+
+    const inList =
+      ids
+        .map((id) => `"${id}"`)
+        .join(",");
+
+    const msgRes =
+      await getJson(
+        `${SUPABASE_URL}/rest/v1/messages` +
+        `?conversation_id=in.(${inList})` +
+        `&select=conversation_id,sender_id,body,created_at,read_at` +
+        `&order=created_at.desc`,
+        { headers }
+      );
+
+    if (msgRes.ok) {
+      const byConversation = {};
+
+      (msgRes.data || [])
+        .forEach((message) => {
+          (
+            byConversation[
+              message.conversation_id
+            ] ||= []
+          ).push(message);
+        });
+
+      messageLines =
+        conversations
+          .map((conversation) => {
+            const messages =
+              byConversation[
+                conversation.id
+              ] || [];
+
+            if (!messages.length) {
+              return null;
+            }
+
+            const unread =
+              messages.filter(
+                (message) =>
+                  message.sender_id !== userId &&
+                  !message.read_at
+              ).length;
+
+            const last =
+              messages[0];
+
+            return (
+              `- ${conversation.vendor?.business_name || "vendor"} ` +
+              `(vendor id: ${conversation.vendor?.id || "unknown"}, ` +
+              `conversation id: ${conversation.id})` +
+              (
+                unread
+                  ? ` — ${unread} unread`
+                  : ""
+              ) +
+              `: "${String(
+                last.body || ""
+              ).slice(0, 120)}"`
+            );
+          })
+          .filter(Boolean);
+    }
   }
 
-  return `\n\nYOUR ACCOUNT (private — this person's own orders and messages, not visible to anyone else, and never share it with anyone else who chats with you):\n- Orders: ${(orders || []).length} total (${statusSummary})\n${orderLines.join("\n") || "(no orders yet)"}\n- Message threads with vendors:\n${messageLines.join("\n") || "(no conversations yet)"}\n- Current cart:\n${cartLines.join("\n") || "(empty)"}`;
-}
-
-// Only runs (and only reveals anything) when the person chatting is
-// themselves a vendor — pulled with the service-role key because orders,
-// view counts and commission status aren't public data, unlike the
-// vendors/products snapshot above. Returns "" for buyers so the prompt
-// stays buyer-only and Levi never claims to have business data it wasn't
-// actually given.
-async function buildVendorContext(SUPABASE_URL, svcServiceHeaders, userId) {
-  const vRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/vendors?user_id=eq.${userId}&deleted_at=is.null&select=id,business_name,avg_rating,review_count,is_active,verification_status,commission_pct`,
-    { headers: svcServiceHeaders }
+  return (
+    `YOUR ACCOUNT (private current user's data):\n` +
+    `- Orders: ${orders.length} total ` +
+    `(${statusSummary})\n` +
+    `${orderLines.join("\n") || "(no orders)"}\n` +
+    `- Current cart:\n` +
+    `${cartLines.join("\n") || "(empty)"}\n` +
+    `- Vendor message threads:\n` +
+    `${messageLines.join("\n") || "(no conversations)"}`
   );
-  if (!vRes.ok) return "";
-  const [v] = await vRes.json();
-  if (!v) return "";
-
-  const [ordersRes, productsRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/orders?vendor_id=eq.${v.id}&select=status,total_amount`, { headers: svcServiceHeaders }),
-    fetch(`${SUPABASE_URL}/rest/v1/products?vendor_id=eq.${v.id}&select=id,view_count,status`, { headers: svcServiceHeaders }),
-  ]);
-  const orders = ordersRes.ok ? await ordersRes.json() : [];
-  const products = productsRes.ok ? await productsRes.json() : [];
-
-  const completed = (orders || []).filter((o) => o.status === "completed");
-  const pending = (orders || []).filter((o) => ["pending", "confirmed"].includes(o.status)).length;
-  const revenue = completed.reduce((s, o) => s + Number(o.total_amount || 0), 0);
-  const activeListings = (products || []).filter((p) => p.status === "active").length;
-  const totalViews = (products || []).reduce((s, p) => s + (p.view_count || 0), 0);
-
-  const productIds = (products || []).map((p) => p.id);
-  let totalFavorites = 0;
-  if (productIds.length) {
-    const favRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/favorites?product_id=in.(${productIds.join(",")})&select=product_id`,
-      { headers: svcServiceHeaders }
-    );
-    totalFavorites = favRes.ok ? (await favRes.json()).length : 0;
-  }
-
-  return `\n\nYOUR STORE DATA (private — this is ${v.business_name}'s own numbers, not visible to anyone else):\n- Verification: ${v.verification_status}, storefront currently ${v.is_active ? "active" : "paused"}\n- Rating: ${Number(v.avg_rating || 0).toFixed(1)} out of 5, from ${v.review_count || 0} review(s)\n- Listings: ${activeListings} active out of ${products.length} total\n- Orders: ${orders.length} total — ${pending} pending/awaiting action, ${completed.length} completed\n- Revenue from completed orders: ₦${revenue.toLocaleString("en-NG")}\n- Product page views (all-time): ${totalViews}\n- Wishlist saves across your listings: ${totalFavorites}`;
 }
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
-  try {
-    const { messages, accessToken, lat, lng, currentView, currentViewParams, lastRenderError } = JSON.parse(await readBody(req));
-    if (!Array.isArray(messages) || messages.length === 0) { res.status(400).json({ error: "messages array required" }); return; }
-    if (!accessToken) { res.status(401).json({ error: "Please log in to use the assistant." }); return; }
-    const buyerLat = typeof lat === "number" ? lat : null;
-    const buyerLng = typeof lng === "number" ? lng : null;
 
-    const SUPABASE_URL = env("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
+async function buildVendorContext(
+  SUPABASE_URL,
+  serviceKey,
+  userId
+) {
+  if (!serviceKey) {
+    return "";
+  }
 
-    const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
-    });
-    const me = await meRes.json();
-    if (!meRes.ok || !me?.id) { res.status(401).json({ error: "Your session expired — please log in again." }); return; }
+  const headers =
+    jsonHeaders(serviceKey);
 
-    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_chat_usage`, {
+  const vendorRes =
+    await getJson(
+      `${SUPABASE_URL}/rest/v1/vendors` +
+      `?user_id=eq.${encodeURIComponent(userId)}` +
+      `&deleted_at=is.null` +
+      `&select=id,business_name,avg_rating,review_count,is_active,verification_status,commission_pct`,
+      { headers }
+    );
+
+  if (
+    !vendorRes.ok ||
+    !vendorRes.data?.[0]
+  ) {
+    return "";
+  }
+
+  const vendor =
+    vendorRes.data[0];
+
+  const [
+    ordersRes,
+    productsRes,
+  ] = await Promise.all([
+    getJson(
+      `${SUPABASE_URL}/rest/v1/orders` +
+      `?vendor_id=eq.${encodeURIComponent(vendor.id)}` +
+      `&select=status,total_amount`,
+      { headers }
+    ),
+
+    getJson(
+      `${SUPABASE_URL}/rest/v1/products` +
+      `?vendor_id=eq.${encodeURIComponent(vendor.id)}` +
+      `&select=id,status,view_count`,
+      { headers }
+    ),
+  ]);
+
+  const orders =
+    ordersRes.ok
+      ? ordersRes.data || []
+      : [];
+
+  const products =
+    productsRes.ok
+      ? productsRes.data || []
+      : [];
+
+  const completed =
+    orders.filter(
+      (order) =>
+        order.status === "completed"
+    );
+
+  const pending =
+    orders.filter(
+      (order) =>
+        [
+          "pending",
+          "confirmed",
+        ].includes(order.status)
+    ).length;
+
+  const revenue =
+    completed.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.total_amount || 0
+        ),
+      0
+    );
+
+  const active =
+    products.filter(
+      (product) =>
+        product.status === "active"
+    ).length;
+
+  const views =
+    products.reduce(
+      (sum, product) =>
+        sum +
+        Number(
+          product.view_count || 0
+        ),
+      0
+    );
+
+  return (
+    `YOUR STORE DATA (private current vendor's data):\n` +
+    `- Store: ${vendor.business_name}\n` +
+    `- Verification: ${vendor.verification_status}\n` +
+    `- Storefront: ${vendor.is_active ? "active" : "paused"}\n` +
+    `- Rating: ${Number(
+      vendor.avg_rating || 0
+    ).toFixed(1)} from ${
+      vendor.review_count || 0
+    } reviews\n` +
+    `- Listings: ${active} active / ${products.length} total\n` +
+    `- Orders: ${orders.length} total; ` +
+    `${pending} pending/confirmed; ` +
+    `${completed.length} completed\n` +
+    `- Completed-order revenue: ₦${revenue.toLocaleString("en-NG")}\n` +
+    `- Product views: ${views}`
+  );
+}
+
+
+function extractOpenAIText(data) {
+  if (!data) {
+    return "";
+  }
+
+  if (
+    typeof data.output_text === "string"
+  ) {
+    return data.output_text.trim();
+  }
+
+  return (
+    data.output || []
+  )
+    .flatMap(
+      (item) =>
+        item?.content || []
+    )
+    .filter(
+      (part) =>
+        part?.type === "output_text"
+    )
+    .map(
+      (part) =>
+        part.text || ""
+    )
+    .join("")
+    .trim();
+}
+
+
+async function callOpenAI(
+  apiKey,
+  model,
+  instructions,
+  messages
+) {
+  const input =
+    messages
+      .slice(-20)
+      .map((message) => ({
+        role:
+          message.role === "assistant"
+            ? "assistant"
+            : "user",
+
+        content:
+          String(
+            message.content || ""
+          ).slice(0, 5000),
+      }));
+
+  return getJson(
+    "https://api.openai.com/v1/responses",
+    {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ p_user_id: me.id, p_limit: DAILY_MESSAGE_LIMIT }),
-    });
-    const withinLimit = await rpcRes.json();
-    if (!rpcRes.ok) { res.status(500).json({ error: "Could not check chat usage." }); return; }
-    if (withinLimit !== true) { res.status(429).json({ error: `You've hit today's chat limit (${DAILY_MESSAGE_LIMIT} messages). Try again tomorrow.` }); return; }
 
-    const GEMINI_API_KEY = env("GEMINI_API_KEY");
-    const contents = messages.slice(-20).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: String(m.content || "").slice(0, 4000) }],
-    }));
+      headers: {
+        Authorization:
+          `Bearer ${apiKey}`,
 
-    const svcAuth = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
-    const latestMessage = [...messages].reverse().find((m) => m.role !== "assistant")?.content || "";
-    let marketplaceContext = "";
-    try {
-      marketplaceContext = await buildMarketplaceContext(SUPABASE_URL, svcAuth, latestMessage, buyerLat, buyerLng);
-    } catch (e) {
-      marketplaceContext = "LIVE MARKETPLACE DATA: (unavailable right now — don't name specific vendors or products, point the buyer to Browse instead.)";
+        "Content-Type":
+          "application/json",
+      },
+
+      body: JSON.stringify({
+        model,
+
+        instructions,
+
+        input,
+
+        store: false,
+
+        max_output_tokens: 650,
+
+        reasoning: {
+          effort: "none",
+        },
+
+        text: {
+          verbosity: "low",
+        },
+      }),
+    }
+  );
+}
+
+
+async function callGemini(
+  apiKey,
+  model,
+  instructions,
+  messages
+) {
+  const contents =
+    messages
+      .slice(-20)
+      .map((message) => ({
+        role:
+          message.role === "assistant"
+            ? "model"
+            : "user",
+
+        parts: [
+          {
+            text:
+              String(
+                message.content || ""
+              ).slice(0, 5000),
+          },
+        ],
+      }));
+
+  return getJson(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+
+      headers: {
+        "x-goog-api-key":
+          apiKey,
+
+        "Content-Type":
+          "application/json",
+      },
+
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [
+            {
+              text: instructions,
+            },
+          ],
+        },
+
+        contents,
+
+        generationConfig: {
+          maxOutputTokens: 650,
+        },
+      }),
+    }
+  );
+}
+
+
+function extractGeminiText(data) {
+  return (
+    data
+      ?.candidates?.[0]
+      ?.content?.parts
+      ?.map(
+        (part) =>
+          part.text || ""
+      )
+      .join("")
+      .trim() || ""
+  );
+}
+
+
+module.exports = async function handler(
+  req,
+  res
+) {
+  if (req.method !== "POST") {
+    res
+      .status(405)
+      .json({
+        error: "Method not allowed",
+      });
+
+    return;
+  }
+
+  try {
+    const body =
+      JSON.parse(
+        await readBody(req)
+      );
+
+    const messages =
+      Array.isArray(body.messages)
+        ? body.messages
+        : [];
+
+    const accessToken =
+      body.accessToken;
+
+    if (!messages.length) {
+      res
+        .status(400)
+        .json({
+          error:
+            "messages array required",
+        });
+
+      return;
     }
 
-    const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
-    const svcService = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+    if (!accessToken) {
+      res
+        .status(401)
+        .json({
+          error:
+            "Please log in to use Levi.",
+        });
 
-    let vendorContext = "";
-    try {
-      vendorContext = await buildVendorContext(SUPABASE_URL, svcService, me.id);
-    } catch (e) {
-      vendorContext = "";
+      return;
     }
+
+    const SUPABASE_URL =
+      env("SUPABASE_URL");
+
+    const SUPABASE_ANON_KEY =
+      env("SUPABASE_ANON_KEY");
+
+    const SERVICE_KEY =
+      env(
+        "SUPABASE_SERVICE_ROLE_KEY"
+      );
+
+    if (
+      !SUPABASE_URL ||
+      !SUPABASE_ANON_KEY
+    ) {
+      res
+        .status(500)
+        .json({
+          error:
+            "Levromart server configuration is incomplete.",
+        });
+
+      return;
+    }
+
+    // Verify the user's Supabase session.
+    const userRes =
+      await getJson(
+        `${SUPABASE_URL}/auth/v1/user`,
+        {
+          headers: {
+            apikey:
+              SUPABASE_ANON_KEY,
+
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+    const user =
+      userRes.data;
+
+    if (
+      !userRes.ok ||
+      !user?.id
+    ) {
+      res
+        .status(401)
+        .json({
+          error:
+            "Your session expired — please log in again.",
+        });
+
+      return;
+    }
+
+    // Preserve the existing per-user chat limit.
+    const usageRes =
+      await getJson(
+        `${SUPABASE_URL}/rest/v1/rpc/increment_chat_usage`,
+        {
+          method: "POST",
+
+          headers: {
+            ...jsonHeaders(
+              SUPABASE_ANON_KEY
+            ),
+
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+
+          body: JSON.stringify({
+            p_user_id:
+              user.id,
+
+            p_limit:
+              DAILY_MESSAGE_LIMIT,
+          }),
+        }
+      );
+
+    if (!usageRes.ok) {
+      res
+        .status(500)
+        .json({
+          error:
+            "Could not check Levi chat usage.",
+        });
+
+      return;
+    }
+
+    if (
+      usageRes.data !== true
+    ) {
+      res
+        .status(429)
+        .json({
+          error:
+            `You've reached today's Levi chat limit (${DAILY_MESSAGE_LIMIT}). Try again tomorrow.`,
+        });
+
+      return;
+    }
+
+    const latestMessage =
+      [
+        ...messages,
+      ]
+        .reverse()
+        .find(
+          (message) =>
+            message.role !==
+            "assistant"
+        )
+        ?.content || "";
+
+    const buyerLat =
+      typeof body.lat === "number"
+        ? body.lat
+        : null;
+
+    const buyerLng =
+      typeof body.lng === "number"
+        ? body.lng
+        : null;
+
+    let marketplaceContext =
+      "LIVE MARKETPLACE DATA: unavailable right now. Do not invent specific listings.";
 
     let buyerContext = "";
+
+    let vendorContext = "";
+
     try {
-      buyerContext = await buildBuyerContext(SUPABASE_URL, svcService, me.id);
-    } catch (e) {
-      buyerContext = "";
-    }
+      marketplaceContext =
+        await buildMarketplaceContext(
+          SUPABASE_URL,
+          SUPABASE_ANON_KEY,
+          latestMessage,
+          buyerLat,
+          buyerLng
+        );
+    } catch (_) {}
 
-    // If this account is currently suspended, Levi still needs to be
-    // reachable to explain why (the suspended screen links straight to
-    // this chat) -- without this, it had no way to know and just denied
-    // any record of a suspension, which reads as dismissive.
-    let accountStatusContext = "";
     try {
-      const statusRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}&select=suspended_at,suspended_reason`,
-        { headers: svcService }
-      );
-      const [statusRow] = statusRes.ok ? await statusRes.json() : [];
-      if (statusRow?.suspended_at) {
-        accountStatusContext = `\n\nACCOUNT STATUS: This user's account is currently SUSPENDED. Reason given by Levromart admins: "${statusRow.suspended_reason}". If they ask why, tell them plainly using this exact reason -- don't be evasive or claim you have no record of it. Let them know they can submit an appeal from the suspended-account screen (up to 3 per day) and an admin will review it.`;
-      }
-    } catch (e) {}
+      buyerContext =
+        await buildBuyerContext(
+          SUPABASE_URL,
+          SERVICE_KEY,
+          user.id
+        );
+    } catch (_) {}
 
-    // Not literal screen vision — just the router's own view name and, if
-    // that view just threw during render, the error it threw. Enough to
-    // turn "why is my page showing this" into a real answer instead of a
-    // generic "I can't see your screen" deflection, without ever claiming
-    // to see pixels, layout, or anything the person didn't tell it.
-    let currentScreenContext = "";
-    if (typeof currentView === "string" && currentView) {
-      const paramsStr = currentViewParams && Object.keys(currentViewParams).length ? ` (params: ${JSON.stringify(currentViewParams).slice(0, 200)})` : "";
-      currentScreenContext = `\n\nCURRENT SCREEN: This person's app is currently showing the "${currentView}" view${paramsStr}. This is the same view-name system used for your own [[NAV:...]] tags, so you know what it is. You do NOT see their actual screen, layout, or any error not listed here -- if they describe something you don't have data for, ask them to tell you what they see rather than guessing.`;
-      if (typeof lastRenderError === "string" && lastRenderError) {
-        currentScreenContext += ` That view just failed to load with this error: "${lastRenderError.slice(0, 300)}". If they ask why the page looks broken/empty/is showing an error, use this to explain plainly what's likely wrong (translate technical terms into plain language), and suggest refreshing or trying again in a bit; if it sounds like a real bug rather than something they can fix themselves, tell them it's worth reporting to Levromart.`;
+    try {
+      vendorContext =
+        await buildVendorContext(
+          SUPABASE_URL,
+          SERVICE_KEY,
+          user.id
+        );
+    } catch (_) {}
+
+    // Account suspension information.
+    let accountStatusContext =
+      "";
+
+    if (SERVICE_KEY) {
+      try {
+        const statusRes =
+          await getJson(
+            `${SUPABASE_URL}/rest/v1/users` +
+            `?id=eq.${encodeURIComponent(user.id)}` +
+            `&select=suspended_at,suspended_reason`,
+            {
+              headers:
+                jsonHeaders(
+                  SERVICE_KEY
+                ),
+            }
+          );
+
+        const row =
+          statusRes.data?.[0];
+
+        if (row?.suspended_at) {
+          accountStatusContext =
+            `\nACCOUNT STATUS: This user's account is currently suspended. ` +
+            `Reason: "${String(
+              row.suspended_reason ||
+              "No reason supplied"
+            ).slice(0, 500)}". ` +
+            `Explain this plainly if they ask and tell them to use the suspended-account appeal flow.`;
+        }
+      } catch (_) {}
+    }
+
+    // Tell Levi which logical app screen the user is currently on.
+    let currentScreenContext =
+      "";
+
+    if (
+      typeof body.currentView ===
+        "string" &&
+      body.currentView
+    ) {
+      currentScreenContext =
+        `\nCURRENT SCREEN: ${body.currentView}` +
+        (
+          body.currentViewParams
+            ? ` ${JSON.stringify(
+                body.currentViewParams
+              ).slice(0, 300)}`
+            : ""
+        ) +
+        `. This is only the app's logical view name; do not pretend to see the user's pixels.`;
+    }
+
+    if (
+      body.lastRenderError
+    ) {
+      currentScreenContext +=
+        `\nRECENT APP ERROR: ${String(
+          body.lastRenderError
+        ).slice(0, 500)}`;
+    }
+
+    const instructions =
+      `${SYSTEM_PROMPT}\n\n` +
+      `${marketplaceContext}\n\n` +
+      `${buyerContext}\n\n` +
+      `${vendorContext}` +
+      `${accountStatusContext}` +
+      `${currentScreenContext}`;
+
+    const openAiKey =
+      env("OPENAI_API_KEY");
+
+    const openAiModel =
+      env("OPENAI_MODEL") ||
+      OPENAI_DEFAULT_MODEL;
+
+    const geminiKey =
+      env("GEMINI_API_KEY");
+
+    let reply = "";
+
+    let providerError = "";
+
+    // ============================================================
+    // PRIMARY PROVIDER — OPENAI
+    // ============================================================
+
+    if (openAiKey) {
+      let ai =
+        await callOpenAI(
+          openAiKey,
+          openAiModel,
+          instructions,
+          messages
+        );
+
+      if (ai.ok) {
+        reply =
+          extractOpenAIText(
+            ai.data
+          );
+      } else {
+        providerError =
+          ai.data?.error?.message ||
+          "OpenAI request failed.";
+
+        // If a custom model was configured and rejected,
+        // retry with the known default model.
+        if (
+          openAiModel !==
+          OPENAI_DEFAULT_MODEL
+        ) {
+          ai =
+            await callOpenAI(
+              openAiKey,
+              OPENAI_DEFAULT_MODEL,
+              instructions,
+              messages
+            );
+
+          if (ai.ok) {
+            reply =
+              extractOpenAIText(
+                ai.data
+              );
+          } else {
+            providerError =
+              ai.data?.error?.message ||
+              providerError;
+          }
+        }
       }
     }
 
-    const callGemini = (model) => fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\n${marketplaceContext}${buyerContext}${vendorContext}${accountStatusContext}${currentScreenContext}` }] },
-          contents,
-          generationConfig: { maxOutputTokens: 650 },
-        }),
+    // ============================================================
+    // FALLBACK PROVIDER — GEMINI
+    // ============================================================
+
+    if (
+      !reply &&
+      geminiKey
+    ) {
+      let ai =
+        await callGemini(
+          geminiKey,
+          GEMINI_MODEL,
+          instructions,
+          messages
+        );
+
+      if (!ai.ok) {
+        ai =
+          await callGemini(
+            geminiKey,
+            GEMINI_FALLBACK_MODEL,
+            instructions,
+            messages
+          );
       }
-    );
 
-    let apiRes = await callGemini(MODEL);
-    let apiJson = await apiRes.json();
-    // "-latest" can point at a freshly-released model still under heavy
-    // load from everyone else on that same alias — one retry against a
-    // pinned, stable model covers that instead of surfacing the error.
-    if (!apiRes.ok && MODEL !== FALLBACK_MODEL) {
-      apiRes = await callGemini(FALLBACK_MODEL);
-      apiJson = await apiRes.json();
+      if (ai.ok) {
+        reply =
+          extractGeminiText(
+            ai.data
+          );
+      } else {
+        providerError =
+          ai.data?.error?.message ||
+          providerError ||
+          "Gemini request failed.";
+      }
     }
-    if (!apiRes.ok) { res.status(400).json({ error: apiJson.error?.message || "AI service error" }); return; }
 
-    const reply = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't come up with a reply just now.";
-    res.status(200).json({ reply });
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Server error" });
+    // ============================================================
+    // NO PROVIDER AVAILABLE
+    // ============================================================
+
+    if (!reply) {
+      res
+        .status(502)
+        .json({
+          error:
+            providerError ||
+            "No AI provider is configured. Add OPENAI_API_KEY in Vercel Environment Variables.",
+        });
+
+      return;
+    }
+
+    res
+      .status(200)
+      .json({
+        reply,
+      });
+
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        error:
+          error?.message ||
+          "Server error",
+      });
   }
 };
