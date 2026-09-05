@@ -3964,7 +3964,7 @@ body { min-width:0 !important; }
   bottom:calc(10.65rem + env(safe-area-inset-bottom,0px)) !important;
 }
 /* Keep fixed controls clear of the final content/card area. */
-#app { padding-bottom:calc(9rem + env(safe-area-inset-bottom,0px)) !important; }
+#app { padding-bottom:calc(9rem + env(safe-area-inset-bottom,0px)) !important; overflow:visible !important; }
 
 /* Fast, stable horizontal shop navigation. */
 .shop-tabs-rail {
@@ -4058,11 +4058,12 @@ body { min-width:0 !important; }
 .notif-item,.conv-list-item,.notif-selection-actions button,.messages-selection-toolbar button{backface-visibility:hidden;transform:translateZ(0);}
 </style>
 
+<style id="native-app-shell-css">
 /* ================================================================
    NATIVE APP SHELL + ACCESSIBILITY TYPE SCALE
    ================================================================ */
-html, body { scrollbar-width:none; -ms-overflow-style:none; }
-html::-webkit-scrollbar, body::-webkit-scrollbar { display:none; width:0; height:0; }
+html, body, body * { scrollbar-width:none; -ms-overflow-style:none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, body *::-webkit-scrollbar { display:none; width:0 !important; height:0 !important; }
 body { padding-top:calc(64px + env(safe-area-inset-top,0px)); }
 header { position:fixed !important; top:0 !important; left:0 !important; right:0 !important; width:100% !important; z-index:200 !important; }
 .container > h2, .container > .page-title { margin-bottom:1rem !important; }
@@ -4084,7 +4085,7 @@ header { position:fixed !important; top:0 !important; left:0 !important; right:0
 /* User-controlled text scale. 100% remains the default; the setting changes
    the root type scale so all rem-based typography grows together predictably. */
 html { font-size:calc(16px * var(--levro-font-scale, 1)); }
-
+</style>
 </head>
 <body>
 <div id="levromartSplash" aria-hidden="true"><div class="levromart-splash-mark"><img class="levromart-splash-logo" alt="Levromart" /></div></div>
@@ -4175,7 +4176,7 @@ html { font-size:calc(16px * var(--levro-font-scale, 1)); }
   <div class="accordion-section hidden" id="accountDangerSection">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class='fa-solid fa-user-xmark' style="color:var(--danger);"></i> Account</span><i class='fa-solid fa-chevron-down accordion-chevron'></i></button>
     <div class="accordion-body">
-      <p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently deletes your profile and signs you out everywhere. Blocked if you have orders still in progress or commission owed.</p>
+      <p class="muted" style="font-size:0.8rem;margin:0.2rem 0 0.7rem;">Permanently closes this account. Vendor accounts must have no orders still in progress and no unsettled commission. Buyer accounts may close even with pending buyer orders.</p>
       <button class="btn btn-sm btn-danger" onclick="startDeleteAccount()">Delete my account</button>
     </div>
   </div>
@@ -5593,7 +5594,7 @@ function initSound() {
 // ---------- ACCESSIBILITY FONT SIZE ----------
 const LEVRO_FONT_MIN=0.85, LEVRO_FONT_MAX=1.25, LEVRO_FONT_STEP=0.05;
 function getLevromartFontScale(){const n=Number(localStorage.getItem("levromart-font-scale"));return Number.isFinite(n)?Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,n)):1;}
-function setLevromartFontScale(value){const n=Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,Number(value)||1));localStorage.setItem("levromart-font-scale",String(Number(n.toFixed(2))));document.documentElement.style.setProperty("--levro-font-scale",String(n));const range=byId("levroFontScaleRange");if(range)range.value=String(n);const out=byId("levroFontScaleValue");if(out)out.textContent=`${Math.round(n*100)}%`;}
+function setLevromartFontScale(value){const n=Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,Number(value)||1));localStorage.setItem("levromart-font-scale",String(Number(n.toFixed(2))));document.documentElement.style.setProperty("--levro-font-scale",String(n));document.body?.style.setProperty("--levro-font-scale",String(n));const range=byId("levroFontScaleRange");if(range)range.value=String(n);const out=byId("levroFontScaleValue");if(out)out.textContent=`${Math.round(n*100)}%`;}
 function applyLevromartFontScale(){setLevromartFontScale(getLevromartFontScale());}
 
 // ---------- LEVI FAB SIZE ----------
@@ -6748,10 +6749,10 @@ function renderSettingsPage(){
     <div class="settings-page-header"><button class="settings-back-btn" onclick="navigate(lastNonSettingsView||'home')" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div><span class="settings-kicker">Levromart</span><h2>Settings</h2><p class="muted">Manage your account and app experience.</p></div></div>
     <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-droplet"></i> Accent color</h3><p class="settings-section-note">Choose the accent used across Levromart.</p><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></section>
-    <section class="settings-page-section"><h3><i class="fa-solid fa-text-height"></i> Text size</h3><p class="settings-section-note">Make Levromart easier to read. This changes the app's text scale on this device.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Font size</strong><span>Choose a comfortable size from 85% to 125%.</span></div><div class="levi-size-value" id="levroFontScaleValue">${Math.round(getLevromartFontScale()*100)}%</div><input class="levi-size-range" id="levroFontScaleRange" type="range" min="0.85" max="1.25" step="0.05" value="${getLevromartFontScale()}" aria-label="Levromart font size" oninput="setLevromartFontScale(this.value)" /></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-text-height"></i> Text size</h3><p class="settings-section-note">Make Levromart easier to read. This changes the app's text scale on this device.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Font size</strong><span>Choose a comfortable size from 85% to 125%.</span></div><div class="levi-size-value" id="levroFontScaleValue">${Math.round(getLevromartFontScale()*100)}%</div><input class="levi-size-range" id="levroFontScaleRange" type="range" min="0.85" max="1.25" step="0.05" value="${getLevromartFontScale()}" aria-label="Levromart font size" oninput="setLevromartFontScale(this.value)" onchange="setLevromartFontScale(this.value)" /></div></section>
     <section class="settings-page-section"><h3><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
-    <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row settings-action-danger" onclick="startDeleteAccount()"><i class="fa-solid fa-user-xmark"></i><span><strong>Delete account permanently</strong><small>${vendor ? "Vendors must clear all active orders and unsettled commission first." : "Permanently close this Levromart account. Pending buyer orders do not block deletion."}</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
     <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
   </div>`;
 }
