@@ -274,10 +274,8 @@
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
-  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
   .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1.1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
-  #confirmModal { z-index: 10050 !important; }
-  #confirmModal .modal-content { position: relative; z-index: 10051; }
   .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
   /* Product page: title up top spanning the full card, photo below it,
      then each row of details (contact actions, vendor/condition/description,
@@ -456,8 +454,6 @@
   .ai-chat-nav-btn:hover { transform: translateY(-1px); }
   .ai-chat-nav-hint { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; color: var(--primary); font-size: 0.78rem; font-weight: 600; opacity: 0.85; }
   .ai-chat-nav-hint i { animation: navHintPulse 0.9s ease-in-out infinite; }
-  .ai-chat-nav-link { cursor:pointer; user-select:none; }
-  .ai-chat-nav-link:hover { opacity:1; text-decoration:underline; }
   @keyframes navHintPulse { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
   @media (prefers-reduced-motion: reduce) { .ai-chat-nav-hint i { animation: none; } }
   .ai-chat-draft-card { margin-top: 0.6rem; padding: 0.7rem; border: 1px solid var(--border); border-radius: 0.8rem; background: var(--bg); }
@@ -521,7 +517,7 @@
   #appealsAccordion.open .accordion-body { max-height: 2000px; overflow-y: auto; }
   /* Order history can run to dozens/hundreds of orders over time — scroll
      inside a capped height instead of clipping content past 320px. */
-  #orderHistoryAccordion.open .accordion-body { max-height: 60vh; overflow-y: auto; }
+  #orderHistoryAccordion.open .accordion-body { max-height: 12000px; overflow: visible; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .order-stats-table tr { border-bottom: 1px solid var(--border); }
   .order-stats-table tr:last-child { border-bottom: none; }
@@ -781,9 +777,7 @@
   .conv-list-item .conv-preview { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv-unread-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
   .conv-unread-badge { min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem; border-radius: 999px; background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .conv-swipe-action { position:absolute; top:0; bottom:0; width:96px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; font-size:.7rem; font-weight:700; cursor:pointer; z-index:0; }
-  .conv-swipe-left-action { left:0; background:color-mix(in srgb,var(--primary) 20%,var(--card)); color:var(--primary); }
-  .conv-swipe-right-action { right:0; background:color-mix(in srgb,var(--text-muted) 16%,var(--card)); color:var(--text-muted); }
+  .conv-swipe-action { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.7rem; font-weight: 600; color: #fff; background: var(--primary); cursor: pointer; z-index: 0; }
   .conv-date-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin: 0.7rem auto; padding: 0.25rem 0.75rem; background: var(--card); border-radius: 999px; width: fit-content; }
   .chat-thread { display: flex; flex-direction: column; height: 65vh; max-height: 600px; border: 1px solid var(--border); border-radius: 0.9rem; overflow: hidden; background: var(--card); }
   /* Chunky desktop scrollbars (Windows/Linux Chrome, unlike macOS's overlay
@@ -1781,8 +1775,6 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   border-top:1px solid var(--ui-border);
   background:color-mix(in srgb,var(--card) 72%,transparent);
 }
-.ai-chat-input-row textarea{scrollbar-width:none !important;-ms-overflow-style:none !important;}
-.ai-chat-input-row textarea::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important;}
 .ai-chat-input-row textarea{
   min-height:48px !important;
   border-radius:15px !important;
@@ -1882,8 +1874,8 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   padding:.25rem 0 .9rem;
   scrollbar-width:thin;
 }
-#profilePanel .profile-panel-scroll{scrollbar-width:none !important;-ms-overflow-style:none !important}
-#profilePanel .profile-panel-scroll::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar{width:4px}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-muted) 28%,transparent);border-radius:999px}
 #profilePanel .drawer-header{margin-bottom:.55rem}
 #profilePanel .profile-panel-header{padding:.45rem 0 1rem !important;align-items:center !important;}
 #profilePanel .profile-panel-header .avatar-lg{width:60px !important;height:60px !important;}
@@ -1901,7 +1893,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   padding:0 !important;background:none !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;
 }
 #profilePanel .profile-item-icon i{font-size:1.05rem !important;color:var(--text-muted) !important;filter:none !important;background:none !important;}
-#profilePanel .profile-nav-arrow{display:none !important;}
+#profilePanel .profile-nav-arrow{font-size:.72rem !important;color:color-mix(in srgb,var(--text-muted) 68%,transparent) !important;}
 #profilePanel .profile-nav-link:hover .profile-item-icon i{color:var(--text) !important;}
 #profilePanel .profile-nav-link-danger .profile-item-icon i,#profilePanel .profile-nav-link-danger .profile-nav-text{color:var(--danger) !important;}
 
@@ -2130,6 +2122,13 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 #profilePanel .profile-panel-header {
   display: grid !important;
@@ -2155,6 +2154,11 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 #profilePanel .profile-nav-link::after { content: none !important; }
 #profilePanel .profile-nav-arrow { display: none !important; }
 #profilePanel .profile-nav-link { min-height: 50px !important; }
+
+/* FINAL PROFILE CLEANUP — calm ChatGPT-style list: no visible scrollbar or trailing arrows. */
+#profilePanel .profile-panel-scroll { scrollbar-width:none !important; -ms-overflow-style:none !important; }
+#profilePanel .profile-panel-scroll::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
+#profilePanel .profile-nav-arrow, #profilePanel .profile-nav-link::after { display:none !important; content:none !important; }
 
 /* Search icon and inline information markers always reserve their own space. */
 .hero-search { overflow: visible !important; }
@@ -2758,12 +2762,6 @@ html { scroll-padding-top: 86px !important; }
 #notifPanel .notif-item-wrap .notif-item .muted { line-height:1.35 !important; }
 #notifPanel .notif-item-wrap .notif-item.unread { background:color-mix(in srgb,var(--primary) 8%,var(--card)) !important; }
 #notifPanel .notif-swipe-bg { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; }
-#notifPanel .notif-swipe-bg { display:flex !important; align-items:center !important; justify-content:space-between !important; padding:0 1.1rem !important; box-sizing:border-box !important; font-size:.76rem !important; font-weight:700 !important; }
-#notifPanel .notif-swipe-bg.left { left:0 !important; right:auto !important; background:color-mix(in srgb,var(--danger) 20%,var(--card)) !important; color:var(--danger) !important; }
-#notifPanel .notif-swipe-bg.right { left:auto !important; right:0 !important; background:color-mix(in srgb,var(--primary) 18%,var(--card)) !important; color:var(--primary) !important; }
-#notifPanel .notif-swipe-bg span { display:inline-flex !important; align-items:center !important; gap:.35rem !important; }
-#notifPanel .notif-swipe-bg.left { justify-content:flex-start !important; gap:.45rem !important; }
-#notifPanel .notif-swipe-bg.right { justify-content:flex-end !important; gap:.45rem !important; }
 
 #settingsPanel .accordion-body { display:none !important; height:auto !important; max-height:none !important; overflow:visible !important; }
 #settingsPanel .accordion-section.open .accordion-body { display:block !important; }
@@ -2793,7 +2791,984 @@ html { scroll-padding-top: 86px !important; }
 .product-card-wrap,.vendor-card,.review-card { content-visibility:visible !important; contain:none !important; }
 .product-card-wrap:hover .card,.product-card-wrap:active .card,.product-card-wrap:focus-within .card { transform:none !important; }
 
+/* FINAL ORDER STATUS INFO LAYER
+   Keep the status icon, status text and info button on one predictable row.
+   The popover itself is portaled to <body> by toggleInfoPopover(), so it
+   cannot sit behind the next card or any transformed ancestor. */
+.order-status-banner{
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr) auto !important;
+  align-items:center !important;
+  column-gap:.6rem !important;
+  overflow:visible !important;
+}
+.order-status-banner > .order-status-icon{
+  grid-column:1 !important;
+  align-self:center !important;
+  flex:none !important;
+}
+.order-status-banner > .order-status-text{
+  grid-column:2 !important;
+  min-width:0 !important;
+  overflow-wrap:anywhere !important;
+}
+.order-status-banner > .info-popover-wrap{
+  grid-column:3 !important;
+  justify-self:end !important;
+  align-self:center !important;
+  margin:0 !important;
+}
+.order-status-banner .info-btn{
+  width:1.35rem !important;
+  height:1.35rem !important;
+  font-size:.76rem !important;
+  position:relative !important;
+  z-index:10001 !important;
+}
+
+
+/* FINAL LEVI FAB POSITIONING
+   Draggable, but never above the app header and never behind the bottom nav. */
+.ai-chat-fab{
+  position:fixed !important;
+  width:74px !important;
+  height:74px !important;
+  min-width:74px !important;
+  min-height:74px !important;
+  left:auto !important;
+  top:auto !important;
+  right:18px !important;
+  bottom:calc(88px + env(safe-area-inset-bottom,0px)) !important;
+  z-index:470 !important;
+  touch-action:none !important;
+  cursor:grab !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
+}
+.ai-chat-fab.hidden{display:none !important}
+.ai-chat-fab.dragging{cursor:grabbing !important}
+.ai-chat-fab .ai-chat-fab-logo{pointer-events:none !important}
+.ai-chat-panel{z-index:460 !important}
+
+
+/* ================================================================
+   LEVROMART SETTINGS — FINAL RESPONSIVE UI
+   Dedicated page, compact hierarchy, no oversized text, no cramped rows.
+   ================================================================ */
+.settings-page{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+  padding:clamp(1rem,2.5vw,1.5rem) 0 7.5rem;
+  color:var(--text);
+}
+.settings-page-header{
+  display:flex;
+  align-items:center;
+  gap:.85rem;
+  padding:.2rem 0 1.15rem;
+  margin-bottom:1rem;
+  border-bottom:1px solid var(--border);
+}
+.settings-page-header > div:last-child{min-width:0;}
+.settings-kicker{
+  display:block;
+  margin-bottom:.18rem;
+  color:var(--primary);
+  font-size:.68rem;
+  font-weight:750;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.settings-page-header h2{
+  margin:0;
+  font-size:clamp(1.45rem,4vw,1.85rem) !important;
+  line-height:1.12;
+  font-weight:800;
+}
+.settings-page-header p{
+  margin:.28rem 0 0 !important;
+  color:var(--text-muted);
+  font-size:.78rem !important;
+  line-height:1.4;
+}
+.settings-back-btn{
+  width:42px;
+  height:42px;
+  flex:0 0 42px;
+  border:1px solid var(--border);
+  border-radius:50%;
+  background:var(--card);
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.95rem;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.06);
+}
+.settings-back-btn:active{transform:scale(.97);}
+.settings-page-section{
+  width:100%;
+  margin:0 0 .85rem;
+  padding:1rem 1.05rem;
+  background:color-mix(in srgb,var(--card) 96%,transparent);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 8px 28px rgba(0,0,0,.045);
+  overflow:hidden;
+}
+.settings-page-section h3{
+  display:flex;
+  align-items:center;
+  gap:.62rem;
+  margin:0;
+  font-size:1rem !important;
+  line-height:1.25;
+  font-weight:800;
+}
+.settings-page-section h3 i{
+  width:1.25rem;
+  flex:0 0 1.25rem;
+  text-align:center;
+  color:var(--primary);
+  font-size:.95rem;
+}
+.settings-section-note{
+  margin:.3rem 0 .8rem !important;
+  color:var(--text-muted);
+  font-size:.76rem !important;
+  line-height:1.45;
+}
+.settings-choice-list{display:flex;flex-direction:column;}
+.settings-choice{
+  width:100%;
+  min-height:54px;
+  display:grid;
+  grid-template-columns:1.25rem minmax(0,1fr) auto;
+  align-items:center;
+  gap:.7rem;
+  padding:.72rem 0;
+  border:0;
+  border-top:1px solid var(--border);
+  background:none;
+  color:var(--text);
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+}
+.settings-choice:first-child{border-top:0;}
+.settings-choice > i:first-child{color:var(--text-muted);font-size:.9rem;text-align:center;}
+.settings-choice span{min-width:0;}
+.settings-choice strong{display:block;font-size:.86rem !important;line-height:1.2;}
+.settings-choice small{display:block;margin-top:.16rem;color:var(--text-muted);font-size:.68rem !important;line-height:1.25;}
+.settings-choice-check{opacity:0;color:var(--primary);font-size:.82rem;}
+.settings-choice.active .settings-choice-check{opacity:1;}
+.settings-page-swatches{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.65rem;
+  padding:.15rem 0 .1rem;
+}
+.settings-page-swatches .accent-swatch{
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
+  padding:0;
+  border:2px solid transparent;
+  border-radius:50%;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.settings-page-swatches .accent-swatch:hover{transform:translateY(-1px);}
+.settings-page-swatches .accent-swatch.active{
+  border-color:var(--card);
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+}
+.settings-control-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:.7rem;
+  align-items:center;
+  padding:.15rem 0;
+}
+.settings-control-copy{min-width:0;}
+.settings-control-copy strong{
+  display:block;
+  font-size:.86rem !important;
+  line-height:1.25;
+  font-weight:750;
+}
+.settings-control-copy span{
+  display:block;
+  margin-top:.16rem;
+  color:var(--text-muted);
+  font-size:.69rem !important;
+  line-height:1.38;
+}
+.levi-size-control{grid-template-columns:minmax(0,1fr) auto;}
+.levi-size-value{
+  color:var(--primary);
+  font-size:.74rem !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.levi-size-range{
+  grid-column:1/-1;
+  width:100%;
+  height:28px;
+  margin:.15rem 0 0;
+  accent-color:var(--primary);
+  cursor:pointer;
+}
+.levi-size-range::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:color-mix(in srgb,var(--primary) 18%,var(--border));}
+.levi-size-range::-webkit-slider-thumb{margin-top:-6px;width:17px;height:17px;border:2px solid var(--card);border-radius:50%;background:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.settings-toggle-row,.settings-simple-row{
+  display:grid;
+  grid-template-columns:1.25rem minmax(0,1fr) auto;
+  align-items:center;
+  gap:.7rem;
+  min-height:54px;
+}
+.settings-toggle-row > i:first-child,.settings-simple-row > i:first-child{color:var(--primary);font-size:.92rem;text-align:center;}
+.settings-inline-btn{
+  min-width:58px;
+  min-height:34px;
+  padding:.38rem .65rem;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:transparent;
+  color:var(--text);
+  font:700 .69rem inherit;
+  cursor:pointer;
+}
+.settings-inline-btn.active{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 45%,var(--border));background:color-mix(in srgb,var(--primary) 9%,transparent);}
+.settings-divider{height:1px;background:var(--border);}
+.settings-voice-wrap{padding:.7rem 0 0;}
+.settings-select{
+  width:100%;
+  min-height:42px;
+  margin-top:.65rem;
+  padding:.55rem .75rem;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:var(--input-bg);
+  color:var(--text);
+  font:600 .76rem inherit;
+}
+.voice-preset-row{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.55rem;}
+.voice-preset-btn{
+  min-height:34px;
+  padding:.4rem .7rem;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:transparent;
+  color:var(--text-muted);
+  font:650 .68rem inherit;
+  cursor:pointer;
+}
+.voice-preset-btn:hover,.voice-preset-btn:focus{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 40%,var(--border));}
+.settings-full-btn{width:100%;margin-top:.65rem;min-height:42px !important;font-size:.75rem !important;}
+.settings-action-row{
+  width:100%;
+  min-height:58px;
+  display:grid;
+  grid-template-columns:1.25rem minmax(0,1fr) auto;
+  align-items:center;
+  gap:.7rem;
+  padding:.72rem 0;
+  border:0;
+  background:none;
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+  font-family:inherit;
+}
+.settings-action-row > i:first-child{color:var(--primary);font-size:.9rem;text-align:center;}
+.settings-action-row > i:last-child{color:var(--text-muted);font-size:.7rem;}
+.settings-action-row span{min-width:0;}
+.settings-action-row strong{display:block;font-size:.84rem !important;line-height:1.25;}
+.settings-action-row small{display:block;margin-top:.14rem;color:var(--text-muted);font-size:.68rem !important;line-height:1.3;}
+.settings-close-page{
+  width:100%;
+  min-height:44px;
+  margin-top:.1rem;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--card);
+  color:var(--text);
+  font:700 .76rem inherit;
+  cursor:pointer;
+}
+/* Do not let the global floating cart intrude into Settings. */
+body:has(#settings-page) .cart-fab{display:none !important;}
+/* Settings should be visually quieter than the marketplace hero. */
+body:has(#settings-page) #app{overflow-x:clip;}
+@media (max-width:720px){
+  .settings-page{max-width:680px;padding:.8rem .05rem 7.2rem;}
+  .settings-page-header{padding:.1rem .05rem 1rem;margin-bottom:.85rem;}
+  .settings-page-section{padding:.9rem;border-radius:16px;margin-bottom:.7rem;}
+  .settings-page-header h2{font-size:1.5rem !important;}
+  .settings-page-header p{font-size:.75rem !important;}
+}
+@media (max-width:480px){
+  .settings-page{padding-left:0;padding-right:0;}
+  .settings-page-section{padding:.85rem;border-radius:15px;}
+  .settings-page-section h3{font-size:.96rem !important;}
+  .settings-section-note{font-size:.72rem !important;}
+  .settings-choice{min-height:51px;padding:.65rem 0;}
+  .settings-control-row,.settings-toggle-row,.settings-simple-row,.settings-action-row{gap:.55rem;}
+  .settings-control-copy strong,.settings-choice strong,.settings-action-row strong{font-size:.82rem !important;}
+  .settings-control-copy span,.settings-choice small,.settings-action-row small{font-size:.66rem !important;}
+  .settings-inline-btn{min-width:54px;padding:.35rem .55rem;font-size:.66rem;}
+  .settings-page-swatches{gap:.58rem;}
+  .settings-page-swatches .accent-swatch{width:34px;height:34px;flex-basis:34px;}
+}
+
+
+/* ===== FINAL STANDARD UI PASS — valid CSS only ===== */
+
+/* ================================================================
+   FINAL ORDER LIST / HISTORY UI — clean responsive cards
+   The order page must use real card layout; never let inline content
+   collapse into a text stream on narrow screens.
+   ================================================================ */
+#orderListWrap,
+#orderHistoryAccordion { width:100%; min-width:0; }
+
+#orderListWrap {
+  display:flex;
+  flex-direction:column;
+  gap:.72rem;
+}
+
+.order-list-card,
+.order-history-card {
+  appearance:none;
+  -webkit-appearance:none;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  border-radius:1.05rem;
+  box-shadow:0 7px 24px rgba(15,23,42,.07);
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.order-list-card:hover,
+.order-history-card:hover {
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--primary) 28%,var(--border));
+  box-shadow:0 10px 28px rgba(15,23,42,.10);
+}
+.order-list-card:active,
+.order-history-card:active { transform:none; }
+.order-list-card:focus-visible,
+.order-history-card:focus-visible {
+  outline:3px solid color-mix(in srgb,var(--primary) 28%,transparent);
+  outline-offset:2px;
+}
+
+.order-list-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:1rem;
+  padding:1rem 1.05rem;
+}
+.order-list-main,
+.order-history-main {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  gap:.22rem;
+}
+.order-list-main strong,
+.order-history-main strong {
+  display:block;
+  min-width:0;
+  color:var(--text);
+  font-size:.98rem;
+  line-height:1.25;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+.order-list-main > span,
+.order-history-meta {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.28rem;
+  min-width:0;
+  color:var(--text-muted);
+  font-size:.84rem;
+  line-height:1.35;
+}
+.order-list-main small,
+.order-history-main small {
+  display:flex;
+  align-items:center;
+  gap:.34rem;
+  min-width:0;
+  color:var(--text-muted);
+  font-size:.76rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.order-list-main small i,
+.order-history-main small i { color:var(--primary); flex:none; }
+.order-list-status,
+.order-history-status {
+  justify-self:end;
+  align-self:center;
+  flex:none;
+  white-space:nowrap;
+  min-width:0;
+}
+
+#orderHistoryAccordion { margin-top:1.2rem !important; }
+#orderHistoryAccordion > .accordion-trigger {
+  width:100%;
+  box-sizing:border-box;
+  margin:0;
+  min-height:58px;
+  padding:.85rem 1rem;
+  border-radius:1rem;
+  background:color-mix(in srgb,var(--card) 88%,var(--primary) 4%);
+  border:1px solid var(--border);
+}
+#orderHistoryAccordion > .accordion-trigger > span {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:.7rem;
+}
+#orderHistoryAccordion > .accordion-trigger > span > i { color:var(--primary); }
+#orderHistoryAccordion > .accordion-body {
+  padding:0 !important;
+  margin:0;
+}
+#orderHistoryAccordion.open > .accordion-body {
+  padding:.1rem 0 .9rem !important;
+}
+.order-history-date {
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin:1.2rem .15rem .65rem;
+  color:var(--text-muted);
+  font-size:.92rem;
+  font-weight:750;
+}
+.order-history-date i { color:var(--primary); }
+.order-history-day {
+  display:flex;
+  flex-direction:column;
+  gap:.65rem;
+}
+.order-history-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:1rem;
+  padding:.95rem 1rem;
+}
+.order-history-separator { opacity:.6; }
+
+/* Status badges stay in exactly one column. They never drop below the
+   order text merely because the description is long. */
+.order-list-card .badge,
+.order-history-card .badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  max-width:8rem;
+  padding:.38rem .7rem;
+  border-radius:999px;
+  font-size:.76rem;
+  line-height:1.1;
+  font-weight:750;
+}
+
+@media (max-width:600px) {
+  #orderListWrap { gap:.62rem; }
+  .order-list-card,
+  .order-history-card {
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:.7rem;
+    border-radius:.95rem;
+  }
+  .order-list-card { padding:.82rem .85rem; }
+  .order-history-card { padding:.82rem .85rem; }
+  .order-list-main strong,
+  .order-history-main strong { font-size:.9rem; }
+  .order-list-main > span,
+  .order-history-meta { font-size:.78rem; }
+  .order-list-main small,
+  .order-history-main small { font-size:.7rem; }
+  .order-list-card .badge,
+  .order-history-card .badge { font-size:.7rem; padding:.34rem .58rem; }
+  .order-history-date { margin:.95rem .1rem .55rem; font-size:.85rem; }
+}
+
+/* Never allow long vendor/buyer names or timestamps to force a second
+   status row. Text wraps only inside the left content column. */
+.order-list-main,
+.order-history-main { overflow:hidden; }
+.order-list-main strong,
+.order-list-main span,
+.order-list-main small,
+.order-history-main strong,
+.order-history-main span,
+.order-history-main small { overflow-wrap:anywhere; word-break:normal; }
+
+/* The page itself owns vertical scrolling. Do not create a second history
+   scroller that fights touch scrolling on iOS. */
+#orderHistoryAccordion .accordion-body { overflow:visible !important; }
+
+/* During live order refreshes, avoid transitions that can make the list
+   appear to twitch as cards are replaced. */
+body.orders-refreshing .order-list-card,
+body.orders-refreshing .order-history-card { transition:none !important; }
+
+
+
+/* Interactive hero backdrop */
+.hero-photo-row{position:relative;z-index:1;}
+.hero-photo-link{flex:1 1 0;min-width:0;height:100%;padding:0;border:0;background:none;display:block;cursor:pointer;overflow:hidden;}
+.hero-photo-link img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s ease,filter .25s ease;}
+.hero-photo-link:hover img,.hero-photo-link:focus-visible img{transform:scale(1.025);filter:saturate(1.06);}
+.hero-photo-scrim{z-index:2;pointer-events:none;}
+
+
+
+
+/* ================================================================
+   FINAL 2026-09-05 STABILITY PASS
+   One source of truth for viewport width, settings rows, orders and hero.
+   ================================================================ */
+html, body {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:hidden !important;
+}
+body { box-sizing:border-box !important; }
+*, *::before, *::after { box-sizing:border-box; }
+img, svg, video, canvas, iframe { max-width:100%; }
+#app {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:clip !important;
+}
+#app > * { min-width:0 !important; max-width:100% !important; }
+
+.settings-page {
+  width:min(100%, 760px) !important;
+  max-width:760px !important;
+  min-width:0 !important;
+  margin:0 auto !important;
+  padding:1rem max(0px, env(safe-area-inset-left)) 7.5rem max(0px, env(safe-area-inset-right)) !important;
+  overflow:visible !important;
+}
+.settings-page-header { min-width:0 !important; }
+.settings-page-section {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+.settings-page-section h3,
+.settings-page-section p,
+.settings-control-copy,
+.settings-control-copy strong,
+.settings-control-copy span,
+.settings-simple-row span,
+.settings-toggle-row span,
+.settings-action-row span { min-width:0 !important; max-width:100% !important; overflow-wrap:anywhere !important; }
+.settings-choice,
+.settings-toggle-row,
+.settings-simple-row,
+.settings-action-row { width:100% !important; max-width:100% !important; min-width:0 !important; }
+.settings-simple-row,
+.settings-toggle-row {
+  grid-template-columns:1.35rem minmax(0,1fr) auto !important;
+  align-items:center !important;
+}
+.settings-status-pill {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:58px !important;
+  min-height:32px !important;
+  padding:.35rem .7rem !important;
+  border:1px solid var(--border) !important;
+  border-radius:999px !important;
+  color:var(--text-muted) !important;
+  font-size:.68rem !important;
+  font-weight:750 !important;
+  white-space:nowrap !important;
+}
+.settings-status-pill.active { color:var(--primary) !important; border-color:color-mix(in srgb,var(--primary) 45%,var(--border)) !important; background:color-mix(in srgb,var(--primary) 9%,transparent) !important; }
+
+@media (max-width:600px) {
+  .settings-page { padding-left:.75rem !important; padding-right:.75rem !important; }
+  .settings-page-header { gap:.65rem !important; }
+  .settings-page-header h2 { font-size:1.45rem !important; }
+  .settings-page-header p { font-size:.75rem !important; }
+  .settings-page-section { padding:.9rem !important; border-radius:16px !important; margin-bottom:.7rem !important; }
+  .settings-page-section h3 { font-size:.98rem !important; }
+  .settings-section-note { font-size:.72rem !important; }
+  .settings-choice { min-height:52px !important; padding:.65rem 0 !important; }
+  .settings-choice strong { font-size:.82rem !important; }
+  .settings-choice small { font-size:.67rem !important; }
+  .settings-control-row.levi-size-control { grid-template-columns:minmax(0,1fr) auto !important; }
+  .settings-control-copy strong { font-size:.82rem !important; }
+  .settings-control-copy span { font-size:.68rem !important; }
+  .settings-toggle-row,.settings-simple-row,.settings-action-row { gap:.55rem !important; }
+  .settings-inline-btn { min-width:54px !important; min-height:34px !important; }
+  .settings-status-pill { min-width:52px !important; padding:.32rem .55rem !important; }
+  .settings-voice-wrap .settings-select { font-size:.72rem !important; }
+}
+
+/* Order cards: authoritative layout, including history. */
+#orderListWrap,
+#orderHistoryAccordion,
+#orderHistoryAccordion .accordion-body,
+.order-history-day { width:100% !important; min-width:0 !important; max-width:100% !important; }
+#orderHistoryAccordion .accordion-body { overflow:visible !important; }
+.order-list-card,
+.order-history-card {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) max-content !important;
+  align-items:center !important;
+  gap:.8rem !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  padding:.9rem 1rem !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+.order-list-main,
+.order-history-main { min-width:0 !important; overflow:hidden !important; }
+.order-list-main > span,
+.order-history-meta { min-width:0 !important; display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:.25rem !important; }
+.order-list-main small,
+.order-history-main small { min-width:0 !important; overflow-wrap:anywhere !important; }
+.order-list-status,
+.order-history-status { grid-column:2 !important; grid-row:1 !important; align-self:center !important; justify-self:end !important; white-space:nowrap !important; }
+.order-history-card .order-history-main strong { font-size:.92rem !important; }
+.order-history-card .order-history-meta { font-size:.78rem !important; }
+.order-history-card .order-history-main small { font-size:.7rem !important; }
+.order-list-card .badge,
+.order-history-card .badge { width:max-content !important; max-width:100% !important; white-space:nowrap !important; }
+@media (max-width:430px) {
+  .order-list-card,.order-history-card { grid-template-columns:minmax(0,1fr) max-content !important; gap:.55rem !important; padding:.78rem .78rem !important; }
+  .order-list-status,.order-history-status { font-size:.66rem !important; padding:.32rem .5rem !important; }
+}
+
+/* Hero backdrop: always three equal interactive slots when three photos exist. */
+.hero-photo-collage { position:absolute !important; inset:0 !important; overflow:hidden !important; }
+.hero-photo-row { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; width:100% !important; height:100% !important; gap:2px !important; }
+.hero-photo-link { display:block !important; width:100% !important; height:100% !important; min-width:0 !important; overflow:hidden !important; padding:0 !important; margin:0 !important; border:0 !important; background:none !important; cursor:pointer !important; }
+.hero-photo-link img { display:block !important; width:100% !important; height:100% !important; min-width:0 !important; max-width:none !important; object-fit:cover !important; }
+.hero-photo-scrim { position:absolute !important; inset:0 !important; z-index:2 !important; pointer-events:none !important; }
+.hero-photo-link { position:relative !important; z-index:3 !important; }
+
+/* No horizontal page pan on mobile; horizontal rails remain independently scrollable. */
+.hero, .settings-page, .container, .card, section, main { min-width:0 !important; }
+.hscroll, .cat-row, .storefront-product-strip { max-width:100% !important; }
+
+/* ================================================================
+   FINAL UX PASS — 05 Sep 2026
+   ================================================================ */
+html, body {
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:hidden !important;
+}
+body { min-width:0 !important; }
+.container, #app, main, header, footer {
+  box-sizing:border-box !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+
+/* Home hero: exactly three newest products, equal columns, tappable. */
+.hero-photo-collage {
+  overflow:hidden !important;
+  width:100% !important;
+}
+.hero-photo-row {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:2px !important;
+  width:100% !important;
+  height:100% !important;
+}
+.hero-photo-link {
+  display:block !important;
+  min-width:0 !important;
+  width:100% !important;
+  height:100% !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  background:none !important;
+  overflow:hidden !important;
+  cursor:pointer !important;
+}
+.hero-photo-link img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+}
+
+/* Three quick actions must occupy three real columns; Request sits centered
+   on the next row instead of crowding the first row. */
+.hero-quick-actions {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:1.15rem 1.05rem !important;
+  width:min(100%,430px) !important;
+  max-width:430px !important;
+  margin:0 auto !important;
+}
+.quick-action {
+  width:100% !important;
+  min-width:0 !important;
+  justify-self:center !important;
+}
+.quick-action:nth-child(4) {
+  grid-column:2 !important;
+}
+
+/* Settings rows: icon | text stack | control. The description can NEVER sit
+   beside or inside the bold title. */
+.settings-page-section h3 {
+  min-width:0 !important;
+}
+.settings-levi-logo {
+  width:1.18rem !important;
+  height:1.18rem !important;
+  object-fit:contain !important;
+  flex:0 0 1.18rem !important;
+  border-radius:50% !important;
+}
+.settings-toggle-row,
+.settings-simple-row {
+  grid-template-columns:1.3rem minmax(0,1fr) auto !important;
+  align-items:center !important;
+  min-width:0 !important;
+  width:100% !important;
+}
+.settings-row-icon {
+  width:1.3rem !important;
+  min-width:1.3rem !important;
+  text-align:center !important;
+}
+.settings-row-copy {
+  display:block !important;
+  min-width:0 !important;
+  width:100% !important;
+  overflow:hidden !important;
+}
+.settings-row-copy strong {
+  display:block !important;
+  font-size:.84rem !important;
+  line-height:1.2 !important;
+  white-space:normal !important;
+}
+.settings-row-copy small {
+  display:block !important;
+  margin-top:.18rem !important;
+  color:var(--text-muted) !important;
+  font-size:.68rem !important;
+  font-weight:400 !important;
+  line-height:1.35 !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+}
+.settings-inline-btn,
+.settings-status-pill {
+  justify-self:end !important;
+  align-self:center !important;
+  flex:0 0 auto !important;
+}
+
+/* Storefront review statistic is a button, but should still look like a stat. */
+.storefront-stat-link {
+  border:0 !important;
+  padding:0 !important;
+  background:none !important;
+  color:inherit !important;
+  font:inherit !important;
+  cursor:pointer !important;
+}
+.storefront-stat-link:hover strong,
+.storefront-stat-link:focus-visible strong {
+  color:var(--primary) !important;
+  text-decoration:underline !important;
+}
+.storefront-reviews {
+  scroll-margin-top:96px !important;
+  margin-top:1.5rem !important;
+}
+.storefront-reviews-head {
+  width:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:.75rem !important;
+  padding:0 !important;
+  border:0 !important;
+  background:none !important;
+  color:inherit !important;
+  text-align:left !important;
+  cursor:pointer !important;
+}
+
+/* Chat list: WhatsApp-like two-sided gesture affordance + selection. */
+.conv-swipe-wrap {
+  position:relative !important;
+  overflow:hidden !important;
+  min-width:0 !important;
+}
+.conv-swipe-action {
+  width:104px !important;
+  opacity:0 !important;
+  transition:opacity .08s linear !important;
+  pointer-events:none !important;
+}
+.conv-swipe-action-left {
+  left:0 !important;
+  right:auto !important;
+  background:var(--primary) !important;
+}
+.conv-swipe-action-right {
+  right:0 !important;
+  left:auto !important;
+  background:var(--success) !important;
+}
+.conv-list-item {
+  z-index:1 !important;
+  min-width:0 !important;
+  touch-action:pan-y !important;
+  transition:transform .18s ease !important;
+}
+.conv-list-item.selected {
+  background:color-mix(in srgb,var(--primary) 8%,var(--card)) !important;
+}
+.conv-select-check {
+  width:1.25rem !important;
+  height:1.25rem !important;
+  min-width:1.25rem !important;
+  border:1.5px solid var(--border) !important;
+  border-radius:50% !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:transparent !important;
+}
+.conv-select-check.active {
+  border-color:var(--primary) !important;
+  background:var(--primary) !important;
+  color:#fff !important;
+}
+.messages-toolbar,
+.messages-selection-toolbar {
+  position:relative !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:.45rem !important;
+  min-height:2.8rem !important;
+  margin-bottom:.55rem !important;
+}
+.messages-toolbar-title { min-width:0 !important; flex:1 !important; }
+.messages-toolbar h2 { margin:0 !important; }
+.messages-more-btn { flex:0 0 auto !important; }
+.messages-more-menu {
+  position:absolute !important;
+  top:2.6rem !important;
+  right:0 !important;
+  z-index:600 !important;
+  min-width:190px !important;
+  max-width:calc(100vw - 2rem) !important;
+}
+.messages-more-menu .ms-item {
+  width:100% !important;
+  border:0 !important;
+  background:none !important;
+  text-align:left !important;
+}
+.messages-selection-toolbar strong {
+  flex:1 !important;
+  min-width:0 !important;
+}
+
+/* Cart must always sit ABOVE Levi's floating button. */
+.cart-fab {
+  z-index:490 !important;
+}
+.ai-chat-fab {
+  z-index:470 !important;
+}
+
+/* Profile drawer gesture zone must not create a horizontal page overflow. */
+#profilePanel, #settingsPanel, #notifPanel {
+  max-width:86vw !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+
+
+/* Notifications: make swipe intent visible before release, on both sides. */
+#notifPanel .notif-item-wrap { position:relative !important; overflow:hidden !important; }
+#notifPanel .notif-swipe-bg {
+  width:100px !important;
+  top:0 !important;
+  bottom:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:.18rem !important;
+  opacity:0 !important;
+  z-index:0 !important;
+  font-size:.68rem !important;
+  font-weight:800 !important;
+}
+#notifPanel .notif-swipe-bg.left {
+  left:0 !important;
+  right:auto !important;
+  padding:0 !important;
+  background:color-mix(in srgb,var(--primary) 16%,var(--card)) !important;
+  color:var(--primary) !important;
+}
+#notifPanel .notif-swipe-bg.right {
+  right:0 !important;
+  left:auto !important;
+  padding:0 !important;
+  background:color-mix(in srgb,var(--danger) 16%,var(--card)) !important;
+  color:var(--danger) !important;
+}
+#notifPanel .notif-swipe-bg i { width:auto !important; height:auto !important; margin:0 !important; background:none !important; font-size:1.05rem !important; color:inherit !important; }
+#notifPanel .notif-swipe-bg span { display:block !important; white-space:nowrap !important; font-size:.64rem !important; font-weight:800 !important; }
+
+
 </style>
+
 </head>
 <body>
 <header>
@@ -2813,7 +3788,7 @@ html { scroll-padding-top: 86px !important; }
       <button class="icon-btn" onclick="toggleNotifPanel()" title="Notifications"><i class='fa-solid fa-bell'></i><span id="notifDot" class="notif-dot hidden">0</span></button>
     </div>
     <div class="icon-wrap">
-      <button class="icon-btn" onclick="toggleSettingsPanel()" title="Settings"><i class='fa-solid fa-gear'></i></button>
+      <button class="icon-btn" onclick="navigate('settings')" title="Settings"><i class='fa-solid fa-gear'></i></button>
     </div>
   </div>
 </header>
@@ -3431,10 +4406,29 @@ function dismissNotifPrompt() {
   if (dismissibleModalId === "notifPromptModal") dismissibleModalId = null;
   setTimeout(maybeShowTour, 400);
 }
+async function syncPushSubscription(registration) {
+  if (!session || !pushSupported()) return null;
+  const reg = registration || await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) return null;
+  const raw = sub.toJSON();
+  if (!raw.endpoint || !raw.keys?.p256dh || !raw.keys?.auth) return null;
+  const { error } = await sb.from("push_subscriptions").upsert(
+    { user_id: session.user.id, endpoint: raw.endpoint, p256dh: raw.keys.p256dh, auth_key: raw.keys.auth },
+    { onConflict: "endpoint" }
+  );
+  if (error) throw error;
+  return sub;
+}
 async function enablePushNotifications() {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") { dismissNotifPrompt(); return; }
+    if (!pushSupported()) throw new Error("Push notifications are not supported on this browser.");
+    if (isIos() && !isStandalone()) {
+      showToast("On iPhone, add Levromart to your Home Screen first, then turn notifications on.", "info");
+      return;
+    }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
@@ -3443,11 +4437,7 @@ async function enablePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
-    const raw = sub.toJSON();
-    await sb.from("push_subscriptions").upsert(
-      { user_id: session.user.id, endpoint: raw.endpoint, p256dh: raw.keys.p256dh, auth_key: raw.keys.auth },
-      { onConflict: "endpoint" }
-    );
+    await syncPushSubscription(reg);
     showToast("Notifications turned on.", "success");
   } catch (err) {
     showToast("Couldn't turn on notifications on this device.", "error");
@@ -3639,7 +4629,7 @@ function finishTour() {
       panel.classList.remove("hidden");
       playSound("open");
       if (aiChatMessages.length === 0) showAiChatGreeting();
-      byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation || localStorage.getItem("medris-location-shared") === "1");
+      byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation);
     }
   }
 }
@@ -3800,10 +4790,24 @@ function toggleInlineMenu(id, evt) {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   if (willOpen) list.classList.remove("hidden");
 }
-document.addEventListener("click", () => {
+document.addEventListener("click", (event) => {
+  // Info controls and the floating popover own their clicks. Do not let this
+  // global outside-click handler immediately close a popover that just opened.
+  if (event.target.closest?.(".info-btn, .info-popover")) return;
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
-  document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    p.classList.add("hidden");
+    p.style.left = "";
+    p.style.top = "";
+    if (p._infoOriginParent && p.parentElement === document.body) {
+      if (p._infoOriginNext && p._infoOriginNext.parentNode === p._infoOriginParent) {
+        p._infoOriginParent.insertBefore(p, p._infoOriginNext);
+      } else {
+        p._infoOriginParent.appendChild(p);
+      }
+    }
+  });
   document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
 });
 // Small "i" button + floating bubble, for swapping a paragraph of helper
@@ -3823,43 +4827,69 @@ function toggleReviewsList() {
   if (chevron) chevron.style.transform = willOpen ? "rotate(180deg)" : "rotate(0deg)";
 }
 function toggleInfoPopover(id, evt) {
-  evt?.stopPropagation();
+  evt?.preventDefault?.();
+  evt?.stopPropagation?.();
   const el = byId(id);
   if (!el) return;
+  const sourceButton = evt?.currentTarget || evt?.target?.closest?.(".info-btn");
   const willOpen = el.classList.contains("hidden");
-  document.querySelectorAll(".info-popover").forEach((p) => { p.classList.add("hidden"); p.style.left = ""; });
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    if (p !== el) { p.classList.add("hidden"); p.style.left = ""; p.style.top = ""; }
+  });
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
-  if (willOpen) { el.classList.remove("hidden"); positionInfoPopover(el); }
+  if (!willOpen) {
+    el.classList.add("hidden");
+    return;
+  }
+  if (!el._infoOriginParent) { el._infoOriginParent = el.parentElement; el._infoOriginNext = el.nextSibling; }
+  el._infoButton = sourceButton || el._infoButton || el._infoOriginParent?.querySelector?.(".info-btn");
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  el.classList.remove("hidden");
+  positionInfoPopover(el);
 }
-// The popover normally hangs left-aligned under the "i" button, but that
-// button can sit anywhere on screen (including near the right edge of a
-// wide banner, or low enough on the page that there's no room below it) --
-// so after showing it, nudge it back on-screen instead of letting it run
-// off either side or the bottom.
+function closeAllInfoPopovers() {
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    p.classList.add("hidden");
+    p.style.left = "";
+    p.style.top = "";
+    if (p._infoOriginParent && p.parentElement === document.body) {
+      if (p._infoOriginNext && p._infoOriginNext.parentNode === p._infoOriginParent) p._infoOriginParent.insertBefore(p, p._infoOriginNext);
+      else p._infoOriginParent.appendChild(p);
+    }
+  });
+}
+
+let infoPopoverScrollBound = false;
+function bindInfoPopoverScrollDismiss() {
+  if (infoPopoverScrollBound) return;
+  infoPopoverScrollBound = true;
+  const dismiss = () => closeAllInfoPopovers();
+  window.addEventListener("scroll", dismiss, { passive: true });
+  window.addEventListener("wheel", dismiss, { passive: true });
+  window.addEventListener("touchmove", dismiss, { passive: true });
+}
+bindInfoPopoverScrollDismiss();
+
 function positionInfoPopover(el) {
-  const wrap = el?.closest?.(".info-popover-wrap");
-  const btn = wrap?.querySelector?.(".info-btn");
-  if (!el || !btn) return;
+  const btn = el?._infoButton;
+  if (!el || !btn || !btn.isConnected) return;
   const margin = 12;
   const btnRect = btn.getBoundingClientRect();
   const width = Math.min(300, window.innerWidth - margin * 2);
   el.classList.remove("info-popover-above");
-  el.style.position = "fixed";
-  el.style.width = `${width}px`;
-  el.style.maxWidth = `calc(100vw - ${margin * 2}px)`;
-  el.style.zIndex = "10000";
+  el.style.position = "fixed"; el.style.width = `${width}px`; el.style.maxWidth = `calc(100vw - ${margin * 2}px)`; el.style.zIndex = "10000";
   let left = btnRect.left;
   if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
   if (left < margin) left = margin;
   el.style.left = `${left}px`;
-  // Measure after width/position are applied, then choose above/below.
   el.style.top = `${btnRect.bottom + 8}px`;
-  let r = el.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
   if (r.bottom > window.innerHeight - margin) {
     el.classList.add("info-popover-above");
     el.style.top = `${Math.max(margin, btnRect.top - r.height - 8)}px`;
   }
 }
+
 function byId(id) { return document.getElementById(id); }
 
 // ---------- MAP (Leaflet + OpenStreetMap, loaded on demand) ----------
@@ -3959,7 +4989,7 @@ function getCurrentPositionOnce() {
 let buyerLocation = null; // { lat, lng } | null
 function getBuyerLocation() {
   if (buyerLocation) return Promise.resolve(buyerLocation);
-  return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; try { localStorage.setItem("medris-location-shared", "1"); } catch (e) {} return loc; });
+  return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; return loc; });
 }
 // Shows our own explanatory modal BEFORE the browser's native permission
 // dialog, so buyers know why we're asking instead of being ambushed by an
@@ -3994,9 +5024,7 @@ async function requestBuyerLocation() {
     localStorage.setItem("medris-location-explained", "1");
     if (!wantsToShare) throw new Error("Location sharing declined.");
   }
-  const loc = await getBuyerLocation();
-  try { localStorage.setItem("medris-location-shared", "1"); } catch (e) {}
-  return loc;
+  return getBuyerLocation();
 }
 
 // Settings-level kill switch, separate from per-request browser permission —
@@ -4037,6 +5065,13 @@ function initSound() {
   } catch (e) {}
 }
 
+// ---------- LEVI FAB SIZE ----------
+const LEVI_FAB_MIN_SIZE=44;
+const LEVI_FAB_MAX_SIZE=74;
+function getLeviFabSize(){const n=Number(localStorage.getItem("medris-levi-fab-size"));return Number.isFinite(n)?Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(n))):LEVI_FAB_MAX_SIZE;}
+function setLeviFabSize(value){const size=Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(Number(value)||LEVI_FAB_MAX_SIZE)));localStorage.setItem("medris-levi-fab-size",String(size));document.documentElement.style.setProperty("--levi-fab-size",`${size}px`);const fab=byId("aiChatFab");if(fab){fab.style.setProperty("width",`${size}px`,"important");fab.style.setProperty("height",`${size}px`,"important");fab.style.setProperty("min-width",`${size}px`,"important");fab.style.setProperty("min-height",`${size}px`,"important");}const out=byId("leviSizeValue");if(out)out.textContent=`${size}px`;const range=byId("leviSizeRange");if(range)range.value=String(size);}
+function applyLeviFabSize(){setLeviFabSize(getLeviFabSize());}
+
 // ---------- LEVI VISIBILITY (hide the floating chat button entirely) ----------
 let leviVisible = true;
 function toggleLeviVisible() {
@@ -4059,6 +5094,7 @@ function initLeviVisible() {
   leviVisible = localStorage.getItem("medris-levi-visible") !== "0";
   renderLeviVisibleToggle();
   applyLeviVisibility();
+  applyLeviFabSize();
 }
 document.addEventListener("click", (e) => {
   if (e.target.closest(".btn, .icon-btn, .cat-chip, .theme-option, .accent-swatch, .bottom-nav-item, .fav-btn")) playSound("click");
@@ -4300,6 +5336,7 @@ function toggleAccordion(trigger) {
 
 // ---------- SLIDE-IN DRAWERS ----------
 function closeAllPanels() {
+  closeAllInfoPopovers();
   document.querySelectorAll(".side-drawer.open").forEach((d) => { d.classList.remove("open"); d.style.transform = ""; });
   byId("drawerBackdrop")?.classList.remove("open");
 }
@@ -4312,39 +5349,49 @@ function openDrawer(id) {
     playSound("open");
   }
 }
-function toggleSettingsPanel() { openDrawer("settingsPanel"); renderSettingsAppRows(); }
+function toggleSettingsPanel() { navigate("settings"); }
 
 // Manual, always-available versions of the one-time auto-popups — so
 // someone who dismissed the popup (or whose browser fired it before they
 // were ready) still has a way to install the app / turn on notifications
 // later, instead of only ever getting one shot at it.
 function renderSettingsAppRows() {
-  const installRow = byId("settingsInstallRow");
-  if (installRow) {
+  const renderInstall = (targetId) => {
+    const row = byId(targetId);
+    if (!row) return;
     if (isStandalone()) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> App</span><span class="badge success">Installed</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>App installation</strong><small>Levromart is installed on this device.</small></span><span class="settings-status-pill">Installed</span>`;
     } else if (deferredInstallPrompt) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><button class="btn btn-sm" onclick="runInstallPrompt().then(renderSettingsAppRows)">Install</button>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>Download the app</strong><small>Install Levromart for a faster app-like experience.</small></span><button class="settings-inline-btn active" onclick="runInstallPrompt().then(() => renderSettingsAppRows())">Install</button>`;
     } else if (isIos()) {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><span class="muted" style="font-size:0.78rem;text-align:right;">Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> → "Add to Home Screen"</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>Download the app</strong><small>Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> then choose “Add to Home Screen”.</small></span>`;
     } else {
-      installRow.innerHTML = `<span><i class="fa-solid fa-mobile-screen-button"></i> Download the app</span><span class="muted" style="font-size:0.78rem;">Not available in this browser</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Install from your browser when the install option becomes available.</small></span>`;
     }
-  }
-  const notifRow = byId("settingsNotifRow");
-  if (notifRow) {
+  };
+  const renderNotif = (targetId) => {
+    const row = byId(targetId);
+    if (!row) return;
     if (!pushSupported()) {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;">Not supported here</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Notifications are not supported in this browser.</small></span>`;
+    } else if (isIos() && !isStandalone()) {
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>On iPhone, add Levromart to your Home Screen before enabling push notifications.</small></span><button class="settings-inline-btn" onclick="showToast('Use Share → Add to Home Screen, open the installed Levromart app, then turn notifications on.', 'info')">How</button>`;
     } else if (Notification.permission === "granted") {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="badge success">On</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Levromart notifications are enabled on this device.</small></span><span class="settings-status-pill active">On</span>`;
+      syncPushSubscription().catch(() => {});
     } else if (Notification.permission === "denied") {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><span class="muted" style="font-size:0.78rem;text-align:right;">Blocked. Enable in your browser's site settings</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Blocked by your browser. Enable them in site settings.</small></span>`;
     } else {
-      notifRow.innerHTML = `<span><i class="fa-solid fa-bell"></i> Notifications</span><button class="btn btn-sm" onclick="enablePushNotifications().then(renderSettingsAppRows)">Turn on</button>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Get updates about orders and important activity.</small></span><button class="settings-inline-btn" onclick="enablePushNotifications().then(() => renderSettingsAppRows())">Turn on</button>`;
     }
-  }
+  };
+  renderInstall("settingsInstallRow");
+  renderNotif("settingsNotifRow");
+  renderInstall("settingsInstallPageRow");
+  renderNotif("settingsNotifPageRow");
   renderAiConsentRow();
 }
+
 function renderAiConsentRow() {
   const row = byId("settingsAiConsentRow");
   if (!row || !profile) return;
@@ -4364,72 +5411,35 @@ function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) {
-  if (!drawer) return;
-  let state = null;
-  const edge = side === "right" ? 26 : 26;
-  const openDrawerForSide = () => {
-    if (side === "right") { toggleNotifPanel(); }
-    else { toggleProfilePanel(); }
-  };
-  // Close an already-open sheet with a swipe toward its edge.
-  drawer.addEventListener("pointerdown", (e) => {
-    if (!drawer.classList.contains("open")) return;
-    if (e.target.closest("button, a, input, textarea, select")) return;
-    state = { x:e.clientX, y:e.clientY, id:e.pointerId, dragging:false };
-  });
-  drawer.addEventListener("pointermove", (e) => {
-    if (!state || e.pointerId !== state.id) return;
-    const dx=e.clientX-state.x, dy=e.clientY-state.y;
-    if (!state.dragging) {
-      if (Math.abs(dx)<10 && Math.abs(dy)<10) return;
-      if (Math.abs(dy)>=Math.abs(dx)) { state=null; return; }
-      const correct = side === "right" ? dx > 0 : dx < 0;
-      if (!correct) { state=null; return; }
-      state.dragging=true;
-      drawer.setPointerCapture?.(state.id);
-    }
-    if (state.dragging) e.preventDefault();
-  });
-  drawer.addEventListener("pointerup", (e) => {
-    if (!state || e.pointerId !== state.id) return;
-    const dx=e.clientX-state.x;
-    if (state.dragging && ((side === "right" && dx>70) || (side === "left" && dx<-70))) closeAllPanels();
-    state=null;
-  });
-  drawer.addEventListener("pointercancel", () => { state=null; });
-
-  // Edge-swipe OPEN: right edge -> left opens Notifications; left edge ->
-  // right opens Profile. Because the gesture must begin at the physical
-  // edge, horizontal product/table rails cannot accidentally trigger it.
-  document.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse" || e.target.closest(".side-drawer, .modal, input, textarea, select, button, a")) return;
-    const fromEdge = side === "right" ? e.clientX >= window.innerWidth-edge : e.clientX <= edge;
-    if (!fromEdge) return;
-    // Never steal a gesture from a horizontally scrollable rail/table/gallery.
-    // This is what prevents product/vendor rails and wide tables from opening
-    // Profile or Notifications just because they begin near the screen edge.
-    let node = e.target;
-    while (node && node !== document.body) {
-      if (node instanceof Element) {
-        const cs = getComputedStyle(node);
-        if (node.scrollWidth > node.clientWidth + 4 && /auto|scroll/.test(cs.overflowX)) return;
-        if (node.classList?.contains("hscroll") || node.classList?.contains("cat-row") || node.classList?.contains("table-wrap")) return;
-      }
-      node = node.parentElement;
-    }
-    window.__levroEdgeSwipe = { side, x:e.clientX, y:e.clientY, id:e.pointerId, active:true };
-  }, { passive:true });
-  document.addEventListener("pointerup", (e) => {
-    const st=window.__levroEdgeSwipe;
-    if (!st || !st.active || st.side!==side || st.id!==e.pointerId) return;
-    const dx=e.clientX-st.x, dy=e.clientY-st.y;
-    window.__levroEdgeSwipe=null;
-    if (Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy) && ((side === "right" && dx<0) || (side === "left" && dx>0))) openDrawerForSide();
-  }, { passive:true });
+  if(!drawer||drawer.dataset.swipeReady==="1")return;drawer.dataset.swipeReady="1";let sx=0,sy=0,active=false;
+  drawer.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t)return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});
+  drawer.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<54||Math.abs(dx)<Math.abs(dy)*1.15)return;if(side==="left"&&dx<0)closeAllPanels();if(side==="right"&&dx>0)closeAllPanels();},{passive:true});
 }
-
+let profileEdgeSwipeBound=false;
+function bindProfileEdgeSwipe(){
+  if(profileEdgeSwipeBound)return;
+  profileEdgeSwipeBound=true;
+  let sx=0,sy=0,active=false;
+  document.addEventListener("touchstart",e=>{
+    const t=e.touches[0];
+    if(!t||!session||!profile||byId("profilePanel")?.classList.contains("open")) return;
+    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.notif-item,.hero-photo-link")) return;
+    // Do not steal Android/iOS OS edge-back gestures. Start the profile
+    // gesture in the body of the screen, from roughly 24%–68% of the width.
+    const w=window.innerWidth;
+    if(t.clientX < w*0.24 || t.clientX > w*0.68) return;
+    sx=t.clientX; sy=t.clientY; active=true;
+  },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(!active||!e.changedTouches[0])return;
+    active=false;
+    const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(dx>72&&Math.abs(dx)>Math.abs(dy)*1.18&&!byId("profilePanel")?.classList.contains("open")) openDrawer("profilePanel");
+  },{passive:true});
+}
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
+bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
 // Swipe left/right ANYWHERE on the page (not just the bottom bar) moves to
@@ -4552,7 +5562,7 @@ async function renderNotifPanel() {
       </div>`
     : `<div class="drawer-header"><h4>${modeLabel}</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
       ${tabs}
-      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe right to restore, left to delete forever." : `Swipe right to ${notifViewMode === "archived" ? "restore" : "archive"}, left to trash.`} Hold an item to select several.</p>`;
+      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe left to restore, right to delete forever." : `Swipe left to ${notifViewMode === "archived" ? "restore" : "archive"}, right to delete.`} Hold an item to select several.</p>`;
 
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const hasUnread = (items || []).some((n) => !n.read);
@@ -4561,8 +5571,8 @@ async function renderNotifPanel() {
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
-        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-box-open" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i><span>${notifViewMode === "trash" ? "Restore" : "Restore"}</span></div>
-        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span>${notifViewMode === "trash" ? "Delete" : "Trash"}</span></div>
+        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i><span>${notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive"}</span></div>
+        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span>${notifViewMode === "trash" ? "Delete forever" : "Trash"}</span></div>
         <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
           <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
           ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
@@ -4628,14 +5638,12 @@ function setupNotifItemGestures(panel) {
       if (dragging) {
         item.style.transition = "transform 0.2s ease";
         if (dx <= -85) {
-          // Swipe LEFT: reveal the right-side action — Trash/Delete.
           item.style.transform = "translateX(-105%)";
+          setTimeout(() => (notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id)), 150);
+        } else if (dx >= 85) {
+          item.style.transform = "translateX(105%)";
           if (notifViewMode === "trash") { setTimeout(() => confirmPurgeOne(id), 150); }
           else { setTimeout(() => quickTrashNotif(id), 150); }
-        } else if (dx >= 85) {
-          // Swipe RIGHT: reveal the left-side action — Archive/Restore.
-          item.style.transform = "translateX(105%)";
-          setTimeout(() => (notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id)), 150);
         } else {
           item.style.transform = "translateX(0)";
         }
@@ -4809,13 +5817,50 @@ function subscribeNotifications() {
 let ordersLiveChannel = null;
 let ordersLiveTimer = null;
 let ordersLiveRefreshTimer = null;
+let lastOrderScrollAt = 0;
+let orderScrollWatchBound = false;
+function ensureOrderScrollWatch() {
+  if (orderScrollWatchBound) return;
+  window.addEventListener("scroll", () => { lastOrderScrollAt = performance.now(); }, { passive:true });
+  orderScrollWatchBound = true;
+}
 function refreshVisibleOrderView() {
   if (!["vendorOrders", "buyerOrders", "orderDetail"].includes(currentView)) return;
+  ensureOrderScrollWatch();
   clearTimeout(ordersLiveRefreshTimer);
-  ordersLiveRefreshTimer = setTimeout(() => {
-    navigate(currentView, currentViewParams || {}, false);
-  }, 180);
+
+  const savedView = currentView;
+  const savedParams = { ...(currentViewParams || {}) };
+  const waitForScrollToSettle = () => {
+    if (currentView !== savedView) return;
+    const elapsed = performance.now() - lastOrderScrollAt;
+    if (elapsed < 550) {
+      ordersLiveRefreshTimer = setTimeout(waitForScrollToSettle, Math.max(120, 550 - elapsed));
+      return;
+    }
+    ordersLiveRefreshTimer = setTimeout(async () => {
+      if (currentView !== savedView) return;
+      document.body.classList.add("orders-refreshing");
+      try {
+        // navigate() captures the scroll position immediately before replacing
+        // #app, rather than using a stale value captured when the realtime
+        // event first arrived. This prevents iOS from jumping upward while
+        // the user is actively reading history.
+        await navigate(savedView, savedParams, false);
+      } finally {
+        requestAnimationFrame(() => document.body.classList.remove("orders-refreshing"));
+      }
+    }, 120);
+  };
+  waitForScrollToSettle();
 }
+let ordersVisibilityRefreshBound = false;
+function handleOrdersVisibilityRefresh() {
+  if (document.hidden || !["vendorOrders","buyerOrders"].includes(currentView)) return;
+  clearTimeout(ordersLiveRefreshTimer);
+  ordersLiveRefreshTimer = setTimeout(refreshVisibleOrderView, 250);
+}
+
 function subscribeOrderUpdates() {
   if (ordersLiveChannel) { try { sb.removeChannel(ordersLiveChannel); } catch (e) {} ordersLiveChannel = null; }
   if (ordersLiveTimer) { clearInterval(ordersLiveTimer); ordersLiveTimer = null; }
@@ -4832,9 +5877,14 @@ function subscribeOrderUpdates() {
   ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, refreshVisibleOrderView);
   ordersLiveChannel.subscribe();
 
-  // Fallback for projects where the orders table has not been added to the
-  // Supabase Realtime publication. This is deliberately light.
-  ordersLiveTimer = setInterval(refreshVisibleOrderView, 5000);
+  // Intentionally no fixed polling interval. Replacing the Orders DOM while
+  // the user is scrolling is what caused the history screen to twitch/jump.
+  // Realtime handles live changes; focus/visibility refreshes are bound once.
+  if (!ordersVisibilityRefreshBound) {
+    document.addEventListener("visibilitychange", handleOrdersVisibilityRefresh, { passive:true });
+    window.addEventListener("focus", handleOrdersVisibilityRefresh, { passive:true });
+    ordersVisibilityRefreshBound = true;
+  }
 }
 
 // ---------- AUTH ----------
@@ -4990,6 +6040,7 @@ function updateAuthUI() {
       links.push({ label: "Vendors &amp; transactions", action: "navigate('adminFinance')" });
       links.push({ label: `Feedback${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('adminFeedback')" });
     }
+    links.push({ label: "Settings", action: "navigate('settings')" });
     links.push({ label: "Take the tour", action: "showTour()" });
     if (profile.role !== "admin") links.push({ label: "Send feedback", action: "showSuggestionModal('platform')" });
     if (vendor) links.push({ label: `Suggestions${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('vendorSuggestionsInbox')" });
@@ -5015,11 +6066,11 @@ function updateAuthUI() {
       <div class="profile-panel-scroll">
         ${links.map((l) => {
           const raw = String(l.label).replace(/<[^>]*>/g, '').trim().toLowerCase();
-          const icon = raw.includes('my orders') ? 'fa-receipt' : raw.includes('request an item') ? 'fa-hand' : raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
-          return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span></a>`;
+          const icon = raw.includes('my orders') ? 'fa-receipt' : raw.includes('request an item') ? 'fa-hand' : raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : raw.includes('settings') ? 'fa-gear' : 'fa-circle';
+          return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>`;
         }).join("")}
         <div class="divider" style="margin:.45rem 0;"></div>
-        <a class="profile-nav-link profile-nav-link-danger" onclick="closeAllPanels();logout();"><span class="profile-item-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span><span class="profile-nav-text">Log out</span></a>
+        <a class="profile-nav-link profile-nav-link-danger" onclick="closeAllPanels();logout();"><span class="profile-item-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span><span class="profile-nav-text">Log out</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>
       </div>
     `;
     byId("accountDangerSection")?.classList.remove("hidden");
@@ -5047,6 +6098,35 @@ async function uploadAvatar(event) {
   profile.avatar_url = url;
   updateAuthUI();
   showToast("Profile photo updated.", "success");
+}
+
+// ---------- DEDICATED LEVROMART SETTINGS PAGE ----------
+function renderSettingsPage(){
+  if(!session||!profile) return '<div class="empty-state">Please log in.</div>';
+  renderSettingsAppRows();
+  return `<div class="settings-page" id="settings-page">
+    <div class="settings-page-header"><button class="settings-back-btn" onclick="navigate(lastNonSettingsView||'home')" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div><span class="settings-kicker">Levromart</span><h2>Settings</h2><p class="muted">Manage your account and app experience.</p></div></div>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-droplet"></i> Accent color</h3><p class="settings-section-note">Choose the accent used across Levromart.</p><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></section>
+    <section class="settings-page-section"><h3><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><div class="voice-preset-row"><button class="voice-preset-btn" onclick="setAiVoicePreset('natural')">Natural</button><button class="voice-preset-btn" onclick="setAiVoicePreset('warm')">Warm</button><button class="voice-preset-btn" onclick="setAiVoicePreset('clear')">Clear</button></div><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
+    <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
+  </div>`;
+}
+function hydrateSettingsPage(){
+  const theme=document.documentElement.dataset.theme||localStorage.getItem("medris-theme")||"light";
+  document.querySelectorAll("#settings-page .settings-choice").forEach(el=>{const on=el.dataset.themeChoice===theme;el.classList.toggle("active",on);el.dataset.active=String(on);});
+  const accent=byId("accentSwatchesPage");
+  if(accent) accent.innerHTML=ACCENT_PALETTE.map((p,i)=>`<button type="button" class="accent-swatch ${i===currentAccentIndex?'active':''}" style="background:linear-gradient(135deg,${p.base},${p.light});" title="${esc(p.name)}" aria-label="${esc(p.name)}" onclick="setAccent(${i});setTimeout(hydrateSettingsPage,0)"></button>`).join("");
+  const vis=byId("leviVisibleSettingRow");
+  if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
+  const consent=byId("settingsAiConsentPageRow");
+  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent});setTimeout(hydrateSettingsPage,0)">${profile.ai_data_consent?'On':'Off'}</button>`;
+  const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
+  if(install&&oldInstall) install.innerHTML=oldInstall.innerHTML;if(notif&&oldNotif) notif.innerHTML=oldNotif.innerHTML;
+  const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'}"></i><span><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} — nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
+  const src=byId("voiceSelect"),page=byId("voiceSelectPage");if(src&&page){page.innerHTML=src.innerHTML;page.value=src.value||localStorage.getItem("medris-ai-voice")||"";page.onchange=function(){setAiVoice(this.value);};}
 }
 
 // ---------- MY DETAILS (any logged-in buyer/vendor's own contact info) ----------
@@ -5459,13 +6539,22 @@ function toggleSettingsMoreSection() {
   row?.classList.toggle("open", open);
   row?.querySelector(".settings-more-chevron")?.classList.toggle("open", open);
 }
-function resetLevromartPreferences() {
-  ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+async function resetLevromartPreferences() {
+  const confirmed = await showConfirmDialog(
+    "Reset Levromart preferences? Your appearance, Levi size, visibility, voice and interface preferences on this device will return to their defaults.",
+    { title: "Reset preferences", okLabel: "Reset", danger: true }
+  );
+  if (!confirmed) return;
+  ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "medris-levi-fab-size", "medris-levi-visible", "medris-ai-voice", "medris-ai-voice-preset", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
   currentAccentIndex = 0;
+  leviVisible = true;
   setTheme("light");
   setAccent(0);
+  applyLeviFabSize();
+  applyLeviVisibility();
   const panel = byId("settingsMoreMenu");
   panel?.classList.add("hidden");
+  hydrateSettingsPage();
   showToast("Preferences restored to default.", "success");
 }
 function showLevromartAbout() {
@@ -5513,11 +6602,15 @@ function errorStateHtml(err) {
 function updateHeaderNavActive() {
   document.querySelectorAll(".header-nav-link").forEach((el) => el.classList.toggle("active", el.dataset.view === currentView));
 }
+let lastNonSettingsView = "home";
+
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
   // A suspended account is locked to this one screen no matter what it
   // tries to navigate to -- appealing (or logging out) is all that's left.
   if (profile?.suspended_at && view !== "suspended") view = "suspended";
+  const previousView = currentView;
+  if (view !== "settings" && previousView !== "settings") lastNonSettingsView = previousView || "home";
   // The outgoing page just stays on screen, silently, until the new one is
   // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
   // Awaited -- removeChannel is itself async (it has to tell the realtime
@@ -5551,6 +6644,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorDashboard": html = await renderVendorDashboard(); break;
       case "vendorEditProfile": html = await renderVendorEditProfile(); break;
       case "editProfile": html = renderEditProfile(); break;
+      case "settings": html = renderSettingsPage(); break;
       case "vendorProducts": html = await renderVendorProducts(); break;
       case "vendorPackages": html = await renderVendorPackages(); break;
       case "vendorEarnings": html = await renderVendorEarnings(); break;
@@ -5582,11 +6676,20 @@ async function navigate(view, params = {}, pushHistory = true) {
     html = errorStateHtml(err);
     lastRenderError = err.message;
   }
+  const preserveSameViewScroll = !pushHistory && previousView === view;
+  const sameViewScrollY = preserveSameViewScroll ? window.scrollY : 0;
   app.innerHTML = html;
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
   initDeliveryFieldsOnPage();
-  window.scrollTo(0, 0);
+  if (view === "settings") setTimeout(hydrateSettingsPage, 0);
+  // A same-view, non-history refresh (notably live order updates) must keep
+  // the user's scroll position. Real navigation still starts at the top.
+  if (preserveSameViewScroll) {
+    requestAnimationFrame(() => window.scrollTo({ top: sameViewScrollY, behavior: "auto" }));
+  } else if (pushHistory || previousView !== view) {
+    window.scrollTo(0, 0);
+  }
 }
 
 // ---------- AUTO-SLIDING CAROUSELS (category row + horizontal product/vendor rails) ----------
@@ -5645,9 +6748,15 @@ async function renderHome() {
   // The hero backdrop is just the 3 most recently listed products' photos --
   // deliberately not the trending list below, so it stays fresh and never
   // turns into a cluttered wall of every product photo on the site.
-  let recentPhotosQuery = sb.from("products").select("photos, created_at, vendor:vendors!inner(verification_status, is_active), category:categories(sector_id)")
-    .eq("status", "active").eq("vendor.verification_status", "verified").eq("vendor.is_active", true);
-  if (activeSector) recentPhotosQuery = recentPhotosQuery.eq("category.sector_id", activeSector.id);
+  // The backdrop is always the three newest ACTIVE products on the entire
+  // marketplace. It intentionally ignores the currently selected sector:
+  // these are the three latest listings site-wide, not three static/staged
+  // images and not three photos from one product.
+  const recentPhotosQuery = sb.from("products")
+    .select("id, name, photos, created_at, vendor:vendors!inner(verification_status, is_active)")
+    .eq("status", "active")
+    .eq("vendor.verification_status", "verified")
+    .eq("vendor.is_active", true);
 
   const [{ data: trending }, { data: topVendors }, { data: recentProducts }] = await Promise.all([
     vendorQuery.order("view_count", { ascending: false }).limit(6),
@@ -5655,10 +6764,17 @@ async function renderHome() {
     recentPhotosQuery.order("created_at", { ascending: false }).limit(3),
   ]);
 
-  const heroPhotos = [...new Set((recentProducts || []).map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 3);
+  // One image per product: product #1, product #2, product #3.
+  // Never use multiple angles from the same product in the home backdrop.
+  const heroPhotos = (recentProducts || [])
+    .map((product) => {
+      const photos = Array.isArray(product.photos) ? product.photos.filter(Boolean) : [];
+      return photos[0] ? { id: product.id, name: product.name || "Product", url: photos[0] } : null;
+    })
+    .filter(Boolean);
 
   let html = `<div class="hero">
-    ${heroPhotos.length >= 3 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy" />`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
+    ${heroPhotos.length >= 1 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((p) => `<button type="button" class="hero-photo-link" onclick="navigate(\'productDetail\',{productId:\'${esc(p.id)}\'})" aria-label="View ${esc(p.name)}"><img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy" /></button>`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
     <div class="hero-aurora"></div>
     <div class="hero-content">
       <div class="hero-search flex">
@@ -6236,40 +7352,165 @@ function convRowHtml(c) {
   const name = c.other_name || "User";
   const isUnread = c.unread_count > 0;
   const archived = isChatArchived(c.conversation_id);
-  return `<div class="conv-swipe-wrap">
-    <div class="conv-swipe-action conv-swipe-left-action"><i class="fa-solid fa-envelope"></i><span>${isUnread ? "Mark read" : "Mark unread"}</span></div>
-    <div class="conv-swipe-action conv-swipe-right-action"><i class="fa-solid fa-box-archive"></i><span>Archive</span></div>
-    <div class="conv-list-item" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+  const selected = msgSelectMode && msgSelectedIds.has(c.conversation_id);
+  return `<div class="conv-swipe-wrap ${selected ? "selected" : ""}">
+    <div class="conv-swipe-action conv-swipe-action-left"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}"></i><span>${archived ? "Restore" : "Archive"}</span></div>
+    <div class="conv-swipe-action conv-swipe-action-right"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Mark read" : "Unread"}</span></div>
+    <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+      ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
       ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
       <div class="conv-meta">
         <strong>${esc(name)}</strong>
         <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
       </div>
       ${isUnread ? `<span class="conv-unread-badge" title="${c.unread_count} unread">${c.unread_count > 99 ? "99+" : c.unread_count}</span>` : ""}
-      <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
-      <button class="icon-btn" style="flex-shrink:0;" title="${archived ? "Restore chat" : "Archive chat"}" onclick="event.stopPropagation();toggleChatArchived('${c.conversation_id}')"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}" style="${archived ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
-      <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+      ${!msgSelectMode ? `
+        <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+        <button class="icon-btn" style="flex-shrink:0;" title="${archived ? "Restore chat" : "Archive chat"}" onclick="event.stopPropagation();toggleChatArchived('${c.conversation_id}')"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}" style="${archived ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+        <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+      ` : ""}
     </div>
   </div>`;
 }
 
-// ---------- TWO-WAY MESSAGE ROW GESTURES ----------
-// Swipe RIGHT -> mark read/unread. Swipe LEFT -> archive. The action is
-// previewed live underneath the row, so the gesture itself communicates
-// exactly what will happen before release.
-let convSwipeState = null;
+let msgSelectMode = false;
+let msgSelectedIds = new Set();
 
+function enterMsgSelectMode(id) {
+  msgSelectMode = true;
+  msgSelectedIds = id ? new Set([id]) : new Set();
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+function exitMsgSelectMode() {
+  msgSelectMode = false;
+  msgSelectedIds.clear();
+  filterMsgList();
+}
+function toggleMsgSelected(id) {
+  if (!msgSelectMode) return;
+  if (msgSelectedIds.has(id)) msgSelectedIds.delete(id); else msgSelectedIds.add(id);
+  if (!msgSelectedIds.size) { msgSelectMode = false; }
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+function toggleSelectAllChats() {
+  const ids = getVisibleChatIds();
+  if (!ids.length) return;
+  if (ids.every((id) => msgSelectedIds.has(id))) msgSelectedIds.clear();
+  else msgSelectedIds = new Set(ids);
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+async function batchArchiveChats() {
+  const ids = [...msgSelectedIds];
+  if (!ids.length) return;
+  const archivedIds = getArchivedChatIds();
+  const restoring = msgListFilter === "archived";
+  if (!(await showConfirmDialog(`${restoring ? "Restore" : "Archive"} ${ids.length} selected chat${ids.length === 1 ? "" : "s"}?`, {
+    title: restoring ? "Restore chats" : "Archive chats",
+    okLabel: restoring ? "Restore" : "Archive",
+    danger: false
+  }))) return;
+  ids.forEach((id) => restoring ? archivedIds.delete(id) : archivedIds.add(id));
+  setArchivedChatIds(archivedIds);
+  exitMsgSelectMode();
+  showToast(restoring ? `${ids.length} chat${ids.length === 1 ? "" : "s"} restored.` : `${ids.length} chat${ids.length === 1 ? "" : "s"} archived.`, "success");
+}
+function getVisibleChatIds() {
+  const convs = window.__conversations || [];
+  const archivedIds = getArchivedChatIds();
+  let shown = convs;
+  if (msgListFilter === "unread") {
+    shown = convs.filter((c) => c.unread_count > 0 && !archivedIds.has(c.conversation_id));
+  } else if (msgListFilter === "archived") {
+    shown = convs.filter((c) => archivedIds.has(c.conversation_id));
+  } else if (msgListFilter.startsWith("list:")) {
+    const list = myChatLists.find((l) => l.id === msgListFilter.slice(5));
+    shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id) && !archivedIds.has(c.conversation_id)) : [];
+  } else {
+    shown = convs.filter((c) => !archivedIds.has(c.conversation_id));
+  }
+  const q = (byId("msgSearchInput")?.value || "").trim().toLowerCase();
+  if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
+  return shown.map((c) => c.conversation_id);
+}
+async function batchMarkChatsRead(read) {
+  const ids = msgSelectedIds.size ? [...msgSelectedIds] : getVisibleChatIds();
+  if (!ids.length) { showToast(`No chats to mark as ${read ? "read" : "unread"}.`, "info"); return; }
+  if (!(await showConfirmDialog(`Mark ${ids.length} chat${ids.length === 1 ? "" : "s"} as ${read ? "read" : "unread"}?`, {
+    title: read ? "Mark as read" : "Mark as unread",
+    okLabel: read ? "Mark read" : "Mark unread"
+  }))) return;
+  for (const id of ids) {
+    try {
+      // The existing RPC toggles the current unread state, so only invoke it
+      // when the current state differs from the requested state.
+      const c = (window.__conversations || []).find((x) => x.conversation_id === id);
+      const currentlyUnread = Number(c?.unread_count || 0) > 0;
+      if (currentlyUnread === !read) continue;
+      await sb.rpc("toggle_conversation_unread", { p_conversation_id: id });
+    } catch (e) {}
+  }
+  msgSelectMode = false; msgSelectedIds.clear();
+  await refreshNotifications();
+  navigate("messages", {}, false);
+}
+function msgSelectionHeaderHtml() {
+  if (!msgSelectMode) {
+    return `<div class="messages-toolbar">
+      <div class="messages-toolbar-title"><h2><i class="fa-solid fa-comments"></i> Messages</h2></div>
+      <button type="button" class="icon-btn messages-more-btn" onclick="toggleInlineMenu('messagesMoreMenu',event)" aria-label="Message actions"><i class="fa-solid fa-ellipsis"></i></button>
+      <div class="ms-list hidden messages-more-menu" id="messagesMoreMenu">
+        <button type="button" class="ms-item" onclick="enterMsgSelectMode();toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-check-double"></i> Select chats</button>
+        <button type="button" class="ms-item" onclick="enterMsgSelectMode();toggleSelectAllChats();toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-square-check"></i> Select all chats</button>
+        <button type="button" class="ms-item" onclick="batchMarkChatsRead(true);toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-envelope-open"></i> Mark all as read</button>
+        <button type="button" class="ms-item" onclick="batchMarkChatsRead(false);toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-envelope"></i> Mark all as unread</button>
+      </div>
+    </div>`;
+  }
+  const visibleIds = getVisibleChatIds();
+  const allVisible = visibleIds.length > 0 && visibleIds.every((id) => msgSelectedIds.has(id));
+  return `<div class="messages-selection-toolbar">
+    <button type="button" class="icon-btn" onclick="exitMsgSelectMode()" aria-label="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
+    <strong>${msgSelectedIds.size} selected</strong>
+    <button type="button" class="icon-btn" onclick="toggleSelectAllChats()" aria-label="Select all"><i class="fa-solid ${allVisible ? "fa-square-minus" : "fa-square-check"}"></i></button>
+    <button type="button" class="icon-btn" onclick="batchMarkChatsRead(true)" ${msgSelectedIds.size ? "" : "disabled"} aria-label="Mark read"><i class="fa-solid fa-envelope-open"></i></button>
+    <button type="button" class="icon-btn" onclick="batchMarkChatsRead(false)" ${msgSelectedIds.size ? "" : "disabled"} aria-label="Mark unread"><i class="fa-solid fa-envelope"></i></button>
+    <button type="button" class="icon-btn" onclick="batchArchiveChats()" ${msgSelectedIds.size ? "" : "disabled"} aria-label="${msgListFilter === "archived" ? "Restore" : "Archive"}"><i class="fa-solid ${msgListFilter === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></button>
+  </div>`;
+}
+
+function updateMsgSelectionBar() {
+  const el = byId("messagesSelectionBar");
+  if (el) el.innerHTML = msgSelectionHeaderHtml();
+}
+
+// ---------- TWO-DIRECTION CHAT ROW GESTURES ----------
+let convSwipeState = null;
 function setupConvSwipe(root) {
   (root || document).querySelectorAll(".conv-list-item").forEach((item) => {
+    if (item.dataset.gesturesReady === "1") return;
+    item.dataset.gesturesReady = "1";
+    const wrap = item.closest(".conv-swipe-wrap");
     item.addEventListener("pointerdown", onConvSwipeStart);
   });
 }
 function onConvSwipeStart(e) {
   if (e.pointerType === "mouse" && e.button !== 0) return;
-  if (e.target.closest("button, a, input, textarea, select")) return;
   const item = e.currentTarget;
   const wrap = item.closest(".conv-swipe-wrap");
-  convSwipeState = { item, wrap, startX:e.clientX, startY:e.clientY, dx:0, dragging:false, pointerId:e.pointerId };
+  convSwipeState = {
+    item, wrap, startX: e.clientX, startY: e.clientY, dx: 0, dragging: false,
+    pointerId: e.pointerId, longPressFired: false,
+    longPressTimer: setTimeout(() => {
+      if (!convSwipeState || convSwipeState.item !== item || convSwipeState.dragging) return;
+      convSwipeState.longPressFired = true;
+      item.dataset.wasLongPressed = "1";
+      if (navigator.vibrate) navigator.vibrate(15);
+      enterMsgSelectMode(item.dataset.conversationId);
+    }, 480)
+  };
   item.addEventListener("pointermove", onConvSwipeMove);
   item.addEventListener("pointerup", onConvSwipeEnd);
   item.addEventListener("pointercancel", onConvSwipeEnd);
@@ -6278,52 +7519,56 @@ function onConvSwipeMove(e) {
   if (!convSwipeState || convSwipeState.item !== e.currentTarget) return;
   const dx = e.clientX - convSwipeState.startX;
   const dy = e.clientY - convSwipeState.startY;
+  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) clearTimeout(convSwipeState.longPressTimer);
   if (!convSwipeState.dragging) {
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-    if (Math.abs(dy) > Math.abs(dx)) { convSwipeState = null; return; }
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+      convSwipeState.dragging = false;
+      convSwipeState = null;
+      return;
+    }
     convSwipeState.dragging = true;
-    convSwipeState.item.setPointerCapture?.(convSwipeState.pointerId);
+    try { e.currentTarget.setPointerCapture(convSwipeState.pointerId); } catch (_) {}
   }
-  e.preventDefault();
-  convSwipeState.dx = Math.max(-96, Math.min(96, dx));
-  convSwipeState.item.style.transition = "none";
-  convSwipeState.item.style.transform = `translateX(${convSwipeState.dx}px)`;
-  const wrap = convSwipeState.wrap;
-  const left = wrap?.querySelector(".conv-swipe-left-action");
-  const right = wrap?.querySelector(".conv-swipe-right-action");
-  if (left) left.style.opacity = convSwipeState.dx > 12 ? Math.min(1, convSwipeState.dx / 72) : 0;
-  if (right) right.style.opacity = convSwipeState.dx < -12 ? Math.min(1, -convSwipeState.dx / 72) : 0;
+  if (!convSwipeState.dragging) return;
+  convSwipeState.dx = Math.max(-104, Math.min(104, dx));
+  e.currentTarget.style.transform = `translateX(${convSwipeState.dx}px)`;
+  const left = convSwipeState.wrap?.querySelector(".conv-swipe-action-left");
+  const right = convSwipeState.wrap?.querySelector(".conv-swipe-action-right");
+  if (left) left.style.opacity = convSwipeState.dx < -14 ? String(Math.min(1, -convSwipeState.dx / 84)) : "0";
+  if (right) right.style.opacity = convSwipeState.dx > 14 ? String(Math.min(1, convSwipeState.dx / 84)) : "0";
 }
 function onConvSwipeEnd(e) {
   if (!convSwipeState) return;
-  const { item, wrap, dx, dragging } = convSwipeState;
-  item.removeEventListener("pointermove", onConvSwipeMove);
-  item.removeEventListener("pointerup", onConvSwipeEnd);
-  item.removeEventListener("pointercancel", onConvSwipeEnd);
-  if (dragging) {
-    item.dataset.wasSwiped = "1";
-    item.style.transition = "transform .2s ease";
-    if (dx >= 62) {
-      item.style.transform = "translateX(105%)";
-      if (navigator.vibrate) navigator.vibrate(12);
-      setTimeout(() => handleSwipeMarkUnread(item.dataset.conversationId), 150);
-    } else if (dx <= -62) {
-      item.style.transform = "translateX(-105%)";
-      if (navigator.vibrate) navigator.vibrate(12);
-      setTimeout(() => { toggleChatArchived(item.dataset.conversationId); }, 150);
+  const state = convSwipeState;
+  clearTimeout(state.longPressTimer);
+  state.item.removeEventListener("pointermove", onConvSwipeMove);
+  state.item.removeEventListener("pointerup", onConvSwipeEnd);
+  state.item.removeEventListener("pointercancel", onConvSwipeEnd);
+  if (state.dragging) {
+    state.item.dataset.wasSwiped = "1";
+    const actionDx = state.dx;
+    state.item.style.transition = "transform .18s ease";
+    if (actionDx <= -70) {
+      state.item.style.transform = "translateX(-110%)";
+      setTimeout(() => toggleChatArchived(state.item.dataset.conversationId), 140);
+    } else if (actionDx >= 70) {
+      state.item.style.transform = "translateX(110%)";
+      setTimeout(() => handleSwipeMarkUnread(state.item.dataset.conversationId), 140);
     } else {
-      item.style.transform = "translateX(0)";
+      state.item.style.transform = "translateX(0)";
     }
-    setTimeout(() => {
-      if (item) item.style.transition = "";
-      if (wrap) wrap.querySelectorAll(".conv-swipe-action").forEach((el) => el.style.opacity = "");
-    }, 220);
+    setTimeout(() => { if (state.item) state.item.style.transition = ""; }, 200);
+  } else if (!state.longPressFired && !msgSelectMode) {
+    // Normal taps are handled by the click listener below.
   }
   convSwipeState = null;
 }
 function handleConvRowClick(event, conversationId) {
   const item = event.currentTarget;
   if (item.dataset.wasSwiped === "1") { item.dataset.wasSwiped = ""; return; }
+  if (item.dataset.wasLongPressed === "1") { item.dataset.wasLongPressed = ""; return; }
+  if (msgSelectMode) { event.preventDefault(); toggleMsgSelected(conversationId); return; }
   navigate("messages", { conversationId });
 }
 async function handleSwipeMarkUnread(conversationId) {
@@ -6453,7 +7698,7 @@ async function renderMessages(conversationId) {
     window.__conversations = convs;
     await refreshChatLists();
 
-    let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2>`;
+    let html = `<div id="messagesSelectionBar">${msgSelectionHeaderHtml()}</div>`;
     html += chatListTabsHtml();
     html += `<input type="text" id="msgSearchInput" placeholder="Search conversations…" oninput="filterMsgList()" style="margin:0.2rem 0 0.8rem;max-width:340px;" />`;
     html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap"></div>`;
@@ -7523,8 +8768,8 @@ async function renderStorefront(vendorId) {
       ${v.bio ? `<p class="storefront-bio">${esc(v.bio)}</p>` : ""}
       <div class="storefront-stats">
         <span><strong>${allProducts.length}</strong> listing${allProducts.length === 1 ? "" : "s"}</span>
-        <span><strong>${st.review_count || 0}</strong> review${Number(st.review_count || 0) === 1 ? "" : "s"}</span>
-        ${st.avg_rating ? `<span><strong>★ ${Number(st.avg_rating).toFixed(1)}</strong> rating</span>` : ""}
+        <button type="button" class="storefront-stat-link" onclick="event.stopPropagation();scrollToVendorReviews()"><strong>${st.review_count || 0}</strong> review${Number(st.review_count || 0) === 1 ? "" : "s"}</button>
+        ${st.avg_rating ? `<button type="button" class="storefront-stat-link" onclick="event.stopPropagation();scrollToVendorReviews()"><strong>★ ${Number(st.avg_rating).toFixed(1)}</strong> rating</button>` : ""}
         ${v.sector?.name ? `<span>${esc(v.sector.name)}</span>` : ""}
       </div>
     </div>
@@ -7563,9 +8808,9 @@ async function renderStorefront(vendorId) {
   </section>`;
 
   if (reviews && reviews.length > 0) {
-    html += `<div class="flex" style="justify-content:space-between;cursor:pointer;margin-top:1.5rem;" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></div><div id="reviewsList" class="hidden">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div>`;
+    html += `<section class="storefront-reviews" id="vendorReviews"><button type="button" class="storefront-reviews-head" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></button><div id="reviewsList">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div></section>`;
   } else {
-    html += `<h3 style="margin-top:1.5rem;">Reviews</h3><p class="muted">No reviews yet.</p>`;
+    html += `<section class="storefront-reviews" id="vendorReviews"><h3 style="margin-top:0;">Reviews</h3><p class="muted">No reviews yet.</p></section>`;
   }
 
   storefrontViewMode = "grid";
@@ -7573,6 +8818,15 @@ async function renderStorefront(vendorId) {
   return html;
 }
 
+function scrollToVendorReviews() {
+  const reviews = byId("vendorReviews");
+  if (!reviews) return;
+  reviews.scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => {
+    const list = byId("reviewsList");
+    if (list?.classList.contains("hidden")) toggleReviewsList();
+  }, 180);
+}
 function toggleStorefrontPackages() {
   const section = byId("storefrontPackagesSection");
   const toggle = section?.querySelector(".storefront-packages-toggle");
@@ -7973,9 +9227,11 @@ async function renderVendorDashboard() {
   html += `<div class="dash-tabs">
     <button class="dash-tab" onclick="navigate('vendorProducts')"><i class="fa-solid fa-box"></i> Products</button>
     <button class="dash-tab" onclick="navigate('vendorPackages')"><i class="fa-solid fa-boxes-packing"></i> Packages</button>
+    <button class="dash-tab" onclick="navigate('vendorOrders',{status:'all'})"><i class="fa-solid fa-receipt"></i> Orders</button>
     <button class="dash-tab" onclick="navigate('vendorRequests')"><i class="fa-solid fa-clipboard-list"></i> Requests</button>
     <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
+    <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
   html += `<div class="accordion-section" style="max-width:700px;margin-bottom:1.4rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> At a glance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -9379,6 +10635,10 @@ function splitActiveAndHistoryOrders(orders, status) {
     history: orders.filter((o) => ORDER_HISTORY_STATUSES.has(o.status)),
   };
 }
+function orderHistoryActivityLabel(order) {
+  const iso = orderActivityIso(order);
+  return iso ? orderDateTimeStr(iso) : "";
+}
 function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   if (!historyOrders || !historyOrders.length) return "";
   const byDate = new Map();
@@ -9389,15 +10649,8 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   });
   let inner = "";
   byDate.forEach((dayOrders, dateKey) => {
-    inner += `<div class="category-group-header">${esc(dateKey)}</div>`;
-    inner += dayOrders.map((o) => `<div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
-      <div>
-        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
-        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
-        <p class="muted" style="font-size:.76rem;margin:.15rem 0 0;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>
-      </div>
-      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
-    </div>`).join("");
+    inner += `<div class="order-history-date"><i class="fa-regular fa-calendar"></i><span>${esc(dateKey)}</span></div>`;
+    inner += `<div class="order-history-day">${dayOrders.map((o) => `<button type="button" class="order-history-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-history-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span class="order-history-meta"><span>${esc(o.order_type)}</span><span class="order-history-separator">·</span><span>${naira(o.total_amount)}</span></span><small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small></span><span class="badge ${orderStatusBadgeClass(o.status)} order-history-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("")}</div>`;
   });
   return `<div class="accordion-section" id="orderHistoryAccordion" style="margin-top:1.2rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-clock-rotate-left"></i> Order history (${historyOrders.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -9426,14 +10679,8 @@ function renderOrderListWrap() {
   wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
 }
 function orderVariantSummary(order) {
-  const variants = (order?.items || []).map((it) => {
-    const name = it?.variant_name || it?.variant?.name || "";
-    const color = it?.variant_color || it?.variant?.color || "";
-    if (!name && !color) return "";
-    if (name && color && !name.toLowerCase().includes(color.toLowerCase())) return `${name} (${color})`;
-    return name || color;
-  }).filter(Boolean);
-  return [...new Set(variants)].join(", ");
+  const names = (order?.items || []).map((it) => it?.variant_name || it?.variant?.name).filter(Boolean);
+  return [...new Set(names)].join(", ");
 }
 
 async function persistOrderItemVariants(orderId, selections) {
@@ -9471,16 +10718,7 @@ function orderListHtml(orders, isBuyerView) {
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
-  return shown.map((o) => `
-    <div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
-      <div>
-        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
-        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
-        ${orderVariantSummary(o) ? `<p class="muted" style="font-size:0.76rem;margin:.12rem 0 0;"><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</p>` : ""}
-        ${orderActivityIso(o) ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>` : ""}
-      </div>
-      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
-    </div>`).join("") + moreBtn;
+  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -9541,7 +10779,7 @@ async function renderOrderDetail(orderId) {
     ${(order.status === "completed" || order.status === "cancelled") && orderActivityIso(order) ? `<p class="muted" style="font-size:0.8rem;margin-top:0.25rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(order))}</p>` : ""}
     ${ORDER_STATUS_HELP[order.status]
       ? order.status === "pending"
-        ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
+        ? `<div class="banner banner-warning order-status-banner" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half order-status-icon"></i><span class="order-status-text">${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])}</span>${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
         : `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</p>`
       : ""}
     ${order.payout_status && order.payout_status !== "not_applicable"
@@ -9554,7 +10792,7 @@ async function renderOrderDetail(orderId) {
     ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
-      ${item.variant_name ? `<p style="margin:.2rem 0 0;font-size:.82rem;"><i class="fa-solid fa-sliders"></i> <strong>Variation:</strong> ${esc(item.variant_name)}${item.variant_color ? ` · <span class="muted">Color: ${esc(item.variant_color)}</span>` : ""}</p>` : ""}
+      ${item.variant_name ? `<p style="margin:.2rem 0 0;font-size:.82rem;"><i class="fa-solid fa-sliders"></i> <strong>Variation:</strong> ${esc(item.variant_name)}${item.variant_color ? ` <span class="muted">(${esc(item.variant_color)})</span>` : ""}</p>` : ""}
     </div>`).join("")}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
@@ -9760,6 +10998,13 @@ const PAYOUT_STATUS_SHORT_LABEL = {
 };
 
 async function updateOrderStatus(orderId, newStatus) {
+  if (newStatus === "cancelled") {
+    const confirmed = await showConfirmDialog(
+      "Decline this order? The buyer will be notified and the order cannot be restored through this action.",
+      { title: "Decline order", okLabel: "Yes, decline", danger: true }
+    );
+    if (!confirmed) return;
+  }
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
   navigate("orderDetail", { orderId });
@@ -9785,7 +11030,7 @@ async function buyerCancelOrder(orderId, feePaid) {
     if (json.refundError) showToast("Order cancelled. There was a hiccup issuing your refund, our team will sort it out.", "info");
     else if (json.refunded) showToast("Order cancelled and refunded.", "success");
     else showToast("Order cancelled.", "success");
-    navigate("buyerOrders", { status: "all" });
+    navigate("orderDetail", { orderId });
   } catch (err) {
     showToast(err.message, "error");
   }
@@ -10664,7 +11909,8 @@ function exportFinancePdf() {
       th{background:#f3f8f7;} .stats{display:flex;gap:1.5rem;margin:1.2rem 0;}
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
-    </style></head><body>
+    
+</style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
@@ -10972,26 +12218,25 @@ let aiChatLastDateKey = null;
 function toggleAiChat() {
   if (!session) { showLogin(); return; }
   const panel = byId("aiChatPanel");
-  const opening = panel.classList.contains("hidden");
+  const wasHidden = panel.classList.contains("hidden");
   panel.classList.toggle("hidden");
+  const isOpen = !panel.classList.contains("hidden");
   const fab = byId("aiChatFab");
-  if (fab && leviVisible) fab.classList.toggle("hidden", opening);
-  if (!opening) { return; }
-  if (opening) {
+  // The floating Levi button must disappear while Levi's chat surface is open.
+  // Otherwise the same Levi icon sits underneath/alongside the open sheet.
+  fab?.classList.toggle("hidden", isOpen);
+  if (isOpen) {
     playSound("open");
     let wasExpanded = false;
     try { wasExpanded = localStorage.getItem("levromart-ai-chat-expanded") === "1"; } catch (e) {}
     panel.classList.toggle("expanded", wasExpanded);
     const expandBtn = byId("aiChatExpandBtn");
     if (expandBtn) { expandBtn.title = wasExpanded ? "Shrink" : "Expand"; expandBtn.querySelector("i").className = wasExpanded ? "fa-solid fa-compress" : "fa-solid fa-expand"; }
-    if (typeof window.restoreAiChatPanelPosition === "function") {
-      requestAnimationFrame(() => window.restoreAiChatPanelPosition());
-    }
     if (aiChatMessages.length === 0) {
       if (!aiChatResumeAttempted) { aiChatResumeAttempted = true; resumeLastAiConversation(); }
       else showAiChatGreeting();
     }
-    byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation || localStorage.getItem("medris-location-shared") === "1");
+    byId("aiChatLocationRow")?.classList.toggle("hidden", !!buyerLocation);
     byId("aiChatInput").focus();
   }
 }
@@ -11168,7 +12413,6 @@ document.addEventListener("click", (e) => {
   if (!panel || panel.classList.contains("hidden")) return;
   if (e.target.closest("#aiChatPanel, #aiChatFab")) return;
   panel.classList.add("hidden");
-  if (leviVisible) byId("aiChatFab")?.classList.remove("hidden");
 });
 // Tapping the empty space around an open conversation (not the chat thread,
 // input, or header — those all have their own click handlers already)
@@ -11383,14 +12627,10 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
       // Auto-navigates rather than waiting for a tap — a beat to actually
       // read the reply first, then Levi points the way and takes you there.
       const navHint = document.createElement("div");
-      navHint.className = "ai-chat-nav-hint ai-chat-nav-link";
-      navHint.setAttribute("role","button");
-      navHint.tabIndex=0;
+      navHint.className = "ai-chat-nav-hint";
       navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> Taking you there…`;
-      navHint.onclick = () => goToAiChatNav(nav);
-      navHint.onkeydown = (evt) => { if (evt.key === "Enter" || evt.key === " ") { evt.preventDefault(); goToAiChatNav(nav); } };
       el.appendChild(navHint);
-      setTimeout(() => { if (navHint.isConnected) goToAiChatNav(nav); }, 1600);
+      setTimeout(() => goToAiChatNav(nav), 1100);
     }
     if (draft) {
       const card = document.createElement("div");
@@ -11413,12 +12653,8 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
       // rather than leaving a "View cart" button someone has to notice
       // and tap themselves.
       const navHint = document.createElement("div");
-      navHint.className = "ai-chat-nav-hint ai-chat-nav-link";
-      navHint.setAttribute("role","button");
-      navHint.tabIndex=0;
+      navHint.className = "ai-chat-nav-hint";
       navHint.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Updating your cart…`;
-      navHint.onclick = () => { toggleAiChat(); navigate("cart"); };
-      navHint.onkeydown = (evt) => { if (evt.key === "Enter" || evt.key === " ") { evt.preventDefault(); toggleAiChat(); navigate("cart"); } };
       el.appendChild(navHint);
       Promise.all([
         cartItems && cartItems.length ? applyAiAddCartItems(cartItems) : Promise.resolve({ added: 0, failed: 0 }),
@@ -11428,8 +12664,8 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
         if (addResult.added) parts.push(`${addResult.added} added`);
         if (addResult.failed) parts.push(`${addResult.failed} couldn't be added`);
         if (removeResult.removed) parts.push(`${removeResult.removed} removed`);
-        navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} — open cart`;
-        setTimeout(() => { if (navHint.isConnected) { toggleAiChat(); navigate("cart"); } }, 1400);
+        navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} — taking you there…`;
+        setTimeout(() => { toggleAiChat(); navigate("cart"); }, 900);
       });
     }
   }
@@ -12041,70 +13277,25 @@ fab.addEventListener("pointerdown", (e) => {
   const fab = byId("aiChatFab");
   if (!fab) return;
   setupDraggableFab(fab, "levromart_ai_fab_pos", () => toggleAiChat());
+  applyLeviFabSize();
 })();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
-// Levi's chat panel is draggable from its header. Buttons inside the header
-// remain normal buttons; only a drag that starts on the empty/header area
-// moves the card. Its position is remembered, and it is always clamped inside
-// the safe viewport.
-(function setupAiChatPanelDrag() {
+// Levi's chat panel stays centered; only the FAB itself is draggable.
+(function stabilizeAiChatPanel() {
   const panel = byId("aiChatPanel");
-  const header = panel?.querySelector(".drawer-header");
-  if (!panel || !header) return;
-  let state = null;
-  function clamp(x,y) {
-    const margin=10, r=panel.getBoundingClientRect();
-    const maxX=Math.max(margin,window.innerWidth-r.width-margin);
-    const maxY=Math.max(margin,window.innerHeight-r.height-margin);
-    return { x:Math.min(Math.max(x,margin),maxX), y:Math.min(Math.max(y,margin),maxY) };
-  }
-  function apply(x,y) {
-    panel.style.left=`${x}px`; panel.style.top=`${y}px`; panel.style.right="auto"; panel.style.bottom="auto"; panel.style.transform="none";
-  }
-  function loadSaved() {
-    try {
-      const saved=JSON.parse(localStorage.getItem("levromart_ai_panel_pos")||"null");
-      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-        const pos=clamp(saved.x,saved.y); apply(pos.x,pos.y); return true;
-      }
-    } catch(e) {}
-    return false;
-  }
-  window.restoreAiChatPanelPosition = () => {
-    if (panel.classList.contains("hidden")) return;
-    if (!loadSaved()) {
-      const r=panel.getBoundingClientRect();
-      apply(Math.max(10,(window.innerWidth-r.width)/2), Math.max(10,(window.innerHeight-r.height)/2));
-    }
-  };
-  header.style.cursor="grab"; header.style.touchAction="none";
-  header.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("button, input, textarea, a, select")) return;
-    const r=panel.getBoundingClientRect();
-    state={ id:e.pointerId, startX:e.clientX, startY:e.clientY, left:r.left, top:r.top, moved:false };
-    header.setPointerCapture?.(e.pointerId);
-  });
-  header.addEventListener("pointermove", (e) => {
-    if (!state || e.pointerId!==state.id) return;
-    const dx=e.clientX-state.startX, dy=e.clientY-state.startY;
-    if (!state.moved && Math.hypot(dx,dy)<6) return;
-    state.moved=true; e.preventDefault(); header.style.cursor="grabbing";
-    const pos=clamp(state.left+dx,state.top+dy); apply(pos.x,pos.y);
-  });
-  function end(e) {
-    if (!state || (e && e.pointerId!==state.id)) return;
-    if (state.moved) {
-      const r=panel.getBoundingClientRect();
-      try { localStorage.setItem("levromart_ai_panel_pos",JSON.stringify({x:r.left,y:r.top})); } catch(_) {}
-    }
-    state=null; header.style.cursor="grab";
-  }
-  header.addEventListener("pointerup",end);
-  header.addEventListener("pointercancel",end);
+  if (!panel) return;
+  panel.style.left = "50%";
+  panel.style.top = "50%";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+  panel.style.transform = "translate(-50%, -50%)";
   window.addEventListener("resize", () => {
-    if (panel.classList.contains("hidden")) return;
-    const r=panel.getBoundingClientRect(), pos=clamp(r.left,r.top); apply(pos.x,pos.y);
+    panel.style.left = "50%";
+    panel.style.top = "50%";
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    panel.style.transform = "translate(-50%, -50%)";
   });
 })();
 
@@ -12254,8 +13445,17 @@ window.addEventListener("popstate", (e) => {
 })();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+      await reg.update().catch(() => {});
+      // If permission was already granted, silently refresh the subscription
+      // after a service-worker update. Expired subscriptions are a common
+      // reason an installed iPhone suddenly stops receiving pushes.
+      if (session && profile && pushSupported() && Notification.permission === "granted") {
+        await syncPushSubscription(reg).catch(() => {});
+      }
+    } catch (e) {}
   });
 }
 </script>
