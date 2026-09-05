@@ -4338,10 +4338,10 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
     <div id="signupExtraFields" class="hidden">
       <label>Full name</label>
       <input type="text" id="loginName" placeholder="Full name" />
-      <label>I am a…</label>
+      <label>Account type</label>
       <select id="loginRole">
-        <option value="buyer">Buyer (Student / Clinic / Health worker)</option>
-        <option value="vendor">Vendor (Equipment owner)</option>
+        <option value="buyer">Buyer</option>
+        <option value="vendor">Vendor</option>
       </select>
       <label>City</label>
       <input type="text" id="loginCity" placeholder="City" value="Lagos" />
@@ -6076,8 +6076,6 @@ function bindProfileEdgeSwipe(){
   document.addEventListener('pointerup',end,{passive:true});
   document.addEventListener('pointercancel',()=>{gesture=null;},{passive:true});
 }
-["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
-setupDrawerSwipe(byId("profilePanel"), "left");
 bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
@@ -7060,21 +7058,41 @@ async function submitAuth() {
       const role = byId("loginRole").value;
       const city = byId("loginCity").value.trim();
       const phone = byId("loginPhone").value.trim();
+
       if (!name) throw new Error("Full name is required.");
+      if (!phone) throw new Error("Phone is required.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
       if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
 
-      const { data, error } = await sb.auth.signUp({
-        email, password,
-        options: { data: { name, phone, city, role } },
+      // Account creation is handled by the single existing Vercel function.
+      // The server creates the Auth user with email_confirm:true, so there is
+      // NO confirmation-email step: create the account and continue immediately.
+      const registerRes = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "register",
+          email,
+          password,
+          name,
+          phone,
+          city,
+          role
+        })
       });
-      if (error) throw error;
 
-      if (!data.session) {
-        hideLogin();
-        showToast("Check your email for a confirmation link, then log in.", "success");
-        return;
+      const registerBody = await registerRes.json().catch(() => ({}));
+      if (!registerRes.ok) {
+        throw new Error(registerBody.error || "Could not create your account.");
       }
+
+      // The account is already confirmed by the server, so sign in immediately.
+      const { error: loginError } = await sb.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (loginError) throw loginError;
+
       await enforceSingleSession();
       await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
