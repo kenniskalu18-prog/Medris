@@ -1,255 +1,674 @@
-// POST { accessToken } -> { deleted: true }
-// Deletes the caller's account. We don't hard-delete the `users` row —
-// auth.users has ON DELETE CASCADE onto it, and deleting straight through
-// would cascade into orders/reviews too, wiping out history that belongs
-// to the *other* party in any past transaction. Instead: anonymize the
-// profile and permanently ban the login, which is the standard safe
-// pattern for this exact FK-cascade situation.
-//
-// Anything that's exclusively this user's own data, with no other party
-// depending on it, is actually deleted outright rather than anonymized:
-// wishlist, Levi chat history, their own notification inbox, and push
-// subscriptions. Orders/payments/reviews/messages/equipment requests stay
-// (anonymized where the schema allows it) because deleting those rows
-// would also destroy the other side's transaction or conversation record
-// — e.g. a request's offers cascade from the request itself, so wiping a
-// buyer's old request would silently erase a vendor's response to it.
-
 const { readBody, env } = require("./_util");
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
+function normalizePhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+
+  if (digits.startsWith("00")) {
+    digits = digits.slice(2);
   }
 
-  try {
-    const { accessToken } = JSON.parse(await readBody(req));
+  if (digits.startsWith("0") && digits.length === 11) {
+    digits = "234" + digits.slice(1);
+  }
 
-    if (!accessToken) {
-      res.status(400).json({ error: "accessToken is required" });
-      return;
-    }
+  return digits;
+}
 
-    const SUPABASE_URL = env("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
-    const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+function aliasFromPhone(phone) {
+  const digits = normalizePhone(phone);
+  return digits ? `p${digits}@accounts.levromart.app` : "";
+}
 
-    const svcAuth = {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-    };
+function serviceHeaders(serviceKey) {
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json",
+  };
+}
 
-    const svcHeaders = {
-      ...svcAuth,
-      "Content-Type": "application/json",
-    };
 
-    // Verify the user's current Supabase session.
-    const meRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${accessToken}`,
-      },
+/* ============================================================
+   ACCOUNT EXISTS
+   ============================================================ */
+
+async function accountExists(body, res) {
+  const email = String(body?.email || "").trim().toLowerCase();
+
+  if (!email || !email.includes("@")) {
+    return res.status(400).json({
+      error: "A valid email is required.",
     });
+  }
 
-    const me = await meRes.json();
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!meRes.ok || !me?.id) {
-      res.status(401).json({ error: "Invalid session" });
-      return;
+  const headers = serviceHeaders(SERVICE_KEY);
+
+  /*
+   * Check the public profile first.
+   * We only return a boolean and never expose account information.
+   */
+  const profileRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(
+      email
+    )}&select=id&limit=1`,
+    {
+      headers,
     }
+  );
 
+  if (profileRes.ok) {
+    const rows = await profileRes.json().catch(() => []);
+
+    if (Array.isArray(rows) && rows.length > 0) {
+      return res.status(200).json({
+        exists: true,
+      });
+    }
+  }
+
+  /*
+   * Then check Supabase Auth.
+   */
+  const authRes = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+    {
+      headers,
+    }
+  );
+
+  if (authRes.ok) {
+    const data = await authRes.json().catch(() => ({}));
+
+    const users = Array.isArray(data)
+      ? data
+      : data?.users || [];
+
+    const exists = users.some(
+      (user) =>
+        String(user?.email || "").toLowerCase() === email
+    );
+
+    return res.status(200).json({
+      exists,
+    });
+  }
+
+  return res.status(200).json({
+    exists: false,
+  });
+}
+
+
+/* ============================================================
+   REGISTER ACCOUNT
+   ============================================================ */
+
+async function registerAccount(body, res) {
+  const {
+    email,
+    password,
+    name,
+    phone,
+    city,
+    role,
+  } = body || {};
+
+  const normalizedPhone = normalizePhone(phone);
+
+  if (
+    !name ||
+    !password ||
+    password.length < 8 ||
+    normalizedPhone.length < 10
+  ) {
+    return res.status(400).json({
+      error:
+        "Name, a valid phone number, and a password of at least 8 characters are required.",
+    });
+  }
+
+  if (role !== "buyer" && role !== "vendor") {
+    return res.status(400).json({
+      error: "Invalid account role.",
+    });
+  }
+
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+
+  const headers = serviceHeaders(SERVICE_KEY);
+
+  /*
+   * Email is optional.
+   *
+   * If the user does not provide an email, create an internal
+   * login alias based on the phone number.
+   */
+  const authEmail =
+    String(email || "").trim().toLowerCase() ||
+    aliasFromPhone(phone);
+
+  if (!authEmail) {
+    return res.status(400).json({
+      error: "A valid phone number is required.",
+    });
+  }
+
+  /*
+   * Prevent duplicate accounts.
+   */
+  const existingRes = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(
+      authEmail
+    )}`,
+    {
+      headers,
+    }
+  );
+
+  if (existingRes.ok) {
+    const data = await existingRes.json().catch(() => ({}));
+
+    const users = Array.isArray(data)
+      ? data
+      : data?.users || [];
+
+    const alreadyExists = users.some(
+      (user) =>
+        String(user?.email || "").toLowerCase() ===
+        authEmail.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      return res.status(409).json({
+        error:
+          "An account with that email or phone already exists. Log in instead.",
+      });
+    }
+  }
+
+  /*
+   * Create the Auth account from the server.
+   *
+   * email_confirm:true means Supabase will NOT require the
+   * normal confirmation-email flow.
+   */
+  const createRes = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        email: authEmail,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          name,
+          phone: String(phone).trim(),
+          city: String(city || "").trim(),
+          role,
+        },
+      }),
+    }
+  );
+
+  const created = await createRes.json().catch(() => ({}));
+
+  if (!createRes.ok || !created?.id) {
+    return res.status(createRes.status || 400).json({
+      error:
+        created?.msg ||
+        created?.message ||
+        "Could not create the account.",
+    });
+  }
+
+  /*
+   * Create the public profile.
+   *
+   * The ignore-duplicates preference makes this safe if the
+   * project's existing handle_new_user trigger already created
+   * the row.
+   */
+  const profileRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/users?select=id`,
+    {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "resolution=ignore-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        id: created.id,
+        name,
+        email: authEmail,
+        phone: String(phone).trim(),
+        city: String(city || "").trim(),
+        role,
+        role_selected: true,
+        has_password: true,
+      }),
+    }
+  );
+
+  if (!profileRes.ok && profileRes.status !== 409) {
     /*
-     * Vendor deletion rule:
-     *
-     * Vendors may NOT delete their account while:
-     * - they have an active/pending order
-     * - they have a confirmed order
-     * - an order is being handed over
-     * - an order is being returned
-     * - an order is disputed
-     * - they have unsettled commission
-     *
-     * Buyers are NOT blocked by pending orders.
+     * Roll back the Auth account if the profile could not
+     * be created. This prevents half-created accounts.
      */
-    const ACTIVE_STATUSES =
-      "pending,confirmed,handed_over,returned,disputed";
-
-    // Find whether this user is a vendor.
-    const vendorRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/vendors?user_id=eq.${me.id}&select=id`,
+    await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users/${created.id}`,
       {
-        headers: svcAuth,
+        method: "DELETE",
+        headers,
       }
     );
 
-    const vendorRows = await vendorRes.json();
-    const [vendorRow] = vendorRows || [];
+    const detail = await profileRes.text().catch(() => "");
 
-    if (vendorRow) {
-      // Check unsettled vendor commission.
-      const owedRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/commission_charges?vendor_id=eq.${vendorRow.id}&status=eq.owed&select=amount`,
-        {
-          headers: svcAuth,
-        }
-      );
+    return res.status(500).json({
+      error:
+        detail ||
+        "Could not create the account profile.",
+    });
+  }
 
-      const owed = await owedRes.json();
+  return res.status(201).json({
+    created: true,
+  });
+}
 
-      const totalOwed = (owed || []).reduce(
-        (sum, row) => sum + Number(row.amount || 0),
+
+/* ============================================================
+   DELETE ACCOUNT
+   ============================================================ */
+
+async function deleteAccount(body, res) {
+  const accessToken = body?.accessToken;
+
+  if (!accessToken) {
+    return res.status(400).json({
+      error: "accessToken is required",
+    });
+  }
+
+  const SUPABASE_URL = env("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
+  const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
+
+  const anonHeaders = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  const svcHeaders = {
+    apikey: SERVICE_KEY,
+    Authorization: `Bearer ${SERVICE_KEY}`,
+    "Content-Type": "application/json",
+  };
+
+  /*
+   * Verify the current session.
+   */
+  const meRes = await fetch(
+    `${SUPABASE_URL}/auth/v1/user`,
+    {
+      headers: anonHeaders,
+    }
+  );
+
+  const me = await meRes.json().catch(() => ({}));
+
+  if (!meRes.ok || !me?.id) {
+    return res.status(401).json({
+      error: "Invalid session",
+    });
+  }
+
+  const uid = me.id;
+
+  /*
+   * Find vendor records belonging to this account.
+   */
+  const vendorRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/vendors?user_id=eq.${uid}&select=id`,
+    {
+      headers: svcHeaders,
+    }
+  );
+
+  const vendorRows = vendorRes.ok
+    ? await vendorRes.json()
+    : [];
+
+  const vendorIds = (vendorRows || [])
+    .map((vendor) => vendor.id)
+    .filter(Boolean);
+
+  /*
+   * VENDOR DELETION RULE
+   *
+   * Vendors cannot delete while any order is still active.
+   *
+   * Buyers are deliberately NOT checked here, meaning buyers
+   * may delete their accounts even if they have pending orders.
+   */
+  if (vendorIds.length) {
+    const activeRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/orders?vendor_id=in.(${vendorIds.join(
+        ","
+      )})&status=not.in.(completed,cancelled)&select=id,status`,
+      {
+        headers: svcHeaders,
+      }
+    );
+
+    const activeRows = activeRes.ok
+      ? await activeRes.json()
+      : [];
+
+    if ((activeRows || []).length) {
+      return res.status(400).json({
+        error:
+          `You cannot delete a vendor account while ${activeRows.length} ` +
+          `order(s) are still active. Complete or cancel every vendor order first.`,
+      });
+    }
+
+    /*
+     * Vendors must also clear unsettled commission.
+     */
+    const commissionRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/commission_charges?vendor_id=in.(${vendorIds.join(
+        ","
+      )})&status=eq.owed&select=amount`,
+      {
+        headers: svcHeaders,
+      }
+    );
+
+    if (commissionRes.ok) {
+      const charges = await commissionRes.json();
+
+      const owed = (charges || []).reduce(
+        (sum, row) =>
+          sum + Number(row?.amount || 0),
         0
       );
 
-      if (totalOwed > 0) {
-        res.status(400).json({
+      if (owed > 0) {
+        return res.status(400).json({
           error:
-            `You have ₦${totalOwed.toLocaleString()} in unsettled commission. ` +
-            `Pay it off first, then delete your account.`,
+            `You have ₦${owed.toLocaleString()} in unsettled commission. ` +
+            `Clear it before deleting your vendor account.`,
         });
-        return;
-      }
-
-      // Check for active vendor orders.
-      const activeVendorOrdersRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?vendor_id=eq.${vendorRow.id}&status=in.(${ACTIVE_STATUSES})&select=id`,
-        {
-          headers: svcAuth,
-        }
-      );
-
-      const activeVendorOrders = await activeVendorOrdersRes.json();
-
-      if ((activeVendorOrders || []).length > 0) {
-        res.status(400).json({
-          error:
-            `You have ${activeVendorOrders.length} order(s) still in progress as a vendor. ` +
-            `Complete or cancel them first.`,
-        });
-        return;
       }
     }
+  }
 
-    /*
-     * Anonymize the public user profile rather than deleting the row.
-     *
-     * This protects historical orders, reviews, messages, etc. belonging
-     * to the other party in previous transactions.
-     */
-    const anonEmail = `deleted-${me.id}@medris.invalid`;
+  /*
+   * Capture conversation IDs before database deletion so their
+   * attachment folders can also be removed.
+   */
+  let conversationIds = [];
 
-    await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${me.id}`, {
-      method: "PATCH",
-      headers: {
-        ...svcHeaders,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        name: "Deleted user",
-        email: anonEmail,
-        avatar_url: null,
-        phone: null,
-      }),
-    });
+  const conversationFilter = vendorIds.length
+    ? `or=(buyer_id.eq.${uid},vendor_id.in.(${vendorIds.join(
+        ","
+      )}))`
+    : `buyer_id=eq.${uid}`;
 
-    /*
-     * If the account belongs to a vendor, deactivate and clear their
-     * storefront information.
-     */
-    if (vendorRow) {
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/vendors?id=eq.${vendorRow.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            ...svcHeaders,
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            is_active: false,
-            bio: null,
-            phone: null,
-            whatsapp_number: null,
-            logo_url: null,
-            cac_number: null,
-            lat: null,
-            lng: null,
-            address: null,
-            city: null,
-            opening_hours: null,
-          }),
-        }
-      );
+  const convRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/conversations?${conversationFilter}&select=id`,
+    {
+      headers: svcHeaders,
     }
+  );
 
-    /*
-     * Delete data that belongs exclusively to the deleted user.
-     *
-     * Historical orders/conversations/reviews are intentionally preserved
-     * because another user may depend on those records.
-     */
-    await Promise.all([
-      fetch(
-        `${SUPABASE_URL}/rest/v1/favorites?buyer_id=eq.${me.id}`,
-        {
-          method: "DELETE",
-          headers: svcAuth,
-        }
-      ),
+  if (convRes.ok) {
+    const rows = await convRes.json();
 
-      fetch(
-        `${SUPABASE_URL}/rest/v1/ai_conversations?user_id=eq.${me.id}`,
-        {
-          method: "DELETE",
-          headers: svcAuth,
-        }
-      ),
+    conversationIds = (rows || [])
+      .map((row) => row.id)
+      .filter(Boolean);
+  }
 
-      fetch(
-        `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${me.id}`,
-        {
-          method: "DELETE",
-          headers: svcAuth,
-        }
-      ),
+  /*
+   * Storage helper.
+   */
+  async function listStorage(bucket, prefix) {
+    if (!prefix) return [];
 
-      fetch(
-        `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${me.id}`,
-        {
-          method: "DELETE",
-          headers: svcAuth,
-        }
-      ),
-    ]);
-
-    /*
-     * Permanently prevent the deleted account from being used again.
-     *
-     * We move the authentication email to the anonymized address so the
-     * user's original email is released for future registration.
-     */
-    await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users/${me.id}`,
+    const response = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(
+        bucket
+      )}`,
       {
-        method: "PUT",
+        method: "POST",
         headers: svcHeaders,
         body: JSON.stringify({
-          ban_duration: "876000h",
-          email: anonEmail,
+          prefix,
+          limit: 1000,
+          offset: 0,
+          sortBy: {
+            column: "name",
+            order: "asc",
+          },
         }),
       }
     );
 
-    res.status(200).json({
-      deleted: true,
+    if (!response.ok) return [];
+
+    const rows = await response.json().catch(() => []);
+
+    return (rows || []).filter(
+      (row) =>
+        row?.name &&
+        !String(row.name).endsWith("/")
+    );
+  }
+
+  async function removeStorage(bucket, names) {
+    if (!names.length) return;
+
+    const response = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/remove`,
+      {
+        method: "POST",
+        headers: svcHeaders,
+        body: JSON.stringify(
+          names.map((name) => ({
+            bucket_id: bucket,
+            name,
+          }))
+        ),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Could not delete files from ${bucket}.`
+      );
+    }
+  }
+
+  /*
+   * The database function is the source of truth for the complete
+   * database wipe.
+   *
+   * This must exist in Supabase:
+   *
+   * delete_my_account()
+   */
+  const rpcRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/rpc/delete_my_account`,
+    {
+      method: "POST",
+      headers: svcHeaders,
+      body: "{}",
+    }
+  );
+
+  const rpcBody = await rpcRes.json().catch(() => ({}));
+
+  if (!rpcRes.ok) {
+    return res.status(500).json({
+      error:
+        rpcBody?.message ||
+        rpcBody?.hint ||
+        rpcBody?.details ||
+        "The account deletion function is not installed or could not complete. Run delete_my_account.sql in Supabase first.",
+    });
+  }
+
+  /*
+   * Remove Storage objects belonging to the user.
+   */
+  const storageTargets = [
+    ["avatars", [uid]],
+    ["vendor-docs", [uid]],
+    ["vendor-logos", vendorIds],
+    ["product-photos", vendorIds],
+    [
+      "chat-attachments",
+      conversationIds.map(
+        (id) => `conv/${id}`
+      ),
+    ],
+  ];
+
+  for (const [bucket, prefixes] of storageTargets) {
+    for (const prefix of prefixes) {
+      const objects = await listStorage(
+        bucket,
+        prefix
+      );
+
+      await removeStorage(
+        bucket,
+        objects.map((object) => object.name)
+      );
+    }
+  }
+
+  /*
+   * Finally delete the Supabase Auth identity.
+   */
+  const authDelete = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users/${uid}`,
+    {
+      method: "DELETE",
+      headers: svcHeaders,
+    }
+  );
+
+  if (!authDelete.ok) {
+    const detail = await authDelete
+      .text()
+      .catch(() => "");
+
+    return res.status(500).json({
+      error:
+        detail ||
+        "Marketplace data was deleted, but the authentication identity could not be removed. Contact an administrator.",
+    });
+  }
+
+  return res.status(200).json({
+    deleted: true,
+  });
+}
+
+
+/* ============================================================
+   SINGLE VERCEL FUNCTION
+   ============================================================ */
+
+module.exports = async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed",
+    });
+  }
+
+  try {
+    const body = JSON.parse(
+      await readBody(req)
+    );
+
+    /*
+     * We intentionally support the old frontend calls without
+     * requiring index.html to be rewritten.
+     *
+     * /api/delete-account
+     *   -> accessToken
+     *
+     * /api/register
+     *   -> password + name + role
+     *
+     * /api/account-exists
+     *   -> email only
+     *
+     * An explicit "action" is also supported for future use.
+     */
+    const action = String(
+      body?.action || ""
+    ).trim().toLowerCase();
+
+    if (
+      action === "register" ||
+      (!action &&
+        body?.password &&
+        body?.name &&
+        body?.role)
+    ) {
+      return await registerAccount(
+        body,
+        res
+      );
+    }
+
+    if (
+      action === "account-exists" ||
+      (!action &&
+        body?.email &&
+        !body?.password &&
+        !body?.accessToken)
+    ) {
+      return await accountExists(
+        body,
+        res
+      );
+    }
+
+    if (
+      action === "delete" ||
+      body?.accessToken
+    ) {
+      return await deleteAccount(
+        body,
+        res
+      );
+    }
+
+    return res.status(400).json({
+      error:
+        "Invalid account operation.",
     });
   } catch (err) {
-    console.error("Delete account error:", err);
+    console.error(
+      "Account API error:",
+      err
+    );
 
-    res.status(500).json({
-      error: err.message || "Server error",
+    return res.status(500).json({
+      error:
+        err?.message ||
+        "Server error",
     });
   }
 };
