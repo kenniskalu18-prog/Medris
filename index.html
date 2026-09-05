@@ -583,12 +583,9 @@
   .notif-action-btn { width: 1.8rem; height: 1.8rem; border-radius: 50%; border: none; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; transition: background-color 0.15s, color 0.15s; }
   .notif-action-btn:hover { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); }
   .notif-action-btn.danger:hover { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
-  .notif-item-wrap { position: relative; overflow: hidden; border-radius: 0.7rem; margin-bottom: 0.15rem; touch-action: pan-y; }
-  .notif-item-wrap .notif-item { position: relative; z-index: 1; background: var(--card); touch-action: pan-y; }
+  .notif-item-wrap { border-radius: 0.7rem; margin-bottom: 0.15rem; }
+  .notif-item-wrap .notif-item { background: var(--card); }
   .notif-item-wrap .notif-item.unread { background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
-  .notif-swipe-bg { position: absolute; top: 0; bottom: 0; width: 100%; display: flex; align-items: center; font-size: 1.1rem; opacity: 0; z-index: 0; }
-  .notif-swipe-bg.left { left: 0; justify-content: flex-start; padding-left: 1rem; background: color-mix(in srgb, var(--primary) 22%, var(--card)); color: var(--primary); }
-  .notif-swipe-bg.right { right: 0; justify-content: flex-end; padding-right: 1rem; background: color-mix(in srgb, var(--danger) 22%, var(--card)); color: var(--danger); }
   .notif-select-check { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: none; align-items: center; justify-content: center; font-size: 0.65rem; color: transparent; margin-top: 0.2rem; }
   .notif-item.selected { background: color-mix(in srgb, var(--primary) 14%, var(--card)) !important; }
   .notif-item.selected .notif-select-check { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -787,8 +784,6 @@
   .contact-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.8rem 0; }
   .btn-whatsapp { background: #25d366; color: white; }
   .btn-whatsapp:hover { filter: brightness(1.08); }
-  .conv-swipe-wrap { position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
-  .conv-swipe-wrap:last-child { border-bottom: none; }
   .conv-list-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem; cursor: pointer; background: var(--card); position: relative; z-index: 1; touch-action: pan-y; user-select: none; }
   .conv-list-item:hover { background: var(--card); }
   .conv-list-item .avatar-circle { flex-shrink: 0; }
@@ -796,7 +791,6 @@
   .conv-list-item .conv-preview { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv-unread-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
   .conv-unread-badge { min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem; border-radius: 999px; background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .conv-swipe-action { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.7rem; font-weight: 600; color: #fff; background: var(--primary); cursor: pointer; z-index: 0; }
   .conv-date-sep { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin: 0.7rem auto; padding: 0.25rem 0.75rem; background: var(--card); border-radius: 999px; width: fit-content; }
   .chat-thread { display: flex; flex-direction: column; height: 65vh; max-height: 600px; border: 1px solid var(--border); border-radius: 0.9rem; overflow: hidden; background: var(--card); }
   /* Chunky desktop scrollbars (Windows/Linux Chrome, unlike macOS's overlay
@@ -2696,8 +2690,6 @@ html { scroll-padding-top: 86px !important; }
 }
 #notifPanel .notif-item-wrap .notif-item strong { line-height:1.3 !important; }
 #notifPanel .notif-item-wrap .notif-item .muted { line-height:1.38 !important; }
-#notifPanel .notif-item-wrap .notif-swipe-bg { height:100% !important; }
-
 /* No touch-hover lift anywhere: mobile Safari must never resize/jump cards. */
 .product-card-wrap:hover .card,
 .product-card-wrap:active .card,
@@ -2780,8 +2772,6 @@ html { scroll-padding-top: 86px !important; }
 #notifPanel .notif-item-wrap .notif-item strong { line-height:1.28 !important; margin:0 !important; }
 #notifPanel .notif-item-wrap .notif-item .muted { line-height:1.35 !important; }
 #notifPanel .notif-item-wrap .notif-item.unread { background:color-mix(in srgb,var(--primary) 8%,var(--card)) !important; }
-#notifPanel .notif-swipe-bg { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; }
-
 #settingsPanel .accordion-body { display:none !important; height:auto !important; max-height:none !important; overflow:visible !important; }
 #settingsPanel .accordion-section.open .accordion-body { display:block !important; }
 
@@ -3659,27 +3649,6 @@ body { min-width:0 !important; }
 }
 
 /* Chat list: WhatsApp-like two-sided gesture affordance + selection. */
-.conv-swipe-wrap {
-  position:relative !important;
-  overflow:hidden !important;
-  min-width:0 !important;
-}
-.conv-swipe-action {
-  width:104px !important;
-  opacity:0 !important;
-  transition:opacity .08s linear !important;
-  pointer-events:none !important;
-}
-.conv-swipe-action-left {
-  left:0 !important;
-  right:auto !important;
-  background:var(--primary) !important;
-}
-.conv-swipe-action-right {
-  right:0 !important;
-  left:auto !important;
-  background:var(--success) !important;
-}
 .conv-list-item {
   z-index:1 !important;
   min-width:0 !important;
@@ -3754,61 +3723,11 @@ body { min-width:0 !important; }
 
 /* Notifications: make swipe intent visible before release, on both sides. */
 #notifPanel .notif-item-wrap { position:relative !important; overflow:hidden !important; }
-#notifPanel .notif-swipe-bg {
-  width:100px !important;
-  top:0 !important;
-  bottom:0 !important;
-  display:flex !important;
-  flex-direction:column !important;
-  justify-content:center !important;
-  align-items:center !important;
-  gap:.18rem !important;
-  opacity:0 !important;
-  z-index:0 !important;
-  font-size:.68rem !important;
-  font-weight:800 !important;
-}
-#notifPanel .notif-swipe-bg.left {
-  left:0 !important;
-  right:auto !important;
-  padding:0 !important;
-  background:color-mix(in srgb,var(--primary) 16%,var(--card)) !important;
-  color:var(--primary) !important;
-}
-#notifPanel .notif-swipe-bg.right {
-  right:0 !important;
-  left:auto !important;
-  padding:0 !important;
-  background:color-mix(in srgb,var(--danger) 16%,var(--card)) !important;
-  color:var(--danger) !important;
-}
-#notifPanel .notif-swipe-bg i { width:auto !important; height:auto !important; margin:0 !important; background:none !important; font-size:1.05rem !important; color:inherit !important; }
-#notifPanel .notif-swipe-bg span { display:block !important; white-space:nowrap !important; font-size:.64rem !important; font-weight:800 !important; }
-
-
-
 /* ================================================================
    FINAL UX POLISH — swipe intent, spacing, draggable Levi, safe gestures
    ================================================================ */
-.conv-swipe-wrap,
+.conv-row-wrap,
 .notif-item-wrap { position:relative !important; overflow:hidden !important; }
-.conv-swipe-action,
-.notif-swipe-bg {
-  transition: opacity .08s linear !important;
-}
-.conv-swipe-action,
-#notifPanel .notif-swipe-bg {
-  justify-content:center !important;
-  text-align:center !important;
-}
-.conv-swipe-action span,
-#notifPanel .notif-swipe-bg span {
-  min-height:1em !important;
-}
-.conv-swipe-action.active-intent,
-#notifPanel .notif-swipe-bg.active-intent {
-  filter:brightness(1.04) saturate(1.05) !important;
-}
 /* Keep every primary/action button visibly separated. The main My Shop
    strip (Products/Packages/Orders/Requests/Earnings) must stay a single
    horizontally-scrolling row on narrow screens -- it must NOT wrap. */
@@ -3831,7 +3750,7 @@ body { min-width:0 !important; }
 .ai-chat-panel.draggable-panel.dragging { transition:none !important; }
 /* Never let page-level profile gestures steal horizontal UI gestures. */
 .hscroll, .cat-row, .range-tabs, .product-gallery-thumbs, .table-wrap,
-.conv-swipe-wrap, .notif-item-wrap, [data-horizontal-scroll] {
+.conv-row-wrap, .notif-item-wrap, [data-horizontal-scroll] {
   overscroll-behavior-x:contain !important;
 }
 @media (max-width:720px) {
@@ -3847,146 +3766,6 @@ body { min-width:0 !important; }
 .card > button.btn + button.btn { margin-left:.15rem !important; }
 .settings-control-row > * + * { margin-left:.7rem; }
 
-
-/* ================================================================
-   DEFINITIVE VISIBLE SWIPE ACTIONS
-   ================================================================ */
-.conv-swipe-wrap,.notif-item-wrap{position:relative!important;overflow:hidden!important;isolation:isolate!important;touch-action:pan-y!important;}
-.conv-swipe-action,.notif-swipe-bg{width:150px!important;min-width:150px!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;z-index:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:.35rem!important;padding:.45rem .55rem!important;box-sizing:border-box!important;transition:opacity .04s linear,filter .12s ease!important;}
-.conv-swipe-action i,.notif-swipe-bg i{font-size:1.25rem!important;line-height:1!important;}
-.conv-swipe-action span:not(.swipe-intent-bar),.notif-swipe-bg span:not(.swipe-intent-bar){font-size:.72rem!important;font-weight:850!important;white-space:nowrap!important;}
-.conv-list-item,.notif-item{z-index:2!important;will-change:transform!important;touch-action:pan-y!important;-webkit-user-select:none!important;user-select:none!important;}
-.leaflet-container,.map,.map-container,#vendorMap,[data-map]{touch-action:none!important;overscroll-behavior:contain!important;}
-/* ================================================================
-   ULTIMATE MOBILE GESTURE INTENT + SPACING PASS
-   The action must be visible WHILE the row is moving, not after release.
-   ================================================================ */
-.conv-swipe-wrap,
-.notif-item-wrap{
-  position:relative !important;
-  overflow:hidden !important;
-  isolation:isolate !important;
-  min-width:0 !important;
-}
-.conv-swipe-action,
-.notif-swipe-bg{
-  min-width:118px !important;
-  width:118px !important;
-  opacity:0 !important;
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:.28rem !important;
-  padding:.35rem .55rem !important;
-  box-sizing:border-box !important;
-  font-weight:800 !important;
-  line-height:1.05 !important;
-  transition:opacity .06s linear, width .04s linear, filter .12s ease !important;
-}
-.conv-swipe-action{
-  position:absolute !important;
-  top:0 !important;
-  bottom:0 !important;
-}
-.conv-swipe-action-left{
-  left:0 !important;
-  right:auto !important;
-  background:#0f766e !important;
-  color:#fff !important;
-}
-.conv-swipe-action-right{
-  right:0 !important;
-  left:auto !important;
-  background:#16a34a !important;
-  color:#fff !important;
-}
-.notif-swipe-bg{
-  position:absolute !important;
-  top:0 !important;
-  bottom:0 !important;
-}
-#notifPanel .notif-swipe-bg.left{
-  left:0 !important;
-  right:auto !important;
-  background:#ef4444 !important;
-  color:#fff !important;
-}
-#notifPanel .notif-swipe-bg.right{
-  right:0 !important;
-  left:auto !important;
-  background:#16a34a !important;
-  color:#fff !important;
-}
-/* The swipe reveal is now led by a real loading bar, not the icon: a big
-   determinate progress track that fills as the finger drags, so "this is
-   about to be archived/trashed/marked unread" reads as a loading bar
-   filling up rather than an icon popping in. */
-.conv-swipe-action i,
-.notif-swipe-bg i{
-  font-size:.92rem !important;
-  line-height:1 !important;
-  width:auto !important;
-  height:auto !important;
-  margin:0 !important;
-  color:inherit !important;
-  background:none !important;
-  opacity:.85 !important;
-}
-.swipe-intent-bar{
-  width:100% !important;
-  max-width:84px !important;
-  height:10px !important;
-  margin:.3rem 0 0 !important;
-  border-radius:999px !important;
-  background:rgba(255,255,255,.25) !important;
-  overflow:hidden !important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35) !important;
-}
-.swipe-intent-bar > span{
-  display:block !important;
-  width:0 !important;
-  height:100% !important;
-  border-radius:inherit !important;
-  background:#fff !important;
-  box-shadow:0 0 10px rgba(255,255,255,.75) !important;
-  transition:width .03s linear !important;
-}
-.conv-swipe-action span,
-.notif-swipe-bg > span:not(.swipe-intent-bar){
-  display:block !important;
-  white-space:nowrap !important;
-  font-size:.66rem !important;
-  font-weight:850 !important;
-  color:inherit !important;
-}
-.conv-swipe-action.active-intent,
-.notif-swipe-bg.active-intent{
-  filter:brightness(1.06) saturate(1.08) !important;
-}
-.conv-swipe-action.active-intent .swipe-intent-bar > span,
-.notif-swipe-bg.active-intent .swipe-intent-bar > span{
-  box-shadow:0 0 12px rgba(255,255,255,.95) !important;
-}
-.conv-list-item,
-.notif-item{
-  position:relative !important;
-  z-index:2 !important;
-  will-change:transform !important;
-  touch-action:pan-y !important;
-}
-/* Never let a horizontal interaction bubble into the profile drawer. */
-.conv-swipe-wrap,
-.conv-list-item,
-.notif-item-wrap,
-.notif-item,
-.hscroll,
-.cat-row,
-.product-gallery-thumbs,
-.table-wrap,
-[data-horizontal-scroll]{
-  overscroll-behavior-x:contain !important;
-}
 
 /* ================================================================
    GLOBAL BUTTON / CARD SPACING — no touching controls
@@ -4097,175 +3876,22 @@ body { min-width:0 !important; }
 .card h3 + #payOnlineBtn{margin-top:1rem!important;}
 .card .btn[data-draft]{margin-top:1rem!important;}
 @media(max-width:600px){#payOnlineBtn{width:100%!important;min-height:46px!important;margin-top:1.05rem!important}.card h3{margin-bottom:.15rem!important}}
-</style>
 
-
-<style id="levromart-swipe-variant-final-fix">
-/* ================================================================
-   LEVROMART FINAL SWIPE INTERACTION FIX
-   The earlier swipe CSS used !important on opacity/visibility/width,
-   which overrode the JavaScript's inline values. These state classes
-   are now the single visual source of truth while the finger moves.
-   ================================================================ */
-.conv-swipe-wrap,
-#notifPanel .notif-item-wrap {
-  position:relative !important;
-  overflow:hidden !important;
-  isolation:isolate !important;
-}
-.conv-swipe-action,
-#notifPanel .notif-swipe-bg {
-  opacity:0 !important;
-  visibility:hidden !important;
-  pointer-events:none !important;
-  will-change:opacity,width,transform !important;
-  transition:opacity .08s linear, width .04s linear, filter .14s ease !important;
-}
-.conv-swipe-action.swipe-visible,
-#notifPanel .notif-swipe-bg.swipe-visible {
-  opacity:1 !important;
-  visibility:visible !important;
-}
-.conv-list-item.swiping,
-#notifPanel .notif-item.swiping {
-  transition:none !important;
-  will-change:transform !important;
-  box-shadow:0 3px 14px rgba(15,23,42,.12) !important;
-  z-index:3 !important;
-}
-.conv-swipe-action.swipe-visible.active-intent,
-#notifPanel .notif-swipe-bg.swipe-visible.active-intent {
-  filter:brightness(1.08) saturate(1.08) !important;
-}
-.conv-swipe-action .swipe-intent-bar,
-#notifPanel .notif-swipe-bg .swipe-intent-bar {
-  width:min(84px,100%) !important;
-  height:9px !important;
-  margin-top:.35rem !important;
-  border-radius:999px !important;
-  background:rgba(255,255,255,.25) !important;
-  overflow:hidden !important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.38) !important;
-}
-.conv-swipe-action .swipe-intent-bar > span,
-#notifPanel .notif-swipe-bg .swipe-intent-bar > span {
-  display:block !important;
-  width:0 !important;
-  height:100% !important;
-  border-radius:inherit !important;
-  background:#fff !important;
-  box-shadow:0 0 10px rgba(255,255,255,.8) !important;
-  transition:width .025s linear !important;
-}
-.conv-swipe-action .swipe-intent-label,
-#notifPanel .notif-swipe-bg .swipe-intent-label {
-  display:block !important;
-  white-space:nowrap !important;
-  font-size:.68rem !important;
-  line-height:1.1 !important;
-  font-weight:850 !important;
-  color:inherit !important;
-}
-.conv-swipe-action.swipe-visible i,
-#notifPanel .notif-swipe-bg.swipe-visible i {
-  animation:levroSwipeIconIn .18s ease-out both;
-}
-.conv-swipe-action.active-intent i,
-#notifPanel .notif-swipe-bg.active-intent i {
-  animation:levroSwipeIconPulse .55s ease-in-out infinite alternate !important;
-}
-@keyframes levroSwipeIconIn {
-  from { opacity:.35; transform:scale(.72); }
-  to { opacity:1; transform:scale(1); }
-}
-@keyframes levroSwipeIconPulse {
-  from { transform:scale(1); }
-  to { transform:scale(1.12); }
-}
-@media (prefers-reduced-motion:reduce) {
-  .conv-swipe-action.swipe-visible i,
-  #notifPanel .notif-swipe-bg.swipe-visible i,
-  .conv-swipe-action.active-intent i,
-  #notifPanel .notif-swipe-bg.active-intent i { animation:none !important; }
-}
-</style>
-
-
-<style id="levromart-swipe-engine-v2">
-/* ================================================================
-   LEVROMART SWIPE ENGINE V2 — rebuilt for immediate touch response
-   ================================================================ */
-.conv-swipe-wrap,
-#notifPanel .notif-item-wrap {
-  position:relative !important;
-  overflow:hidden !important;
-  isolation:isolate !important;
-  touch-action:pan-y !important;
-  -webkit-tap-highlight-color:transparent !important;
-}
-.conv-list-item,
-#notifPanel .notif-item {
-  position:relative !important;
-  z-index:2 !important;
-  transform:translate3d(0,0,0);
-  will-change:transform !important;
-  backface-visibility:hidden !important;
-  -webkit-backface-visibility:hidden !important;
-  touch-action:pan-y !important;
-}
-.conv-list-item.swiping,
-#notifPanel .notif-item.swiping {
-  transition:none !important;
-  cursor:grabbing !important;
-}
-.conv-swipe-action,
-#notifPanel .notif-swipe-bg {
-  position:absolute !important;
-  top:0 !important;
-  bottom:0 !important;
-  width:118px !important;
-  min-width:118px !important;
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:.25rem !important;
-  padding:.4rem !important;
-  box-sizing:border-box !important;
-  z-index:1 !important;
-  opacity:0 !important;
-  visibility:hidden !important;
-  pointer-events:none !important;
-  transition:none !important;
-}
-.conv-swipe-action-left { left:0 !important; right:auto !important; background:#0f766e !important; color:#fff !important; }
-.conv-swipe-action-right { right:0 !important; left:auto !important; background:#16a34a !important; color:#fff !important; }
-#notifPanel .notif-swipe-bg.left { left:0 !important; right:auto !important; background:#ef4444 !important; color:#fff !important; }
-#notifPanel .notif-swipe-bg.right { right:0 !important; left:auto !important; background:#16a34a !important; color:#fff !important; }
-.conv-swipe-action.swipe-visible,
-#notifPanel .notif-swipe-bg.swipe-visible { visibility:visible !important; }
-.conv-swipe-action i,
-#notifPanel .notif-swipe-bg i { font-size:1rem !important; margin:0 !important; color:inherit !important; background:none !important; }
-.conv-swipe-action .swipe-intent-label,
-#notifPanel .notif-swipe-bg .swipe-intent-label { font-size:.68rem !important; font-weight:850 !important; line-height:1.05 !important; white-space:nowrap !important; }
-.swipe-intent-bar {
-  width:82px !important;
-  height:8px !important;
-  border-radius:999px !important;
-  overflow:hidden !important;
-  background:rgba(255,255,255,.28) !important;
-  margin-top:.18rem !important;
-}
-.swipe-intent-bar > span {
-  display:block !important;
-  width:0 !important;
-  height:100% !important;
-  border-radius:inherit !important;
-  background:#fff !important;
-  transition:none !important;
-}
-.conv-swipe-action.active-intent,
-#notifPanel .notif-swipe-bg.active-intent { filter:brightness(1.08) saturate(1.08) !important; }
+  /* Clean notification/message batch selection — tap based. */
+.conv-row-wrap:last-child { border-bottom: none; }
+  .conv-list-item { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  .conv-list-item.selected { background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
+  .conv-select-check { width: 1.35rem; height: 1.35rem; border-radius: 50%; border: 2px solid var(--border); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 1.35rem; color: transparent; font-size: .62rem; }
+  .conv-select-check.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .notif-item-wrap { position: relative; overflow: hidden; border-radius: .7rem; margin-bottom: .15rem; }
+  .notif-item { width: 100%; text-align: left; }
+  .notif-item { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  .notif-item.selected { background: color-mix(in srgb, var(--primary) 14%, var(--card)) !important; }
+  .notif-selection-actions { display:flex; align-items:center; justify-content:flex-end; gap:.35rem; margin-left:auto; flex-wrap:nowrap; }
+  .notif-selection-actions .notif-action-btn:disabled { opacity:.32; cursor:default; }
+  .notif-header-actions { position:relative; display:flex; align-items:center; gap:.15rem; }
+  #notifPanel .messages-more-menu { right:0; left:auto; top:calc(100% + .35rem); z-index:10001; min-width:190px; }
+  #notifPanel.selecting .notif-select-check { display:inline-flex; }
 </style>
 
 </head>
@@ -5927,7 +5553,7 @@ function bindProfileEdgeSwipe(){
   document.addEventListener("touchstart",e=>{
     const t=e.touches[0];
     if(!t||!session||!profile||byId("profilePanel")?.classList.contains("open")) return;
-    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.conv-swipe-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*=\"overflow-x\"]")) return;
+    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*=\"overflow-x\"]")) return;
     if(currentView === "messages" && (e.target.closest("#messagesSelectionBar") || e.target.closest("#app"))) return;
     // Do not steal Android/iOS OS edge-back gestures. Start the profile
     // gesture in the body of the screen, from roughly 24%–68% of the width.
@@ -6054,20 +5680,32 @@ async function renderNotifPanel() {
 
   const topBar = notifSelectMode
     ? `<div class="notif-select-bar">
-        <button class="icon-btn" onclick="exitNotifSelectMode()" title="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" class="icon-btn" onclick="exitNotifSelectMode()" aria-label="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
         <strong>${notifSelectedIds.size} selected</strong>
-        <div class="flex" style="gap:0.5rem;margin:0;">
-          <button class="notif-action-btn" title="${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "Deselect all" : "Select all"}" onclick="toggleSelectAllNotifs()"><i class="fa-solid ${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "fa-square-minus" : "fa-square-check"}"></i></button>
+        <div class="notif-selection-actions">
+          <button type="button" class="notif-action-btn" title="${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "Deselect all" : "Select all"}" onclick="toggleSelectAllNotifs()"><i class="fa-solid ${notifSelectedIds.size === (window.__notifPanelIds || []).length ? "fa-square-minus" : "fa-square-check"}"></i></button>
+          ${notifViewMode !== "trash" ? `<button type="button" class="notif-action-btn" title="Mark read" onclick="batchMarkNotifsRead(true)" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid fa-envelope-open"></i></button>
+          <button type="button" class="notif-action-btn" title="Mark unread" onclick="batchMarkNotifsRead(false)" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid fa-envelope"></i></button>` : ""}
           ${notifViewMode === "trash"
-            ? `<button class="notif-action-btn" title="Restore" onclick="batchRestoreSelected()"><i class="fa-solid fa-trash-arrow-up"></i></button>
-               <button class="notif-action-btn danger" title="Delete forever" onclick="batchPurgeSelected()"><i class="fa-solid fa-trash-can"></i></button>`
-            : `<button class="notif-action-btn" title="${notifViewMode === "archived" ? "Restore" : "Archive"}" onclick="batchArchiveOrRestoreSelected()"><i class="fa-solid ${notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></button>
-               <button class="notif-action-btn danger" title="Delete" onclick="batchTrashSelected()"><i class="fa-solid fa-trash"></i></button>`}
+            ? `<button type="button" class="notif-action-btn" title="Restore" onclick="batchRestoreSelected()" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid fa-trash-arrow-up"></i></button>
+               <button type="button" class="notif-action-btn danger" title="Delete forever" onclick="batchPurgeSelected()" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid fa-trash-can"></i></button>`
+            : `<button type="button" class="notif-action-btn" title="${notifViewMode === "archived" ? "Restore" : "Archive"}" onclick="batchArchiveOrRestoreSelected()" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid ${notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></button>
+               <button type="button" class="notif-action-btn danger" title="Move to trash" onclick="batchTrashSelected()" ${notifSelectedIds.size ? "" : "disabled"}><i class="fa-solid fa-trash"></i></button>`}
         </div>
       </div>`
-    : `<div class="drawer-header"><h4>${modeLabel}</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
+    : `<div class="drawer-header"><h4>${modeLabel}</h4>
+        <div class="notif-header-actions">
+          <button type="button" class="icon-btn" onclick="toggleInlineMenu('notifMoreMenu',event)" aria-label="Notification actions"><i class="fa-solid fa-ellipsis"></i></button>
+          <button type="button" class="drawer-close-btn" onclick="closeAllPanels()" aria-label="Close"><i class='fa-solid fa-xmark'></i></button>
+          <div class="ms-list hidden messages-more-menu" id="notifMoreMenu">
+            <button type="button" class="ms-item" onclick="enterNotifSelectMode();toggleInlineMenu('notifMoreMenu',event)"><i class="fa-solid fa-check-double"></i> Select notifications</button>
+            <button type="button" class="ms-item" onclick="enterNotifSelectMode();toggleSelectAllNotifs();toggleInlineMenu('notifMoreMenu',event)"><i class="fa-solid fa-square-check"></i> Select all notifications</button>
+            ${notifViewMode !== "trash" ? `<button type="button" class="ms-item" onclick="markAllNotifsRead();toggleInlineMenu('notifMoreMenu',event)"><i class="fa-solid fa-envelope-open"></i> Mark all as read</button>` : ""}
+          </div>
+        </div>
+      </div>
       ${tabs}
-      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe right to restore, left to delete forever." : `Swipe right to ${notifViewMode === "archived" ? "restore" : "archive"}, left to move to trash.`} Hold an item to select several.</p>`;
+      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">Tap <strong>⋯</strong> to select multiple notifications. In selection mode, tap any notification to add or remove it.</p>`;
 
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const hasUnread = (items || []).some((n) => !n.read);
@@ -6076,9 +5714,7 @@ async function renderNotifPanel() {
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
-        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span class="swipe-intent-label">${notifViewMode === "trash" ? "Delete forever" : "Trash"}</span><div class="swipe-intent-bar"><span></span></div></div>
-        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : "fa-box-open"}"></i><span class="swipe-intent-label">${notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive"}</span><div class="swipe-intent-bar"><span></span></div></div>
-        <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
+        <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}' onclick="handleNotifItemClick(event,'${n.id}')">
           <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
           ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
           <span style="flex:1;min-width:0;"><strong style="display:block;">${esc(n.title)}</strong>${n.body ? `<span class="muted" style="font-size:0.8rem;">${esc(n.body)}</span><br/>` : ""}<span class="muted" style="font-size:0.72rem;">${timeAgo(n.created_at)}</span></span>
@@ -6088,166 +5724,22 @@ async function renderNotifPanel() {
 
   panel.innerHTML = `${topBar}${markAllBar}<div class="notif-list-scroll">${list}</div>`;
   panel.classList.toggle("selecting", notifSelectMode);
-  setupNotifItemGestures(panel);
 }
 
-// ---------- FAST, NATIVE-STYLE NOTIFICATION SWIPE GESTURES ----------
-let notifSwipeState = null;
-
-function setupNotifItemGestures(panel) {
-  if (!panel || panel.dataset.notifSwipeDelegated === "1") return;
-  panel.dataset.notifSwipeDelegated = "1";
-  panel.addEventListener("pointerdown", onNotifSwipeStart, { passive: true });
-}
-
-function renderNotifSwipeFrame(state) {
-  state.raf = 0;
-  if (!notifSwipeState || notifSwipeState !== state || !state.dragging || !state.item) return;
-  const dx = state.pendingDx;
-  state.dx = dx;
-  state.item.style.transform = `translate3d(${dx}px,0,0)`;
-
-  const leftBg = state.wrap.querySelector(".notif-swipe-bg.left");
-  const rightBg = state.wrap.querySelector(".notif-swipe-bg.right");
-  const ratio = Math.min(1, Math.abs(dx) / 108);
-  const leftLabel = notifViewMode === "trash" ? "Delete forever" : "Move to trash";
-  const rightLabel = notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive";
-  setSwipeIntent(leftBg, dx < 0 ? ratio : 0, leftLabel);
-  setSwipeIntent(rightBg, dx > 0 ? ratio : 0, rightLabel);
-
-  if (Math.abs(dx) >= 108 && !state.thresholdVibrated) {
-    state.thresholdVibrated = true;
-    if (navigator.vibrate) navigator.vibrate(10);
+function handleNotifItemClick(event, id) {
+  if (event) event.preventDefault();
+  if (notifSelectMode) {
+    toggleNotifSelect(id);
+    return;
   }
+  const item = event?.currentTarget || document.querySelector(`#notifPanel .notif-item[data-id="${CSS.escape(String(id))}"]`);
+  if (!item) return;
+  markSingleNotifRead(id);
+  closeAllPanels();
+  let params = {};
+  try { params = JSON.parse(item.dataset.params || "{}"); } catch (_) {}
+  navigate(item.dataset.view || "home", params);
 }
-
-function finishNotifSwipe(state, cancelled = false) {
-  if (!state) return;
-  clearTimeout(state.longPressTimer);
-  if (state.raf) cancelAnimationFrame(state.raf);
-  try { state.wrap.releasePointerCapture(state.pointerId); } catch (_) {}
-
-  const item = state.item;
-  const id = state.id;
-  const dx = state.dx;
-  const leftAction = !cancelled && dx <= -108;
-  const rightAction = !cancelled && dx >= 108;
-
-  item.classList.remove("swiping");
-  item.style.transition = "transform 180ms cubic-bezier(.2,.8,.2,1)";
-
-  if (leftAction) {
-    item.dataset.wasSwiped = "1";
-    item.style.transform = "translate3d(-110%,0,0)";
-    if (notifViewMode === "trash") setTimeout(() => confirmPurgeOne(id), 120);
-    else setTimeout(() => quickTrashNotif(id), 120);
-  } else if (rightAction) {
-    item.dataset.wasSwiped = "1";
-    item.style.transform = "translate3d(110%,0,0)";
-    setTimeout(() => notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id), 120);
-  } else {
-    item.style.transform = "translate3d(0,0,0)";
-    setTimeout(() => { item.dataset.wasSwiped = ""; }, 190);
-  }
-
-  setTimeout(() => {
-    item.style.transition = "";
-    resetNotifSwipeVisuals(state.wrap);
-  }, 190);
-  notifSwipeState = null;
-}
-
-function resetNotifSwipeVisuals(wrap) {
-  if (!wrap) return;
-  wrap.querySelectorAll(".notif-swipe-bg").forEach((bg) => {
-    bg.classList.remove("swipe-visible", "active-intent");
-    bg.style.setProperty("opacity", "0", "important");
-    bg.style.setProperty("visibility", "hidden", "important");
-    bg.style.setProperty("width", "118px", "important");
-    const bar = bg.querySelector(".swipe-intent-bar > span");
-    if (bar) bar.style.setProperty("width", "0", "important");
-    const icon = bg.querySelector("i");
-    if (icon) icon.style.transform = "scale(.9)";
-  });
-}
-
-function onNotifSwipeStart(e) {
-  if (notifSwipeState) return;
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  const wrap = e.target?.closest?.(".notif-item-wrap");
-  const item = wrap?.querySelector?.(".notif-item");
-  if (!wrap || !item) return;
-  if (e.target?.closest?.("button:not(.notif-item),a,input,select,textarea")) return;
-
-  notifSwipeState = {
-    wrap, item, id: wrap.dataset.id,
-    startX:e.clientX, startY:e.clientY,
-    dx:0, pendingDx:0,
-    dragging:false, scrolling:false,
-    pointerId:e.pointerId,
-    thresholdVibrated:false,
-    longPressFired:false,
-    raf:0,
-    longPressTimer:setTimeout(() => {
-      const st = notifSwipeState;
-      if (!st || st.wrap !== wrap || st.dragging || st.scrolling) return;
-      st.longPressFired = true;
-      if (navigator.vibrate) navigator.vibrate(15);
-      if (!notifSelectMode) enterNotifSelectMode(st.id); else toggleNotifSelect(st.id);
-      notifSwipeState = null;
-    }, 450)
-  };
-}
-
-function onNotifSwipeMove(e) {
-  const state = notifSwipeState;
-  if (!state || state.pointerId !== e.pointerId) return;
-  const dx = e.clientX - state.startX;
-  const dy = e.clientY - state.startY;
-
-  if (!state.dragging) {
-    if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-    clearTimeout(state.longPressTimer);
-    if (notifSelectMode) {
-      if (Math.abs(dy) > Math.abs(dx) * 1.1) {
-        state.scrolling = true;
-        notifSwipeState = null;
-      }
-      return;
-    }
-    if (Math.abs(dy) > Math.abs(dx) * 1.12) {
-      state.scrolling = true;
-      notifSwipeState = null;
-      return;
-    }
-    state.dragging = true;
-    state.item.classList.add("swiping");
-    state.item.style.transition = "none";
-    try { state.wrap.setPointerCapture(state.pointerId); } catch (_) {}
-  }
-  if (!state.dragging) return;
-  e.preventDefault();
-  e.stopPropagation();
-  state.pendingDx = Math.max(-150, Math.min(150, dx));
-  if (!state.raf) state.raf = requestAnimationFrame(() => renderNotifSwipeFrame(state));
-}
-
-function onNotifSwipeEnd(e) {
-  const state = notifSwipeState;
-  if (!state || state.pointerId !== e.pointerId) return;
-  clearTimeout(state.longPressTimer);
-  if (state.raf) cancelAnimationFrame(state.raf);
-  if (state.dragging) {
-    state.dx = state.pendingDx;
-    finishNotifSwipe(state);
-  } else {
-    notifSwipeState = null;
-  }
-}
-
-document.addEventListener("pointermove", onNotifSwipeMove, { passive:false });
-document.addEventListener("pointerup", onNotifSwipeEnd, { passive:false });
-document.addEventListener("pointercancel", onNotifSwipeEnd, { passive:false });
 
 function switchNotifView(mode) {
   notifViewMode = mode;
@@ -6257,40 +5749,69 @@ function switchNotifView(mode) {
 
 function enterNotifSelectMode(id) {
   notifSelectMode = true;
-  notifSelectedIds = new Set([id]);
+  notifSelectedIds = id ? new Set([id]) : new Set();
   renderNotifPanel();
 }
 function toggleNotifSelect(id) {
-  if (notifSelectedIds.has(id)) notifSelectedIds.delete(id); else notifSelectedIds.add(id);
+  if (!notifSelectMode) return;
+  if (notifSelectedIds.has(id)) notifSelectedIds.delete(id);
+  else notifSelectedIds.add(id);
   if (notifSelectedIds.size === 0) {
-    notifSelectMode = false;
-    renderNotifPanel();
+    exitNotifSelectMode();
     return;
   }
-  // Do not rebuild the drawer on every tap: that used to make multi-select
-  // feel sticky and made it unnecessarily hard to select several items.
-  document.querySelectorAll("#notifPanel .notif-item-wrap").forEach((wrap) => {
-    const selected = notifSelectedIds.has(wrap.dataset.id);
-    const row = wrap.querySelector(".notif-item");
-    const check = wrap.querySelector(".notif-select-check");
-    row?.classList.toggle("selected", selected);
-    check?.classList.toggle("active", selected);
+  // Match the Messages batch-selection behavior: do not rebuild the panel
+  // for each tap. Updating the existing rows keeps every tap responsive and
+  // prevents the list from jumping underneath the user's finger.
+  document.querySelectorAll("#notifPanel .notif-item").forEach((row) => {
+    const selected = notifSelectedIds.has(row.dataset.id);
+    row.classList.toggle("selected", selected);
+    row.setAttribute("aria-selected", selected ? "true" : "false");
   });
   const bar = byId("notifPanel")?.querySelector(".notif-select-bar");
   const count = bar?.querySelector("strong");
   if (count) count.textContent = `${notifSelectedIds.size} selected`;
+  const allVisible = getVisibleNotifIds().length > 0 && getVisibleNotifIds().every((x) => notifSelectedIds.has(x));
+  const selectAllBtn = bar?.querySelector('button[title="Select all"], button[title="Deselect all"]');
+  if (selectAllBtn) {
+    selectAllBtn.title = allVisible ? "Deselect all" : "Select all";
+    const icon = selectAllBtn.querySelector("i");
+    if (icon) icon.className = `fa-solid ${allVisible ? "fa-square-minus" : "fa-square-check"}`;
+  }
+}
+function getVisibleNotifIds() {
+  return (window.__notifPanelIds || []).map(String);
 }
 function toggleSelectAllNotifs() {
-  const allIds = window.__notifPanelIds || [];
-  if (notifSelectedIds.size === allIds.length) notifSelectedIds.clear();
-  else notifSelectedIds = new Set(allIds);
-  if (notifSelectedIds.size === 0) notifSelectMode = false;
+  const allIds = getVisibleNotifIds();
+  if (!allIds.length) return;
+  const allSelected = allIds.every((id) => notifSelectedIds.has(id));
+  notifSelectMode = true;
+  notifSelectedIds = allSelected ? new Set() : new Set(allIds);
+  if (notifSelectedIds.size === 0) {
+    exitNotifSelectMode();
+    return;
+  }
   renderNotifPanel();
 }
 function exitNotifSelectMode(rerender = true) {
   notifSelectMode = false;
   notifSelectedIds.clear();
   if (rerender) renderNotifPanel();
+}
+
+async function batchMarkNotifsRead(read) {
+  const ids = [...notifSelectedIds];
+  if (!ids.length) return;
+  if (!(await showConfirmDialog(`Mark ${ids.length} notification${ids.length === 1 ? "" : "s"} as ${read ? "read" : "unread"}?`, {
+    title: read ? "Mark as read" : "Mark as unread",
+    okLabel: read ? "Mark read" : "Mark unread"
+  }))) return;
+  const { error } = await sb.from("notifications").update({ read }).in("id", ids);
+  if (error) { showToast(error.message || "Couldn't update notifications.", "error"); return; }
+  exitNotifSelectMode(false);
+  await refreshNotifications();
+  showToast(`${ids.length} notification${ids.length === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
 }
 
 // ---- inbox <-> archive ----
@@ -7964,9 +7485,7 @@ function convRowHtml(c) {
   const isUnread = c.unread_count > 0;
   const archived = isChatArchived(c.conversation_id);
   const selected = msgSelectMode && msgSelectedIds.has(c.conversation_id);
-  return `<div class="conv-swipe-wrap ${selected ? "selected" : ""}">
-    <div class="conv-swipe-action conv-swipe-action-left" data-label="${archived ? "Restore" : "Archive"}"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}"></i><span class="swipe-intent-label">${archived ? "Restore" : "Archive"}</span><div class="swipe-intent-bar"><span></span></div></div>
-    <div class="conv-swipe-action conv-swipe-action-right" data-label="${isUnread ? "Mark read" : "Mark unread"}"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span class="swipe-intent-label">${isUnread ? "Mark read" : "Mark unread"}</span><div class="swipe-intent-bar"><span></span></div></div>
+  return `<div class="conv-row-wrap ${selected ? "selected" : ""}">
     <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
       ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
       ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
@@ -8097,207 +7616,11 @@ function updateMsgSelectionBar() {
   if (el) el.innerHTML = msgSelectionHeaderHtml();
 }
 
-// ---------- FAST, NATIVE-STYLE CHAT SWIPE GESTURES ----------
-// Rebuilt from scratch: one delegated pointer stream, no per-row move
-// listeners, no animated work during the finger drag, and no synthetic
-// mouse/touch event mix. The row follows the finger immediately.
-let convSwipeState = null;
-
-function setupConvSwipe(root) {
-  const host = root || document;
-  if (host.dataset?.convSwipeDelegated === "1") return;
-  if (host.dataset) host.dataset.convSwipeDelegated = "1";
-  host.addEventListener("pointerdown", onConvSwipeStart, { passive: true });
-}
-
-function setSwipeIntent(el, ratio, label) {
-  if (!el) return;
-  const r = Math.max(0, Math.min(1, Number(ratio) || 0));
-  const visible = r > 0.01;
-  el.classList.toggle("swipe-visible", visible);
-  el.classList.toggle("active-intent", r >= 1);
-  // Deliberately use inline important values: older CSS layers in this file
-  // contain !important rules which otherwise hide the live gesture state.
-  el.style.setProperty("opacity", visible ? String(Math.min(1, .35 + r * .65)) : "0", "important");
-  el.style.setProperty("visibility", visible ? "visible" : "hidden", "important");
-  el.style.setProperty("width", "118px", "important");
-  const text = el.querySelector(".swipe-intent-label") || el.querySelector("span:not(.swipe-intent-bar)");
-  if (text) text.textContent = r >= .82 ? `Release to ${label}` : label;
-  const bar = el.querySelector(".swipe-intent-bar > span");
-  if (bar) bar.style.setProperty("width", `${Math.round(r * 100)}%`, "important");
-  const icon = el.querySelector("i");
-  if (icon) icon.style.transform = `scale(${.9 + r * .1})`;
-}
-
-function resetSwipeVisuals(wrap) {
-  if (!wrap) return;
-  wrap.querySelectorAll(".conv-swipe-action").forEach((el) => {
-    el.classList.remove("swipe-visible", "active-intent");
-    el.style.setProperty("opacity", "0", "important");
-    el.style.setProperty("visibility", "hidden", "important");
-    el.style.setProperty("width", "118px", "important");
-    const bar = el.querySelector(".swipe-intent-bar > span");
-    if (bar) bar.style.setProperty("width", "0", "important");
-    const icon = el.querySelector("i");
-    if (icon) icon.style.transform = "scale(.9)";
-  });
-}
-
-function finishConvSwipe(state, cancelled = false) {
-  if (!state) return;
-  const item = state.item;
-  const wrap = state.wrap;
-  clearTimeout(state.longPressTimer);
-  if (state.raf) cancelAnimationFrame(state.raf);
-  if (state.pointerId != null) {
-    try { item.releasePointerCapture(state.pointerId); } catch (_) {}
-  }
-
-  const dx = state.dx;
-  const shouldArchive = !cancelled && dx <= -108;
-  const shouldMark = !cancelled && dx >= 108;
-
-  item.classList.remove("swiping");
-  item.style.transition = "transform 180ms cubic-bezier(.2,.8,.2,1)";
-
-  if (shouldArchive) {
-    item.dataset.wasSwiped = "1";
-    item.style.transform = "translate3d(-110%,0,0)";
-    setTimeout(() => toggleChatArchived(item.dataset.conversationId), 120);
-  } else if (shouldMark) {
-    item.dataset.wasSwiped = "1";
-    item.style.transform = "translate3d(0,0,0)";
-    setTimeout(() => handleSwipeMarkUnread(item.dataset.conversationId), 120);
-  } else {
-    item.style.transform = "translate3d(0,0,0)";
-    setTimeout(() => { item.dataset.wasSwiped = ""; }, 190);
-  }
-
-  setTimeout(() => {
-    item.style.transition = "";
-    resetSwipeVisuals(wrap);
-  }, 190);
-  convSwipeState = null;
-}
-
-function onConvSwipeStart(e) {
-  if (convSwipeState) return;
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  const item = e.target?.closest?.(".conv-list-item");
-  if (!item) return;
-  const wrap = item.closest(".conv-swipe-wrap");
-  if (!wrap || item.dataset.wasSwiped === "1") item.dataset.wasSwiped = "";
-
-  // Buttons inside the row have their own click action. Don't steal a direct
-  // press on them; a swipe can still begin from the rest of the row.
-  if (e.target?.closest?.("button,a,input,select,textarea")) return;
-
-  convSwipeState = {
-    item, wrap,
-    startX: e.clientX, startY: e.clientY,
-    dx: 0, dy: 0,
-    dragging: false, scrolling: false,
-    pointerId: e.pointerId,
-    thresholdVibrated: false,
-    longPressFired: false,
-    raf: 0,
-    pendingDx: 0,
-    longPressTimer: setTimeout(() => {
-      const st = convSwipeState;
-      if (!st || st.item !== item || st.dragging || st.scrolling) return;
-      st.longPressFired = true;
-      if (navigator.vibrate) navigator.vibrate(15);
-      enterMsgSelectMode(item.dataset.conversationId);
-    }, 480)
-  };
-
-  item.style.touchAction = "pan-y";
-}
-
-function renderConvSwipeFrame(state) {
-  state.raf = 0;
-  if (!convSwipeState || convSwipeState !== state || !state.dragging) return;
-  const item = state.item;
-  const dx = state.pendingDx;
-  state.dx = dx;
-
-  // GPU-composited transform. Nothing expensive happens in the gesture loop.
-  item.style.transform = `translate3d(${dx}px,0,0)`;
-
-  const c = window.__conversations?.find((x) => x.conversation_id === item.dataset.conversationId);
-  const unread = Number(c?.unread_count || 0) > 0;
-  const ratio = Math.min(1, Math.abs(dx) / 108);
-  if (dx < 0) {
-    setSwipeIntent(state.wrap.querySelector(".conv-swipe-action-left"), ratio, state.wrap.querySelector(".conv-swipe-action-left")?.dataset?.label || "Archive");
-    setSwipeIntent(state.wrap.querySelector(".conv-swipe-action-right"), 0, state.wrap.querySelector(".conv-swipe-action-right")?.dataset?.label || (unread ? "Mark read" : "Mark unread"));
-  } else {
-    setSwipeIntent(state.wrap.querySelector(".conv-swipe-action-right"), ratio, state.wrap.querySelector(".conv-swipe-action-right")?.dataset?.label || (unread ? "Mark read" : "Mark unread"));
-    setSwipeIntent(state.wrap.querySelector(".conv-swipe-action-left"), 0, state.wrap.querySelector(".conv-swipe-action-left")?.dataset?.label || "Archive");
-  }
-
-  if (Math.abs(dx) >= 108 && !state.thresholdVibrated) {
-    state.thresholdVibrated = true;
-    if (navigator.vibrate) navigator.vibrate(10);
-  }
-}
-
-function onConvSwipeMove(e) {
-  const state = convSwipeState;
-  if (!state || state.pointerId !== e.pointerId) return;
-  const dx = e.clientX - state.startX;
-  const dy = e.clientY - state.startY;
-  state.dy = dy;
-
-  if (!state.dragging) {
-    if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-    clearTimeout(state.longPressTimer);
-    // A vertical gesture belongs to the native scrolling container.
-    if (Math.abs(dy) > Math.abs(dx) * 1.12) {
-      state.scrolling = true;
-      convSwipeState = null;
-      return;
-    }
-    state.dragging = true;
-    state.item.classList.add("swiping");
-    state.item.style.transition = "none";
-    try { state.item.setPointerCapture(state.pointerId); } catch (_) {}
-  }
-  if (!state.dragging) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-  state.pendingDx = Math.max(-150, Math.min(150, dx));
-  if (!state.raf) state.raf = requestAnimationFrame(() => renderConvSwipeFrame(state));
-}
-
-function onConvSwipeEnd(e) {
-  const state = convSwipeState;
-  if (!state || state.pointerId !== e.pointerId) return;
-  clearTimeout(state.longPressTimer);
-  if (state.raf) cancelAnimationFrame(state.raf);
-  if (state.dragging) {
-    state.dx = state.pendingDx;
-    finishConvSwipe(state);
-    return;
-  }
-  convSwipeState = null;
-}
-
-document.addEventListener("pointermove", onConvSwipeMove, { passive: false });
-document.addEventListener("pointerup", onConvSwipeEnd, { passive: false });
-document.addEventListener("pointercancel", onConvSwipeEnd, { passive: false });
-
+// ---------- CHAT ROW SELECTION ----------
 function handleConvRowClick(event, conversationId) {
-  const item = event.currentTarget?.closest?.(".conv-list-item") || event.currentTarget;
-  if (item?.dataset?.wasSwiped === "1") {
-    event.preventDefault();
-    event.stopPropagation();
-    item.dataset.wasSwiped = "";
-    return;
-  }
+  if (event) event.preventDefault();
   if (msgSelectMode) {
-    event.preventDefault();
-    toggleMsgSelect(conversationId);
+    toggleMsgSelected(conversationId);
     return;
   }
   navigate("messages", { conversationId });
@@ -8331,7 +7654,6 @@ function filterMsgList() {
   if (msgListFilter === "all") shown = shown.filter((c) => !archivedIds.has(c.conversation_id));
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
   wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : emptyReason}</div>`;
-  setupConvSwipe(wrap);
 }
 
 // ---------- CUSTOM CHAT LISTS (WhatsApp-style user-made lists) ----------
@@ -11405,53 +10727,26 @@ function renderOrderListWrap() {
   if (!wrap) return;
   wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
 }
-function orderItemVariantLabel(item) {
-  const name = String(item?.variant_name || item?.variant?.name || "").trim();
-  const color = String(item?.variant_color || item?.variant?.color || "").trim();
-  if (name && color && name.toLowerCase() === color.toLowerCase()) return name;
-  return [name, color].filter(Boolean).join(" · ");
-}
-
 function orderVariantSummary(order) {
-  const parts = (order?.items || []).map((it) => {
-    const v = orderItemVariantLabel(it);
-    const product = String(it?.product?.name || "").trim();
-    return v ? (product ? `${product}: ${v}` : v) : "";
-  }).filter(Boolean);
-  return [...new Set(parts)].join("; ");
+  const names = (order?.items || []).map((it) => it?.variant_name || it?.variant?.name).filter(Boolean);
+  return [...new Set(names)].join(", ");
 }
 
 async function persistOrderItemVariants(orderId, selections) {
-  if (!orderId || !Array.isArray(selections) || !selections.length) return false;
-  let allSaved = true;
+  if (!orderId || !Array.isArray(selections) || !selections.length) return;
   for (const item of selections) {
     if (!item?.productId || !item?.variantName) continue;
     try {
-      const { error } = await sb.rpc("set_order_item_variant", {
+      await sb.rpc("set_order_item_variant", {
         p_order_id: orderId,
         p_product_id: item.productId,
         p_variant_name: item.variantName,
         p_variant_color: item.variantColor || null,
       });
-      if (error) throw error;
     } catch (e) {
-      allSaved = false;
       console.warn("Variant order metadata sync failed", e);
-      // Keep a safe fallback for deployments where the RPC is unavailable but
-      // the caller is still allowed by RLS to update its own order item.
-      try {
-        const { error: fallbackError } = await sb.from("order_items")
-          .update({ variant_name: item.variantName, variant_color: item.variantColor || null })
-          .eq("order_id", orderId)
-          .eq("product_id", item.productId);
-        if (!fallbackError) allSaved = true;
-        else console.warn("Variant direct order-item fallback failed", fallbackError);
-      } catch (fallbackErr) {
-        console.warn("Variant direct order-item fallback failed", fallbackErr);
-      }
     }
   }
-  return allSaved;
 }
 
 function orderListHtml(orders, isBuyerView) {
@@ -11546,7 +10841,7 @@ async function renderOrderDetail(orderId) {
     ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
-      ${orderItemVariantLabel(item) ? `<p class="order-item-variation" style="margin:.35rem 0 0;font-size:.82rem;padding:.35rem .55rem;border-radius:.55rem;background:color-mix(in srgb,var(--primary) 8%,var(--card));color:var(--text);"><i class="fa-solid fa-sliders" style="color:var(--primary);"></i> <strong>Selected:</strong> ${esc(orderItemVariantLabel(item))}</p>` : ""}
+      ${item.variant_name ? `<p style="margin:.2rem 0 0;font-size:.82rem;"><i class="fa-solid fa-sliders"></i> <strong>Variation:</strong> ${esc(item.variant_name)}${item.variant_color ? ` <span class="muted">(${esc(item.variant_color)})</span>` : ""}</p>` : ""}
     </div>`).join("")}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
