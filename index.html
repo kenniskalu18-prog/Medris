@@ -274,7 +274,7 @@
   fieldset { border: none; padding: 0; margin-top: 0.5rem; }
   legend { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
   .hidden { display: none !important; }
-  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000 !important; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 250; padding: 1rem; overflow-y: auto; backdrop-filter: blur(3px); }
   .modal-content { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); color: var(--text); padding: 2rem; border-radius: 1.1rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
   .product-img { width: 100%; height: 160px; object-fit: cover; border-radius: 0.5rem; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
   /* Product page: title up top spanning the full card, photo below it,
@@ -3768,55 +3768,77 @@ body { min-width:0 !important; }
 
 
 
-  /* ---- 2026-09-05 interaction fixes: Levi, swipe affordances, drawers ---- */
-  .ai-chat-panel .drawer-header {
-    cursor: grab !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    touch-action: none !important;
-  }
-  .ai-chat-panel.ai-panel-dragging .drawer-header { cursor: grabbing !important; }
-  .ai-chat-panel.ai-panel-dragging { transition: none !important; }
-  .ai-chat-panel .drawer-header button,
-  .ai-chat-panel .drawer-header a { cursor: pointer !important; touch-action: manipulation !important; }
+/* ================================================================
+   FINAL UX POLISH — swipe intent, spacing, draggable Levi, safe gestures
+   ================================================================ */
+.conv-swipe-wrap,
+.notif-item-wrap { position:relative !important; overflow:hidden !important; }
+.conv-swipe-action,
+.notif-swipe-bg {
+  transition: opacity .08s linear !important;
+}
+.swipe-intent-bar {
+  width:72px !important;
+  height:4px !important;
+  margin-top:.24rem !important;
+  border-radius:999px !important;
+  background:color-mix(in srgb,currentColor 18%,transparent) !important;
+  overflow:hidden !important;
+}
+.swipe-intent-bar > span {
+  display:block !important;
+  width:0 !important;
+  height:100% !important;
+  border-radius:inherit !important;
+  background:currentColor !important;
+  transition:width .04s linear !important;
+}
+.conv-swipe-action,
+#notifPanel .notif-swipe-bg {
+  justify-content:center !important;
+  text-align:center !important;
+}
+.conv-swipe-action span,
+#notifPanel .notif-swipe-bg span {
+  min-height:1em !important;
+}
+.conv-swipe-action.active-intent,
+#notifPanel .notif-swipe-bg.active-intent {
+  filter:brightness(1.04) saturate(1.05) !important;
+}
+/* Keep every primary/action button visibly separated. */
+.dash-tabs { display:flex !important; flex-wrap:wrap !important; gap:.7rem !important; }
+.dash-tabs .dash-tab { margin:0 !important; }
+.package-card .flex { gap:.75rem !important; margin-top:.8rem !important; }
+.package-card .flex .btn { margin:0 !important; flex:0 0 auto !important; }
+.package-card { overflow:visible !important; }
+.package-page-head { margin-bottom:1rem !important; align-items:flex-end !important; gap:1rem !important; }
+#payCommissionBtn,
+#payCommissionBtn.btn { margin-top:.85rem !important; align-self:flex-start !important; }
+/* Confirmation must sit over the Levi panel and every other application layer. */
+#confirmModal { z-index:2000 !important; }
+#confirmModal .modal-content { position:relative !important; z-index:2001 !important; }
+/* Levi's chat panel can be dragged from its header. */
+.ai-chat-panel.draggable-panel { cursor:default !important; }
+.ai-chat-panel.draggable-panel .drawer-header { cursor:grab !important; user-select:none !important; -webkit-user-select:none !important; }
+.ai-chat-panel.draggable-panel.dragging { transition:none !important; }
+/* Never let page-level profile gestures steal horizontal UI gestures. */
+.hscroll, .cat-row, .range-tabs, .product-gallery-thumbs, .table-wrap,
+.conv-swipe-wrap, .notif-item-wrap, [data-horizontal-scroll] {
+  overscroll-behavior-x:contain !important;
+}
+@media (max-width:720px) {
+  .package-card .flex { align-items:stretch !important; }
+  .package-card .flex .btn { min-height:42px !important; }
+  #payCommissionBtn { width:100% !important; justify-content:center !important; }
+}
 
-  #aiChatInput { scrollbar-width: none !important; -ms-overflow-style: none !important; }
-  #aiChatInput::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 
-  .conv-swipe-action, .notif-swipe-bg {
-    transition: opacity .08s linear, transform .08s linear !important;
-    will-change: opacity, transform;
-  }
-  .conv-swipe-action { width: 112px !important; opacity: 0 !important; }
-  .conv-swipe-action-left { left: 0 !important; right: auto !important; background: var(--success) !important; }
-  .conv-swipe-action-right { right: 0 !important; left: auto !important; background: var(--primary) !important; }
-  .conv-swipe-action.is-ready, .notif-swipe-bg.is-ready { font-weight: 700 !important; }
-
-  .notif-item-wrap { touch-action: pan-y !important; }
-  .notif-swipe-bg {
-    width: 50% !important; min-width: 104px !important; opacity: 0 !important;
-    padding: 0 1rem !important; gap: .45rem !important; font-weight: 700 !important;
-  }
-  .notif-swipe-bg.left {
-    left: 0 !important; right: auto !important; justify-content: flex-start !important;
-    background: color-mix(in srgb, var(--danger) 24%, var(--card)) !important; color: var(--danger) !important;
-  }
-  .notif-swipe-bg.right {
-    right: 0 !important; left: auto !important; justify-content: flex-end !important;
-    background: color-mix(in srgb, var(--primary) 24%, var(--card)) !important; color: var(--primary) !important;
-  }
-  .notif-swipe-bg i, .conv-swipe-action i { font-size: 1.05rem; }
-  .notif-swipe-bg span, .conv-swipe-action span { white-space: nowrap; }
-
-  #payOnlineBtn { display: inline-flex !important; margin-top: .9rem !important; }
-  .order-action-buttons { display:flex !important; flex-wrap:wrap !important; gap:.75rem !important; margin-top:1rem !important; }
-  .card > h3 + .btn { margin-top: .85rem; }
-  .card > p + .btn { margin-top: .8rem; }
-
-  .product-gallery-main, .product-gallery-thumbs, .table-wrap, .range-tabs, .tabs, [data-horizontal-scroll] {
-    overscroll-behavior-x: contain;
-  }
-  @media (max-width: 860px) { .side-drawer.right { width: min(360px, 90vw); } }
+.card .flex > .btn + .btn,
+.card .flex > button.btn + button.btn,
+.card > .btn + .btn,
+.card > button.btn + button.btn { margin-left:.15rem !important; }
+.settings-control-row > * + * { margin-left:.7rem; }
 
 </style>
 
@@ -5038,19 +5060,9 @@ function getCurrentPositionOnce() {
 }
 // Cached for the session once granted, so we don't re-prompt on every page.
 let buyerLocation = null; // { lat, lng } | null
-try {
-  const cachedLocation = JSON.parse(localStorage.getItem("levromart-buyer-location") || "null");
-  if (cachedLocation && Number.isFinite(Number(cachedLocation.lat)) && Number.isFinite(Number(cachedLocation.lng))) {
-    buyerLocation = { lat: Number(cachedLocation.lat), lng: Number(cachedLocation.lng) };
-  }
-} catch (_) {}
 function getBuyerLocation() {
   if (buyerLocation) return Promise.resolve(buyerLocation);
-  return getCurrentPositionOnce().then((loc) => {
-    buyerLocation = loc;
-    try { localStorage.setItem("levromart-buyer-location", JSON.stringify(loc)); } catch (_) {}
-    return loc;
-  });
+  return getCurrentPositionOnce().then((loc) => { buyerLocation = loc; return loc; });
 }
 // Shows our own explanatory modal BEFORE the browser's native permission
 // dialog, so buyers know why we're asking instead of being ambushed by an
@@ -5099,7 +5111,7 @@ function initLocationSetting() {
 function toggleLocationSetting() {
   locationSharingEnabled = !locationSharingEnabled;
   localStorage.setItem("medris-location-enabled", locationSharingEnabled ? "1" : "0");
-  if (!locationSharingEnabled) { buyerLocation = null; try { localStorage.removeItem("levromart-buyer-location"); } catch (_) {} }
+  if (!locationSharingEnabled) buyerLocation = null;
   renderLocationToggle();
   showToast(locationSharingEnabled ? "Location sharing turned on. You'll be asked to share your location the next time a feature needs it." : "Location sharing turned off.", "success");
 }
@@ -5346,7 +5358,8 @@ const ACCENT_PALETTE = [
   { name: "Magenta", base: "#a21caf", light: "#e879f9" },
   { name: "Lime", base: "#4d7c0f", light: "#a3e635" },
 ];
-let currentAccentIndex = 0;
+const DEFAULT_ACCENT_INDEX = 5;
+let currentAccentIndex = DEFAULT_ACCENT_INDEX;
 function lightenHex(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -5384,7 +5397,7 @@ function renderAccentSwatches() {
 }
 function initAccent() {
   const saved = localStorage.getItem("medris-accent");
-  currentAccentIndex = saved !== null ? Number(saved) : 0;
+  currentAccentIndex = saved !== null ? Number(saved) : DEFAULT_ACCENT_INDEX;
   applyAccent(currentAccentIndex);
   renderAccentSwatches();
 }
@@ -5476,56 +5489,32 @@ function setupDrawerSwipe(drawer, side) {
   drawer.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t)return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});
   drawer.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<54||Math.abs(dx)<Math.abs(dy)*1.15)return;if(side==="left"&&dx<0)closeAllPanels();if(side==="right"&&dx>0)closeAllPanels();},{passive:true});
 }
-let drawerEdgeSwipeBound=false;
-function isHorizontalScrollSurface(target) {
-  let el = target instanceof Element ? target : target?.parentElement;
-  while (el && el !== document.body && el !== document.documentElement) {
-    if (el.matches("input,textarea,select,button,a,.modal,.ai-chat-panel,.side-drawer")) return true;
-    if (el.matches(".product-gallery-main,.product-gallery-thumbs,.table-wrap,.range-tabs,.tabs,[data-horizontal-scroll]")) return true;
-    const cs = getComputedStyle(el);
-    if ((cs.overflowX === "auto" || cs.overflowX === "scroll" || cs.overflowX === "overlay") &&
-        el.scrollWidth > el.clientWidth + 4) return true;
-    el = el.parentElement;
-  }
-  return false;
-}
-function bindDrawerEdgeSwipes() {
-  if (drawerEdgeSwipeBound) return;
-  drawerEdgeSwipeBound=true;
-  let sx=0, sy=0, active=false, kind=null;
-  document.addEventListener("touchstart", e => {
+let profileEdgeSwipeBound=false;
+function bindProfileEdgeSwipe(){
+  if(profileEdgeSwipeBound)return;
+  profileEdgeSwipeBound=true;
+  let sx=0,sy=0,active=false;
+  document.addEventListener("touchstart",e=>{
     const t=e.touches[0];
-    if (!t || !session || !profile) return;
-    if (document.querySelector(".modal:not(.hidden)") || document.querySelector(".side-drawer.open") || !byId("aiChatPanel")?.classList.contains("hidden")) return;
-    if (isHorizontalScrollSurface(e.target)) return;
+    if(!t||!session||!profile||byId("profilePanel")?.classList.contains("open")) return;
+    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.conv-swipe-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,[data-horizontal-scroll]")) return;
+    if(currentView === "messages" && (e.target.closest("#messagesSelectionBar") || e.target.closest("#app"))) return;
+    // Do not steal Android/iOS OS edge-back gestures. Start the profile
+    // gesture in the body of the screen, from roughly 24%–68% of the width.
     const w=window.innerWidth;
-    if (!byId("profilePanel")?.classList.contains("open") && t.clientX >= 22 && t.clientX <= w * .72) {
-      sx=t.clientX; sy=t.clientY; active=true; kind="profile"; return;
-    }
-    if (!byId("notifPanel")?.classList.contains("open") && t.clientX >= w - 30) {
-      sx=t.clientX; sy=t.clientY; active=true; kind="notifications"; return;
-    }
-  }, {passive:true});
-  document.addEventListener("touchmove", e => {
-    if (!active || !e.touches[0]) return;
-    if (isHorizontalScrollSurface(e.target)) { active=false; kind=null; return; }
-    const t=e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    if (Math.abs(dy) > Math.abs(dx) * 1.15) { active=false; kind=null; }
-  }, {passive:true});
-  document.addEventListener("touchend", e => {
-    if (!active || !e.changedTouches[0]) return;
-    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy, which=kind;
-    active=false; kind=null;
-    if (Math.abs(dx) < 72 || Math.abs(dx) <= Math.abs(dy) * 1.18) return;
-    if (which === "profile" && dx > 72 && !byId("profilePanel")?.classList.contains("open")) openDrawer("profilePanel");
-    if (which === "notifications" && dx < -72 && !byId("notifPanel")?.classList.contains("open")) {
-      notifViewMode="inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel();
-    }
-  }, {passive:true});
+    if(t.clientX < w*0.24 || t.clientX > w*0.68) return;
+    sx=t.clientX; sy=t.clientY; active=true;
+  },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(!active||!e.changedTouches[0])return;
+    active=false;
+    const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(dx>72&&Math.abs(dx)>Math.abs(dy)*1.18&&!byId("profilePanel")?.classList.contains("open")) openDrawer("profilePanel");
+  },{passive:true});
 }
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
-bindDrawerEdgeSwipes();
+bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
 // Swipe left/right ANYWHERE on the page (not just the bottom bar) moves to
@@ -5648,7 +5637,7 @@ async function renderNotifPanel() {
       </div>`
     : `<div class="drawer-header"><h4>${modeLabel}</h4><button class="drawer-close-btn" onclick="closeAllPanels()"><i class='fa-solid fa-xmark'></i></button></div>
       ${tabs}
-      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe left to restore, right to delete forever." : `Swipe left to ${notifViewMode === "archived" ? "restore" : "archive"}, right to delete.`} Hold an item to select several.</p>`;
+      <p class="muted" style="font-size:0.72rem;margin:0.5rem 0;">${notifViewMode === "trash" ? "Swipe right to restore, left to delete forever." : `Swipe right to ${notifViewMode === "archived" ? "restore" : "archive"}, left to move to trash.`} Hold an item to select several.</p>`;
 
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const hasUnread = (items || []).some((n) => !n.read);
@@ -5657,8 +5646,8 @@ async function renderNotifPanel() {
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
-        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span>${notifViewMode === "trash" ? "Delete forever" : "Trash"}</span></div>
-         <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i><span>${notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive"}</span></div>
+        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span>${notifViewMode === "trash" ? "Delete forever" : "Trash"}</span><div class="swipe-intent-bar"><span></span></div></div>
+        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : "fa-box-open"}"></i><span>${notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive"}</span><div class="swipe-intent-bar"><span></span></div></div>
         <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
           <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
           ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
@@ -5708,12 +5697,16 @@ function setupNotifItemGestures(panel) {
       dragging = true;
       dx = Math.max(-110, Math.min(110, mdx));
       item.style.transform = `translateX(${dx}px)`;
-      const leftAction = wrap.querySelector(".notif-swipe-bg.left");
-      const rightAction = wrap.querySelector(".notif-swipe-bg.right");
-      const leftProgress = dx > 0 ? Math.min(1, dx / 82) : 0;
-      const rightProgress = dx < 0 ? Math.min(1, -dx / 82) : 0;
-      if (leftAction) { leftAction.style.opacity = String(leftProgress); leftAction.classList.toggle("is-ready", dx >= 72); }
-      if (rightAction) { rightAction.style.opacity = String(rightProgress); rightAction.classList.toggle("is-ready", dx <= -72); }
+      const leftBg = wrap.querySelector(".notif-swipe-bg.left");
+      const rightBg = wrap.querySelector(".notif-swipe-bg.right");
+      const leftBar = leftBg?.querySelector(".swipe-intent-bar > span");
+      const rightBar = rightBg?.querySelector(".swipe-intent-bar > span");
+      const leftRatio = dx < 0 ? Math.min(1, Math.abs(dx) / 85) : 0;
+      const rightRatio = dx > 0 ? Math.min(1, Math.abs(dx) / 85) : 0;
+      if (leftBg) { leftBg.style.opacity = leftRatio ? String(Math.min(1, .18 + leftRatio * .82)) : 0; leftBg.classList.toggle("active-intent", leftRatio >= 1); }
+      if (rightBg) { rightBg.style.opacity = rightRatio ? String(Math.min(1, .18 + rightRatio * .82)) : 0; rightBg.classList.toggle("active-intent", rightRatio >= 1); }
+      if (leftBar) leftBar.style.width = `${Math.round(leftRatio * 100)}%`;
+      if (rightBar) rightBar.style.width = `${Math.round(rightRatio * 100)}%`;
     };
     const onEnd = (evt) => {
       evt.stopPropagation();
@@ -5729,17 +5722,18 @@ function setupNotifItemGestures(panel) {
         item.style.transition = "transform 0.2s ease";
         if (dx <= -85) {
           item.style.transform = "translateX(-105%)";
-          setTimeout(() => (notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id)), 150);
-        } else if (dx >= 85) {
-          item.style.transform = "translateX(105%)";
           if (notifViewMode === "trash") { setTimeout(() => confirmPurgeOne(id), 150); }
           else { setTimeout(() => quickTrashNotif(id), 150); }
+        } else if (dx >= 85) {
+          item.style.transform = "translateX(105%)";
+          setTimeout(() => (notifViewMode === "trash" ? quickRestoreFromTrash(id) : notifViewMode === "archived" ? quickUnarchiveNotif(id) : quickArchiveNotif(id)), 150);
         } else {
           item.style.transform = "translateX(0)";
         }
-        wrap.querySelector(".notif-swipe-bg.left")?.classList.remove("is-ready");
-        wrap.querySelector(".notif-swipe-bg.right")?.classList.remove("is-ready");
-        setTimeout(() => { if (item) item.style.transition = ""; }, 220);
+        setTimeout(() => {
+          if (item) item.style.transition = "";
+          wrap.querySelectorAll(".notif-swipe-bg").forEach(bg => { bg.style.opacity = "0"; bg.classList.remove("active-intent"); const bar=bg.querySelector(".swipe-intent-bar > span"); if(bar) bar.style.width="0"; });
+        }, 220);
       } else if (!longPressFired && !scrolling) {
         if (notifSelectMode) toggleNotifSelect(id);
         else { markSingleNotifRead(id); closeAllPanels(); navigate(item.dataset.view || "home", JSON.parse(item.dataset.params || "{}")); }
@@ -6638,7 +6632,7 @@ async function resetLevromartPreferences() {
   );
   if (!confirmed) return;
   ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "medris-levi-fab-size", "medris-levi-visible", "medris-ai-voice", "medris-ai-voice-preset", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
-  currentAccentIndex = 0;
+  currentAccentIndex = DEFAULT_ACCENT_INDEX;
   leviVisible = true;
   setTheme("light");
   setAccent(0);
@@ -7446,8 +7440,8 @@ function convRowHtml(c) {
   const archived = isChatArchived(c.conversation_id);
   const selected = msgSelectMode && msgSelectedIds.has(c.conversation_id);
   return `<div class="conv-swipe-wrap ${selected ? "selected" : ""}">
-    <div class="conv-swipe-action conv-swipe-action-left"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Mark read" : "Mark unread"}</span></div>
-    <div class="conv-swipe-action conv-swipe-action-right"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}"></i><span>${archived ? "Restore" : "Archive"}</span></div>
+    <div class="conv-swipe-action conv-swipe-action-left"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}"></i><span>${archived ? "Restore" : "Archive"}</span><div class="swipe-intent-bar"><span></span></div></div>
+    <div class="conv-swipe-action conv-swipe-action-right"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Mark read" : "Mark unread"}</span><div class="swipe-intent-bar"><span></span></div></div>
     <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
       ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
       ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
@@ -7623,14 +7617,18 @@ function onConvSwipeMove(e) {
     try { e.currentTarget.setPointerCapture(convSwipeState.pointerId); } catch (_) {}
   }
   if (!convSwipeState.dragging) return;
-  convSwipeState.dx = Math.max(-112, Math.min(112, dx));
+  convSwipeState.dx = Math.max(-104, Math.min(104, dx));
   e.currentTarget.style.transform = `translateX(${convSwipeState.dx}px)`;
   const left = convSwipeState.wrap?.querySelector(".conv-swipe-action-left");
   const right = convSwipeState.wrap?.querySelector(".conv-swipe-action-right");
-  const leftProgress = convSwipeState.dx > 0 ? Math.min(1, convSwipeState.dx / 82) : 0;
-  const rightProgress = convSwipeState.dx < 0 ? Math.min(1, -convSwipeState.dx / 82) : 0;
-  if (left) { left.style.opacity = String(leftProgress); left.classList.toggle("is-ready", convSwipeState.dx >= 62); }
-  if (right) { right.style.opacity = String(rightProgress); right.classList.toggle("is-ready", convSwipeState.dx <= -62); }
+  const leftProgress = left?.querySelector(".swipe-intent-bar > span");
+  const rightProgress = right?.querySelector(".swipe-intent-bar > span");
+  const leftRatio = convSwipeState.dx < 0 ? Math.min(1, Math.abs(convSwipeState.dx) / 70) : 0;
+  const rightRatio = convSwipeState.dx > 0 ? Math.min(1, Math.abs(convSwipeState.dx) / 70) : 0;
+  if (left) { left.style.opacity = leftRatio ? String(Math.min(1, .18 + leftRatio * .82)) : "0"; left.classList.toggle("active-intent", leftRatio >= 1); }
+  if (right) { right.style.opacity = rightRatio ? String(Math.min(1, .18 + rightRatio * .82)) : "0"; right.classList.toggle("active-intent", rightRatio >= 1); }
+  if (leftProgress) leftProgress.style.width = `${Math.round(leftRatio * 100)}%`;
+  if (rightProgress) rightProgress.style.width = `${Math.round(rightRatio * 100)}%`;
 }
 function onConvSwipeEnd(e) {
   if (!convSwipeState) return;
@@ -7652,8 +7650,6 @@ function onConvSwipeEnd(e) {
     } else {
       state.item.style.transform = "translateX(0)";
     }
-    state.wrap?.querySelector(".conv-swipe-action-left")?.classList.remove("is-ready");
-    state.wrap?.querySelector(".conv-swipe-action-right")?.classList.remove("is-ready");
     setTimeout(() => { if (state.item) state.item.style.transition = ""; }, 200);
   } else if (!state.longPressFired && !msgSelectMode) {
     // Normal taps are handled by the click listener below.
@@ -9323,9 +9319,11 @@ async function renderVendorDashboard() {
   html += `<div class="dash-tabs">
     <button class="dash-tab" onclick="navigate('vendorProducts')"><i class="fa-solid fa-box"></i> Products</button>
     <button class="dash-tab" onclick="navigate('vendorPackages')"><i class="fa-solid fa-boxes-packing"></i> Packages</button>
+    <button class="dash-tab" onclick="navigate('vendorOrders',{status:'all'})"><i class="fa-solid fa-receipt"></i> Orders</button>
     <button class="dash-tab" onclick="navigate('vendorRequests')"><i class="fa-solid fa-clipboard-list"></i> Requests</button>
     <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
+    <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
   html += `<div class="accordion-section" style="max-width:700px;margin-bottom:1.4rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> At a glance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -10336,7 +10334,7 @@ async function renderVendorPackages() {
 
   if (!packages || packages.length === 0) { html += `<div class="empty-state">No packages yet. Bundle products you already sell into one fixed-price deal to stand out.</div>`; return html; }
 
-  html += `<div class="grid">${packages.map((pkg) => `<div class="card">
+  html += `<div class="grid">${packages.map((pkg) => `<div class="card package-card">
     <div class="flex" style="justify-content:space-between;"><strong>${esc(pkg.name)}</strong><span class="badge ${pkg.status === "active" ? "success" : "warning"}">${esc(pkg.status)}</span></div>
     ${pkg.description ? `<p class="muted" style="margin:0.3rem 0;">${esc(pkg.description)}</p>` : ""}
     <p class="muted" style="font-size:0.85rem;">${(pkg.items || []).map((it) => `${it.quantity}× ${esc(it.product?.name || "")}`).join(", ") || "No items yet"}</p>
@@ -10959,7 +10957,7 @@ async function renderOrderDetail(orderId) {
     </div>`;
   }
 
-  html += `<div class="flex order-action-buttons">${orderActionButtonsHtml(order, isBuyer, isVendor, feePaid)}</div>`;
+  html += `<div class="flex" style="margin-top:1rem;">${orderActionButtonsHtml(order, isBuyer, isVendor, feePaid)}</div>`;
 
   if (isBuyer && order.status === "completed" && !order.review) {
     html += `<div class="card"><h3>Leave a review</h3>
@@ -12455,14 +12453,25 @@ async function deleteAiConversation(id, evt) {
   const { error } = await sb.from("ai_conversations").delete().eq("id", id);
   if (error) { showToast(error.message, "error"); return; }
   if (currentAiConversationId === id) {
+    const panel = byId("aiChatPanel");
+    const wasHidden = panel?.classList.contains("hidden");
+    const rectBefore = panel && !wasHidden ? panel.getBoundingClientRect() : null;
     currentAiConversationId = null;
     aiConversationCreatePromise = null;
     localStorage.removeItem("medris-ai-last-conversation");
     aiChatMessages = [];
     aiChatLastDateKey = null;
+    if (panel) {
+      panel.classList.remove("hidden");
+      if (rectBefore) {
+        panel.style.left = `${rectBefore.left}px`; panel.style.top = `${rectBefore.top}px`;
+        panel.style.right = "auto"; panel.style.bottom = "auto"; panel.style.transform = "none";
+      }
+    }
     byId("aiChatMessages").innerHTML = "";
     showAiChatGreeting();
   }
+  if (byId("aiChatPanel")) byId("aiChatPanel").classList.remove("hidden");
   loadAiChatHistoryList();
 }
 async function renderSharedAiChat(token) {
@@ -12502,6 +12511,8 @@ async function shareLocationFromChat() {
     row?.classList.add("hidden");
   }
 }
+window.addEventListener("scroll", () => { closeAllInfoPopovers(); }, { passive:true });
+
 document.addEventListener("click", (e) => {
   const panel = byId("aiChatPanel");
   if (!panel || panel.classList.contains("hidden")) return;
@@ -12722,13 +12733,9 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
       // read the reply first, then Levi points the way and takes you there.
       const navHint = document.createElement("div");
       navHint.className = "ai-chat-nav-hint";
-      navHint.setAttribute("role", "link");
-      navHint.tabIndex = 0;
-      navHint.style.cursor = "pointer";
       navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> Taking you there…`;
       el.appendChild(navHint);
-      const navTimer = setTimeout(() => goToAiChatNav(nav), 1100);
-      navHint.onclick = () => { clearTimeout(navTimer); goToAiChatNav(nav); };
+      setTimeout(() => goToAiChatNav(nav), 1100);
     }
     if (draft) {
       const card = document.createElement("div");
@@ -12752,9 +12759,6 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
       // and tap themselves.
       const navHint = document.createElement("div");
       navHint.className = "ai-chat-nav-hint";
-      navHint.setAttribute("role", "link");
-      navHint.tabIndex = 0;
-      navHint.style.cursor = "pointer";
       navHint.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Updating your cart…`;
       el.appendChild(navHint);
       Promise.all([
@@ -12766,8 +12770,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
         if (addResult.failed) parts.push(`${addResult.failed} couldn't be added`);
         if (removeResult.removed) parts.push(`${removeResult.removed} removed`);
         navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} — taking you there…`;
-        const cartTimer = setTimeout(() => { toggleAiChat(); navigate("cart"); }, 900);
-        navHint.onclick = () => { clearTimeout(cartTimer); toggleAiChat(); navigate("cart"); };
+        setTimeout(() => { toggleAiChat(); navigate("cart"); }, 900);
       });
     }
   }
@@ -13287,7 +13290,7 @@ async function resolveLeviLocalAction(text) {
     if (empty.length) lines.push(`${empty.map(r => r.product.name).join(", ")} ${empty.length === 1 ? "is" : "are"} out of stock.`);
     if (failed.length) lines.push(`I couldn't add ${failed.map(r => r.product.name).join(", ")} right now.`);
     if (missing.length) lines.push(`I couldn't find ${missing.map(r => `“${r.part}”`).join(", ")}.`);
-    if (ok.length) { toggleAiChat(); await navigate("cart"); }
+    if (ok.length) await navigate("cart");
     return { handled: true, reply: lines.join(" ") || "Tell me the product name, or open the product and say “add this to my cart”." };
   }
   if (mode === "remove") {
@@ -13383,69 +13386,63 @@ fab.addEventListener("pointerdown", (e) => {
 })();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
-// Levi's chat panel is draggable from its header. Header buttons remain
-// normal controls, while a drag anywhere else on the header repositions the
-// whole chat surface and remembers its position.
-(function setupAiChatPanelDrag() {
+// Levi's chat panel stays centered; only the FAB itself is draggable.
+(function setupAiChatPanelDrag(){
   const panel = byId("aiChatPanel");
   const header = panel?.querySelector(".drawer-header");
-  if (!panel || !header || header.dataset.dragReady === "1") return;
-  header.dataset.dragReady = "1";
-  const KEY = "levromart_ai_panel_pos";
-  let dragging=false, pointerId=null, startX=0, startY=0, startLeft=0, startTop=0;
-
-  function clamp(x,y) {
-    const rect=panel.getBoundingClientRect(), margin=10;
-    const maxX=Math.max(margin, window.innerWidth-rect.width-margin);
-    const maxY=Math.max(margin, window.innerHeight-rect.height-margin);
-    return { x:Math.min(maxX,Math.max(margin,x)), y:Math.min(maxY,Math.max(margin,y)) };
-  }
-  function setPos(x,y) {
-    const p=clamp(x,y);
-    panel.style.left=`${p.x}px`; panel.style.top=`${p.y}px`;
-    panel.style.right="auto"; panel.style.bottom="auto"; panel.style.transform="none";
-    panel.dataset.customPosition="1";
-  }
-  function save() {
-    if (!panel.dataset.customPosition) return;
-    try { localStorage.setItem(KEY,JSON.stringify({left:parseFloat(panel.style.left),top:parseFloat(panel.style.top)})); } catch (_) {}
-  }
-  function restore() {
-    let saved=null;
-    try { saved=JSON.parse(localStorage.getItem(KEY)||"null"); } catch (_) {}
-    if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
-      requestAnimationFrame(()=>setPos(saved.left,saved.top));
-    }
-  }
+  if(!panel || !header || panel.dataset.dragReady === "1") return;
+  panel.dataset.dragReady = "1";
+  panel.classList.add("draggable-panel");
+  let dragging=false, moved=false, pointerId=null, sx=0, sy=0, sl=0, st=0;
+  const key="levromart_ai_panel_pos";
+  const clamp=(x,y)=>{
+    const margin=8, topMin=8;
+    const maxX=Math.max(margin,window.innerWidth-panel.offsetWidth-margin);
+    const maxY=Math.max(topMin,window.innerHeight-panel.offsetHeight-margin);
+    return {x:Math.min(Math.max(x,margin),maxX),y:Math.min(Math.max(y,topMin),maxY)};
+  };
+  const apply=(x,y)=>{ panel.style.left=`${x}px`; panel.style.top=`${y}px`; panel.style.right="auto"; panel.style.bottom="auto"; panel.style.transform="none"; };
+  try{
+    const saved=JSON.parse(localStorage.getItem(key)||"null");
+    if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)){ const p=clamp(saved.x,saved.y); apply(p.x,p.y); }
+  }catch(_){}
   header.addEventListener("pointerdown",e=>{
-    if (e.pointerType==="mouse" && e.button!==0) return;
-    if (e.target.closest("button,a,input,textarea,select")) return;
-    const rect=panel.getBoundingClientRect();
-    dragging=true; pointerId=e.pointerId; startX=e.clientX; startY=e.clientY;
-    startLeft=rect.left; startTop=rect.top;
-    panel.style.left=`${rect.left}px`; panel.style.top=`${rect.top}px`;
-    panel.style.right="auto"; panel.style.bottom="auto"; panel.style.transform="none";
-    panel.classList.add("ai-panel-dragging");
-    try { header.setPointerCapture(e.pointerId); } catch (_) {}
+    if(e.target.closest("button,a,input,select,textarea")) return;
+    dragging=true; moved=false; pointerId=e.pointerId; sx=e.clientX; sy=e.clientY;
+    const r=panel.getBoundingClientRect(); sl=r.left; st=r.top;
+    panel.classList.add("dragging");
+    try{ header.setPointerCapture(e.pointerId); }catch(_){}
     e.preventDefault();
   });
   header.addEventListener("pointermove",e=>{
-    if (!dragging || e.pointerId!==pointerId) return;
-    setPos(startLeft+e.clientX-startX,startTop+e.clientY-startY);
+    if(!dragging||e.pointerId!==pointerId) return;
+    const dx=e.clientX-sx,dy=e.clientY-sy;
+    if(!moved&&Math.hypot(dx,dy)>5)moved=true;
+    if(!moved)return;
+    const p=clamp(sl+dx,st+dy); apply(p.x,p.y);
+    e.preventDefault();
   });
-  function end(e) {
-    if (!dragging || (e && e.pointerId!==pointerId)) return;
-    dragging=false; panel.classList.remove("ai-panel-dragging"); save();
-  }
+  const end=e=>{
+    if(!dragging||e.pointerId!==pointerId)return;
+    dragging=false; panel.classList.remove("dragging");
+    if(moved){const r=panel.getBoundingClientRect();try{localStorage.setItem(key,JSON.stringify({x:r.left,y:r.top}));}catch(_){} }
+    pointerId=null;
+  };
   header.addEventListener("pointerup",end);
   header.addEventListener("pointercancel",end);
-  restore();
   window.addEventListener("resize",()=>{
-    if (panel.dataset.customPosition) {
-      const rect=panel.getBoundingClientRect(); setPos(rect.left,rect.top);
-    }
+    const r=panel.getBoundingClientRect();
+    if(!Number.isFinite(r.left)||!Number.isFinite(r.top))return;
+    const p=clamp(r.left,r.top); apply(p.x,p.y);
   });
 })();
+
+function closeLeviAfterCartAction(){
+  const panel=byId("aiChatPanel");
+  if(panel) panel.classList.add("hidden");
+  const fab=byId("aiChatFab");
+  if(fab) fab.classList.remove("hidden");
+}
 
 // ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
 // A handful of plain, non-destructive popups should close like a native
