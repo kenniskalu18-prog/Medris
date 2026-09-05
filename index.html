@@ -2779,7 +2779,67 @@ html { scroll-padding-top: 86px !important; }
 .product-card-wrap,.vendor-card,.review-card { content-visibility:visible !important; contain:none !important; }
 .product-card-wrap:hover .card,.product-card-wrap:active .card,.product-card-wrap:focus-within .card { transform:none !important; }
 
+/* FINAL ORDER STATUS INFO LAYER
+   Keep the status icon, status text and info button on one predictable row.
+   The popover itself is portaled to <body> by toggleInfoPopover(), so it
+   cannot sit behind the next card or any transformed ancestor. */
+.order-status-banner{
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr) auto !important;
+  align-items:center !important;
+  column-gap:.6rem !important;
+  overflow:visible !important;
+}
+.order-status-banner > .order-status-icon{
+  grid-column:1 !important;
+  align-self:center !important;
+  flex:none !important;
+}
+.order-status-banner > .order-status-text{
+  grid-column:2 !important;
+  min-width:0 !important;
+  overflow-wrap:anywhere !important;
+}
+.order-status-banner > .info-popover-wrap{
+  grid-column:3 !important;
+  justify-self:end !important;
+  align-self:center !important;
+  margin:0 !important;
+}
+.order-status-banner .info-btn{
+  width:1.35rem !important;
+  height:1.35rem !important;
+  font-size:.76rem !important;
+  position:relative !important;
+  z-index:10001 !important;
+}
+
+
+/* FINAL LEVI FAB POSITIONING
+   Draggable, but never above the app header and never behind the bottom nav. */
+.ai-chat-fab{
+  position:fixed !important;
+  width:74px !important;
+  height:74px !important;
+  min-width:74px !important;
+  min-height:74px !important;
+  left:auto !important;
+  top:auto !important;
+  right:18px !important;
+  bottom:calc(88px + env(safe-area-inset-bottom,0px)) !important;
+  z-index:470 !important;
+  touch-action:none !important;
+  cursor:grab !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
+}
+.ai-chat-fab.hidden{display:none !important}
+.ai-chat-fab.dragging{cursor:grabbing !important}
+.ai-chat-fab .ai-chat-fab-logo{pointer-events:none !important}
+.ai-chat-panel{z-index:460 !important}
+
 </style>
+
 </head>
 <body>
 <header>
@@ -3789,7 +3849,18 @@ function toggleInlineMenu(id, evt) {
 document.addEventListener("click", () => {
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
   document.querySelectorAll(".ms-btn.open").forEach((b) => b.classList.remove("open"));
-  document.querySelectorAll(".info-popover").forEach((p) => p.classList.add("hidden"));
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    p.classList.add("hidden");
+    p.style.left = "";
+    p.style.top = "";
+    if (p._infoOriginParent && p.parentElement === document.body) {
+      if (p._infoOriginNext && p._infoOriginNext.parentNode === p._infoOriginParent) {
+        p._infoOriginParent.insertBefore(p, p._infoOriginNext);
+      } else {
+        p._infoOriginParent.appendChild(p);
+      }
+    }
+  });
   document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
 });
 // Small "i" button + floating bubble, for swapping a paragraph of helper
@@ -3813,9 +3884,26 @@ function toggleInfoPopover(id, evt) {
   const el = byId(id);
   if (!el) return;
   const willOpen = el.classList.contains("hidden");
-  document.querySelectorAll(".info-popover").forEach((p) => { p.classList.add("hidden"); p.style.left = ""; });
+
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    p.classList.add("hidden");
+    p.style.left = "";
+    p.style.top = "";
+  });
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
-  if (willOpen) { el.classList.remove("hidden"); positionInfoPopover(el); }
+
+  if (!willOpen) return;
+
+  // Portal the bubble to <body>. This removes it from the stacking/overflow
+  // context of the Pending/Items cards, so the explanation always appears in
+  // front instead of being clipped or painted behind the next card.
+  if (!el._infoOriginParent) {
+    el._infoOriginParent = el.parentElement;
+    el._infoOriginNext = el.nextSibling;
+  }
+  document.body.appendChild(el);
+  el.classList.remove("hidden");
+  positionInfoPopover(el);
 }
 // The popover normally hangs left-aligned under the "i" button, but that
 // button can sit anywhere on screen (including near the right edge of a
@@ -4738,8 +4826,36 @@ let ordersLiveRefreshTimer = null;
 function refreshVisibleOrderView() {
   if (!["vendorOrders", "buyerOrders", "orderDetail"].includes(currentView)) return;
   clearTimeout(ordersLiveRefreshTimer);
-  ordersLiveRefreshTimer = setTimeout(() => {
-    navigate(currentView, currentViewParams || {}, false);
+
+  const savedView = currentView;
+  const savedParams = { ...(currentViewParams || {}) };
+  const savedScrollY = window.scrollY;
+  const historyEl = byId("orderHistoryAccordion");
+  const savedHistoryOpen = !!historyEl?.classList.contains("open");
+  const savedListExpanded = !!orderListExpanded;
+  const savedListMode = orderListViewMode;
+
+  ordersLiveRefreshTimer = setTimeout(async () => {
+    if (currentView !== savedView) return;
+
+    // Preserve UI state while still refreshing the underlying order data.
+    const beforeRefresh = window.scrollY;
+    await navigate(savedView, savedParams, false);
+
+    orderListExpanded = savedListExpanded;
+    orderListViewMode = savedListMode;
+
+    requestAnimationFrame(() => {
+      const freshHistory = byId("orderHistoryAccordion");
+      if (savedHistoryOpen && freshHistory && !freshHistory.classList.contains("open")) {
+        freshHistory.classList.add("open");
+      }
+
+      // Restore after the new DOM has laid out. This is the important part:
+      // realtime refresh must never fling the buyer/vendor back to page top.
+      const targetY = Math.max(0, savedScrollY ?? beforeRefresh ?? 0);
+      window.scrollTo({ top: targetY, behavior: "auto" });
+    });
   }, 180);
 }
 function subscribeOrderUpdates() {
@@ -5444,6 +5560,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   // A suspended account is locked to this one screen no matter what it
   // tries to navigate to -- appealing (or logging out) is all that's left.
   if (profile?.suspended_at && view !== "suspended") view = "suspended";
+  const previousView = currentView;
   // The outgoing page just stays on screen, silently, until the new one is
   // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
   // Awaited -- removeChannel is itself async (it has to tell the realtime
@@ -5512,7 +5629,9 @@ async function navigate(view, params = {}, pushHistory = true) {
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
   initDeliveryFieldsOnPage();
-  window.scrollTo(0, 0);
+  // A same-view, non-history refresh (notably live order updates) must keep
+  // the user's scroll position. Real navigation still starts at the top.
+  if (pushHistory || previousView !== view) window.scrollTo(0, 0);
 }
 
 // ---------- AUTO-SLIDING CAROUSELS (category row + horizontal product/vendor rails) ----------
@@ -9441,7 +9560,7 @@ async function renderOrderDetail(orderId) {
     ${(order.status === "completed" || order.status === "cancelled") && orderActivityIso(order) ? `<p class="muted" style="font-size:0.8rem;margin-top:0.25rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(order))}</p>` : ""}
     ${ORDER_STATUS_HELP[order.status]
       ? order.status === "pending"
-        ? `<div class="banner banner-warning" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half"></i> ${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
+        ? `<div class="banner banner-warning order-status-banner" style="margin-top:0.6rem;"><i class="fa-solid fa-hourglass-half order-status-icon"></i><span class="order-status-text">${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])}</span>${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</div>`
         : `<p class="muted" style="font-size:0.85rem;margin-top:0.4rem;">${esc(ORDER_STATUS_SHORT_LABEL[order.status] || ORDER_STATUS_HELP[order.status])} ${ORDER_STATUS_SHORT_LABEL[order.status] ? infoPopoverHtml("orderStatusInfo", esc(ORDER_STATUS_HELP[order.status])) : ""}</p>`
       : ""}
     ${order.payout_status && order.payout_status !== "not_applicable"
@@ -10872,8 +10991,14 @@ let aiChatLastDateKey = null;
 function toggleAiChat() {
   if (!session) { showLogin(); return; }
   const panel = byId("aiChatPanel");
+  const wasHidden = panel.classList.contains("hidden");
   panel.classList.toggle("hidden");
-  if (!panel.classList.contains("hidden")) {
+  const isOpen = !panel.classList.contains("hidden");
+  const fab = byId("aiChatFab");
+  // The floating Levi button must disappear while Levi's chat surface is open.
+  // Otherwise the same Levi icon sits underneath/alongside the open sheet.
+  fab?.classList.toggle("hidden", isOpen);
+  if (isOpen) {
     playSound("open");
     let wasExpanded = false;
     try { wasExpanded = localStorage.getItem("levromart-ai-chat-expanded") === "1"; } catch (e) {}
@@ -11928,28 +12053,22 @@ fab.addEventListener("pointerdown", (e) => {
 })();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
-// Levi's open chat is intentionally NOT draggable. A chat window is an
-// interaction surface, not a floating object: opening it always returns it to
-// a predictable centered position so typing, keyboard resize and touch scrolling
-// never inherit a stale left/top coordinate from an earlier session.
+// Levi's chat panel stays centered; only the FAB itself is draggable.
 (function stabilizeAiChatPanel() {
   const panel = byId("aiChatPanel");
   if (!panel) return;
-  try { localStorage.removeItem("levromart_ai_panel_pos"); } catch (e) {}
-  panel.style.left = "";
-  panel.style.top = "";
-  panel.style.right = "";
-  panel.style.bottom = "";
-  panel.style.transform = "";
-  const recenter = () => {
+  panel.style.left = "50%";
+  panel.style.top = "50%";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+  panel.style.transform = "translate(-50%, -50%)";
+  window.addEventListener("resize", () => {
     panel.style.left = "50%";
     panel.style.top = "50%";
     panel.style.right = "auto";
     panel.style.bottom = "auto";
     panel.style.transform = "translate(-50%, -50%)";
-  };
-  recenter();
-  window.addEventListener("resize", recenter);
+  });
 })();
 
 // ---------- MODAL BACK-BUTTON / OUTSIDE-CLICK DISMISSAL ----------
