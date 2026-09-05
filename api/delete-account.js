@@ -1,146 +1,459 @@
 const { readBody, env } = require("./_util");
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Method not allowed"
+function serviceHeaders(serviceKey) {
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json"
+  };
+}
+
+function normalizePhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+
+  if (digits.startsWith("00")) {
+    digits = digits.slice(2);
+  }
+
+  if (digits.startsWith("0") && digits.length === 11) {
+    digits = "234" + digits.slice(1);
+  }
+
+  return digits;
+}
+
+
+/* ============================================================
+   REGISTER ACCOUNT
+   ============================================================ */
+
+async function registerAccount(body, res) {
+  const {
+    email,
+    password,
+    name,
+    phone,
+    city,
+    role
+  } = body || {};
+
+  const cleanEmail =
+    String(email || "").trim().toLowerCase();
+
+  const cleanName =
+    String(name || "").trim();
+
+  const cleanPhone =
+    String(phone || "").trim();
+
+  const normalizedPhone =
+    normalizePhone(cleanPhone);
+
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return res.status(400).json({
+      error: "A valid email address is required."
     });
   }
 
-  try {
-    const body = JSON.parse(await readBody(req));
-    const accessToken = body?.accessToken;
+  if (!cleanName) {
+    return res.status(400).json({
+      error: "Full name is required."
+    });
+  }
 
-    if (!accessToken) {
-      return res.status(400).json({
-        error: "accessToken is required"
+  if (!cleanPhone || normalizedPhone.length < 10) {
+    return res.status(400).json({
+      error: "A valid phone number is required."
+    });
+  }
+
+  if (!password || password.length < 8) {
+    return res.status(400).json({
+      error:
+        "Password must be at least 8 characters."
+    });
+  }
+
+  if (
+    role !== "buyer" &&
+    role !== "vendor"
+  ) {
+    return res.status(400).json({
+      error: "Invalid account type."
+    });
+  }
+
+  const SUPABASE_URL =
+    env("SUPABASE_URL");
+
+  const SERVICE_KEY =
+    env("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    return res.status(500).json({
+      error:
+        "Supabase server configuration is incomplete."
+    });
+  }
+
+  const headers =
+    serviceHeaders(SERVICE_KEY);
+
+
+  /* ----------------------------------------------------------
+     CHECK WHETHER EMAIL ALREADY EXISTS
+     ---------------------------------------------------------- */
+
+  const existingResponse =
+    await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(cleanEmail)}`,
+      {
+        headers
+      }
+    );
+
+  if (existingResponse.ok) {
+
+    const existingData =
+      await existingResponse
+        .json()
+        .catch(() => ({}));
+
+    const users =
+      Array.isArray(existingData)
+        ? existingData
+        : existingData?.users || [];
+
+    const exists =
+      users.some(
+        user =>
+          String(user?.email || "")
+            .toLowerCase() === cleanEmail
+      );
+
+    if (exists) {
+      return res.status(409).json({
+        error:
+          "An account with that email already exists. Please log in instead."
       });
     }
+  }
 
-    const SUPABASE_URL = env("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY");
-    const SERVICE_KEY = env("SUPABASE_SERVICE_ROLE_KEY");
 
-    const anonHeaders = {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${accessToken}`
-    };
+  /* ----------------------------------------------------------
+     CREATE SUPABASE AUTH USER
+     
+     email_confirm:true is the important part.
+     
+     It means:
+     - account is immediately confirmed
+     - no confirmation link is required
+     - no confirmation email is sent
+     ---------------------------------------------------------- */
 
-    const svcHeaders = {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json"
-    };
+  const createResponse =
+    await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            name: cleanName,
+            phone: cleanPhone,
+            city:
+              String(city || "").trim(),
+            role
+          }
+        })
+      }
+    );
 
-    // Verify the current session.
-    const meRes = await fetch(
+  const created =
+    await createResponse
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !createResponse.ok ||
+    !created?.id
+  ) {
+    return res.status(
+      createResponse.status || 400
+    ).json({
+      error:
+        created?.msg ||
+        created?.message ||
+        "Could not create the account."
+    });
+  }
+
+
+  /* ----------------------------------------------------------
+     CREATE PUBLIC USER PROFILE
+     ---------------------------------------------------------- */
+
+  const profileResponse =
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/users`,
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          Prefer:
+            "resolution=ignore-duplicates,return=minimal"
+        },
+        body: JSON.stringify({
+          id: created.id,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          city:
+            String(city || "").trim(),
+          role,
+          role_selected: true,
+          has_password: true
+        })
+      }
+    );
+
+  if (
+    !profileResponse.ok &&
+    profileResponse.status !== 409
+  ) {
+
+    // Roll back Auth if profile creation fails.
+    await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users/${created.id}`,
+      {
+        method: "DELETE",
+        headers
+      }
+    );
+
+    const detail =
+      await profileResponse
+        .text()
+        .catch(() => "");
+
+    return res.status(500).json({
+      error:
+        detail ||
+        "Could not create the account profile."
+    });
+  }
+
+
+  return res.status(201).json({
+    created: true,
+    userId: created.id
+  });
+}
+
+
+/* ============================================================
+   DELETE ACCOUNT
+   ============================================================ */
+
+async function deleteAccount(body, res) {
+
+  const accessToken =
+    body?.accessToken;
+
+  if (!accessToken) {
+    return res.status(400).json({
+      error: "accessToken is required."
+    });
+  }
+
+  const SUPABASE_URL =
+    env("SUPABASE_URL");
+
+  const SUPABASE_ANON_KEY =
+    env("SUPABASE_ANON_KEY");
+
+  const SERVICE_KEY =
+    env("SUPABASE_SERVICE_ROLE_KEY");
+
+  const anonHeaders = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization:
+      `Bearer ${accessToken}`
+  };
+
+  const svcHeaders =
+    serviceHeaders(SERVICE_KEY);
+
+
+  /* ----------------------------------------------------------
+     VERIFY SESSION
+     ---------------------------------------------------------- */
+
+  const meResponse =
+    await fetch(
       `${SUPABASE_URL}/auth/v1/user`,
       {
         headers: anonHeaders
       }
     );
 
-    const me = await meRes.json().catch(() => ({}));
+  const me =
+    await meResponse
+      .json()
+      .catch(() => ({}));
 
-    if (!meRes.ok || !me?.id) {
-      return res.status(401).json({
-        error: "Invalid session"
-      });
-    }
+  if (
+    !meResponse.ok ||
+    !me?.id
+  ) {
+    return res.status(401).json({
+      error: "Invalid session."
+    });
+  }
 
-    const uid = me.id;
+  const uid = me.id;
 
-    // Find vendor records before deleting anything.
-    const vendorRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/vendors?user_id=eq.${encodeURIComponent(uid)}&select=id`,
+
+  /* ----------------------------------------------------------
+     FIND VENDOR RECORDS
+     ---------------------------------------------------------- */
+
+  const vendorResponse =
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/vendors` +
+      `?user_id=eq.${encodeURIComponent(uid)}` +
+      `&select=id`,
       {
         headers: svcHeaders
       }
     );
 
-    const vendorRows = vendorRes.ok
-      ? await vendorRes.json()
+  const vendorRows =
+    vendorResponse.ok
+      ? await vendorResponse.json()
       : [];
 
-    const vendorIds = (vendorRows || [])
+  const vendorIds =
+    (vendorRows || [])
       .map(row => row.id)
       .filter(Boolean);
 
-    // Buyers may delete even with pending orders.
-    // Vendors must finish or cancel all active orders.
-    if (vendorIds.length) {
-      const ids = vendorIds.join(",");
 
-      const activeRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?vendor_id=in.(${ids})&status=not.in.(completed,cancelled)&select=id,status`,
+  /* ----------------------------------------------------------
+     VENDOR DELETION RESTRICTIONS
+     ---------------------------------------------------------- */
+
+  if (vendorIds.length) {
+
+    const ids =
+      vendorIds.join(",");
+
+
+    // Active orders block vendor deletion.
+    const ordersResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/orders` +
+        `?vendor_id=in.(${ids})` +
+        `&status=not.in.(completed,cancelled)` +
+        `&select=id,status`,
         {
           headers: svcHeaders
         }
       );
 
-      const activeOrders = activeRes.ok
-        ? await activeRes.json()
+    const activeOrders =
+      ordersResponse.ok
+        ? await ordersResponse.json()
         : [];
 
-      if (activeOrders.length) {
-        return res.status(400).json({
-          error:
-            `You cannot delete a vendor account while ${activeOrders.length} ` +
-            `order(s) are still active. Complete or cancel every vendor order first.`
-        });
-      }
+    if (activeOrders.length) {
+      return res.status(400).json({
+        error:
+          `You cannot delete your vendor account while ` +
+          `${activeOrders.length} order(s) are still active. ` +
+          `Complete or cancel every active order first.`
+      });
+    }
 
-      // Vendors must have no unsettled commission.
-      const commissionRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/commission_charges?vendor_id=in.(${ids})&status=eq.owed&select=amount`,
+
+    // Unsettled commission blocks vendor deletion.
+    const commissionResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/commission_charges` +
+        `?vendor_id=in.(${ids})` +
+        `&status=eq.owed` +
+        `&select=amount`,
         {
           headers: svcHeaders
         }
       );
 
-      if (commissionRes.ok) {
-        const charges = await commissionRes.json();
+    if (commissionResponse.ok) {
 
-        const owed = (charges || []).reduce(
+      const charges =
+        await commissionResponse.json();
+
+      const owed =
+        (charges || []).reduce(
           (sum, row) =>
-            sum + Number(row?.amount || 0),
+            sum +
+            Number(row?.amount || 0),
           0
         );
 
-        if (owed > 0) {
-          return res.status(400).json({
-            error:
-              `You have ₦${owed.toLocaleString()} in unsettled commission. ` +
-              `Clear it before deleting your vendor account.`
-          });
-        }
+      if (owed > 0) {
+        return res.status(400).json({
+          error:
+            `You have ₦${owed.toLocaleString()} ` +
+            `in unsettled commission. ` +
+            `Clear it before deleting your vendor account.`
+        });
       }
     }
+  }
 
-    // Capture conversation IDs before deleting database rows.
-    let conversationIds = [];
 
-    const conversationFilter = vendorIds.length
+  /* ----------------------------------------------------------
+     CAPTURE CONVERSATIONS BEFORE DATABASE WIPE
+     ---------------------------------------------------------- */
+
+  let conversationIds = [];
+
+  const conversationFilter =
+    vendorIds.length
       ? `or=(buyer_id.eq.${uid},vendor_id.in.(${vendorIds.join(",")}))`
       : `buyer_id=eq.${uid}`;
 
-    const convRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/conversations?${conversationFilter}&select=id`,
+  const conversationResponse =
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/conversations` +
+      `?${conversationFilter}&select=id`,
       {
         headers: svcHeaders
       }
     );
 
-    if (convRes.ok) {
-      const rows = await convRes.json();
+  if (conversationResponse.ok) {
 
-      conversationIds = (rows || [])
+    const rows =
+      await conversationResponse.json();
+
+    conversationIds =
+      (rows || [])
         .map(row => row.id)
         .filter(Boolean);
-    }
+  }
 
-    // Complete database wipe.
-    const rpcRes = await fetch(
+
+  /* ----------------------------------------------------------
+     DATABASE WIPE
+     ---------------------------------------------------------- */
+
+  const deleteResponse =
+    await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/delete_my_account`,
       {
         method: "POST",
@@ -151,23 +464,36 @@ module.exports = async function handler(req, res) {
       }
     );
 
-    const rpcBody = await rpcRes.json().catch(() => ({}));
+  const deleteBody =
+    await deleteResponse
+      .json()
+      .catch(() => ({}));
 
-    if (!rpcRes.ok) {
-      return res.status(500).json({
-        error:
-          rpcBody?.message ||
-          rpcBody?.hint ||
-          rpcBody?.details ||
-          "The account deletion function is not installed. Run the delete_my_account SQL in Supabase first."
-      });
-    }
+  if (!deleteResponse.ok) {
 
-    // Storage cleanup.
-    async function listStorage(bucket, prefix) {
-      if (!prefix) return [];
+    return res.status(500).json({
+      error:
+        deleteBody?.message ||
+        deleteBody?.hint ||
+        deleteBody?.details ||
+        "The delete_my_account function is not installed in Supabase."
+    });
+  }
 
-      const response = await fetch(
+
+  /* ----------------------------------------------------------
+     STORAGE CLEANUP
+     ---------------------------------------------------------- */
+
+  async function listStorage(
+    bucket,
+    prefix
+  ) {
+
+    if (!prefix) return [];
+
+    const response =
+      await fetch(
         `${SUPABASE_URL}/storage/v1/object/list/${encodeURIComponent(bucket)}`,
         {
           method: "POST",
@@ -184,21 +510,33 @@ module.exports = async function handler(req, res) {
         }
       );
 
-      if (!response.ok) return [];
-
-      const rows = await response.json().catch(() => []);
-
-      return (rows || []).filter(
-        row =>
-          row?.name &&
-          !String(row.name).endsWith("/")
-      );
+    if (!response.ok) {
+      return [];
     }
 
-    async function removeStorage(bucket, names) {
-      if (!names.length) return;
+    const rows =
+      await response
+        .json()
+        .catch(() => []);
 
-      const response = await fetch(
+    return (rows || []).filter(
+      row =>
+        row?.name &&
+        !String(row.name)
+          .endsWith("/")
+    );
+  }
+
+
+  async function removeStorage(
+    bucket,
+    names
+  ) {
+
+    if (!names.length) return;
+
+    const response =
+      await fetch(
         `${SUPABASE_URL}/storage/v1/object/remove`,
         {
           method: "POST",
@@ -212,46 +550,68 @@ module.exports = async function handler(req, res) {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(
-          `Could not delete files from ${bucket}.`
-        );
-      }
+    if (!response.ok) {
+      throw new Error(
+        `Could not delete files from ${bucket}.`
+      );
     }
+  }
 
-    const storageTargets = [
-      ["avatars", [uid]],
-      ["vendor-docs", [uid]],
-      ["vendor-logos", vendorIds],
-      ["product-photos", vendorIds],
-      [
-        "chat-attachments",
-        conversationIds.map(
-          id => `conv/${id}`
-        )
-      ]
-    ];
 
-    for (const [bucket, prefixes] of storageTargets) {
-      for (const prefix of prefixes) {
-        const objects = await listStorage(
+  const storageTargets = [
+
+    ["avatars", [uid]],
+
+    ["vendor-docs", [uid]],
+
+    ["vendor-logos", vendorIds],
+
+    ["product-photos", vendorIds],
+
+    [
+      "chat-attachments",
+      conversationIds.map(
+        id => `conv/${id}`
+      )
+    ]
+
+  ];
+
+
+  for (
+    const [bucket, prefixes]
+    of storageTargets
+  ) {
+
+    for (
+      const prefix
+      of prefixes
+    ) {
+
+      const objects =
+        await listStorage(
           bucket,
           prefix
         );
 
-        await removeStorage(
-          bucket,
-          objects.map(
-            object => object.name
-          )
-        );
-      }
+      await removeStorage(
+        bucket,
+        objects.map(
+          object => object.name
+        )
+      );
     }
+  }
 
-    // IMPORTANT:
-    // Delete the actual Supabase Auth identity.
-    // This is what allows the same email to register again later.
-    const authDelete = await fetch(
+
+  /* ----------------------------------------------------------
+     DELETE AUTH IDENTITY
+     
+     THIS is what makes the email available again.
+     ---------------------------------------------------------- */
+
+  const authDeleteResponse =
+    await fetch(
       `${SUPABASE_URL}/auth/v1/admin/users/${uid}`,
       {
         method: "DELETE",
@@ -259,32 +619,80 @@ module.exports = async function handler(req, res) {
       }
     );
 
-    if (!authDelete.ok) {
-      const detail = await authDelete
+  if (!authDeleteResponse.ok) {
+
+    const detail =
+      await authDeleteResponse
         .text()
         .catch(() => "");
 
-      return res.status(500).json({
-        error:
-          detail ||
-          "Marketplace data was deleted, but the authentication account could not be removed."
-      });
+    return res.status(500).json({
+      error:
+        detail ||
+        "Marketplace data was deleted, but the authentication account could not be removed."
+    });
+  }
+
+
+  return res.status(200).json({
+    deleted: true
+  });
+}
+
+
+/* ============================================================
+   SINGLE VERCEL FUNCTION
+   ============================================================ */
+
+module.exports = async function handler(
+  req,
+  res
+) {
+
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed."
+    });
+  }
+
+  try {
+
+    const rawBody =
+      await readBody(req);
+
+    const body =
+      typeof rawBody === "string"
+        ? JSON.parse(rawBody || "{}")
+        : (rawBody || {});
+
+
+    // Registration uses this SAME function.
+    if (body.action === "register") {
+      return await registerAccount(
+        body,
+        res
+      );
     }
 
-    return res.status(200).json({
-      deleted: true
-    });
 
-  } catch (err) {
+    // Everything else with an accessToken
+    // is an account-deletion request.
+    return await deleteAccount(
+      body,
+      res
+    );
+
+  } catch (error) {
+
     console.error(
-      "Delete account error:",
-      err
+      "Levromart account API error:",
+      error
     );
 
     return res.status(500).json({
       error:
-        err?.message ||
-        "Could not delete the account."
+        error?.message ||
+        "Could not complete the account request."
     });
   }
 };
