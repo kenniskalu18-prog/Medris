@@ -2122,6 +2122,13 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#profilePanel .profile-panel-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 #profilePanel .profile-panel-header {
   display: grid !important;
@@ -2145,8 +2152,13 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 #profilePanel .profile-account-email { font-size: .76rem !important; line-height: 1.35 !important; }
 #profilePanel .profile-role-badge { margin-top: .3rem !important; align-self: flex-start !important; white-space: nowrap !important; }
 #profilePanel .profile-nav-link::after { content: none !important; }
-#profilePanel .profile-nav-arrow { display: inline-flex !important; flex: 0 0 auto !important; margin-left: auto !important; }
+#profilePanel .profile-nav-arrow { display: none !important; }
 #profilePanel .profile-nav-link { min-height: 50px !important; }
+
+/* FINAL PROFILE CLEANUP — calm ChatGPT-style list: no visible scrollbar or trailing arrows. */
+#profilePanel .profile-panel-scroll { scrollbar-width:none !important; -ms-overflow-style:none !important; }
+#profilePanel .profile-panel-scroll::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
+#profilePanel .profile-nav-arrow, #profilePanel .profile-nav-link::after { display:none !important; content:none !important; }
 
 /* Search icon and inline information markers always reserve their own space. */
 .hero-search { overflow: visible !important; }
@@ -3477,6 +3489,284 @@ img, svg, video, canvas, iframe { max-width:100%; }
 .hero, .settings-page, .container, .card, section, main { min-width:0 !important; }
 .hscroll, .cat-row, .storefront-product-strip { max-width:100% !important; }
 
+/* ================================================================
+   FINAL UX PASS — 05 Sep 2026
+   ================================================================ */
+html, body {
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:hidden !important;
+}
+body { min-width:0 !important; }
+.container, #app, main, header, footer {
+  box-sizing:border-box !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+
+/* Home hero: exactly three newest products, equal columns, tappable. */
+.hero-photo-collage {
+  overflow:hidden !important;
+  width:100% !important;
+}
+.hero-photo-row {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:2px !important;
+  width:100% !important;
+  height:100% !important;
+}
+.hero-photo-link {
+  display:block !important;
+  min-width:0 !important;
+  width:100% !important;
+  height:100% !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  background:none !important;
+  overflow:hidden !important;
+  cursor:pointer !important;
+}
+.hero-photo-link img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+}
+
+/* Three quick actions must occupy three real columns; Request sits centered
+   on the next row instead of crowding the first row. */
+.hero-quick-actions {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:1.15rem 1.05rem !important;
+  width:min(100%,430px) !important;
+  max-width:430px !important;
+  margin:0 auto !important;
+}
+.quick-action {
+  width:100% !important;
+  min-width:0 !important;
+  justify-self:center !important;
+}
+.quick-action:nth-child(4) {
+  grid-column:2 !important;
+}
+
+/* Settings rows: icon | text stack | control. The description can NEVER sit
+   beside or inside the bold title. */
+.settings-page-section h3 {
+  min-width:0 !important;
+}
+.settings-levi-logo {
+  width:1.18rem !important;
+  height:1.18rem !important;
+  object-fit:contain !important;
+  flex:0 0 1.18rem !important;
+  border-radius:50% !important;
+}
+.settings-toggle-row,
+.settings-simple-row {
+  grid-template-columns:1.3rem minmax(0,1fr) auto !important;
+  align-items:center !important;
+  min-width:0 !important;
+  width:100% !important;
+}
+.settings-row-icon {
+  width:1.3rem !important;
+  min-width:1.3rem !important;
+  text-align:center !important;
+}
+.settings-row-copy {
+  display:block !important;
+  min-width:0 !important;
+  width:100% !important;
+  overflow:hidden !important;
+}
+.settings-row-copy strong {
+  display:block !important;
+  font-size:.84rem !important;
+  line-height:1.2 !important;
+  white-space:normal !important;
+}
+.settings-row-copy small {
+  display:block !important;
+  margin-top:.18rem !important;
+  color:var(--text-muted) !important;
+  font-size:.68rem !important;
+  font-weight:400 !important;
+  line-height:1.35 !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+}
+.settings-inline-btn,
+.settings-status-pill {
+  justify-self:end !important;
+  align-self:center !important;
+  flex:0 0 auto !important;
+}
+
+/* Storefront review statistic is a button, but should still look like a stat. */
+.storefront-stat-link {
+  border:0 !important;
+  padding:0 !important;
+  background:none !important;
+  color:inherit !important;
+  font:inherit !important;
+  cursor:pointer !important;
+}
+.storefront-stat-link:hover strong,
+.storefront-stat-link:focus-visible strong {
+  color:var(--primary) !important;
+  text-decoration:underline !important;
+}
+.storefront-reviews {
+  scroll-margin-top:96px !important;
+  margin-top:1.5rem !important;
+}
+.storefront-reviews-head {
+  width:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:.75rem !important;
+  padding:0 !important;
+  border:0 !important;
+  background:none !important;
+  color:inherit !important;
+  text-align:left !important;
+  cursor:pointer !important;
+}
+
+/* Chat list: WhatsApp-like two-sided gesture affordance + selection. */
+.conv-swipe-wrap {
+  position:relative !important;
+  overflow:hidden !important;
+  min-width:0 !important;
+}
+.conv-swipe-action {
+  width:104px !important;
+  opacity:0 !important;
+  transition:opacity .08s linear !important;
+  pointer-events:none !important;
+}
+.conv-swipe-action-left {
+  left:0 !important;
+  right:auto !important;
+  background:var(--primary) !important;
+}
+.conv-swipe-action-right {
+  right:0 !important;
+  left:auto !important;
+  background:var(--success) !important;
+}
+.conv-list-item {
+  z-index:1 !important;
+  min-width:0 !important;
+  touch-action:pan-y !important;
+  transition:transform .18s ease !important;
+}
+.conv-list-item.selected {
+  background:color-mix(in srgb,var(--primary) 8%,var(--card)) !important;
+}
+.conv-select-check {
+  width:1.25rem !important;
+  height:1.25rem !important;
+  min-width:1.25rem !important;
+  border:1.5px solid var(--border) !important;
+  border-radius:50% !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:transparent !important;
+}
+.conv-select-check.active {
+  border-color:var(--primary) !important;
+  background:var(--primary) !important;
+  color:#fff !important;
+}
+.messages-toolbar,
+.messages-selection-toolbar {
+  position:relative !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:.45rem !important;
+  min-height:2.8rem !important;
+  margin-bottom:.55rem !important;
+}
+.messages-toolbar-title { min-width:0 !important; flex:1 !important; }
+.messages-toolbar h2 { margin:0 !important; }
+.messages-more-btn { flex:0 0 auto !important; }
+.messages-more-menu {
+  position:absolute !important;
+  top:2.6rem !important;
+  right:0 !important;
+  z-index:600 !important;
+  min-width:190px !important;
+  max-width:calc(100vw - 2rem) !important;
+}
+.messages-more-menu .ms-item {
+  width:100% !important;
+  border:0 !important;
+  background:none !important;
+  text-align:left !important;
+}
+.messages-selection-toolbar strong {
+  flex:1 !important;
+  min-width:0 !important;
+}
+
+/* Cart must always sit ABOVE Levi's floating button. */
+.cart-fab {
+  z-index:490 !important;
+}
+.ai-chat-fab {
+  z-index:470 !important;
+}
+
+/* Profile drawer gesture zone must not create a horizontal page overflow. */
+#profilePanel, #settingsPanel, #notifPanel {
+  max-width:86vw !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+
+
+/* Notifications: make swipe intent visible before release, on both sides. */
+#notifPanel .notif-item-wrap { position:relative !important; overflow:hidden !important; }
+#notifPanel .notif-swipe-bg {
+  width:100px !important;
+  top:0 !important;
+  bottom:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:.18rem !important;
+  opacity:0 !important;
+  z-index:0 !important;
+  font-size:.68rem !important;
+  font-weight:800 !important;
+}
+#notifPanel .notif-swipe-bg.left {
+  left:0 !important;
+  right:auto !important;
+  padding:0 !important;
+  background:color-mix(in srgb,var(--primary) 16%,var(--card)) !important;
+  color:var(--primary) !important;
+}
+#notifPanel .notif-swipe-bg.right {
+  right:0 !important;
+  left:auto !important;
+  padding:0 !important;
+  background:color-mix(in srgb,var(--danger) 16%,var(--card)) !important;
+  color:var(--danger) !important;
+}
+#notifPanel .notif-swipe-bg i { width:auto !important; height:auto !important; margin:0 !important; background:none !important; font-size:1.05rem !important; color:inherit !important; }
+#notifPanel .notif-swipe-bg span { display:block !important; white-space:nowrap !important; font-size:.64rem !important; font-weight:800 !important; }
+
+
 </style>
 
 </head>
@@ -4116,10 +4406,29 @@ function dismissNotifPrompt() {
   if (dismissibleModalId === "notifPromptModal") dismissibleModalId = null;
   setTimeout(maybeShowTour, 400);
 }
+async function syncPushSubscription(registration) {
+  if (!session || !pushSupported()) return null;
+  const reg = registration || await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) return null;
+  const raw = sub.toJSON();
+  if (!raw.endpoint || !raw.keys?.p256dh || !raw.keys?.auth) return null;
+  const { error } = await sb.from("push_subscriptions").upsert(
+    { user_id: session.user.id, endpoint: raw.endpoint, p256dh: raw.keys.p256dh, auth_key: raw.keys.auth },
+    { onConflict: "endpoint" }
+  );
+  if (error) throw error;
+  return sub;
+}
 async function enablePushNotifications() {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") { dismissNotifPrompt(); return; }
+    if (!pushSupported()) throw new Error("Push notifications are not supported on this browser.");
+    if (isIos() && !isStandalone()) {
+      showToast("On iPhone, add Levromart to your Home Screen first, then turn notifications on.", "info");
+      return;
+    }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
@@ -4128,11 +4437,7 @@ async function enablePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
-    const raw = sub.toJSON();
-    await sb.from("push_subscriptions").upsert(
-      { user_id: session.user.id, endpoint: raw.endpoint, p256dh: raw.keys.p256dh, auth_key: raw.keys.auth },
-      { onConflict: "endpoint" }
-    );
+    await syncPushSubscription(reg);
     showToast("Notifications turned on.", "success");
   } catch (err) {
     showToast("Couldn't turn on notifications on this device.", "error");
@@ -4542,6 +4847,29 @@ function toggleInfoPopover(id, evt) {
   el.classList.remove("hidden");
   positionInfoPopover(el);
 }
+function closeAllInfoPopovers() {
+  document.querySelectorAll(".info-popover").forEach((p) => {
+    p.classList.add("hidden");
+    p.style.left = "";
+    p.style.top = "";
+    if (p._infoOriginParent && p.parentElement === document.body) {
+      if (p._infoOriginNext && p._infoOriginNext.parentNode === p._infoOriginParent) p._infoOriginParent.insertBefore(p, p._infoOriginNext);
+      else p._infoOriginParent.appendChild(p);
+    }
+  });
+}
+
+let infoPopoverScrollBound = false;
+function bindInfoPopoverScrollDismiss() {
+  if (infoPopoverScrollBound) return;
+  infoPopoverScrollBound = true;
+  const dismiss = () => closeAllInfoPopovers();
+  window.addEventListener("scroll", dismiss, { passive: true });
+  window.addEventListener("wheel", dismiss, { passive: true });
+  window.addEventListener("touchmove", dismiss, { passive: true });
+}
+bindInfoPopoverScrollDismiss();
+
 function positionInfoPopover(el) {
   const btn = el?._infoButton;
   if (!el || !btn || !btn.isConnected) return;
@@ -5008,6 +5336,7 @@ function toggleAccordion(trigger) {
 
 // ---------- SLIDE-IN DRAWERS ----------
 function closeAllPanels() {
+  closeAllInfoPopovers();
   document.querySelectorAll(".side-drawer.open").forEach((d) => { d.classList.remove("open"); d.style.transform = ""; });
   byId("drawerBackdrop")?.classList.remove("open");
 }
@@ -5031,11 +5360,11 @@ function renderSettingsAppRows() {
     const row = byId(targetId);
     if (!row) return;
     if (isStandalone()) {
-      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>App installation</strong><small>Levromart is installed on this device.</small></span><span class="settings-status-pill">Installed</span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>App installation</strong><small>Levromart is installed on this device.</small></span><span class="settings-status-pill">Installed</span>`;
     } else if (deferredInstallPrompt) {
-      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Install Levromart for a faster app-like experience.</small></span><button class="settings-inline-btn active" onclick="runInstallPrompt().then(() => renderSettingsAppRows())">Install</button>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>Download the app</strong><small>Install Levromart for a faster app-like experience.</small></span><button class="settings-inline-btn active" onclick="runInstallPrompt().then(() => renderSettingsAppRows())">Install</button>`;
     } else if (isIos()) {
-      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> then choose “Add to Home Screen”.</small></span>`;
+      row.innerHTML = `<i class="fa-solid fa-mobile-screen-button settings-row-icon"></i><span class="settings-row-copy"><strong>Download the app</strong><small>Tap Share <i class="fa-solid fa-arrow-up-from-bracket"></i> then choose “Add to Home Screen”.</small></span>`;
     } else {
       row.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i><span><strong>Download the app</strong><small>Install from your browser when the install option becomes available.</small></span>`;
     }
@@ -5044,13 +5373,16 @@ function renderSettingsAppRows() {
     const row = byId(targetId);
     if (!row) return;
     if (!pushSupported()) {
-      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Notifications are not supported in this browser.</small></span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Notifications are not supported in this browser.</small></span>`;
+    } else if (isIos() && !isStandalone()) {
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>On iPhone, add Levromart to your Home Screen before enabling push notifications.</small></span><button class="settings-inline-btn" onclick="showToast('Use Share → Add to Home Screen, open the installed Levromart app, then turn notifications on.', 'info')">How</button>`;
     } else if (Notification.permission === "granted") {
-      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Levromart notifications are enabled.</small></span><span class="settings-status-pill active">On</span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Levromart notifications are enabled on this device.</small></span><span class="settings-status-pill active">On</span>`;
+      syncPushSubscription().catch(() => {});
     } else if (Notification.permission === "denied") {
-      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Blocked by your browser. Enable them in site settings.</small></span>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Blocked by your browser. Enable them in site settings.</small></span>`;
     } else {
-      row.innerHTML = `<i class="fa-solid fa-bell"></i><span><strong>Notifications</strong><small>Get updates about orders and important activity.</small></span><button class="settings-inline-btn" onclick="enablePushNotifications().then(() => renderSettingsAppRows())">Turn on</button>`;
+      row.innerHTML = `<i class="fa-solid fa-bell settings-row-icon"></i><span class="settings-row-copy"><strong>Notifications</strong><small>Get updates about orders and important activity.</small></span><button class="settings-inline-btn" onclick="enablePushNotifications().then(() => renderSettingsAppRows())">Turn on</button>`;
     }
   };
   renderInstall("settingsInstallRow");
@@ -5084,7 +5416,27 @@ function setupDrawerSwipe(drawer, side) {
   drawer.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<54||Math.abs(dx)<Math.abs(dy)*1.15)return;if(side==="left"&&dx<0)closeAllPanels();if(side==="right"&&dx>0)closeAllPanels();},{passive:true});
 }
 let profileEdgeSwipeBound=false;
-function bindProfileEdgeSwipe(){if(profileEdgeSwipeBound)return;profileEdgeSwipeBound=true;let sx=0,sy=0,active=false;document.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t||t.clientX>18||e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel"))return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});document.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(dx>58&&Math.abs(dx)>Math.abs(dy)*1.15&&!byId("profilePanel")?.classList.contains("open")&&session&&profile)openDrawer("profilePanel");},{passive:true});}
+function bindProfileEdgeSwipe(){
+  if(profileEdgeSwipeBound)return;
+  profileEdgeSwipeBound=true;
+  let sx=0,sy=0,active=false;
+  document.addEventListener("touchstart",e=>{
+    const t=e.touches[0];
+    if(!t||!session||!profile||byId("profilePanel")?.classList.contains("open")) return;
+    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.notif-item,.hero-photo-link")) return;
+    // Do not steal Android/iOS OS edge-back gestures. Start the profile
+    // gesture in the body of the screen, from roughly 24%–68% of the width.
+    const w=window.innerWidth;
+    if(t.clientX < w*0.24 || t.clientX > w*0.68) return;
+    sx=t.clientX; sy=t.clientY; active=true;
+  },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(!active||!e.changedTouches[0])return;
+    active=false;
+    const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(dx>72&&Math.abs(dx)>Math.abs(dy)*1.18&&!byId("profilePanel")?.classList.contains("open")) openDrawer("profilePanel");
+  },{passive:true});
+}
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
 bindProfileEdgeSwipe();
@@ -5219,8 +5571,8 @@ async function renderNotifPanel() {
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
-        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></div>
-        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i></div>
+        <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i><span>${notifViewMode === "trash" ? "Restore" : notifViewMode === "archived" ? "Restore" : "Archive"}</span></div>
+        <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i><span>${notifViewMode === "trash" ? "Delete forever" : "Trash"}</span></div>
         <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
           <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
           ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
@@ -5714,7 +6066,7 @@ function updateAuthUI() {
       <div class="profile-panel-scroll">
         ${links.map((l) => {
           const raw = String(l.label).replace(/<[^>]*>/g, '').trim().toLowerCase();
-          const icon = raw.includes('my orders') ? 'fa-receipt' : raw.includes('request an item') ? 'fa-hand' : raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
+          const icon = raw.includes('my orders') ? 'fa-receipt' : raw.includes('request an item') ? 'fa-hand' : raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : raw.includes('settings') ? 'fa-gear' : 'fa-circle';
           return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>`;
         }).join("")}
         <div class="divider" style="margin:.45rem 0;"></div>
@@ -5756,7 +6108,7 @@ function renderSettingsPage(){
     <div class="settings-page-header"><button class="settings-back-btn" onclick="navigate(lastNonSettingsView||'home')" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div><span class="settings-kicker">Levromart</span><h2>Settings</h2><p class="muted">Manage your account and app experience.</p></div></div>
     <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-droplet"></i> Accent color</h3><p class="settings-section-note">Choose the accent used across Levromart.</p><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></section>
-    <section class="settings-page-section"><h3><i class="fa-solid fa-robot"></i> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><div class="voice-preset-row"><button class="voice-preset-btn" onclick="setAiVoicePreset('natural')">Natural</button><button class="voice-preset-btn" onclick="setAiVoicePreset('warm')">Warm</button><button class="voice-preset-btn" onclick="setAiVoicePreset('clear')">Clear</button></div><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
+    <section class="settings-page-section"><h3><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><div class="voice-preset-row"><button class="voice-preset-btn" onclick="setAiVoicePreset('natural')">Natural</button><button class="voice-preset-btn" onclick="setAiVoicePreset('warm')">Warm</button><button class="voice-preset-btn" onclick="setAiVoicePreset('clear')">Clear</button></div><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
     <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
@@ -5768,9 +6120,9 @@ function hydrateSettingsPage(){
   const accent=byId("accentSwatchesPage");
   if(accent) accent.innerHTML=ACCENT_PALETTE.map((p,i)=>`<button type="button" class="accent-swatch ${i===currentAccentIndex?'active':''}" style="background:linear-gradient(135deg,${p.base},${p.light});" title="${esc(p.name)}" aria-label="${esc(p.name)}" onclick="setAccent(${i});setTimeout(hydrateSettingsPage,0)"></button>`).join("");
   const vis=byId("leviVisibleSettingRow");
-  if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'}"></i><span><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
+  if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
   const consent=byId("settingsAiConsentPageRow");
-  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line"></i><span><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent});setTimeout(hydrateSettingsPage,0)">${profile.ai_data_consent?'On':'Off'}</button>`;
+  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent});setTimeout(hydrateSettingsPage,0)">${profile.ai_data_consent?'On':'Off'}</button>`;
   const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
   if(install&&oldInstall) install.innerHTML=oldInstall.innerHTML;if(notif&&oldNotif) notif.innerHTML=oldNotif.innerHTML;
   const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'}"></i><span><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} — nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
@@ -6396,27 +6748,30 @@ async function renderHome() {
   // The hero backdrop is just the 3 most recently listed products' photos --
   // deliberately not the trending list below, so it stays fresh and never
   // turns into a cluttered wall of every product photo on the site.
-  let recentPhotosQuery = sb.from("products").select("id, name, photos, created_at, vendor:vendors!inner(verification_status, is_active), category:categories(sector_id)")
-    .eq("status", "active").eq("vendor.verification_status", "verified").eq("vendor.is_active", true);
-  if (activeSector) recentPhotosQuery = recentPhotosQuery.eq("category.sector_id", activeSector.id);
+  // The backdrop is always the three newest ACTIVE products on the entire
+  // marketplace. It intentionally ignores the currently selected sector:
+  // these are the three latest listings site-wide, not three static/staged
+  // images and not three photos from one product.
+  const recentPhotosQuery = sb.from("products")
+    .select("id, name, photos, created_at, vendor:vendors!inner(verification_status, is_active)")
+    .eq("status", "active")
+    .eq("vendor.verification_status", "verified")
+    .eq("vendor.is_active", true);
 
   const [{ data: trending }, { data: topVendors }, { data: recentProducts }] = await Promise.all([
     vendorQuery.order("view_count", { ascending: false }).limit(6),
     topVendorsQuery.order("avg_rating", { ascending: false }).limit(6),
-    recentPhotosQuery.order("created_at", { ascending: false }).limit(12),
+    recentPhotosQuery.order("created_at", { ascending: false }).limit(3),
   ]);
 
-  const heroPhotos = [];
-  const seenHeroUrls = new Set();
-  for (const product of (recentProducts || [])) {
-    for (const url of (Array.isArray(product.photos) ? product.photos : [])) {
-      if (!url || seenHeroUrls.has(url)) continue;
-      seenHeroUrls.add(url);
-      heroPhotos.push({ id: product.id, name: product.name || "Product", url });
-      if (heroPhotos.length === 3) break;
-    }
-    if (heroPhotos.length === 3) break;
-  }
+  // One image per product: product #1, product #2, product #3.
+  // Never use multiple angles from the same product in the home backdrop.
+  const heroPhotos = (recentProducts || [])
+    .map((product) => {
+      const photos = Array.isArray(product.photos) ? product.photos.filter(Boolean) : [];
+      return photos[0] ? { id: product.id, name: product.name || "Product", url: photos[0] } : null;
+    })
+    .filter(Boolean);
 
   let html = `<div class="hero">
     ${heroPhotos.length >= 1 ? `<div class="hero-photo-collage"><div class="hero-photo-row">${heroPhotos.map((p) => `<button type="button" class="hero-photo-link" onclick="navigate(\'productDetail\',{productId:\'${esc(p.id)}\'})" aria-label="View ${esc(p.name)}"><img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy" /></button>`).join("")}</div><div class="hero-photo-scrim"></div></div>` : ""}
@@ -6997,36 +7352,165 @@ function convRowHtml(c) {
   const name = c.other_name || "User";
   const isUnread = c.unread_count > 0;
   const archived = isChatArchived(c.conversation_id);
-  return `<div class="conv-swipe-wrap">
-    <div class="conv-swipe-action"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Read" : "Unread"}</span></div>
-    <div class="conv-list-item" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+  const selected = msgSelectMode && msgSelectedIds.has(c.conversation_id);
+  return `<div class="conv-swipe-wrap ${selected ? "selected" : ""}">
+    <div class="conv-swipe-action conv-swipe-action-left"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}"></i><span>${archived ? "Restore" : "Archive"}</span></div>
+    <div class="conv-swipe-action conv-swipe-action-right"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Mark read" : "Unread"}</span></div>
+    <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
+      ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
       ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
       <div class="conv-meta">
         <strong>${esc(name)}</strong>
         <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
       </div>
       ${isUnread ? `<span class="conv-unread-badge" title="${c.unread_count} unread">${c.unread_count > 99 ? "99+" : c.unread_count}</span>` : ""}
-      <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
-      <button class="icon-btn" style="flex-shrink:0;" title="${archived ? "Restore chat" : "Archive chat"}" onclick="event.stopPropagation();toggleChatArchived('${c.conversation_id}')"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}" style="${archived ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
-      <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+      ${!msgSelectMode ? `
+        <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+        <button class="icon-btn" style="flex-shrink:0;" title="${archived ? "Restore chat" : "Archive chat"}" onclick="event.stopPropagation();toggleChatArchived('${c.conversation_id}')"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}" style="${archived ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+        <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+      ` : ""}
     </div>
   </div>`;
 }
 
-// ---------- SWIPE-TO-MARK-UNREAD (conversation list rows) ----------
-// One-step gesture: swiping a row left past the threshold fires the
-// mark-read/unread toggle immediately on release, no second tap needed.
-let convSwipeState = null;
+let msgSelectMode = false;
+let msgSelectedIds = new Set();
 
+function enterMsgSelectMode(id) {
+  msgSelectMode = true;
+  msgSelectedIds = id ? new Set([id]) : new Set();
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+function exitMsgSelectMode() {
+  msgSelectMode = false;
+  msgSelectedIds.clear();
+  filterMsgList();
+}
+function toggleMsgSelected(id) {
+  if (!msgSelectMode) return;
+  if (msgSelectedIds.has(id)) msgSelectedIds.delete(id); else msgSelectedIds.add(id);
+  if (!msgSelectedIds.size) { msgSelectMode = false; }
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+function toggleSelectAllChats() {
+  const ids = getVisibleChatIds();
+  if (!ids.length) return;
+  if (ids.every((id) => msgSelectedIds.has(id))) msgSelectedIds.clear();
+  else msgSelectedIds = new Set(ids);
+  filterMsgList();
+  updateMsgSelectionBar();
+}
+async function batchArchiveChats() {
+  const ids = [...msgSelectedIds];
+  if (!ids.length) return;
+  const archivedIds = getArchivedChatIds();
+  const restoring = msgListFilter === "archived";
+  if (!(await showConfirmDialog(`${restoring ? "Restore" : "Archive"} ${ids.length} selected chat${ids.length === 1 ? "" : "s"}?`, {
+    title: restoring ? "Restore chats" : "Archive chats",
+    okLabel: restoring ? "Restore" : "Archive",
+    danger: false
+  }))) return;
+  ids.forEach((id) => restoring ? archivedIds.delete(id) : archivedIds.add(id));
+  setArchivedChatIds(archivedIds);
+  exitMsgSelectMode();
+  showToast(restoring ? `${ids.length} chat${ids.length === 1 ? "" : "s"} restored.` : `${ids.length} chat${ids.length === 1 ? "" : "s"} archived.`, "success");
+}
+function getVisibleChatIds() {
+  const convs = window.__conversations || [];
+  const archivedIds = getArchivedChatIds();
+  let shown = convs;
+  if (msgListFilter === "unread") {
+    shown = convs.filter((c) => c.unread_count > 0 && !archivedIds.has(c.conversation_id));
+  } else if (msgListFilter === "archived") {
+    shown = convs.filter((c) => archivedIds.has(c.conversation_id));
+  } else if (msgListFilter.startsWith("list:")) {
+    const list = myChatLists.find((l) => l.id === msgListFilter.slice(5));
+    shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id) && !archivedIds.has(c.conversation_id)) : [];
+  } else {
+    shown = convs.filter((c) => !archivedIds.has(c.conversation_id));
+  }
+  const q = (byId("msgSearchInput")?.value || "").trim().toLowerCase();
+  if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
+  return shown.map((c) => c.conversation_id);
+}
+async function batchMarkChatsRead(read) {
+  const ids = msgSelectedIds.size ? [...msgSelectedIds] : getVisibleChatIds();
+  if (!ids.length) { showToast(`No chats to mark as ${read ? "read" : "unread"}.`, "info"); return; }
+  if (!(await showConfirmDialog(`Mark ${ids.length} chat${ids.length === 1 ? "" : "s"} as ${read ? "read" : "unread"}?`, {
+    title: read ? "Mark as read" : "Mark as unread",
+    okLabel: read ? "Mark read" : "Mark unread"
+  }))) return;
+  for (const id of ids) {
+    try {
+      // The existing RPC toggles the current unread state, so only invoke it
+      // when the current state differs from the requested state.
+      const c = (window.__conversations || []).find((x) => x.conversation_id === id);
+      const currentlyUnread = Number(c?.unread_count || 0) > 0;
+      if (currentlyUnread === !read) continue;
+      await sb.rpc("toggle_conversation_unread", { p_conversation_id: id });
+    } catch (e) {}
+  }
+  msgSelectMode = false; msgSelectedIds.clear();
+  await refreshNotifications();
+  navigate("messages", {}, false);
+}
+function msgSelectionHeaderHtml() {
+  if (!msgSelectMode) {
+    return `<div class="messages-toolbar">
+      <div class="messages-toolbar-title"><h2><i class="fa-solid fa-comments"></i> Messages</h2></div>
+      <button type="button" class="icon-btn messages-more-btn" onclick="toggleInlineMenu('messagesMoreMenu',event)" aria-label="Message actions"><i class="fa-solid fa-ellipsis"></i></button>
+      <div class="ms-list hidden messages-more-menu" id="messagesMoreMenu">
+        <button type="button" class="ms-item" onclick="enterMsgSelectMode();toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-check-double"></i> Select chats</button>
+        <button type="button" class="ms-item" onclick="enterMsgSelectMode();toggleSelectAllChats();toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-square-check"></i> Select all chats</button>
+        <button type="button" class="ms-item" onclick="batchMarkChatsRead(true);toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-envelope-open"></i> Mark all as read</button>
+        <button type="button" class="ms-item" onclick="batchMarkChatsRead(false);toggleInlineMenu('messagesMoreMenu',event)"><i class="fa-solid fa-envelope"></i> Mark all as unread</button>
+      </div>
+    </div>`;
+  }
+  const visibleIds = getVisibleChatIds();
+  const allVisible = visibleIds.length > 0 && visibleIds.every((id) => msgSelectedIds.has(id));
+  return `<div class="messages-selection-toolbar">
+    <button type="button" class="icon-btn" onclick="exitMsgSelectMode()" aria-label="Cancel selection"><i class="fa-solid fa-xmark"></i></button>
+    <strong>${msgSelectedIds.size} selected</strong>
+    <button type="button" class="icon-btn" onclick="toggleSelectAllChats()" aria-label="Select all"><i class="fa-solid ${allVisible ? "fa-square-minus" : "fa-square-check"}"></i></button>
+    <button type="button" class="icon-btn" onclick="batchMarkChatsRead(true)" ${msgSelectedIds.size ? "" : "disabled"} aria-label="Mark read"><i class="fa-solid fa-envelope-open"></i></button>
+    <button type="button" class="icon-btn" onclick="batchMarkChatsRead(false)" ${msgSelectedIds.size ? "" : "disabled"} aria-label="Mark unread"><i class="fa-solid fa-envelope"></i></button>
+    <button type="button" class="icon-btn" onclick="batchArchiveChats()" ${msgSelectedIds.size ? "" : "disabled"} aria-label="${msgListFilter === "archived" ? "Restore" : "Archive"}"><i class="fa-solid ${msgListFilter === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></button>
+  </div>`;
+}
+
+function updateMsgSelectionBar() {
+  const el = byId("messagesSelectionBar");
+  if (el) el.innerHTML = msgSelectionHeaderHtml();
+}
+
+// ---------- TWO-DIRECTION CHAT ROW GESTURES ----------
+let convSwipeState = null;
 function setupConvSwipe(root) {
   (root || document).querySelectorAll(".conv-list-item").forEach((item) => {
+    if (item.dataset.gesturesReady === "1") return;
+    item.dataset.gesturesReady = "1";
+    const wrap = item.closest(".conv-swipe-wrap");
     item.addEventListener("pointerdown", onConvSwipeStart);
   });
 }
 function onConvSwipeStart(e) {
   if (e.pointerType === "mouse" && e.button !== 0) return;
   const item = e.currentTarget;
-  convSwipeState = { item, startX: e.clientX, startY: e.clientY, dx: 0, dragging: false, pointerId: e.pointerId };
+  const wrap = item.closest(".conv-swipe-wrap");
+  convSwipeState = {
+    item, wrap, startX: e.clientX, startY: e.clientY, dx: 0, dragging: false,
+    pointerId: e.pointerId, longPressFired: false,
+    longPressTimer: setTimeout(() => {
+      if (!convSwipeState || convSwipeState.item !== item || convSwipeState.dragging) return;
+      convSwipeState.longPressFired = true;
+      item.dataset.wasLongPressed = "1";
+      if (navigator.vibrate) navigator.vibrate(15);
+      enterMsgSelectMode(item.dataset.conversationId);
+    }, 480)
+  };
   item.addEventListener("pointermove", onConvSwipeMove);
   item.addEventListener("pointerup", onConvSwipeEnd);
   item.addEventListener("pointercancel", onConvSwipeEnd);
@@ -7035,34 +7519,56 @@ function onConvSwipeMove(e) {
   if (!convSwipeState || convSwipeState.item !== e.currentTarget) return;
   const dx = e.clientX - convSwipeState.startX;
   const dy = e.clientY - convSwipeState.startY;
+  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) clearTimeout(convSwipeState.longPressTimer);
   if (!convSwipeState.dragging) {
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-    if (Math.abs(dy) > Math.abs(dx)) { convSwipeState = null; return; }
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+      convSwipeState.dragging = false;
+      convSwipeState = null;
+      return;
+    }
     convSwipeState.dragging = true;
-    convSwipeState.item.setPointerCapture(convSwipeState.pointerId);
+    try { e.currentTarget.setPointerCapture(convSwipeState.pointerId); } catch (_) {}
   }
-  convSwipeState.dx = Math.min(0, Math.max(dx, -84));
-  convSwipeState.item.style.transform = `translateX(${convSwipeState.dx}px)`;
+  if (!convSwipeState.dragging) return;
+  convSwipeState.dx = Math.max(-104, Math.min(104, dx));
+  e.currentTarget.style.transform = `translateX(${convSwipeState.dx}px)`;
+  const left = convSwipeState.wrap?.querySelector(".conv-swipe-action-left");
+  const right = convSwipeState.wrap?.querySelector(".conv-swipe-action-right");
+  if (left) left.style.opacity = convSwipeState.dx < -14 ? String(Math.min(1, -convSwipeState.dx / 84)) : "0";
+  if (right) right.style.opacity = convSwipeState.dx > 14 ? String(Math.min(1, convSwipeState.dx / 84)) : "0";
 }
 function onConvSwipeEnd(e) {
   if (!convSwipeState) return;
-  const { item, dx, dragging } = convSwipeState;
-  item.removeEventListener("pointermove", onConvSwipeMove);
-  item.removeEventListener("pointerup", onConvSwipeEnd);
-  item.removeEventListener("pointercancel", onConvSwipeEnd);
-  if (dragging) {
-    item.dataset.wasSwiped = "1";
-    item.style.transform = "translateX(0)";
-    if (dx < -50) {
-      if (navigator.vibrate) navigator.vibrate(12);
-      handleSwipeMarkUnread(item.dataset.conversationId);
+  const state = convSwipeState;
+  clearTimeout(state.longPressTimer);
+  state.item.removeEventListener("pointermove", onConvSwipeMove);
+  state.item.removeEventListener("pointerup", onConvSwipeEnd);
+  state.item.removeEventListener("pointercancel", onConvSwipeEnd);
+  if (state.dragging) {
+    state.item.dataset.wasSwiped = "1";
+    const actionDx = state.dx;
+    state.item.style.transition = "transform .18s ease";
+    if (actionDx <= -70) {
+      state.item.style.transform = "translateX(-110%)";
+      setTimeout(() => toggleChatArchived(state.item.dataset.conversationId), 140);
+    } else if (actionDx >= 70) {
+      state.item.style.transform = "translateX(110%)";
+      setTimeout(() => handleSwipeMarkUnread(state.item.dataset.conversationId), 140);
+    } else {
+      state.item.style.transform = "translateX(0)";
     }
+    setTimeout(() => { if (state.item) state.item.style.transition = ""; }, 200);
+  } else if (!state.longPressFired && !msgSelectMode) {
+    // Normal taps are handled by the click listener below.
   }
   convSwipeState = null;
 }
 function handleConvRowClick(event, conversationId) {
   const item = event.currentTarget;
   if (item.dataset.wasSwiped === "1") { item.dataset.wasSwiped = ""; return; }
+  if (item.dataset.wasLongPressed === "1") { item.dataset.wasLongPressed = ""; return; }
+  if (msgSelectMode) { event.preventDefault(); toggleMsgSelected(conversationId); return; }
   navigate("messages", { conversationId });
 }
 async function handleSwipeMarkUnread(conversationId) {
@@ -7192,7 +7698,7 @@ async function renderMessages(conversationId) {
     window.__conversations = convs;
     await refreshChatLists();
 
-    let html = `<h2><i class="fa-solid fa-comments"></i> Messages</h2>`;
+    let html = `<div id="messagesSelectionBar">${msgSelectionHeaderHtml()}</div>`;
     html += chatListTabsHtml();
     html += `<input type="text" id="msgSearchInput" placeholder="Search conversations…" oninput="filterMsgList()" style="margin:0.2rem 0 0.8rem;max-width:340px;" />`;
     html += `<div class="card" style="padding:0;overflow:hidden;" id="convListWrap"></div>`;
@@ -8262,8 +8768,8 @@ async function renderStorefront(vendorId) {
       ${v.bio ? `<p class="storefront-bio">${esc(v.bio)}</p>` : ""}
       <div class="storefront-stats">
         <span><strong>${allProducts.length}</strong> listing${allProducts.length === 1 ? "" : "s"}</span>
-        <span><strong>${st.review_count || 0}</strong> review${Number(st.review_count || 0) === 1 ? "" : "s"}</span>
-        ${st.avg_rating ? `<span><strong>★ ${Number(st.avg_rating).toFixed(1)}</strong> rating</span>` : ""}
+        <button type="button" class="storefront-stat-link" onclick="event.stopPropagation();scrollToVendorReviews()"><strong>${st.review_count || 0}</strong> review${Number(st.review_count || 0) === 1 ? "" : "s"}</button>
+        ${st.avg_rating ? `<button type="button" class="storefront-stat-link" onclick="event.stopPropagation();scrollToVendorReviews()"><strong>★ ${Number(st.avg_rating).toFixed(1)}</strong> rating</button>` : ""}
         ${v.sector?.name ? `<span>${esc(v.sector.name)}</span>` : ""}
       </div>
     </div>
@@ -8302,9 +8808,9 @@ async function renderStorefront(vendorId) {
   </section>`;
 
   if (reviews && reviews.length > 0) {
-    html += `<div class="flex" style="justify-content:space-between;cursor:pointer;margin-top:1.5rem;" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></div><div id="reviewsList" class="hidden">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div>`;
+    html += `<section class="storefront-reviews" id="vendorReviews"><button type="button" class="storefront-reviews-head" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></button><div id="reviewsList">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div></section>`;
   } else {
-    html += `<h3 style="margin-top:1.5rem;">Reviews</h3><p class="muted">No reviews yet.</p>`;
+    html += `<section class="storefront-reviews" id="vendorReviews"><h3 style="margin-top:0;">Reviews</h3><p class="muted">No reviews yet.</p></section>`;
   }
 
   storefrontViewMode = "grid";
@@ -8312,6 +8818,15 @@ async function renderStorefront(vendorId) {
   return html;
 }
 
+function scrollToVendorReviews() {
+  const reviews = byId("vendorReviews");
+  if (!reviews) return;
+  reviews.scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => {
+    const list = byId("reviewsList");
+    if (list?.classList.contains("hidden")) toggleReviewsList();
+  }, 180);
+}
 function toggleStorefrontPackages() {
   const section = byId("storefrontPackagesSection");
   const toggle = section?.querySelector(".storefront-packages-toggle");
@@ -11394,7 +11909,8 @@ function exportFinancePdf() {
       th{background:#f3f8f7;} .stats{display:flex;gap:1.5rem;margin:1.2rem 0;}
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
-    </style></head><body>
+    
+</style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
@@ -12929,8 +13445,17 @@ window.addEventListener("popstate", (e) => {
 })();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+      await reg.update().catch(() => {});
+      // If permission was already granted, silently refresh the subscription
+      // after a service-worker update. Expired subscriptions are a common
+      // reason an installed iPhone suddenly stops receiving pushes.
+      if (session && profile && pushSupported() && Notification.permission === "granted") {
+        await syncPushSubscription(reg).catch(() => {});
+      }
+    } catch (e) {}
   });
 }
 </script>
