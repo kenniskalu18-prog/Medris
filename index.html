@@ -2859,7 +2859,7 @@ html { scroll-padding-top: 86px !important; }
       <button class="icon-btn" onclick="toggleNotifPanel()" title="Notifications"><i class='fa-solid fa-bell'></i><span id="notifDot" class="notif-dot hidden">0</span></button>
     </div>
     <div class="icon-wrap">
-      <button class="icon-btn" onclick="toggleSettingsPanel()" title="Settings"><i class='fa-solid fa-gear'></i></button>
+      <button class="icon-btn" onclick="navigate('settings')" title="Settings"><i class='fa-solid fa-gear'></i></button>
     </div>
   </div>
 </header>
@@ -3884,56 +3884,39 @@ function toggleInfoPopover(id, evt) {
   const el = byId(id);
   if (!el) return;
   const willOpen = el.classList.contains("hidden");
-
   document.querySelectorAll(".info-popover").forEach((p) => {
     p.classList.add("hidden");
-    p.style.left = "";
-    p.style.top = "";
+    p.style.left = ""; p.style.top = "";
   });
   document.querySelectorAll(".ms-list").forEach((l) => l.classList.add("hidden"));
-
   if (!willOpen) return;
-
-  // Portal the bubble to <body>. This removes it from the stacking/overflow
-  // context of the Pending/Items cards, so the explanation always appears in
-  // front instead of being clipped or painted behind the next card.
-  if (!el._infoOriginParent) {
-    el._infoOriginParent = el.parentElement;
-    el._infoOriginNext = el.nextSibling;
-  }
+  const sourceButton = evt?.currentTarget || evt?.target?.closest?.(".info-btn");
+  if (!el._infoOriginParent) { el._infoOriginParent = el.parentElement; el._infoOriginNext = el.nextSibling; }
+  el._infoButton = sourceButton || el._infoButton || el._infoOriginParent?.querySelector?.(".info-btn");
   document.body.appendChild(el);
   el.classList.remove("hidden");
   positionInfoPopover(el);
 }
-// The popover normally hangs left-aligned under the "i" button, but that
-// button can sit anywhere on screen (including near the right edge of a
-// wide banner, or low enough on the page that there's no room below it) --
-// so after showing it, nudge it back on-screen instead of letting it run
-// off either side or the bottom.
 function positionInfoPopover(el) {
-  const wrap = el?.closest?.(".info-popover-wrap");
-  const btn = wrap?.querySelector?.(".info-btn");
-  if (!el || !btn) return;
+  const btn = el?._infoButton;
+  if (!el || !btn || !btn.isConnected) return;
   const margin = 12;
   const btnRect = btn.getBoundingClientRect();
   const width = Math.min(300, window.innerWidth - margin * 2);
   el.classList.remove("info-popover-above");
-  el.style.position = "fixed";
-  el.style.width = `${width}px`;
-  el.style.maxWidth = `calc(100vw - ${margin * 2}px)`;
-  el.style.zIndex = "10000";
+  el.style.position = "fixed"; el.style.width = `${width}px`; el.style.maxWidth = `calc(100vw - ${margin * 2}px)`; el.style.zIndex = "10000";
   let left = btnRect.left;
   if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
   if (left < margin) left = margin;
   el.style.left = `${left}px`;
-  // Measure after width/position are applied, then choose above/below.
   el.style.top = `${btnRect.bottom + 8}px`;
-  let r = el.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
   if (r.bottom > window.innerHeight - margin) {
     el.classList.add("info-popover-above");
     el.style.top = `${Math.max(margin, btnRect.top - r.height - 8)}px`;
   }
 }
+
 function byId(id) { return document.getElementById(id); }
 
 // ---------- MAP (Leaflet + OpenStreetMap, loaded on demand) ----------
@@ -4109,6 +4092,13 @@ function initSound() {
   } catch (e) {}
 }
 
+// ---------- LEVI FAB SIZE ----------
+const LEVI_FAB_MIN_SIZE=44;
+const LEVI_FAB_MAX_SIZE=74;
+function getLeviFabSize(){const n=Number(localStorage.getItem("medris-levi-fab-size"));return Number.isFinite(n)?Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(n))):LEVI_FAB_MAX_SIZE;}
+function setLeviFabSize(value){const size=Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(Number(value)||LEVI_FAB_MAX_SIZE)));localStorage.setItem("medris-levi-fab-size",String(size));document.documentElement.style.setProperty("--levi-fab-size",`${size}px`);const fab=byId("aiChatFab");if(fab){fab.style.setProperty("width",`${size}px`,"important");fab.style.setProperty("height",`${size}px`,"important");fab.style.setProperty("min-width",`${size}px`,"important");fab.style.setProperty("min-height",`${size}px`,"important");}const out=byId("leviSizeValue");if(out)out.textContent=`${size}px`;const range=byId("leviSizeRange");if(range)range.value=String(size);}
+function applyLeviFabSize(){setLeviFabSize(getLeviFabSize());}
+
 // ---------- LEVI VISIBILITY (hide the floating chat button entirely) ----------
 let leviVisible = true;
 function toggleLeviVisible() {
@@ -4131,6 +4121,7 @@ function initLeviVisible() {
   leviVisible = localStorage.getItem("medris-levi-visible") !== "0";
   renderLeviVisibleToggle();
   applyLeviVisibility();
+  applyLeviFabSize();
 }
 document.addEventListener("click", (e) => {
   if (e.target.closest(".btn, .icon-btn, .cat-chip, .theme-option, .accent-swatch, .bottom-nav-item, .fav-btn")) playSound("click");
@@ -4384,7 +4375,7 @@ function openDrawer(id) {
     playSound("open");
   }
 }
-function toggleSettingsPanel() { openDrawer("settingsPanel"); renderSettingsAppRows(); }
+function toggleSettingsPanel() { navigate("settings"); }
 
 // Manual, always-available versions of the one-time auto-popups — so
 // someone who dismissed the popup (or whose browser fired it before they
@@ -4436,16 +4427,15 @@ function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) {
-  // Side drawers are intentionally stationary while open. The previous
-  // touch-drag implementation directly overwrote transform during a gesture,
-  // which made the profile/settings panels drift diagonally or appear to jump.
-  // Keep this function as a compatibility no-op because older initialization
-  // code still calls it. Closing is handled by the close button, backdrop, or
-  // Escape key, while the drawer itself remains vertically scrollable.
-  return;
+  if(!drawer||drawer.dataset.swipeReady==="1")return;drawer.dataset.swipeReady="1";let sx=0,sy=0,active=false;
+  drawer.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t)return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});
+  drawer.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<54||Math.abs(dx)<Math.abs(dy)*1.15)return;if(side==="left"&&dx<0)closeAllPanels();if(side==="right"&&dx>0)closeAllPanels();},{passive:true});
 }
+let profileEdgeSwipeBound=false;
+function bindProfileEdgeSwipe(){if(profileEdgeSwipeBound)return;profileEdgeSwipeBound=true;let sx=0,sy=0,active=false;document.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t||t.clientX>18||e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel"))return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});document.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(dx>58&&Math.abs(dx)>Math.abs(dy)*1.15&&!byId("profilePanel")?.classList.contains("open")&&session&&profile)openDrawer("profilePanel");},{passive:true});}
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
+bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
 // Swipe left/right ANYWHERE on the page (not just the bottom bar) moves to
@@ -4858,6 +4848,13 @@ function refreshVisibleOrderView() {
     });
   }, 180);
 }
+let ordersVisibilityRefreshBound = false;
+function handleOrdersVisibilityRefresh() {
+  if (document.hidden || !["vendorOrders","buyerOrders"].includes(currentView)) return;
+  clearTimeout(ordersLiveRefreshTimer);
+  ordersLiveRefreshTimer = setTimeout(refreshVisibleOrderView, 250);
+}
+
 function subscribeOrderUpdates() {
   if (ordersLiveChannel) { try { sb.removeChannel(ordersLiveChannel); } catch (e) {} ordersLiveChannel = null; }
   if (ordersLiveTimer) { clearInterval(ordersLiveTimer); ordersLiveTimer = null; }
@@ -4874,9 +4871,14 @@ function subscribeOrderUpdates() {
   ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, refreshVisibleOrderView);
   ordersLiveChannel.subscribe();
 
-  // Fallback for projects where the orders table has not been added to the
-  // Supabase Realtime publication. This is deliberately light.
-  ordersLiveTimer = setInterval(refreshVisibleOrderView, 5000);
+  // Intentionally no fixed polling interval. Replacing the Orders DOM while
+  // the user is scrolling is what caused the history screen to twitch/jump.
+  // Realtime handles live changes; focus/visibility refreshes are bound once.
+  if (!ordersVisibilityRefreshBound) {
+    document.addEventListener("visibilitychange", handleOrdersVisibilityRefresh, { passive:true });
+    window.addEventListener("focus", handleOrdersVisibilityRefresh, { passive:true });
+    ordersVisibilityRefreshBound = true;
+  }
 }
 
 // ---------- AUTH ----------
@@ -5032,6 +5034,7 @@ function updateAuthUI() {
       links.push({ label: "Vendors &amp; transactions", action: "navigate('adminFinance')" });
       links.push({ label: `Feedback${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('adminFeedback')" });
     }
+    links.push({ label: "Settings", action: "navigate('settings')" });
     links.push({ label: "Take the tour", action: "showTour()" });
     if (profile.role !== "admin") links.push({ label: "Send feedback", action: "showSuggestionModal('platform')" });
     if (vendor) links.push({ label: `Suggestions${unreadSuggestionCount > 0 ? ` <span class="badge danger">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}`, action: "navigate('vendorSuggestionsInbox')" });
@@ -5089,6 +5092,35 @@ async function uploadAvatar(event) {
   profile.avatar_url = url;
   updateAuthUI();
   showToast("Profile photo updated.", "success");
+}
+
+// ---------- DEDICATED LEVROMART SETTINGS PAGE ----------
+function renderSettingsPage(){
+  if(!session||!profile) return '<div class="empty-state">Please log in.</div>';
+  renderSettingsAppRows();
+  return `<div class="settings-page" id="settings-page">
+    <div class="settings-page-header"><button class="settings-back-btn" onclick="navigate(lastNonSettingsView||'home')" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button><div><span class="settings-kicker">Levromart</span><h2>Settings</h2><p class="muted">Manage your account and app experience.</p></div></div>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-droplet"></i> Accent color</h3><p class="settings-section-note">Choose the accent used across Levromart.</p><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-robot"></i> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><div class="voice-preset-row"><button class="voice-preset-btn" onclick="setAiVoicePreset('natural')">Natural</button><button class="voice-preset-btn" onclick="setAiVoicePreset('warm')">Warm</button><button class="voice-preset-btn" onclick="setAiVoicePreset('clear')">Clear</button></div><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
+    <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
+    <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
+  </div>`;
+}
+function hydrateSettingsPage(){
+  const theme=document.documentElement.dataset.theme||localStorage.getItem("medris-theme")||"light";
+  document.querySelectorAll("#settings-page .settings-choice").forEach(el=>{const on=el.dataset.themeChoice===theme;el.classList.toggle("active",on);el.dataset.active=String(on);});
+  const accent=byId("accentSwatchesPage");
+  if(accent) accent.innerHTML=ACCENT_PALETTE.map((p,i)=>`<button type="button" class="accent-swatch ${i===currentAccentIndex?'active':''}" style="background:linear-gradient(135deg,${p.base},${p.light});" title="${esc(p.name)}" aria-label="${esc(p.name)}" onclick="setAccent(${i});setTimeout(hydrateSettingsPage,0)"></button>`).join("");
+  const vis=byId("leviVisibleSettingRow");
+  if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'}"></i><span><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
+  const consent=byId("settingsAiConsentPageRow");
+  if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line"></i><span><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent});setTimeout(hydrateSettingsPage,0)">${profile.ai_data_consent?'On':'Off'}</button>`;
+  const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
+  if(install&&oldInstall) install.innerHTML=oldInstall.innerHTML;if(notif&&oldNotif) notif.innerHTML=oldNotif.innerHTML;
+  const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'}"></i><span><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} — nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
+  const src=byId("voiceSelect"),page=byId("voiceSelectPage");if(src&&page){page.innerHTML=src.innerHTML;page.value=src.value||localStorage.getItem("medris-ai-voice")||"";page.onchange=function(){setAiVoice(this.value);};}
 }
 
 // ---------- MY DETAILS (any logged-in buyer/vendor's own contact info) ----------
@@ -5555,12 +5587,15 @@ function errorStateHtml(err) {
 function updateHeaderNavActive() {
   document.querySelectorAll(".header-nav-link").forEach((el) => el.classList.toggle("active", el.dataset.view === currentView));
 }
+let lastNonSettingsView = "home";
+
 async function navigate(view, params = {}, pushHistory = true) {
   const app = byId("app");
   // A suspended account is locked to this one screen no matter what it
   // tries to navigate to -- appealing (or logging out) is all that's left.
   if (profile?.suspended_at && view !== "suspended") view = "suspended";
   const previousView = currentView;
+  if (view !== "settings" && previousView !== "settings") lastNonSettingsView = previousView || "home";
   // The outgoing page just stays on screen, silently, until the new one is
   // ready to swap in -- no spinner, ever, no matter how long a fetch takes.
   // Awaited -- removeChannel is itself async (it has to tell the realtime
@@ -5594,6 +5629,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "vendorDashboard": html = await renderVendorDashboard(); break;
       case "vendorEditProfile": html = await renderVendorEditProfile(); break;
       case "editProfile": html = renderEditProfile(); break;
+      case "settings": html = renderSettingsPage(); break;
       case "vendorProducts": html = await renderVendorProducts(); break;
       case "vendorPackages": html = await renderVendorPackages(); break;
       case "vendorEarnings": html = await renderVendorEarnings(); break;
@@ -5629,6 +5665,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
   initDeliveryFieldsOnPage();
+  if (view === "settings") setTimeout(hydrateSettingsPage, 0);
   // A same-view, non-history refresh (notably live order updates) must keep
   // the user's scroll position. Real navigation still starts at the top.
   if (pushHistory || previousView !== view) window.scrollTo(0, 0);
@@ -9404,6 +9441,10 @@ function splitActiveAndHistoryOrders(orders, status) {
     history: orders.filter((o) => ORDER_HISTORY_STATUSES.has(o.status)),
   };
 }
+function orderHistoryActivityLabel(order) {
+  const iso = orderActivityIso(order);
+  return iso ? orderDateTimeStr(iso) : "";
+}
 function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   if (!historyOrders || !historyOrders.length) return "";
   const byDate = new Map();
@@ -9415,14 +9456,7 @@ function orderHistoryAccordionHtml(historyOrders, isBuyerView) {
   let inner = "";
   byDate.forEach((dayOrders, dateKey) => {
     inner += `<div class="category-group-header">${esc(dateKey)}</div>`;
-    inner += dayOrders.map((o) => `<div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
-      <div>
-        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
-        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
-        <p class="muted" style="font-size:.76rem;margin:.15rem 0 0;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>
-      </div>
-      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
-    </div>`).join("");
+    inner += dayOrders.map((o) => `<div class="order-history-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><div class="order-history-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${o.order_type} · ${naira(o.total_amount)}</span><small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small></div><span class="badge ${orderStatusBadgeClass(o.status)} order-history-status">${o.status.replace("_", " ")}</span></div>`).join("");
   });
   return `<div class="accordion-section" id="orderHistoryAccordion" style="margin-top:1.2rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-clock-rotate-left"></i> Order history (${historyOrders.length})</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -9490,16 +9524,7 @@ function orderListHtml(orders, isBuyerView) {
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
-  return shown.map((o) => `
-    <div class="card flex" style="justify-content:space-between;cursor:pointer;" onclick="navigate('orderDetail',{orderId:'${o.id}'})">
-      <div>
-        <strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong>
-        <p class="muted" style="text-transform:capitalize;">${o.order_type} · ${naira(o.total_amount)}</p>
-        ${orderVariantSummary(o) ? `<p class="muted" style="font-size:0.76rem;margin:.12rem 0 0;"><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</p>` : ""}
-        ${orderActivityIso(o) ? `<p class="muted" style="font-size:0.78rem;margin-top:0.15rem;"><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</p>` : ""}
-      </div>
-      <span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span>
-    </div>`).join("") + moreBtn;
+  return shown.map((o) => `<div class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><div class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${o.order_type} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</div><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status.replace("_", " ")}</span></div>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -10683,7 +10708,10 @@ function exportFinancePdf() {
       th{background:#f3f8f7;} .stats{display:flex;gap:1.5rem;margin:1.2rem 0;}
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
-    </style></head><body>
+    /* ===== FINAL STANDARD UI PASS — valid CSS only ===== */
+.settings-page{max-width:760px;margin:0 auto;padding:1rem 0 7rem}.settings-page-header{display:flex;align-items:flex-start;gap:1rem;padding:.35rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1rem}.settings-back-btn{width:2.8rem;height:2.8rem;flex:0 0 2.8rem;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text);display:inline-flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer}.settings-page-header h2{margin:.05rem 0 .2rem;font-size:1.7rem;line-height:1.15}.settings-page-header p{margin:0;font-size:.84rem}.settings-page-section{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1rem 1.05rem;margin:0 0 .85rem;box-shadow:0 6px 24px rgba(0,0,0,.04)}.settings-page-section h3{display:flex;align-items:center;gap:.65rem;margin:0;font-size:1rem}.settings-page-section h3 i{width:1.2rem;text-align:center;color:var(--primary)}.settings-section-note{margin:.3rem 0 .8rem;color:var(--text-muted);font-size:.78rem;line-height:1.45}.settings-choice-list{display:flex;flex-direction:column}.settings-choice{width:100%;display:grid;grid-template-columns:1.35rem minmax(0,1fr) auto;gap:.75rem;align-items:center;text-align:left;border:0;border-top:1px solid var(--border);background:none;color:var(--text);padding:.85rem 0;cursor:pointer;font-family:inherit}.settings-choice:first-child{border-top:0}.settings-choice>i:first-child{color:var(--text-muted);font-size:1rem}.settings-choice span{min-width:0}.settings-choice strong{display:block;font-size:.93rem}.settings-choice small{display:block;color:var(--text-muted);font-size:.72rem;margin-top:.12rem}.settings-choice-check{opacity:0;color:var(--primary);font-size:.9rem}.settings-choice.active .settings-choice-check{opacity:1}.settings-page-swatches{display:flex;flex-wrap:wrap;gap:.65rem;padding:.25rem 0}.settings-page-swatches .accent-swatch{border:0;width:34px;height:34px;border-radius:50%;padding:0;cursor:pointer}.settings-control-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.8rem;align-items:center;padding:.25rem 0}.settings-control-copy strong{display:block;font-size:.92rem}.settings-control-copy span{display:block;color:var(--text-muted);font-size:.72rem;line-height:1.35;margin-top:.15rem}.levi-size-control{grid-template-columns:minmax(0,1fr) auto}.levi-size-value{font-variant-numeric:tabular-nums;color:var(--primary);font-weight:750;font-size:.8rem}.levi-size-range{grid-column:1/-1;width:100%;accent-color:var(--primary);height:1.5rem}.settings-toggle-row,.settings-simple-row{display:grid;grid-template-columns:1.35rem minmax(0,1fr) auto;align-items:center;gap:.75rem;min-height:54px}.settings-toggle-row>i:first-child,.settings-simple-row>i:first-child{color:var(--primary);font-size:1rem;text-align:center}.settings-inline-btn{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:999px;padding:.4rem .72rem;font:600 .74rem inherit;cursor:pointer}.settings-inline-btn.active{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 40%,var(--border));background:color-mix(in srgb,var(--primary) 8%,transparent)}.settings-divider{height:1px;background:var(--border)}.settings-voice-wrap{padding:.7rem 0 0}.settings-select{width:100%;margin-top:.65rem}.settings-full-btn{width:100%;margin-top:.6rem}.settings-action-row{width:100%;display:grid;grid-template-columns:1.25rem minmax(0,1fr) auto;align-items:center;gap:.75rem;border:0;background:none;color:var(--text);padding:.8rem 0;text-align:left;cursor:pointer;font-family:inherit}.settings-action-row>i:first-child{color:var(--primary);text-align:center}.settings-action-row>i:last-child{color:var(--text-muted);font-size:.75rem}.settings-action-row strong{display:block;font-size:.92rem}.settings-action-row small{display:block;color:var(--text-muted);font-size:.72rem;margin-top:.15rem}.settings-close-page{width:100%;min-height:44px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:12px;font:650 .86rem inherit;cursor:pointer}#settingsPanel{display:none!important}.cart-fab{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;font-size:1rem!important}.ai-chat-fab{width:var(--levi-fab-size,74px)!important;height:var(--levi-fab-size,74px)!important;min-width:var(--levi-fab-size,74px)!important;min-height:var(--levi-fab-size,74px)!important}#profilePanel{overscroll-behavior:contain;touch-action:pan-y;will-change:transform}.order-list-card,.order-history-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1rem 1.05rem;margin:.65rem 0;cursor:pointer}.order-list-card:hover,.order-history-card:hover{border-color:color-mix(in srgb,var(--primary) 28%,var(--border))}.order-list-main,.order-history-main{min-width:0;display:flex;flex-direction:column;gap:.16rem}.order-list-main strong,.order-history-main strong{font-size:.96rem}.order-list-main span,.order-history-main span{font-size:.8rem;color:var(--text-muted);text-transform:capitalize}.order-list-main small,.order-history-main small{font-size:.72rem;color:var(--text-muted);line-height:1.35}.order-list-status,.order-history-status{justify-self:end;white-space:nowrap;margin:0!important}@media(max-width:720px){.settings-page{padding:.75rem 0 6.5rem}.settings-page-section{border-radius:16px;padding:.9rem}.settings-page-header h2{font-size:1.5rem}.cart-fab{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}}@media(max-width:520px){.order-list-card,.order-history-card{gap:.7rem;padding:.86rem .9rem}.order-list-main strong,.order-history-main strong{font-size:.9rem}.order-list-status,.order-history-status{font-size:.72rem}}
+
+</style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
     <div class="stats">
@@ -12050,6 +12078,7 @@ fab.addEventListener("pointerdown", (e) => {
   const fab = byId("aiChatFab");
   if (!fab) return;
   setupDraggableFab(fab, "levromart_ai_fab_pos", () => toggleAiChat());
+  applyLeviFabSize();
 })();
 setupDraggableFab(byId("cartFab"), "levromart_cart_fab_pos", () => navigate("cart"));
 
