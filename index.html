@@ -488,7 +488,6 @@
   .side-drawer.left { left: 0; border-right: 1px solid var(--glass-border); transform: translateX(-105%); }
   .side-drawer.left.open { transform: translateX(0); }
   .drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-  .ai-chat-panel .drawer-header { cursor: move; touch-action: none; }
   .drawer-header h4 { font-size: 1.05rem; }
   .drawer-subhead { font-size: 0.78rem; margin: 1.1rem 0 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .accordion-section { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; margin-bottom: 0.7rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: border-color 0.2s ease; }
@@ -1963,6 +1962,233 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 .voice-preset-btn{border:1px solid var(--border);background:transparent;color:var(--text-muted);border-radius:999px;padding:.42rem .75rem;font:inherit;font-size:.76rem;font-weight:650;cursor:pointer;}
 .voice-preset-btn.active{border-color:var(--primary);color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,transparent);}
 .voice-quality-hint{margin:.45rem 0 0;font-size:.72rem;color:var(--text-muted);line-height:1.4;}
+
+
+/* ================================================================
+   STABILITY + POLISH PATCH — 05 Sep 2026
+   Fixes: settings clipping/overlap, profile wrapping, duplicate arrows,
+   touch-hover jumps, search icon collisions, and viewport-safe sheets.
+   ================================================================ */
+#settingsPanel,
+#profilePanel,
+#notifPanel {
+  width: min(304px, 78vw) !important;
+  max-width: 304px !important;
+  min-width: 0 !important;
+}
+
+/* Settings must be a normal scroll flow. Never animate a fixed max-height
+   on the actual content: long sections (voice/accessibility/etc.) used to
+   spill underneath the next row and create the horizontal "stripes" seen
+   on mobile. */
+#settingsPanel {
+  display: block !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px)) !important;
+}
+#settingsPanel .accordion-section,
+#settingsPanel .settings-row-card,
+#settingsPanel .settings-more-section {
+  position: relative !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ui-hairline, var(--border)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+#settingsPanel .accordion-trigger,
+#settingsPanel .settings-more-row {
+  width: 100% !important;
+  min-height: 54px !important;
+  padding: .8rem 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: .8rem !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--text) !important;
+  text-align: left !important;
+}
+#settingsPanel .accordion-trigger > span,
+#settingsPanel .settings-more-row > span {
+  display: flex !important;
+  align-items: center !important;
+  gap: .8rem !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+#settingsPanel .accordion-trigger > span > i,
+#settingsPanel .settings-more-row > span > i {
+  flex: 0 0 1.25rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  color: var(--text-muted) !important;
+  font-size: 1rem !important;
+}
+#settingsPanel .accordion-section.open .accordion-trigger > span > i,
+#settingsPanel .settings-more-row.open > span > i { color: var(--primary) !important; }
+#settingsPanel .accordion-trigger .accordion-chevron,
+#settingsPanel .settings-more-row .settings-more-chevron {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+  background: none !important;
+  border: 0 !important;
+  color: var(--text-muted) !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+#settingsPanel .accordion-body {
+  display: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+  height: auto !important;
+  padding: 0 0 1rem 2.05rem !important;
+  transition: none !important;
+}
+#settingsPanel .accordion-section.open .accordion-body {
+  display: block !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#settingsPanel .settings-row-card > .theme-option {
+  min-height: 54px !important;
+  padding: .78rem 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+#settingsPanel .settings-row-card > .theme-option i {
+  flex: 0 0 1.25rem !important;
+  width: 1.25rem !important;
+  background: none !important;
+  padding: 0 !important;
+  margin-right: .8rem !important;
+  box-shadow: none !important;
+}
+#settingsPanel .settings-row-card > p {
+  margin: .8rem 0 .2rem !important;
+  padding: 0 !important;
+}
+#settingsPanel .settings-row-card .flex { padding: .1rem 0 .8rem !important; }
+#settingsPanel .settings-more-content {
+  padding: 0 0 1rem 2.05rem !important;
+}
+#settingsPanel .settings-subrow {
+  min-height: 48px !important;
+  width: 100% !important;
+  padding: .65rem 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: .7rem !important;
+  color: var(--text) !important;
+}
+
+/* Profile: fixed header, independent scrolling menu, no duplicate chevrons. */
+#profilePanel {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+#profilePanel .profile-panel-static {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+#profilePanel .profile-panel-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+#profilePanel .profile-panel-header {
+  display: grid !important;
+  grid-template-columns: 60px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: .85rem !important;
+  min-width: 0 !important;
+  padding: .4rem 0 1rem !important;
+}
+#profilePanel .profile-account-copy {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  overflow: hidden !important;
+}
+#profilePanel .profile-greeting,
+#profilePanel .profile-account-name,
+#profilePanel .profile-account-email { max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+#profilePanel .profile-account-name { line-height: 1.25 !important; }
+#profilePanel .profile-account-email { font-size: .76rem !important; line-height: 1.35 !important; }
+#profilePanel .profile-role-badge { margin-top: .3rem !important; align-self: flex-start !important; white-space: nowrap !important; }
+#profilePanel .profile-nav-link::after { content: none !important; }
+#profilePanel .profile-nav-arrow { display: inline-flex !important; flex: 0 0 auto !important; margin-left: auto !important; }
+#profilePanel .profile-nav-link { min-height: 50px !important; }
+
+/* Search icon and inline information markers always reserve their own space. */
+.hero-search { overflow: visible !important; }
+.hero-search-icon { left: 1rem !important; width: 1.25rem !important; text-align: center !important; z-index: 1 !important; }
+.hero-search input { padding-left: 3rem !important; padding-right: 1rem !important; min-width: 0 !important; }
+.info-popover-wrap { display: inline-flex !important; align-items: center !important; margin-left: .45rem !important; flex: 0 0 auto !important; }
+.info-btn { margin: 0 !important; vertical-align: middle !important; flex: 0 0 auto !important; }
+
+/* Prevent iOS/Safari touch-hover from making a product card jump when the
+   storefront is expanded. */
+.storefront-products-shell .product-card-wrap:hover .card,
+.storefront-products-shell .product-card-wrap:active .card,
+.storefront-products-shell .product-card-wrap:focus-within .card {
+  transform: none !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+.storefront-products-shell .product-card-wrap .card { transition: border-color .15s ease, box-shadow .15s ease !important; }
+.storefront-products-shell .product-card-wrap { animation: none !important; }
+.storefront-products-shell .product-card-wrap .btn:hover,
+.storefront-products-shell .product-card-wrap .btn:active { transform: none !important; }
+.storefront-products-shell { scroll-margin-top: 88px !important; }
+.storefront-packages { margin-top: 1.5rem !important; padding-top: .1rem !important; }
+.storefront-packages .storefront-section-head { margin-bottom: .9rem !important; }
+
+/* Don't let a sticky header obscure the beginning of a long vendor/admin form. */
+html { scroll-padding-top: 86px !important; }
+#app > *:first-child { scroll-margin-top: 86px !important; }
+
+/* Levi: never draggable, never repositioned by stale legacy styles. */
+.ai-chat-panel {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%,-50%) !important;
+  touch-action: auto !important;
+}
+.ai-chat-panel .drawer-header { cursor: default !important; user-select: none !important; }
+
+@media (max-width: 720px) {
+  #settingsPanel, #profilePanel, #notifPanel { width: min(304px,78vw) !important; max-width: 304px !important; }
+  .profile-panel-header { grid-template-columns: 56px minmax(0,1fr) !important; }
+  #profilePanel .profile-panel-header .avatar-lg { width: 56px !important; height: 56px !important; }
+  .hero-search input { padding-left: 2.9rem !important; }
+}
 
 </style>
 </head>
@@ -4140,14 +4366,19 @@ function updateAuthUI() {
             <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
             <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
           </div>
-          <div><span class="muted" style="font-size:0.78rem;display:block;">${greetingWord()},</span><strong>${esc(profile.name || "")}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(profile.email)}</p><span class="badge" style="margin-top:0.3rem;">${profile.role === "admin" ? "admin" : vendor ? "vendor" : "buyer"}</span></div>
+          <div class="profile-account-copy">
+            <span class="profile-greeting muted">${greetingWord()},</span>
+            <strong class="profile-account-name">${esc(profile.name || "")}</strong>
+            <span class="profile-account-email muted">${esc(profile.email)}</span>
+            <span class="badge profile-role-badge">${profile.role === "admin" ? "admin" : vendor ? "vendor" : "buyer"}</span>
+          </div>
         </div>
         <div class="divider" style="margin:.15rem 0 .35rem;"></div>
       </div>
       <div class="profile-panel-scroll">
         ${links.map((l) => {
           const raw = String(l.label).replace(/<[^>]*>/g, '').trim().toLowerCase();
-          const icon = raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
+          const icon = raw.includes('my orders') ? 'fa-receipt' : raw.includes('request an item') ? 'fa-hand' : raw.includes('my shop') ? 'fa-store' : raw.includes('packages') ? 'fa-box-open' : raw.includes('buyer requests') ? 'fa-clipboard-list' : raw.includes('business profile') ? 'fa-shop' : raw.includes('my details') ? 'fa-id-card' : raw.includes('messages') ? 'fa-message' : raw.includes('wishlist') ? 'fa-heart' : raw.includes('admin panel') ? 'fa-shield-halved' : raw.includes('manage admins') ? 'fa-users-gear' : raw.includes('vendors') ? 'fa-chart-line' : raw.includes('feedback') ? 'fa-comment-medical' : raw.includes('suggestions') ? 'fa-inbox' : raw.includes('tour') ? 'fa-compass' : 'fa-circle';
           return `<a class="profile-nav-link" onclick="closeAllPanels();${l.action};"><span class="profile-item-icon"><i class="fa-solid ${icon}"></i></span><span class="profile-nav-text">${l.label}</span><i class="fa-solid fa-chevron-right profile-nav-arrow"></i></a>`;
         }).join("")}
         <div class="divider" style="margin:.45rem 0;"></div>
@@ -10483,6 +10714,55 @@ function toggleMsgMic() {
   msgRecognizer.onend = () => { msgListening = false; btn.classList.remove("listening"); };
   try { msgRecognizer.start(); } catch (e) { /* already running */ }
 }
+
+function leviOfflineFallback(text) {
+  const q = leviNormaliseText(text);
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(q)) {
+    const name = (profile?.name || '').trim().split(/\s+/)[0];
+    return `Hi${name ? `, ${name}` : ''}. I'm Levi. I can still help with basic Levromart navigation, your cart, wishlist, orders, and products while the smart assistant reconnects.`;
+  }
+  if (/\b(open|show|take me to|go to)\b.*\b(cart|basket)\b/.test(q)) {
+    navigate('cart');
+    return 'Done — I opened your cart.';
+  }
+  if (/\b(open|show|go to|take me to)\b.*\b(my shop|shop)\b/.test(q) && vendor) {
+    navigate('vendorDashboard');
+    return 'Done — I opened your shop.';
+  }
+  if (/\b(open|show|go to|take me to)\b.*\b(vendors?|vendor directory)\b/.test(q)) {
+    navigate('vendors');
+    return 'Done — here are the vendors.';
+  }
+  return 'I’m still here. The smart assistant connection is temporarily unavailable, but I can continue handling local app actions such as your cart, wishlist, navigation, and product browsing.';
+}
+
+async function fetchLeviReply(payload) {
+  const urls = ['/api/chat', '/api/chat.js'];
+  let lastError = null;
+  for (const url of urls) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+          cache: 'no-store',
+          body: JSON.stringify(payload),
+        });
+        const raw = await res.text();
+        let json = {};
+        try { json = raw ? JSON.parse(raw) : {}; } catch (_) {}
+        if (res.ok && json.reply) return json;
+        lastError = new Error(json.error || `Levi service returned HTTP ${res.status}.`);
+        if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) break;
+      } catch (err) {
+        lastError = err;
+      }
+      if (attempt === 0) await new Promise(r => setTimeout(r, 550));
+    }
+  }
+  throw lastError || new Error('Levi service unavailable.');
+}
+
 async function sendAiChatMessage() {
   const input = byId("aiChatInput");
   const text = input.value.trim();
@@ -10512,19 +10792,13 @@ async function sendAiChatMessage() {
 
   appendAiChatMessage("typing", "");
   try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: aiChatMessages.filter((m) => m.role !== "typing"),
-        accessToken: session?.access_token,
-        lat: buyerLocation?.lat, lng: buyerLocation?.lng,
-        currentView, currentViewParams, lastRenderError,
-      }),
+    const json = await fetchLeviReply({
+      messages: aiChatMessages.filter((m) => m.role !== "typing"),
+      accessToken: session?.access_token,
+      lat: buyerLocation?.lat, lng: buyerLocation?.lng,
+      currentView, currentViewParams, lastRenderError,
     });
-    const json = await res.json();
     byId("aiChatTyping")?.remove();
-    if (!res.ok) throw new Error(json.error || "AI service unavailable.");
     const assistantEl = appendAiChatMessage("assistant", json.reply, wasVoice);
     persistAiMessage("assistant", json.reply).then((id) => {
       if (id && assistantEl) { assistantEl.dataset.msgId = id; attachAiReactionUI(assistantEl, id, null); }
@@ -10533,7 +10807,9 @@ async function sendAiChatMessage() {
   } catch (err) {
     byId("aiChatTyping")?.remove();
     console.error("Levi chat error:", err);
-    appendAiChatMessage("assistant", "Levi is unavailable right now. Please try again in a moment.");
+    const fallback = leviOfflineFallback(text);
+    appendAiChatMessage("assistant", fallback, wasVoice);
+    persistAiMessage("assistant", fallback);
   }
 }
 
