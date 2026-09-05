@@ -4085,7 +4085,68 @@ header { position:fixed !important; top:0 !important; left:0 !important; right:0
 /* User-controlled text scale. 100% remains the default; the setting changes
    the root type scale so all rem-based typography grows together predictably. */
 html { font-size:calc(16px * var(--levro-font-scale, 1)); }
+
+/* Final native-app shell lock: the document itself scrolls naturally, but its scrollbar is never painted. */
+html, body { scrollbar-width:none !important; -ms-overflow-style:none !important; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
+body { overflow-x:hidden !important; }
+header { position:fixed !important; inset:0 0 auto 0 !important; width:100% !important; }
+body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
+@media (max-width:720px){ body{padding-top:calc(58px + env(safe-area-inset-top,0px)) !important;} }
+
 </style>
+
+<style id="final-vendor-bottom-nav-and-profile-gesture-fix">
+/* Vendor navigation: fill the complete bar. The + button owns the centre
+   column; every surrounding destination receives an equal-width slot. */
+@media (max-width:720px){
+  .bottom-nav.has-add{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr) !important;
+    align-items:center !important;
+    width:auto !important;
+    min-width:0 !important;
+  }
+  .bottom-nav.has-add .bn-group{
+    display:flex !important;
+    width:100% !important;
+    min-width:0 !important;
+    align-items:stretch !important;
+    justify-content:stretch !important;
+  }
+  .bottom-nav.has-add .bn-group .bottom-nav-item{
+    flex:1 1 0 !important;
+    width:0 !important;
+    min-width:0 !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:.2rem .08rem !important;
+    justify-content:center !important;
+    align-items:center !important;
+    overflow:visible !important;
+  }
+  .bottom-nav.has-add .bn-group .bottom-nav-item .bn-icon,
+  .bottom-nav.has-add .bn-group .bottom-nav-item span:last-child{
+    max-width:100% !important;
+  }
+  .bottom-nav.has-add .bn-group .bottom-nav-item span:last-child{
+    width:100% !important;
+    text-align:center !important;
+  }
+  .bottom-nav.has-add .bottom-nav-add{
+    justify-self:center !important;
+    align-self:center !important;
+    flex:none !important;
+  }
+}
+
+/* Profile is vertically scrollable but horizontally gestureable. Other
+   horizontal surfaces keep their own native scrolling behaviour because the
+   profile controller explicitly ignores them. */
+#profilePanel{overscroll-behavior-x:none !important;touch-action:pan-y !important;}
+#profilePanel .profile-panel-scroll{touch-action:pan-y !important;}
+</style>
+
 </head>
 <body>
 <div id="levromartSplash" aria-hidden="true"><div class="levromart-splash-mark"><img class="levromart-splash-logo" alt="Levromart" /></div></div>
@@ -4270,7 +4331,7 @@ html { font-size:calc(16px * var(--levro-font-scale, 1)); }
     <div id="authError" class="error-text hidden"></div>
 
     <div id="googleAuthWrap">
-      <button type="button" class="btn btn-sm btn-outline" id="googleAuthBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;"><i class="fa-brands fa-google"></i> Continue with Google</button>
+      <button type="button" class="btn btn-sm btn-outline" id="googleAuthBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;"><i class="fa-brands fa-google"></i> Google sign-in (existing accounts)</button>
       <div class="flex" style="align-items:center;gap:0.6rem;margin:0.9rem 0;"><div style="flex:1;height:1px;background:var(--border);"></div><span class="muted" style="font-size:0.78rem;">or</span><div style="flex:1;height:1px;background:var(--border);"></div></div>
     </div>
 
@@ -4285,11 +4346,12 @@ html { font-size:calc(16px * var(--levro-font-scale, 1)); }
       <label>City</label>
       <input type="text" id="loginCity" placeholder="City" value="Lagos" />
       <label>Phone</label>
-      <input type="tel" id="loginPhone" placeholder="Phone" />
+      <input type="tel" id="loginPhone" placeholder="Phone (required)" />
+      <p class="muted" style="font-size:.75rem;margin:.15rem 0 .55rem;">Email is optional. Your phone number can be used to sign in if you do not add an email.</p>
     </div>
 
-    <label>Email</label>
-    <input type="email" id="loginEmail" placeholder="Email address" />
+    <label>Email <span class="muted" style="font-weight:400;font-size:.75em;">(optional when registering)</span></label>
+    <input type="email" id="loginEmail" placeholder="Email address (optional when registering)" />
     <div id="loginPasswordWrap">
       <label>Password</label>
       <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
@@ -5594,7 +5656,7 @@ function initSound() {
 // ---------- ACCESSIBILITY FONT SIZE ----------
 const LEVRO_FONT_MIN=0.85, LEVRO_FONT_MAX=1.25, LEVRO_FONT_STEP=0.05;
 function getLevromartFontScale(){const n=Number(localStorage.getItem("levromart-font-scale"));return Number.isFinite(n)?Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,n)):1;}
-function setLevromartFontScale(value){const n=Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,Number(value)||1));localStorage.setItem("levromart-font-scale",String(Number(n.toFixed(2))));document.documentElement.style.setProperty("--levro-font-scale",String(n));document.body?.style.setProperty("--levro-font-scale",String(n));const range=byId("levroFontScaleRange");if(range)range.value=String(n);const out=byId("levroFontScaleValue");if(out)out.textContent=`${Math.round(n*100)}%`;}
+function setLevromartFontScale(value){const n=Math.max(LEVRO_FONT_MIN,Math.min(LEVRO_FONT_MAX,Number(value)||1));const v=String(Number(n.toFixed(2)));localStorage.setItem("levromart-font-scale",v);document.documentElement.style.setProperty("--levro-font-scale",v);document.documentElement.style.setProperty("font-size",`calc(16px * ${v})`);document.body?.style.setProperty("--levro-font-scale",v);const range=byId("levroFontScaleRange");if(range)range.value=v;const out=byId("levroFontScaleValue");if(out)out.textContent=`${Math.round(n*100)}%`;}
 function applyLevromartFontScale(){setLevromartFontScale(getLevromartFontScale());}
 
 // ---------- LEVI FAB SIZE ----------
@@ -5967,24 +6029,52 @@ let profileEdgeSwipeBound=false;
 function bindProfileEdgeSwipe(){
   if(profileEdgeSwipeBound)return;
   profileEdgeSwipeBound=true;
-  let sx=0,sy=0,active=false;
-  document.addEventListener("touchstart",e=>{
-    const t=e.touches[0];
-    if(!t||!session||!profile||byId("profilePanel")?.classList.contains("open")) return;
-    if(e.target.closest("input,textarea,select,button,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*=\"overflow-x\"]")) return;
-    if(currentView === "messages" && (e.target.closest("#messagesSelectionBar") || e.target.closest("#app"))) return;
-    // Do not steal Android/iOS OS edge-back gestures. Start the profile
-    // gesture in the body of the screen, from roughly 24%–68% of the width.
+  const panel=byId("profilePanel");
+  if(!panel)return;
+  // ONLY the profile panel gets this horizontal page gesture.  Scrollable
+  // controls (tables, maps, galleries, rails, forms, messages) are ignored.
+  let gesture=null;
+  const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
+  const canStart=(target)=>!target?.closest?.(ignoreSelector);
+
+  function start(e){
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    if(!session || !profile || !canStart(e.target))return;
+    const open=panel.classList.contains('open');
     const w=window.innerWidth;
-    if(t.clientX < w*0.24 || t.clientX > w*0.68) return;
-    sx=t.clientX; sy=t.clientY; active=true;
-  },{passive:true});
-  document.addEventListener("touchend",e=>{
-    if(!active||!e.changedTouches[0])return;
-    active=false;
-    const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
-    if(dx>72&&Math.abs(dx)>Math.abs(dy)*1.18&&!byId("profilePanel")?.classList.contains("open")) openDrawer("profilePanel");
-  },{passive:true});
+    // Opening starts comfortably inside the screen so the OS edge-back gesture
+    // remains untouched. Closing starts only inside the profile drawer.
+    if(!open){
+      if(e.clientX < w*0.20 || e.clientX > w*0.80)return;
+    }else if(!panel.contains(e.target))return;
+    gesture={id:e.pointerId,sx:e.clientX,sy:e.clientY,open,moved:false,horizontal:false};
+    try{e.target.setPointerCapture?.(e.pointerId);}catch(_){}
+  }
+
+  function move(e){
+    if(!gesture || e.pointerId!==gesture.id)return;
+    const dx=e.clientX-gesture.sx,dy=e.clientY-gesture.sy;
+    if(!gesture.moved){
+      if(Math.hypot(dx,dy)<9)return;
+      if(Math.abs(dy)>=Math.abs(dx)*0.92){gesture=null;return;}
+      gesture.moved=true; gesture.horizontal=true;
+    }
+    if(gesture.horizontal && e.cancelable)e.preventDefault();
+  }
+
+  function end(e){
+    if(!gesture || e.pointerId!==gesture.id)return;
+    const g=gesture; gesture=null;
+    const dx=e.clientX-g.sx,dy=e.clientY-g.sy;
+    if(!g.horizontal || Math.abs(dx)<58 || Math.abs(dx)<Math.abs(dy)*1.12)return;
+    if(!g.open && dx>0){openDrawer('profilePanel');return;}
+    if(g.open && dx<0){closeAllPanels();return;}
+  }
+
+  document.addEventListener('pointerdown',start,{passive:true});
+  document.addEventListener('pointermove',move,{passive:false});
+  document.addEventListener('pointerup',end,{passive:true});
+  document.addEventListener('pointercancel',()=>{gesture=null;},{passive:true});
 }
 ["notifPanel", "settingsPanel"].forEach((id) => setupDrawerSwipe(byId(id), "right"));
 setupDrawerSwipe(byId("profilePanel"), "left");
@@ -6928,15 +7018,63 @@ async function enforceSingleSession() {
 // same as leaving "I am a…" on its default during a normal signup --
 // anyone who actually wants to sell can still apply as a vendor
 // afterward, same as always.
-async function signInWithGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: window.location.origin + window.location.pathname },
+function normalizeAuthPhone(phone) {
+  const raw = String(phone || "").trim();
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 11) digits = "234" + digits.slice(1);
+  return digits;
+}
+function authAliasFromPhone(phone) {
+  const digits = normalizeAuthPhone(phone);
+  return digits ? `p${digits}@accounts.levromart.app` : "";
+}
+function looksLikePhoneIdentifier(value) {
+  const raw = String(value || "").trim();
+  return !!raw && !raw.includes("@") && /^[+()\d\s-]{7,}$/.test(raw);
+}
+
+async function accountExistsForGoogle(email) {
+  const res = await fetch("/api/account-exists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
   });
-  if (error) showToast(error.message, "error");
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || "Could not verify that account.");
+  return !!json.exists;
+}
+
+async function signInWithGoogle() {
+  const email = byId("loginEmail").value.trim();
+  const errorEl = byId("authError");
+  errorEl.classList.add("hidden");
+  if (!email || !email.includes("@")) {
+    errorEl.textContent = "Enter the email already registered to your Levromart account before using Google sign-in.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+  const btn = byId("googleAuthBtn");
+  btn.disabled = true;
+  try {
+    const exists = await accountExistsForGoogle(email);
+    if (!exists) {
+      throw new Error("No Levromart account was found for that email. Register first, then you can use Google sign-in.");
+    }
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { login_hint: email } },
+    });
+    if (error) throw error;
+  } catch (err) {
+    errorEl.textContent = err.message || "Could not start Google sign-in.";
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
 }
 async function submitAuth() {
-  const email = byId("loginEmail").value.trim();
+  let email = byId("loginEmail").value.trim();
   const password = byId("loginPassword").value;
   const errorEl = byId("authError");
   errorEl.classList.add("hidden");
@@ -6949,7 +7087,7 @@ async function submitAuth() {
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
       if (error) throw error;
       hideLogin();
-      showToast("Check your email for a password reset link.", "success");
+      showToast("If that email has a Levromart account, the reset link has been requested.", "success");
     } catch (err) {
       errorEl.textContent = err.message;
       errorEl.classList.remove("hidden");
@@ -6958,8 +7096,6 @@ async function submitAuth() {
     }
     return;
   }
-
-  if (!email || !password) { errorEl.textContent = "Email and password are required."; errorEl.classList.remove("hidden"); return; }
 
   const btn = byId("authSubmitBtn");
   btn.disabled = true;
@@ -6971,31 +7107,34 @@ async function submitAuth() {
       const city = byId("loginCity").value.trim();
       const phone = byId("loginPhone").value.trim();
       if (!name) throw new Error("Full name is required.");
+      if (!phone) throw new Error("Phone is required when creating a Levromart account. Email is optional.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
       if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
+      const normalizedPhone = normalizeAuthPhone(phone);
+      if (normalizedPhone.length < 10) throw new Error("Enter a valid phone number.");
 
-      const { data, error } = await sb.auth.signUp({
-        email, password,
-        options: { data: { name, phone, city, role } },
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || null, password, name, phone, city, role }),
       });
-      if (error) throw error;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Could not create your account.");
 
-      if (!data.session) {
-        hideLogin();
-        showToast("Check your email for a confirmation link, then log in.", "success");
-        return;
-      }
+      // The server creates the Supabase Auth user with email confirmation
+      // already marked complete. No confirmation email is sent.
+      const authIdentifier = email || authAliasFromPhone(phone);
+      const { error: loginError } = await sb.auth.signInWithPassword({ email: authIdentifier, password });
+      if (loginError) throw loginError;
       await enforceSingleSession();
       await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (!email || !password) { throw new Error("Email or phone and password are required."); }
+      const authIdentifier = looksLikePhoneIdentifier(email) ? authAliasFromPhone(email) : email;
+      if (!authIdentifier) throw new Error("Enter your email or phone number.");
+      const { error } = await sb.auth.signInWithPassword({ email: authIdentifier, password });
       if (error) throw error;
       await enforceSingleSession();
-      // The OTP check (and role-select / set-password, if either is still
-      // pending on this account) all now run from inside finishLoginSuccess
-      // -> refreshAuthStateOnce -> runPostAuthChecks, one shared sequence
-      // for every sign-in path (password, Google, and a returning session
-      // past its 7-day OTP window) instead of duplicating the check here.
       await finishLoginSuccess("home");
     }
   } catch (err) {
@@ -11287,13 +11426,13 @@ async function persistOrderItemVariants(orderId, selections) {
     if (!item?.productId || (!item?.variantName && !item?.variantColor)) continue;
     let rpcOk = false;
     try {
-      const { error } = await sb.rpc("set_order_item_variant", {
+      const { data: rpcResult, error } = await sb.rpc("set_order_item_variant", {
         p_order_id: orderId,
         p_product_id: item.productId,
         p_variant_name: item.variantName || null,
         p_variant_color: item.variantColor || null,
       });
-      if (!error) rpcOk = true;
+      if (!error && rpcResult !== false) rpcOk = true;
       else console.warn("Variant metadata RPC failed; continuing with direct sync", error);
     } catch (e) {
       console.warn("Variant metadata RPC failed; continuing with direct sync", e);
@@ -11439,7 +11578,7 @@ async function renderOrderDetail(orderId) {
     ${order.items.map((item, i) => `<div style="${i > 0 ? "border-top:1px solid var(--border);padding-top:0.7rem;margin-top:0.7rem;" : ""}">
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
-      ${(item.variant_name || item.variant_color) ? `<div class="order-selected-variant"><i class="fa-solid fa-sliders"></i> <strong>Selected:</strong> ${esc(item.variant_name || "Variation")}${item.variant_color ? ` <span class="muted">· ${esc(item.variant_color)}</span>` : ""}</div>` : ""}
+      ${(item.variant_name || item.variant_color) ? `<div class="order-selected-variant"><i class="fa-solid fa-sliders"></i> <strong>Selected:</strong> ${item.variant_name ? esc(item.variant_name) : "Variation"}${item.variant_color ? ` <span class="muted">· ${esc(item.variant_color)}</span>` : ""}</div>` : ""}
     </div>`).join("")}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
@@ -12690,7 +12829,7 @@ function renderTerms() {
     <p>Levromart provides the platform, payment processing, and vendor verification. We are not the seller or renter of record. Every listing belongs to an independent vendor, who is responsible for the condition, safety, and accuracy of their goods, services, and descriptions.</p>
 
     <h3>2. Accounts</h3>
-    <p>You must provide accurate information when registering. You're responsible for keeping your password secure and for all activity under your account. Vendor accounts additionally require identity/business verification before their storefront goes live.</p>
+    <p>You must provide accurate information when registering. A phone number and password are required; an email address is optional. You're responsible for keeping your password secure and for all activity under your account. Vendor accounts additionally require identity/business verification before their storefront goes live.</p>
 
     <h3>3. Orders, rentals &amp; payments</h3>
     <ul>
@@ -12745,7 +12884,7 @@ function renderPrivacy() {
     <p>Your conversations with Levi are saved to your account so they're there when you come back, and are visible only to you: searchable, and deletable any time from the chat panel. Levromart's team does not read them unless you turn on "Help improve Levi" in Settings, which is off by default.</p>
 
     <h3>4. Your choices</h3>
-    <p>You can edit or delete most of your profile information from your account settings. You can request full account deletion by contacting a Levromart admin; we'll remove your personal data except where we're required to keep transaction records (e.g. for tax/payment compliance).</p>
+    <p>You can edit or delete your profile information from your account settings. You can permanently delete your own Levromart account from Settings → Account. Buyers may delete even with pending orders; vendor accounts must have all orders completed or cancelled and any unsettled commission cleared first.</p>
 
     <h3>5. Security</h3>
     <p>Passwords are never stored in plain text (handled by Supabase Auth). Every account, including ones created with Google, has a password on file so account actions that require it (like deleting your account) work consistently. Access to vendor verification documents and payment records is restricted to the account owner and admins.</p>
