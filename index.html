@@ -2641,6 +2641,90 @@ html { scroll-padding-top: 86px !important; }
   #tourCallout .install-modal-actions .btn { min-height:34px !important; font-size:.74rem !important; }
 }
 
+
+/* ================================================================
+   DEFINITIVE MOBILE UI FIX — 05 Sep 2026
+   ================================================================ */
+#notifPanel .notif-list-scroll {
+  display:flex !important; flex-direction:column !important; align-items:stretch !important;
+  justify-content:flex-start !important; gap:.55rem !important;
+  height:calc(100dvh - 170px) !important; min-height:0 !important;
+  overflow-y:auto !important; overflow-x:hidden !important;
+  padding:.15rem 0 calc(1rem + env(safe-area-inset-bottom,0px)) !important;
+  margin:0 !important; box-sizing:border-box !important;
+  -webkit-overflow-scrolling:touch !important; overscroll-behavior:contain !important;
+}
+#notifPanel .notif-item-wrap {
+  display:block !important; flex:0 0 auto !important; width:100% !important;
+  height:auto !important; min-height:0 !important; max-height:none !important;
+  margin:0 !important; padding:0 !important; position:relative !important;
+  overflow:hidden !important; contain:layout paint !important; box-sizing:border-box !important;
+}
+#notifPanel .notif-item-wrap .notif-item {
+  -webkit-appearance:none !important; appearance:none !important;
+  border:0 !important; outline:0 !important; font:inherit !important;
+  color:var(--text) !important; text-align:left !important;
+  display:grid !important; grid-template-columns:2.35rem minmax(0,1fr) !important;
+  align-items:start !important; column-gap:.72rem !important;
+  width:100% !important; min-width:0 !important; min-height:72px !important;
+  height:auto !important; max-height:none !important; box-sizing:border-box !important;
+  padding:.78rem .72rem !important; margin:0 !important; overflow:visible !important;
+  position:relative !important; z-index:1 !important; background:var(--card) !important;
+  border-radius:.78rem !important; line-height:1.35 !important; cursor:pointer !important;
+  transform:translateX(0) !important; transition:transform .2s ease,background-color .15s ease !important;
+}
+#notifPanel .notif-item-wrap .notif-item > img,
+#notifPanel .notif-item-wrap .notif-item > .avatar-circle,
+#notifPanel .notif-item-wrap .notif-item > i,
+#notifPanel .notif-item-wrap .notif-item > .notif-select-check {
+  grid-column:1 !important; grid-row:1 !important; width:2.25rem !important;
+  height:2.25rem !important; min-width:2.25rem !important; min-height:2.25rem !important;
+  margin:0 !important; flex:none !important;
+}
+#notifPanel .notif-item-wrap .notif-item > span[style*="flex:1"] {
+  grid-column:2 !important; grid-row:1 !important; display:block !important;
+  min-width:0 !important; width:100% !important; flex:none !important; overflow:visible !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong,
+#notifPanel .notif-item-wrap .notif-item .muted {
+  display:block !important; width:100% !important; min-width:0 !important;
+  height:auto !important; max-height:none !important; white-space:normal !important;
+  overflow:visible !important; text-overflow:clip !important; overflow-wrap:anywhere !important;
+  word-break:normal !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong { line-height:1.28 !important; margin:0 !important; }
+#notifPanel .notif-item-wrap .notif-item .muted { line-height:1.35 !important; }
+#notifPanel .notif-item-wrap .notif-item.unread { background:color-mix(in srgb,var(--primary) 8%,var(--card)) !important; }
+#notifPanel .notif-swipe-bg { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; }
+
+#settingsPanel .accordion-body { display:none !important; height:auto !important; max-height:none !important; overflow:visible !important; }
+#settingsPanel .accordion-section.open .accordion-body { display:block !important; }
+
+#tourModal { position:fixed !important; inset:0 !important; overflow:hidden !important; }
+#tourCallout {
+  position:fixed !important; box-sizing:border-box !important;
+  width:min(276px,calc(100vw - 24px)) !important; max-width:min(276px,calc(100vw - 24px)) !important;
+  max-height:min(220px,calc(100dvh - 24px)) !important; padding:.7rem .76rem !important;
+  margin:0 !important; overflow:hidden !important; z-index:481 !important;
+  transform:none !important; animation:none !important;
+}
+#tourCallout.centered { left:50% !important; top:50% !important; transform:translate(-50%,-50%) !important; }
+#tourCallout.tour-enter { animation:tourCalloutFade .18s ease both !important; }
+@keyframes tourCalloutFade { from{opacity:0} to{opacity:1} }
+#tourCallout .install-modal-badge { width:2.25rem !important; height:2.25rem !important; margin:0 auto .3rem !important; }
+#tourCallout .install-modal-badge img { width:1.45rem !important; height:1.45rem !important; }
+#tourCallout > p.muted:first-of-type { font-size:.6rem !important; margin:0 0 .08rem !important; }
+#tourCallout h3 { font-size:.9rem !important; line-height:1.16 !important; margin:0 0 .2rem !important; }
+#tourCallout #tourBody { font-size:.7rem !important; line-height:1.28 !important; margin:0 auto !important; max-width:258px !important; }
+#tourCallout .tour-dots { margin:.34rem 0 .42rem !important; gap:.24rem !important; }
+#tourCallout .tour-dot { width:.28rem !important; height:.28rem !important; }
+#tourCallout .tour-dot.active { width:.62rem !important; }
+#tourCallout .install-modal-actions { margin:0 !important; gap:.32rem !important; }
+#tourCallout .install-modal-actions .btn { min-height:32px !important; padding:.3rem .58rem !important; font-size:.7rem !important; }
+#tourCallout .tour-skip { margin:.28rem auto 0 !important; font-size:.64rem !important; }
+.product-card-wrap,.vendor-card,.review-card { content-visibility:visible !important; contain:none !important; }
+.product-card-wrap:hover .card,.product-card-wrap:active .card,.product-card-wrap:focus-within .card { transform:none !important; }
+
 </style>
 </head>
 <body>
@@ -4436,11 +4520,11 @@ async function renderNotifPanel() {
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
         <div class="notif-swipe-bg left"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-arrow-up" : notifViewMode === "archived" ? "fa-box-open" : "fa-box-archive"}"></i></div>
         <div class="notif-swipe-bg right"><i class="fa-solid ${notifViewMode === "trash" ? "fa-trash-can" : "fa-trash"}"></i></div>
-        <div class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
+        <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}'>
           <span class="notif-select-check"><i class="fa-solid fa-check"></i></span>
           ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
           <span style="flex:1;min-width:0;"><strong style="display:block;">${esc(n.title)}</strong>${n.body ? `<span class="muted" style="font-size:0.8rem;">${esc(n.body)}</span><br/>` : ""}<span class="muted" style="font-size:0.72rem;">${timeAgo(n.created_at)}</span></span>
-        </div>
+        </button>
       </div>`).join("")
     : `<p class="muted" style="padding:0.4rem;">${emptyMsg}</p>`;
 
