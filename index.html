@@ -2190,6 +2190,308 @@ html { scroll-padding-top: 86px !important; }
   .hero-search input { padding-left: 2.9rem !important; }
 }
 
+
+/* ================================================================
+   FINAL MOBILE STABILITY PATCH — 05 Sep 2026
+   Notifications, settings, storefront expansion, and Levi transport.
+   This deliberately overrides earlier experimental UI layers so the
+   rendered layout has one predictable source of truth.
+   ================================================================ */
+
+/* Notifications: the drawer itself is the shell; only the list scrolls.
+   Without flex-shrink:0, dozens of notification rows were being compressed
+   by the flex drawer and their contents painted over neighbouring rows. */
+#notifPanel {
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  min-height:0 !important;
+}
+#notifPanel > .drawer-header,
+#notifPanel > .notif-tabs,
+#notifPanel > .notif-mark-all-btn,
+#notifPanel > .notif-select-bar,
+#notifPanel > .muted {
+  flex:0 0 auto !important;
+}
+#notifPanel > .notif-list-scroll {
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+  overscroll-behavior:contain !important;
+  padding-bottom:.25rem !important;
+}
+#notifPanel .notif-item-wrap {
+  display:block !important;
+  width:100% !important;
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  flex:0 0 auto !important;
+  margin:0 0 .45rem !important;
+  overflow:hidden !important;
+}
+#notifPanel .notif-item-wrap .notif-item {
+  display:flex !important;
+  width:100% !important;
+  min-height:58px !important;
+  height:auto !important;
+  max-height:none !important;
+  flex:none !important;
+  align-items:flex-start !important;
+  box-sizing:border-box !important;
+  padding:.72rem .62rem !important;
+  gap:.7rem !important;
+}
+#notifPanel .notif-item-wrap .notif-item > span:not(.notif-select-check) {
+  min-width:0 !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong,
+#notifPanel .notif-item-wrap .notif-item .muted {
+  overflow-wrap:anywhere !important;
+  word-break:break-word !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong { line-height:1.3 !important; }
+#notifPanel .notif-item-wrap .notif-item .muted { line-height:1.4 !important; }
+
+/* Settings: accordion rows must participate in normal document flow. */
+#settingsPanel {
+  display:block !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  min-height:0 !important;
+}
+#settingsPanel > * { flex:none !important; min-width:0 !important; }
+#settingsPanel .accordion-section,
+#settingsPanel .settings-row-card,
+#settingsPanel .settings-more-section { height:auto !important; min-height:0 !important; }
+#settingsPanel .accordion-body {
+  height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+}
+#settingsPanel .accordion-section.open .accordion-body {
+  display:block !important;
+}
+#settingsPanel .accordion-trigger,
+#settingsPanel .settings-more-row {
+  box-sizing:border-box !important;
+}
+#settingsPanel .accordion-trigger > span,
+#settingsPanel .settings-more-row > span {
+  min-width:0 !important;
+}
+#settingsPanel .accordion-trigger > span > i,
+#settingsPanel .settings-more-row > span > i {
+  flex:0 0 1.25rem !important;
+}
+
+/* Storefront packages: collapsed by default so a vendor can have 20+ bundles
+   without pushing the actual products off the screen. */
+.storefront-packages-collapsed {
+  margin:1rem 0 1.15rem !important;
+  padding:0 !important;
+  border:1px solid var(--ui-border,var(--border)) !important;
+  border-radius:16px !important;
+  background:color-mix(in srgb,var(--card) 94%,transparent) !important;
+  overflow:hidden !important;
+}
+.storefront-packages-toggle {
+  width:100% !important;
+  min-height:56px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:.75rem !important;
+  padding:.8rem 1rem !important;
+  border:0 !important;
+  background:transparent !important;
+  color:var(--text) !important;
+  font:inherit !important;
+  cursor:pointer !important;
+  text-align:left !important;
+}
+.storefront-packages-toggle > span {
+  display:flex !important;
+  align-items:center !important;
+  min-width:0 !important;
+  gap:.65rem !important;
+}
+.storefront-packages-toggle > span > i { color:var(--primary) !important; flex:0 0 auto !important; }
+.storefront-packages-toggle strong { font-size:1rem !important; }
+.storefront-packages-toggle em {
+  font-style:normal !important;
+  min-width:1.45rem !important;
+  height:1.45rem !important;
+  padding:0 .35rem !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:999px !important;
+  background:color-mix(in srgb,var(--primary) 12%,transparent) !important;
+  color:var(--primary) !important;
+  font-size:.72rem !important;
+  font-weight:800 !important;
+}
+.storefront-packages-chevron { color:var(--text-muted) !important; transition:transform .18s ease !important; flex:0 0 auto !important; }
+.storefront-packages-collapsed .storefront-packages-body { display:none !important; padding:0 1rem 1rem !important; }
+.storefront-packages-collapsed.open .storefront-packages-body { display:block !important; }
+.storefront-packages-collapsed.open .storefront-packages-chevron { transform:rotate(180deg) !important; color:var(--primary) !important; }
+.storefront-packages-body > .grid { gap:.8rem !important; max-height:min(48dvh,520px) !important; overflow-y:auto !important; padding:.05rem .05rem .2rem !important; }
+
+/* Product expansion: do not let Safari's sticky :hover state, content
+   visibility placeholders, or transforms create the "grow then snap back"
+   effect when View more products is tapped. */
+.storefront-products-shell .product-card-wrap,
+.storefront-products-shell .product-card-wrap .card {
+  content-visibility:visible !important;
+  contain:none !important;
+  transform:none !important;
+  animation:none !important;
+}
+.storefront-products-shell .product-card-wrap .card,
+.storefront-products-shell .product-card-wrap:hover .card,
+.storefront-products-shell .product-card-wrap:active .card,
+.storefront-products-shell .product-card-wrap:focus .card,
+.storefront-products-shell .product-card-wrap:focus-within .card {
+  transform:none !important;
+  transition:border-color .15s ease,box-shadow .15s ease !important;
+}
+.storefront-products-shell .product-card-wrap .product-img {
+  height:auto !important;
+  aspect-ratio:1 / 1.03 !important;
+  overflow:hidden !important;
+}
+.storefront-products-shell .product-card-wrap .product-img img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+}
+.storefront-view-more .btn,
+.storefront-view-more .btn:hover,
+.storefront-view-more .btn:active,
+.storefront-view-more .btn:focus {
+  transform:none !important;
+}
+
+/* Keep vendor package/product spacing deterministic after expansion. */
+.storefront-products-shell { margin-top:1.25rem !important; }
+.storefront-packages + .storefront-products-shell { margin-top:1.35rem !important; }
+
+/* Search and info icons always get real layout space. */
+.hero-search { position:relative !important; }
+.hero-search-icon { left:1rem !important; width:1.25rem !important; min-width:1.25rem !important; text-align:center !important; pointer-events:none !important; }
+.hero-search input { padding-left:3.1rem !important; }
+.info-popover-wrap { display:inline-flex !important; align-items:center !important; flex:0 0 auto !important; margin-left:.45rem !important; }
+.info-btn { flex:0 0 auto !important; margin:0 !important; }
+
+/* Compact, consistent sheet width on phones. */
+@media (max-width:720px) {
+  #notifPanel, #settingsPanel, #profilePanel {
+    width:min(304px,78vw) !important;
+    max-width:304px !important;
+    min-width:0 !important;
+  }
+  #notifPanel { padding-left:14px !important; padding-right:14px !important; }
+  #settingsPanel { padding-left:16px !important; padding-right:16px !important; }
+}
+
+/* Levi chat must always be usable even if an old drag/position rule exists. */
+.ai-chat-panel {
+  z-index:260 !important;
+  isolation:isolate !important;
+}
+.ai-chat-messages {
+  min-height:0 !important;
+  overflow-y:auto !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+
+/* ================================================================
+   TOUR MOBILE FIT — keep Levi's guide compact and keep the highlighted
+   element visible instead of covering it with the callout.
+   ================================================================ */
+#tourModal {
+  z-index: 480 !important;
+  padding: 0 !important;
+}
+#tourCallout {
+  box-sizing: border-box !important;
+  width: min(300px, calc(100vw - 28px)) !important;
+  max-width: min(300px, calc(100vw - 28px)) !important;
+  max-height: min(46dvh, 320px) !important;
+  overflow: hidden !important;
+  padding: 0.9rem 1rem !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 42px rgba(0,0,0,.34) !important;
+}
+#tourCallout .install-modal-badge {
+  width: 3.1rem !important;
+  height: 3.1rem !important;
+  margin: 0 auto .55rem !important;
+  border-radius: .9rem !important;
+}
+#tourCallout .install-modal-badge img {
+  width: 2rem !important;
+  height: 2rem !important;
+}
+#tourCallout > p.muted:first-of-type {
+  margin-bottom: .18rem !important;
+  font-size: .67rem !important;
+}
+#tourCallout h3 {
+  margin: 0 0 .3rem !important;
+  font-size: 1.02rem !important;
+  line-height: 1.22 !important;
+}
+#tourCallout #tourBody {
+  margin: 0 auto !important;
+  max-width: 265px !important;
+  font-size: .79rem !important;
+  line-height: 1.42 !important;
+}
+#tourCallout .tour-dots {
+  margin: .55rem 0 .7rem !important;
+  gap: .32rem !important;
+}
+#tourCallout .tour-dot {
+  width: .36rem !important;
+  height: .36rem !important;
+}
+#tourCallout .tour-dot.active { width: .85rem !important; }
+#tourCallout .install-modal-actions {
+  gap: .45rem !important;
+  margin-top: .15rem !important;
+}
+#tourCallout .install-modal-actions .btn {
+  min-height: 40px !important;
+  padding: .48rem .85rem !important;
+  font-size: .82rem !important;
+}
+#tourCallout .tour-skip {
+  margin: .55rem auto 0 !important;
+  font-size: .72rem !important;
+}
+@media (max-width: 600px) {
+  #tourCallout {
+    width: min(286px, calc(100vw - 24px)) !important;
+    max-width: min(286px, calc(100vw - 24px)) !important;
+    max-height: min(40dvh, 285px) !important;
+    padding: .78rem .85rem !important;
+  }
+  #tourCallout .install-modal-badge {
+    width: 2.65rem !important;
+    height: 2.65rem !important;
+    margin-bottom: .45rem !important;
+  }
+  #tourCallout .install-modal-badge img { width: 1.75rem !important; height: 1.75rem !important; }
+  #tourCallout h3 { font-size: .98rem !important; }
+  #tourCallout #tourBody { font-size: .76rem !important; line-height: 1.38 !important; }
+}
 </style>
 </head>
 <body>
@@ -2950,43 +3252,62 @@ function positionTourSpotlight(rect) {
   const callout = byId("tourCallout");
   if (!hole || !callout) return;
   const vh = window.innerHeight, vw = window.innerWidth;
+
+  // Intro/outro steps have no target, so centre the compact guide.
   if (!rect) {
     hole.classList.add("centered");
     callout.classList.add("centered");
+    callout.style.top = "50%";
+    callout.style.left = "50%";
+    callout.style.transform = "translate(-50%, -50%)";
     return;
   }
-  const pad = 10;
+
+  const pad = 8;
   const safeRect = {
-    top: Math.max(8, rect.top - pad),
-    left: Math.max(8, rect.left - pad),
-    right: Math.min(vw - 8, rect.right + pad),
-    bottom: Math.min(vh - 8, rect.bottom + pad)
+    top: Math.max(6, rect.top - pad),
+    left: Math.max(6, rect.left - pad),
+    right: Math.min(vw - 6, rect.right + pad),
+    bottom: Math.min(vh - 6, rect.bottom + pad)
   };
+
   hole.classList.remove("centered");
   hole.style.top = `${safeRect.top}px`;
   hole.style.left = `${safeRect.left}px`;
   hole.style.width = `${Math.max(0, safeRect.right - safeRect.left)}px`;
   hole.style.height = `${Math.max(0, safeRect.bottom - safeRect.top)}px`;
 
+  // Measure after the compact CSS has applied. Prefer the free side of the
+  // highlighted element. Only use the middle of the screen as a last resort.
   callout.classList.remove("centered");
-  const calloutWidth = Math.min(callout.offsetWidth || 340, vw - 28);
-  const calloutHeight = Math.min(callout.offsetHeight || 240, vh - 28);
-  const gap = 18;
-  const roomAbove = safeRect.top - 12;
-  const roomBelow = vh - safeRect.bottom - 12;
+  callout.style.transform = "none";
+  const calloutWidth = Math.min(callout.offsetWidth || 286, vw - 24);
+  const calloutHeight = Math.min(callout.offsetHeight || 220, vh - 24);
+  const gap = 12;
+  const edge = 12;
+  const roomAbove = safeRect.top - edge;
+  const roomBelow = vh - safeRect.bottom - edge;
+
   let top;
   if (roomBelow >= calloutHeight + gap) {
     top = safeRect.bottom + gap;
   } else if (roomAbove >= calloutHeight + gap) {
     top = safeRect.top - gap - calloutHeight;
   } else {
-    top = Math.max(14, Math.min((vh - calloutHeight) / 2, vh - calloutHeight - 14));
+    // If the target is large (or a fixed bottom bar consumes the free space),
+    // place the guide in the largest remaining vertical region rather than
+    // directly over the thing Levi is describing.
+    const candidateBelow = Math.max(edge, vh - calloutHeight - edge);
+    const candidateAbove = Math.max(edge, safeRect.top - gap - calloutHeight);
+    top = roomAbove > roomBelow ? candidateAbove : candidateBelow;
   }
+  top = Math.max(edge, Math.min(top, vh - calloutHeight - edge));
+
   let left = safeRect.left + (safeRect.right - safeRect.left) / 2 - calloutWidth / 2;
-  left = Math.max(14, Math.min(left, vw - calloutWidth - 14));
+  left = Math.max(edge, Math.min(left, vw - calloutWidth - edge));
+
   callout.style.top = `${top}px`;
   callout.style.left = `${left}px`;
-  callout.style.transform = "none";
 }
 function tourReposition() {
   if (byId("tourModal")?.classList.contains("hidden")) return;
@@ -3969,7 +4290,7 @@ async function renderNotifPanel() {
       </div>`).join("")
     : `<p class="muted" style="padding:0.4rem;">${emptyMsg}</p>`;
 
-  panel.innerHTML = topBar + markAllBar + list;
+  panel.innerHTML = `${topBar}${markAllBar}<div class="notif-list-scroll">${list}</div>`;
   panel.classList.toggle("selecting", notifSelectMode);
   setupNotifItemGestures(panel);
 }
@@ -6741,7 +7062,15 @@ async function renderStorefront(vendorId) {
   }
 
   if (packages && packages.length > 0) {
-    html += `<section class="storefront-packages"><div class="storefront-section-head"><h3>Special packages</h3></div><div class="grid">${packages.map((pkg) => packageCardHtml(pkg, v.delivery_fee)).join("")}</div></section>`;
+    html += `<section class="storefront-packages storefront-packages-collapsed" id="storefrontPackagesSection">
+      <button class="storefront-packages-toggle" type="button" aria-expanded="false" onclick="toggleStorefrontPackages()">
+        <span><i class="fa-solid fa-box-open"></i><strong>Special packages</strong><em>${packages.length}</em></span>
+        <i class="fa-solid fa-chevron-down storefront-packages-chevron"></i>
+      </button>
+      <div class="storefront-packages-body" id="storefrontPackagesBody">
+        <div class="grid">${packages.map((pkg) => packageCardHtml(pkg, v.delivery_fee)).join("")}</div>
+      </div>
+    </section>`;
   }
 
   html += `<section class="storefront-products-shell" id="storefrontProductsShell">
@@ -6761,6 +7090,14 @@ async function renderStorefront(vendorId) {
   storefrontViewMode = "grid";
   if (allProducts.length) setTimeout(filterStorefrontProducts, 0);
   return html;
+}
+
+function toggleStorefrontPackages() {
+  const section = byId("storefrontPackagesSection");
+  const toggle = section?.querySelector(".storefront-packages-toggle");
+  if (!section || !toggle) return;
+  const expanded = section.classList.toggle("open");
+  toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
 }
 
 let storefrontViewMode = "grid";
