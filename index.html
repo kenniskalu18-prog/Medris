@@ -330,7 +330,11 @@
   .variant-chip { display:inline-flex; align-items:center; gap:0.45rem; padding:0.48rem 0.75rem; border:1px solid var(--border); border-radius:999px; background:var(--card); color:var(--text); cursor:pointer; font:inherit; }
   .variant-chip.active { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 10%,var(--card)); color:var(--primary); font-weight:700; }
   .variant-swatch { width:0.85rem; height:0.85rem; border-radius:50%; border:1px solid rgba(0,0,0,.16); flex-shrink:0; }
-  .variant-row { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(90px,.8fr) auto; gap:0.55rem; align-items:center; margin-bottom:0.55rem; }
+  .variant-row { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(90px,.8fr) minmax(72px,.5fr) auto; gap:0.55rem; align-items:center; margin-bottom:0.55rem; }
+  .variant-row-head { font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:.3rem; padding:0 .15rem; }
+  @media (max-width:600px) { .variant-row { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; gap:.38rem; } .variant-row-head { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; } }
+  .variant-stock-count { display:inline-flex; align-items:center; justify-content:center; min-width:1.25rem; height:1.25rem; padding:0 .3rem; border-radius:999px; font-size:.7rem; font-weight:800; background:color-mix(in srgb,var(--primary) 13%,transparent); color:var(--primary); }
+  .variant-chip.disabled { opacity:.45; cursor:not-allowed; }
   .variant-row input { margin:0; }
   .variant-remove { width:2.25rem; height:2.25rem; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--danger); cursor:pointer; }
   .image-lightbox { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:1rem; }
@@ -2801,11 +2805,6 @@ html { scroll-padding-top: 86px !important; }
       <button class="btn btn-sm btn-outline" style="margin-top:0.6rem;width:100%;" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button>
     </div>
   </div>
-  <div class="settings-row-card"><div class="theme-option" id="soundToggleOption" onclick="toggleSound()"></div></div>
-  <div class="settings-row-card">
-    <p class="muted" style="font-size:0.8rem;margin:0 0 0.4rem;">Sound style</p>
-    <div class="flex" id="soundStyleOptions" style="gap:0.4rem;"></div>
-  </div>
   <div class="settings-row-card"><div class="theme-option" id="locationToggleOption" onclick="toggleLocationSetting()"></div></div>
   <div class="settings-row-card"><div class="theme-option" id="leviVisibleToggleOption" onclick="toggleLeviVisible()"></div></div>
   <div class="accordion-section hidden" id="changePasswordSection">
@@ -3820,24 +3819,19 @@ function loadLeaflet() {
   });
   return leafletLoadPromise;
 }
-// CARTO's free basemap tiles (built on the same OpenStreetMap data, just
-// styled) look far more modern than plain OSM raster tiles, and swapping
-// styles by theme means the map never clashes with light/dark/black mode.
-// Both styles still require the same OSM + CARTO attribution shown in the
-// map corner -- that can be made small and unobtrusive, but not removed,
-// since it's a condition of using the tiles for free.
+// OpenStreetMap raster tiles are used directly so the map never displays a
+// provider API-key requirement. The product stays keyless; keep the standard
+// OSM attribution visible as required by the tile service.
 function mapTileConfig() {
-  const theme = document.documentElement.getAttribute("data-theme");
-  const dark = theme === "dark" || theme === "black";
   return {
-    url: `https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "rastertiles/voyager"}/{z}/{x}/{y}{r}.png`,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
-    maxZoom: 20,
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    maxZoom: 19,
   };
 }
 function addBasemapTileLayer(map) {
   const cfg = mapTileConfig();
-  return window.L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: cfg.maxZoom, subdomains: "abcd" }).addTo(map);
+  return window.L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: cfg.maxZoom }).addTo(map);
 }
 // A rounded teardrop pin in the site's own accent color with a shop icon,
 // instead of Leaflet's default generic blue marker.
@@ -3941,7 +3935,6 @@ function toggleLocationSetting() {
   localStorage.setItem("medris-location-enabled", locationSharingEnabled ? "1" : "0");
   if (!locationSharingEnabled) buyerLocation = null;
   renderLocationToggle();
-  if (soundEnabled) playSound("click");
   showToast(locationSharingEnabled ? "Location sharing turned on. You'll be asked to share your location the next time a feature needs it." : "Location sharing turned off.", "success");
 }
 function renderLocationToggle() {
@@ -3950,104 +3943,21 @@ function renderLocationToggle() {
   el.innerHTML = `<i class='fa-solid ${locationSharingEnabled ? "fa-location-dot" : "fa-location-crosshairs"}'></i> Location sharing: ${locationSharingEnabled ? "On" : "Off"}`;
 }
 
-// ---------- SOUND EFFECTS ----------
-let soundEnabled = true;
+// ---------- AUDIO COMPATIBILITY ----------
+// Levromart UI sounds are disabled. Levi read-aloud voice remains separate.
+let soundEnabled = false;
 let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-// "chime" is the original sine-tone sound some found grating for routine
-// taps -- "click" and "typewriter" are short filtered noise bursts instead
-// (a real click/key sound, not a musical note), used for the frequent
-// click/open interaction sounds. notify/success/error stay as short tone
-// sequences either way since those are meant to carry information, not
-// mimic a physical sound.
-let soundStyle = "click";
-const SOUND_STYLES = [
-  { key: "click", label: "Click" },
-  { key: "typewriter", label: "Typing" },
-  { key: "chime", label: "Chime" },
-];
-function playPercussiveSound(ctx, kind) {
-  const now = ctx.currentTime;
-  const isOpen = kind === "open";
-  const bufferSize = Math.floor(ctx.sampleRate * (soundStyle === "typewriter" ? 0.05 : 0.03));
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-  const noise = ctx.createBufferSource();
-  noise.buffer = buffer;
-  const filter = ctx.createBiquadFilter();
-  filter.type = soundStyle === "typewriter" ? "bandpass" : "highpass";
-  filter.frequency.value = soundStyle === "typewriter" ? (isOpen ? 1200 : 1900) : (isOpen ? 2400 : 3200);
-  filter.Q.value = soundStyle === "typewriter" ? 4 : 1;
-  const gain = ctx.createGain();
-  const peak = isOpen ? 0.32 : 0.24;
-  const decay = soundStyle === "typewriter" ? 0.06 : 0.035;
-  gain.gain.setValueAtTime(peak, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
-  noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
-  noise.start(now);
-  noise.stop(now + decay + 0.01);
-}
-function playSound(kind) {
-  if (!soundEnabled) return;
-  try {
-    const ctx = getAudioCtx();
-    if (ctx.state === "suspended") ctx.resume();
-    if ((kind === "click" || kind === "open") && soundStyle !== "chime") {
-      playPercussiveSound(ctx, kind);
-      return;
-    }
-    const now = ctx.currentTime;
-    const gain = ctx.createGain();
-    gain.connect(ctx.destination);
-    const freqMap = { click: [660], open: [520, 740], notify: [880, 1108], success: [660, 990], error: [220, 160] };
-    const freqs = freqMap[kind] || [500];
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.1, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16 * freqs.length + 0.05);
-    freqs.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = f;
-      osc.connect(gain);
-      const start = now + i * 0.08;
-      osc.start(start);
-      osc.stop(start + 0.15);
-    });
-  } catch (e) { /* audio unsupported/blocked — fail silently */ }
-}
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-  localStorage.setItem("medris-sound", soundEnabled ? "1" : "0");
-  renderSoundToggle();
-  if (soundEnabled) playSound("click");
-}
-function renderSoundToggle() {
-  const el = byId("soundToggleOption");
-  if (!el) return;
-  el.innerHTML = `<i class='fa-solid ${soundEnabled ? "fa-volume-high" : "fa-volume-xmark"}'></i> Sound effects: ${soundEnabled ? "On" : "Off"}`;
-}
-function setSoundStyle(style) {
-  soundStyle = style;
-  localStorage.setItem("medris-sound-style", style);
-  renderSoundStyleOptions();
-  playSound("click");
-}
-function renderSoundStyleOptions() {
-  const wrap = byId("soundStyleOptions");
-  if (!wrap) return;
-  wrap.innerHTML = SOUND_STYLES.map((s) => `<button type="button" class="btn btn-sm ${s.key === soundStyle ? "" : "btn-outline"}" onclick="setSoundStyle('${s.key}')">${esc(s.label)}</button>`).join("");
-}
+function playSound() {}
+function toggleSound() {}
+function renderSoundToggle() {}
+function setSoundStyle() {}
+function renderSoundStyleOptions() {}
 function initSound() {
-  soundEnabled = localStorage.getItem("medris-sound") === "1";
-  soundStyle = localStorage.getItem("medris-sound-style") || "click";
-  renderSoundToggle();
-  renderSoundStyleOptions();
+  soundEnabled = false;
+  try {
+    localStorage.removeItem('medris-sound');
+    localStorage.removeItem('medris-sound-style');
+  } catch (e) {}
 }
 
 // ---------- LEVI VISIBILITY (hide the floating chat button entirely) ----------
@@ -5866,6 +5776,7 @@ function cartItemRowHtml(it) {
       <div style="min-width:0;">
         <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11rem;">${esc(p.name)}</strong>
         <span class="muted" style="font-size:0.82rem;">${naira(p.sale_price)} each</span>
+        ${(() => { try { const v = JSON.parse(localStorage.getItem(`levromart-cart-variant:${session?.user?.id || ""}:${p.id}`) || "null"); return v?.name ? `<span class="muted" style="font-size:0.75rem;display:block;">Variation: <strong>${esc(v.name)}</strong>${v.stock != null ? ` · ${Number(v.stock)} available` : ""}</span>` : ""; } catch (e) { return ""; } })()}
       </div>
     </div>
     <div class="flex" style="align-items:center;gap:0.4rem;flex-shrink:0;">
@@ -5921,11 +5832,18 @@ async function renderCart() {
   }
   return html;
 }
-async function addToCart(productId, qty) {
+async function addToCart(productId, qty, variant) {
   if (!session) { showLogin(); return; }
-  const { error } = await sb.rpc("add_to_cart", { p_product_id: productId, p_quantity: qty || 1 });
+  const amount = Math.max(1, Number(qty) || 1);
+  if (variant && variant.stock !== null && variant.stock !== undefined && Number(variant.stock) < amount) { showToast(`Only ${Math.max(0, Number(variant.stock))} of ${variant.name} are available.`, "error"); return; }
+  const { error } = await sb.rpc("add_to_cart", { p_product_id: productId, p_quantity: amount });
   if (error) { showToast(error.message, "error"); return; }
-  showToast("Added to cart.", "success");
+  try {
+    const key = `levromart-cart-variant:${session.user.id}:${productId}`;
+    localStorage.setItem(key, JSON.stringify(variant ? { name: variant.name, color: variant.color || "", stock: variant.stock ?? null } : null));
+  } catch (e) {}
+  showToast(variant ? `Added ${variant.name} to your cart.` : "Added to cart.", "success");
+  updateCartFab();
   refreshNotifications();
 }
 // One-tap add straight from a product card's grid/rail listing, without
@@ -5971,13 +5889,24 @@ async function checkoutCartVendor(vendorId) {
   const delivery = readDeliveryFields(`cart-${vendorId}`, errorEl);
   if (!delivery) return;
 
-  const items = group.items.map((it) => ({ product_id: it.product.id, quantity: it.quantity }));
+  const items = group.items.map((it) => {
+    let variant = null;
+    try { variant = JSON.parse(localStorage.getItem(`levromart-cart-variant:${session?.user?.id || ""}:${it.product.id}`) || "null"); } catch (e) {}
+    return { product_id: it.product.id, quantity: it.quantity, variant_name: variant?.name || null, variant_color: variant?.color || null, variant };
+  });
+  for (const item of items) {
+    if (item.variant?.name && item.variant.stock !== null && item.variant.stock !== undefined && Number(item.variant.stock) < Number(item.quantity)) {
+      if (errorEl) { errorEl.textContent = `Only ${Number(item.variant.stock)} of ${item.variant.name} are available. Please reduce the quantity or choose another variation.`; errorEl.classList.remove("hidden"); }
+      return;
+    }
+  }
+  const rpcItems = items.map(({ variant, ...item }) => item);
   const confirmMsg = `Check out ${items.length} item${items.length === 1 ? "" : "s"} from ${group.vendor.business_name}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
   if (!(await showConfirmDialog(confirmMsg, { title: "Confirm checkout", okLabel: "Checkout" }))) return;
 
   const { data: orderId, error } = await sb.rpc("create_cart_order", {
     p_vendor_id: vendorId,
-    p_items: items,
+    p_items: rpcItems,
     p_delivery_method: delivery.method,
     p_delivery_address: delivery.address,
     p_delivery_phone: delivery.phone,
@@ -5987,6 +5916,34 @@ async function checkoutCartVendor(vendorId) {
   if (error) {
     if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); }
     return;
+  }
+  // Keep the visible per-variant stock in sync using the same hidden product
+  // metadata used by the vendor editor. The real order RPC remains backward
+  // compatible because extra JSON keys are harmless to older deployments.
+  for (const item of group.items) {
+    try {
+      const key = `levromart-cart-variant:${session?.user?.id || ""}:${item.product.id}`;
+      const chosen = JSON.parse(localStorage.getItem(key) || "null");
+      if (chosen?.name) {
+        const latest = await sb.from("products").select("id,description").eq("id", item.product.id).maybeSingle();
+        const vars = parseProductVariants(latest.data?.description || item.product.description || "");
+        const next = vars.map(v => v.name === chosen.name ? { ...v, stock: Math.max(0, Number(v.stock || 0) - Number(item.quantity || 0)) } : v);
+        if (latest.data && vars.length) {
+          const complete = next.every(v => v.stock !== null && v.stock !== undefined);
+          const updateFields = { description: descriptionWithProductVariants(stripProductVariantMeta(latest.data.description || ""), next) };
+          if (complete) {
+            const newVariantTotal = next.reduce((sum, v) => sum + Math.max(0, Number(v.stock) || 0), 0);
+            const oldTotal = Number(item.product.quantity_total || 0);
+            const oldAvailable = Number(item.product.quantity_available ?? oldTotal);
+            const soldAfter = Math.max(0, oldTotal - oldAvailable) + Number(item.quantity || 0);
+            updateFields.quantity_total = Math.max(0, newVariantTotal);
+            updateFields.quantity_available = Math.max(0, newVariantTotal - soldAfter);
+          }
+          await sb.from("products").update(updateFields).eq("id", item.product.id);
+        }
+        localStorage.removeItem(key);
+      }
+    } catch (e) {}
   }
   await sb.from("cart_items").delete().in("id", group.items.map((it) => it.id));
   refreshNotifications();
@@ -6083,12 +6040,24 @@ async function openDisputeChat(buyerId, vendorId) {
   navigate("messages", { conversationId });
 }
 
-let msgListFilter = "all"; // 'all' | 'unread' | 'list:<listId>'
+let msgListFilter = "all"; // all | unread | archived | list:<listId>
 let myChatLists = []; // [{id, name, conversation_ids}]
 
+function chatArchiveKey() { return `levromart-archived-chats:${session?.user?.id || "guest"}`; }
+function getArchivedChatIds() { try { const x = JSON.parse(localStorage.getItem(chatArchiveKey()) || "[]"); return new Set(Array.isArray(x) ? x : []); } catch (e) { return new Set(); } }
+function setArchivedChatIds(set) { try { localStorage.setItem(chatArchiveKey(), JSON.stringify([...set])); } catch (e) {} }
+function isChatArchived(id) { return getArchivedChatIds().has(id); }
+async function toggleChatArchived(conversationId) {
+  const ids = getArchivedChatIds();
+  if (ids.has(conversationId)) { ids.delete(conversationId); showToast("Chat restored.", "success"); }
+  else { ids.add(conversationId); showToast("Chat archived.", "success"); }
+  setArchivedChatIds(ids);
+  navigate("messages", {}, false);
+}
 function convRowHtml(c) {
   const name = c.other_name || "User";
   const isUnread = c.unread_count > 0;
+  const archived = isChatArchived(c.conversation_id);
   return `<div class="conv-swipe-wrap">
     <div class="conv-swipe-action"><i class="fa-solid ${isUnread ? "fa-envelope-open" : "fa-envelope"}"></i><span>${isUnread ? "Read" : "Unread"}</span></div>
     <div class="conv-list-item" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
@@ -6099,6 +6068,7 @@ function convRowHtml(c) {
       </div>
       ${isUnread ? `<span class="conv-unread-badge" title="${c.unread_count} unread">${c.unread_count > 99 ? "99+" : c.unread_count}</span>` : ""}
       <button class="icon-btn" style="flex-shrink:0;" title="Add to a list" onclick="event.stopPropagation();openChatListPicker('${c.conversation_id}')"><i class="fa-solid fa-layer-group" style="${myChatLists.some((l) => l.conversation_ids.includes(c.conversation_id)) ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
+      <button class="icon-btn" style="flex-shrink:0;" title="${archived ? "Restore chat" : "Archive chat"}" onclick="event.stopPropagation();toggleChatArchived('${c.conversation_id}')"><i class="fa-solid ${archived ? "fa-box-open" : "fa-box-archive"}" style="${archived ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
       <button class="icon-btn" style="flex-shrink:0;" title="${c.pinned ? "Unpin" : "Pin"}" onclick="event.stopPropagation();togglePinConversation('${c.conversation_id}')"><i class="fa-solid fa-thumbtack" style="${c.pinned ? "color:var(--primary);" : "opacity:0.35;"}"></i></button>
     </div>
   </div>`;
@@ -6175,15 +6145,20 @@ function filterMsgList() {
   const q = (byId("msgSearchInput")?.value || "").trim().toLowerCase();
   let shown = convs;
   let emptyReason = "No conversations yet.";
+  const archivedIds = getArchivedChatIds();
   if (msgListFilter === "unread") {
-    shown = convs.filter((c) => c.unread_count > 0);
+    shown = convs.filter((c) => c.unread_count > 0 && !archivedIds.has(c.conversation_id));
     emptyReason = "Nothing unread.";
+  } else if (msgListFilter === "archived") {
+    shown = convs.filter((c) => archivedIds.has(c.conversation_id));
+    emptyReason = "No archived chats.";
   } else if (msgListFilter.startsWith("list:")) {
     const listId = msgListFilter.slice(5);
     const list = myChatLists.find((l) => l.id === listId);
-    shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id)) : [];
+    shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id) && !archivedIds.has(c.conversation_id)) : [];
     emptyReason = `No chats in "${list?.name || "this list"}" yet — tap the list icon on a chat to add it.`;
   }
+  if (msgListFilter === "all") shown = shown.filter((c) => !archivedIds.has(c.conversation_id));
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
   wrap.innerHTML = shown.length ? shown.map(convRowHtml).join("") : `<div class="empty-state">${q ? "No conversations match that search." : emptyReason}</div>`;
   setupConvSwipe(wrap);
@@ -6208,6 +6183,7 @@ function chatListTabsHtml() {
   return `<div class="tabs" style="overflow-x:auto;flex-wrap:nowrap;">
       <a class="${msgListFilter === "all" ? "active" : ""}" onclick="setMsgListFilter('all')">all</a>
       <a class="${msgListFilter === "unread" ? "active" : ""}" onclick="setMsgListFilter('unread')">unread</a>
+      <a class="${msgListFilter === "archived" ? "active" : ""}" onclick="setMsgListFilter('archived')">archived</a>
       ${listTabs}
       <a onclick="createChatListPrompt()" title="Create a new list"><i class="fa-solid fa-plus"></i> New list</a>
       ${msgListFilter.startsWith("list:") ? `<a onclick="deleteChatListPrompt('${msgListFilter.slice(5)}')" title="Delete this list" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></a>` : ""}
@@ -6661,7 +6637,12 @@ function parseProductVariants(description) {
   if (end < 0) return [];
   const encoded = text.slice(start + PRODUCT_VARIANT_MARKER.length, end);
   const parsed = decodeProductVariantMeta(encoded);
-  return Array.isArray(parsed) ? parsed.filter(v => v && v.name) : [];
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter(v => v && String(v.name || "").trim()).map(v => ({
+    name: String(v.name || "").trim(),
+    color: String(v.color || "").trim(),
+    stock: (v.stock === null || v.stock === undefined || v.stock === "") ? null : Math.max(0, parseInt(v.stock, 10) || 0),
+  }));
 }
 function stripProductVariantMeta(description) {
   return String(description || "").replace(/\s*<!--LEVROMART_VARIANTS:[\s\S]*?-->/, "").trim();
@@ -6674,17 +6655,25 @@ function descriptionWithProductVariants(description, variants) {
 function renderProductVariantRows(variants) {
   const wrap = byId("prodVariantsList");
   if (!wrap) return;
-  wrap.innerHTML = (variants || []).map((v, i) => `<div class="variant-row" data-variant-index="${i}">\n    <input type="text" class="prod-variant-name" value="${esc(v.name || "")}" placeholder="Variation name e.g. Blue" />\n    <input type="text" class="prod-variant-color" value="${esc(v.color || "")}" placeholder="Colour (optional)" />\n    <button type="button" class="variant-remove" onclick="removeProductVariantRow(${i})" title="Remove variation"><i class="fa-solid fa-xmark"></i></button>\n  </div>`).join("");
+  const rows = variants || [];
+  wrap.innerHTML = rows.length ? `
+    <div class="variant-row variant-row-head" aria-hidden="true"><span>Variation</span><span>Colour</span><span>Stock</span><span></span></div>
+    ${rows.map((v, i) => `<div class="variant-row" data-variant-index="${i}">\n      <input type="text" class="prod-variant-name" value="${esc(v.name || "")}" placeholder="e.g. Purple" aria-label="Variation name" />
+      <input type="text" class="prod-variant-color" value="${esc(v.color || "")}" placeholder="e.g. Purple" aria-label="Variation colour" />
+      <input type="number" class="prod-variant-stock" value="${v.stock === null || v.stock === undefined ? "" : Math.max(0, Number(v.stock) || 0)}" min="0" step="1" placeholder="0" aria-label="Stock count" />
+      <button type="button" class="variant-remove" onclick="removeProductVariantRow(${i})" title="Remove variation"><i class="fa-solid fa-xmark"></i></button>
+    </div>`).join("")}` : `<div class="muted" style="font-size:.8rem;padding:.35rem 0;">No variations yet. Add colours, sizes or other options buyers can choose.</div>`;
 }
 function getProductVariantRows() {
   return [...document.querySelectorAll("#prodVariantsList .variant-row")].map(row => ({
     name: row.querySelector(".prod-variant-name")?.value.trim() || "",
     color: row.querySelector(".prod-variant-color")?.value.trim() || "",
+    stock: Math.max(0, parseInt(row.querySelector(".prod-variant-stock")?.value || "0", 10) || 0),
   })).filter(v => v.name);
 }
 function addProductVariantRow() {
   const variants = getProductVariantRows();
-  variants.push({ name: "", color: "" });
+  variants.push({ name: "", color: "", stock: 0 });
   renderProductVariantRows(variants);
   setTimeout(() => document.querySelector("#prodVariantsList .variant-row:last-child .prod-variant-name")?.focus(), 0);
 }
@@ -6716,13 +6705,34 @@ function closeProductImageLightbox(event) {
   if (event && event.target?.id !== "productImageLightbox" && !event.target?.closest?.(".image-lightbox-close")) return;
   byId("productImageLightbox")?.classList.add("hidden");
 }
+let selectedProductVariantIndex = 0;
+function selectedProductVariant() {
+  const variants = parseProductVariants(currentProductDetail?.description);
+  return variants[selectedProductVariantIndex] || variants[0] || null;
+}
+function productVariantStorageKey(productId) {
+  return `levromart-selected-variant:${session?.user?.id || "guest"}:${productId}`;
+}
+function loadSavedProductVariant(productId, variants) {
+  selectedProductVariantIndex = 0;
+  try {
+    const saved = parseInt(localStorage.getItem(productVariantStorageKey(productId)) || "0", 10);
+    if (Number.isInteger(saved) && saved >= 0 && saved < variants.length) selectedProductVariantIndex = saved;
+  } catch (e) {}
+}
 function selectProductVariant(index) {
   const variants = parseProductVariants(currentProductDetail?.description);
   const v = variants[index];
   if (!v) return;
+  const knownStock = v.stock !== null && v.stock !== undefined;
+  if (knownStock && Number(v.stock) <= 0) return;
+  selectedProductVariantIndex = index;
+  try { if (currentProductDetail?.id) localStorage.setItem(productVariantStorageKey(currentProductDetail.id), String(index)); } catch (e) {}
   document.querySelectorAll(".variant-chip").forEach((el, i) => el.classList.toggle("active", i === index));
   const label = byId("selectedProductVariantLabel");
-  if (label) label.textContent = `Selected: ${v.name}`;
+  if (label) label.innerHTML = `<strong>${esc(v.name)}</strong>${knownStock ? ` · ${Number(v.stock)} available` : ""}`;
+  const buyBtn = byId("productAddToCartBtn");
+  if (buyBtn) buyBtn.disabled = knownStock && Number(v.stock) <= 0;
 }
 
 // ---------- PRODUCT DETAIL ----------
@@ -6748,6 +6758,7 @@ async function renderProductDetail(productId) {
   const productPhotos = Array.isArray(product.photos) ? product.photos.filter(Boolean) : [];
   const productVariants = parseProductVariants(product.description);
   const cleanDescription = stripProductVariantMeta(product.description || "");
+  loadSavedProductVariant(product.id, productVariants);
   const photosHtml = productPhotos.length
     ? `<div class="product-gallery">
         <div class="product-gallery-main" onclick="openProductImageLightbox()">
@@ -6781,7 +6792,7 @@ async function renderProductDetail(productId) {
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
       ${product.is_service ? "" : `<p><strong>Condition:</strong> ${esc((product.condition || "").replace("-", " "))}</p>`}
       <p>Description ${infoPopoverHtml(`productDescInfo-${product.id}`, esc(cleanDescription || "No description"))}</p>
-    ${productVariants.length ? `<div class="product-variants"><strong>Available variations</strong><div class="variant-chips" style="margin-top:0.55rem;">${productVariants.map((v,i) => `<button type="button" class="variant-chip ${i===0 ? "active" : ""}" onclick="selectProductVariant(${i})">${v.color ? `<span class="variant-swatch" style="background:${esc(v.color)}"></span>` : ""}${esc(v.name)}</button>`).join("")}</div><p class="muted" id="selectedProductVariantLabel" style="font-size:0.78rem;margin:0.5rem 0 0;">Selected: ${esc(productVariants[0].name)}</p></div>` : ""}
+    ${productVariants.length ? `<div class="product-variants"><strong>Choose a variation</strong><div class="variant-chips" style="margin-top:0.55rem;">${productVariants.map((v,i) => { const knownStock = v.stock !== null && v.stock !== undefined; const out = knownStock && Number(v.stock) < 1; return `<button type="button" class="variant-chip ${i===selectedProductVariantIndex ? "active" : ""} ${out ? "disabled" : ""}" onclick="selectProductVariant(${i})" ${out ? "disabled" : ""}>${v.color ? `<span class="variant-swatch" style="background:${esc(v.color)}"></span>` : ""}${esc(v.name)} ${knownStock ? `<span class="variant-stock-count">${Math.max(0, Number(v.stock))}</span>` : ""}</button>`; }).join("")}</div><p class="muted" id="selectedProductVariantLabel" style="font-size:0.78rem;margin:0.5rem 0 0;"></p></div>` : ""}
     </div>
     ${statItems.length ? `<div class="product-detail-stats">${statItems.map((s) => `<div><span class="muted">${esc(s.label)}</span><strong>${s.value}</strong></div>`).join("")}</div>` : ""}
   </div>`;
@@ -6815,7 +6826,7 @@ async function renderProductDetail(productId) {
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km, product.is_service ? "In-person" : "Pickup")}
       <div class="flex">
         <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
-        ${!product.is_service ? `<button class="btn btn-outline" onclick="addToCart('${product.id}', parseInt(byId('buyQty').value)||1)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>` : ""}
+        ${!product.is_service ? `<button id="productAddToCartBtn" class="btn btn-outline" onclick="addToCart('${product.id}', parseInt(byId('buyQty').value)||1, selectedProductVariant())"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>` : ""}
       </div>
       <p id="buyError" class="error-text hidden"></p>
     </div>`;
@@ -6832,6 +6843,9 @@ async function renderProductDetail(productId) {
   }
 
   html += `<button class="btn btn-sm" style="margin-top:1rem;" onclick="navigate('home')"><i class='fa-solid fa-arrow-left'></i> Back to Marketplace</button>`;
+  setTimeout(() => {
+    if (productVariants.length) selectProductVariant(selectedProductVariantIndex);
+  }, 0);
   return html;
 }
 
@@ -7033,9 +7047,23 @@ async function buyNow(vendorId, productId) {
 
   const productName = currentProductDetail?.name || "this item";
   const verb = currentProductDetail?.is_service ? "Book" : "Buy";
+  const chosenVariant = !currentProductDetail?.is_service ? selectedProductVariant() : null;
+  const knownStock = chosenVariant && chosenVariant.stock !== null && chosenVariant.stock !== undefined;
+  if (chosenVariant && knownStock && qty > Number(chosenVariant.stock)) {
+    errorEl.textContent = `Only ${Number(chosenVariant.stock)} ${chosenVariant.name} ${Number(chosenVariant.stock) === 1 ? "is" : "are"} available.`;
+    errorEl.classList.remove("hidden");
+    return;
+  }
+  if (chosenVariant && knownStock && Number(chosenVariant.stock) <= 0) {
+    errorEl.textContent = `${chosenVariant.name} is out of stock. Choose another variation.`;
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
   const previewEl = byId("serviceTotalPreview");
   const totalText = previewEl ? previewEl.textContent.replace(/^Total:\s*/, "") : (currentProductDetail?.sale_price != null ? naira(currentProductDetail.sale_price * qty) : "");
-  const confirmMsg = `${verb} ${qty > 1 && !previewEl ? qty + "× " : ""}${productName}${totalText ? ` for ${totalText}` : ""}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
+  const variantText = chosenVariant ? ` · ${chosenVariant.name}` : "";
+  const confirmMsg = `${verb} ${qty > 1 && !previewEl ? qty + "× " : ""}${productName}${variantText}${totalText ? ` for ${totalText}` : ""}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
   if (!(await showConfirmDialog(confirmMsg, { title: `Confirm ${verb === "Book" ? "booking" : "purchase"}`, okLabel: `${verb} now` }))) return;
 
   const { data: orderId, error } = await sb.rpc("create_sale_order", {
@@ -7049,6 +7077,18 @@ async function buyNow(vendorId, productId) {
     p_buyer_lng: buyerLocation?.lng ?? null,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+
+  if (chosenVariant?.name && knownStock) {
+    try {
+      const latest = await sb.from("products").select("id,description").eq("id", productId).maybeSingle();
+      const vars = parseProductVariants(latest.data?.description || currentProductDetail?.description || "");
+      const next = vars.map(v => v.name === chosenVariant.name ? { ...v, stock: Math.max(0, Number(v.stock || 0) - qty) } : v);
+      if (latest.data && vars.length) {
+        await sb.from("products").update({ description: descriptionWithProductVariants(stripProductVariantMeta(latest.data.description || ""), next) }).eq("id", productId);
+      }
+      try { localStorage.removeItem(productVariantStorageKey(productId)); } catch (e) {}
+    } catch (e) { console.warn("Variant stock sync after purchase failed", e); }
+  }
   navigate("orderDetail", { orderId });
 }
 
@@ -8647,6 +8687,8 @@ async function saveProduct() {
     }
 
     const variants = getProductVariantRows();
+    const hasCompleteVariantStock = variants.length > 0 && variants.every(v => v.stock !== null && Number.isFinite(Number(v.stock)));
+    const effectiveQuantityTotal = hasCompleteVariantStock ? Math.max(1, variants.reduce((sum, v) => sum + Math.max(0, Number(v.stock) || 0), 0)) : quantity_total;
     const fields = {
       name,
       description: descriptionWithProductVariants(byId("prodDesc").value.trim(), variants),
@@ -8659,7 +8701,7 @@ async function saveProduct() {
       rental_rate: listing_type === "sale" ? null : rental_rate,
       rental_rate_unit: listing_type === "sale" ? null : rental_rate_unit,
       deposit_amount: is_service ? null : (byId("prodDeposit").value ? Number(byId("prodDeposit").value) : null),
-      quantity_total,
+      quantity_total: effectiveQuantityTotal,
     };
 
     const newFiles = [...byId("prodPhotoFiles").files];
@@ -9176,6 +9218,25 @@ function pickupMessageDraft(order) {
   const itemsText = order.package?.name || (order.items || []).map((it) => `${it.product?.name || "item"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}`).join(", ") || "my order";
   return `Hi! I'd like to confirm pickup for ${itemsText}. Could you share your exact location and a good time to come by?`;
 }
+
+async function messageBuyerFromOrder(orderId) {
+  if (!session) { showLogin(); return; }
+  try {
+    const { data: order, error } = await sb.from("orders").select("id,buyer_id,vendor_id").eq("id", orderId).maybeSingle();
+    if (error || !order) { showToast(error?.message || "Order not found.", "error"); return; }
+    const { data: existing, error: findErr } = await sb.from("conversations").select("id").eq("buyer_id", order.buyer_id).eq("vendor_id", order.vendor_id).maybeSingle();
+    if (findErr) throw findErr;
+    let conversationId = existing?.id;
+    if (!conversationId) {
+      const { data: created, error: createErr } = await sb.from("conversations").insert({ buyer_id: order.buyer_id, vendor_id: order.vendor_id }).select("id").single();
+      if (createErr) throw createErr;
+      conversationId = created.id;
+    }
+    navigate("messages", { conversationId });
+  } catch (err) {
+    showToast(err.message || "Couldn't open the buyer chat.", "error");
+  }
+}
 async function renderOrderDetail(orderId) {
   if (!session) return '<div class="empty-state">Please log in.</div>';
   const { data: order, error } = await sb
@@ -9241,12 +9302,13 @@ async function renderOrderDetail(orderId) {
   if (isVendor) {
     const { data: contact } = await sb.rpc("get_order_buyer_contact", { p_order_id: orderId });
     const c = (contact && contact[0]) || {};
-    if (c.phone || c.name) {
-      html += `<div class="card"><h3><i class="fa-solid fa-address-card"></i> Buyer contact</h3>
-        <p>${esc(c.name || "Buyer")}</p>
-        ${c.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(c.phone)}"><i class="fa-solid fa-phone"></i> ${esc(c.phone)}</a>` : `<span class="muted" style="font-size:0.85rem;">No phone on file</span>`}
-      </div>`;
-    }
+    html += `<div class="card"><h3><i class="fa-solid fa-address-card"></i> Buyer</h3>
+      <p>${esc(c.name || "Buyer")}</p>
+      <div class="flex" style="gap:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" type="button" onclick="messageBuyerFromOrder('${orderId}')"><i class="fa-solid fa-comment-dots"></i> Message buyer</button>
+        ${c.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(c.phone)}"><i class="fa-solid fa-phone"></i> ${esc(c.phone)}</a>` : `<span class="muted" style="font-size:0.85rem;align-self:center;">No phone on file</span>`}
+      </div>
+    </div>`;
   }
 
   if (order.delivery_method === "pickup" && isBuyer) {
@@ -11308,7 +11370,7 @@ function leviOfflineFallback(text) {
     navigate('vendors');
     return 'Done — here are the vendors.';
   }
-  return 'I’m still here. The smart assistant connection is temporarily unavailable, but I can continue handling local app actions such as your cart, wishlist, navigation, and product browsing.';
+  return `I'm Levi. I can help with Levromart products, vendors, orders, your cart, wishlist, and how the marketplace works. Try asking me what to buy, where to find something, or what you want me to do in the app.`;
 }
 
 async function fetchLeviReply(payload) {
