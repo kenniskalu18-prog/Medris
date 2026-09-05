@@ -4017,6 +4017,62 @@ body { min-width:0 !important; }
 
 </style>
 
+
+<style id="automatic-location-distance-ui">
+  .vendors-location-action{display:flex;align-items:center;min-height:2.5rem;gap:.5rem;}
+  .location-recovery-modal{max-width:430px;}
+  .location-prompt-state{margin-top:.55rem;font-size:.82rem;line-height:1.5;}
+  @media(max-width:720px){.vendors-location-action{width:auto}.vendors-location-action .btn{width:auto}}
+</style>
+<style id="tour-vendor-lock-polish">
+/* Final tour target lock: vendor cards must stay visually still while spotlighted. */
+.vendor-card.tour-target-locked,
+.hscroll .vendor-card.tour-target-locked {
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+  position: relative;
+  z-index: 492 !important;
+}
+#tourCallout.tour-switching {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity .10s ease !important;
+}
+#tourCallout.tour-enter {
+  opacity: 1 !important;
+  transition: opacity .16s ease !important;
+}
+#tourSpotlightHole {
+  pointer-events: none !important;
+  z-index: 491 !important;
+}
+#tourCallout {
+  z-index: 493 !important;
+}
+</style>
+<style id="final-tour-cart-polish-css">
+/* FINAL TOUR STABILITY + CART BREATHING SPACE */
+#tourCallout{
+  transform:none !important;
+  transition:opacity .16s ease, top .20s ease, left .20s ease !important;
+  animation:none !important;
+  will-change:top,left,opacity;
+}
+#tourCallout.centered{transform:translate(-50%,-50%) !important;}
+#tourCallout.tour-enter{animation:tourFadeOnly .16s ease both !important;}
+@keyframes tourFadeOnly{from{opacity:0}to{opacity:1}}
+#tourSpotlightHole{transition:top .20s ease,left .20s ease,width .20s ease,height .20s ease,opacity .16s ease !important;}
+#tourSpotlightHole.centered{opacity:0 !important;}
+.cart-page-title{margin:0 0 1.15rem !important;padding:0 .1rem !important;line-height:1.2 !important;}
+.cart-vendor-card{margin-top:.15rem !important;}
+@media(max-width:720px){.cart-page-title{margin-bottom:1.25rem !important}.cart-vendor-card{margin-top:.1rem !important}}
+
+</style>
+<style id="fast-ui-micro-polish">
+/* Keep action transitions on the compositor; avoid expensive layout work. */
+.notif-item,.conv-list-item,.notif-selection-actions button,.messages-selection-toolbar button{backface-visibility:hidden;transform:translateZ(0);}
+</style>
 </head>
 <body>
 <div id="levromartSplash" aria-hidden="true"><div class="levromart-splash-mark"><div class="lrs-ring lrs-ring-left"></div><div class="lrs-ring lrs-ring-right"></div><div class="lrs-center"></div></div></div>
@@ -4708,20 +4764,40 @@ const LIVE_TOUR_STEPS = [
 let liveTourStep = 0;
 let liveTourRunToken = 0;
 let liveTourBusy = false;
-async function waitForTourTarget(selector, maxMs = 3200) {
+function tourIsVisible(el) {
+  if (!el || !el.isConnected) return false;
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity || 1) > 0 && r.width > 0 && r.height > 0;
+}
+
+async function waitForTourTarget(selector, maxMs = 5000) {
   if (!selector) return null;
   const started = performance.now();
   while (performance.now() - started < maxMs) {
-    const el = document.querySelector(selector);
-    if (el) {
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      const visible = cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity || 1) > 0 && r.width > 0 && r.height > 0;
-      if (visible) return el;
-    }
+    // Vendor steps must resolve to the first *real, visible* card after the
+    // vendors page has rendered. querySelector alone can catch an off-screen,
+    // hidden or stale card and make the spotlight appear to point at nothing.
+    const nodes = [...document.querySelectorAll(selector)];
+    const el = nodes.find(tourIsVisible) || null;
+    if (el) return el;
     await new Promise(requestAnimationFrame);
   }
   return null;
+}
+
+function clearTourTargetLock() {
+  document.querySelectorAll(".tour-target-locked").forEach(el => {
+    el.classList.remove("tour-target-locked");
+    el.removeAttribute("data-tour-target");
+  });
+}
+
+function lockTourTarget(el) {
+  clearTourTargetLock();
+  if (!el) return;
+  el.classList.add("tour-target-locked");
+  el.setAttribute("data-tour-target", "true");
 }
 
 let tourTransitionTimer = null;
@@ -4735,6 +4811,7 @@ async function showTour() {
   const token = liveTourRunToken;
   liveTourStep = 0;
   liveTourBusy = true;
+  clearTourTargetLock();
   closeAllPanels();
   const modal = byId("tourModal");
   modal?.classList.remove("hidden");
@@ -4753,10 +4830,13 @@ async function runTourStep(token = liveTourRunToken) {
   const step = LIVE_TOUR_STEPS[liveTourStep];
   if (!step) return;
 
+  clearTourTargetLock();
+
   if (step.view && step.view !== currentView) {
     await navigate(step.view, {});
     if (token !== liveTourRunToken) return;
-    // Wait for the destination DOM to commit before measuring anything.
+    // Let the destination render and its deferred loaders populate before we
+    // attempt to lock the spotlight onto anything.
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
   }
@@ -4767,7 +4847,37 @@ async function runTourStep(token = liveTourRunToken) {
   const dots = byId("tourDots");
   const back = byId("tourBackBtn");
   const next = byId("tourNextBtn");
-  if (!icon || !title || !body || !dots || !back || !next) return;
+  const callout = byId("tourCallout");
+  const hole = byId("tourSpotlightHole");
+  if (!icon || !title || !body || !dots || !back || !next || !callout || !hole) return;
+
+  let el = null;
+  if (step.selector) {
+    el = await waitForTourTarget(step.selector, step.selector === ".vendor-card" ? 6500 : 5000);
+    if (token !== liveTourRunToken) return;
+    if (el) {
+      const cs = getComputedStyle(el);
+      const isFixed = cs.position === "fixed" || cs.position === "sticky" || el === byId("bottomNav");
+      if (!isFixed) {
+        // For the vendor step, center the actual card and lock its animation so
+        // the spotlight cannot chase a moving card.
+        el.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+        await new Promise(requestAnimationFrame);
+        await new Promise(requestAnimationFrame);
+      }
+      lockTourTarget(el);
+    }
+  }
+
+  if (token !== liveTourRunToken) return;
+
+  // Smoothly replace only the contents of the guide. This avoids the old
+  // transform/position race where the callout could briefly duplicate or land
+  // in the centre while the target was changing views.
+  callout.classList.remove("tour-enter");
+  callout.classList.add("tour-switching");
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  if (token !== liveTourRunToken) return;
 
   icon.className = `fa-solid ${step.icon}`;
   title.textContent = step.title;
@@ -4780,38 +4890,11 @@ async function runTourStep(token = liveTourRunToken) {
   back.classList.toggle("hidden", liveTourStep === 0);
   next.textContent = liveTourStep === LIVE_TOUR_STEPS.length - 1 ? "Get started" : "Next";
 
-  const callout = byId("tourCallout");
-  const hole = byId("tourSpotlightHole");
-  callout?.classList.remove("tour-enter");
-  hole?.classList.remove("tour-enter");
-
-  let el = null;
-  if (step.selector) {
-    el = await waitForTourTarget(step.selector);
-    if (token !== liveTourRunToken) return;
-
-    if (el) {
-      const cs = getComputedStyle(el);
-      const isFixed = cs.position === "fixed" || cs.position === "sticky" || el === byId("bottomNav");
-      // Fixed UI must never be scrolled. For normal content, place the target
-      // predictably in the viewport before measuring the spotlight.
-      if (!isFixed) {
-        el.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
-        await new Promise(requestAnimationFrame);
-      }
-    }
-  }
-
-  if (token !== liveTourRunToken) return;
   const rect = el?.getBoundingClientRect?.() || null;
   positionTourSpotlight(rect, step.selector === "#bottomNav");
-
-  // One controlled fade per step. No transform animation is allowed to fight
-  // the absolute positioning used by positionTourSpotlight().
-  if (callout) {
-    void callout.offsetWidth;
-    callout.classList.add("tour-enter");
-  }
+  void callout.offsetWidth;
+  callout.classList.remove("tour-switching");
+  callout.classList.add("tour-enter");
 }
 
 function positionTourSpotlight(rect, forceAbove = false) {
@@ -4820,7 +4903,7 @@ function positionTourSpotlight(rect, forceAbove = false) {
   if (!hole || !callout) return;
   const vh = window.innerHeight, vw = window.innerWidth;
 
-  if (!rect) {
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
     hole.classList.add("centered");
     callout.classList.add("centered");
     callout.style.top = "50%";
@@ -4829,7 +4912,7 @@ function positionTourSpotlight(rect, forceAbove = false) {
     return;
   }
 
-  const pad = 7;
+  const pad = 8;
   const top = Math.max(5, rect.top - pad);
   const left = Math.max(5, rect.left - pad);
   const right = Math.min(vw - 5, rect.right + pad);
@@ -4838,27 +4921,27 @@ function positionTourSpotlight(rect, forceAbove = false) {
   hole.classList.remove("centered");
   hole.style.top = `${top}px`;
   hole.style.left = `${left}px`;
-  hole.style.width = `${Math.max(1, right-left)}px`;
-  hole.style.height = `${Math.max(1, bottom-top)}px`;
+  hole.style.width = `${Math.max(1, right - left)}px`;
+  hole.style.height = `${Math.max(1, bottom - top)}px`;
 
   callout.classList.remove("centered");
   callout.style.transform = "none";
   const width = Math.min(callout.offsetWidth || 286, vw - 24);
   const height = Math.min(callout.offsetHeight || 220, vh - 24);
-  const gap = 14, edge = 12;
-  const above = top - edge;
-  const below = vh - bottom - edge;
+  const gap = 16, edge = 12;
+  const aboveSpace = top - edge;
+  const belowSpace = vh - bottom - edge;
   let y;
-  if (forceAbove || below < height + gap) {
+  if (forceAbove || belowSpace < height + gap) {
     y = top - gap - height;
-    if (y < edge && below >= height + gap) y = bottom + gap;
+    if (y < edge && belowSpace >= height + gap) y = bottom + gap;
   } else {
     y = bottom + gap;
   }
   if (y < edge) y = Math.max(edge, Math.min(vh - height - edge, (vh - height) / 2));
   if (y > vh - height - edge) y = vh - height - edge;
 
-  let x = left + ((right-left) / 2) - (width / 2);
+  let x = left + ((right - left) / 2) - (width / 2);
   x = Math.max(edge, Math.min(x, vw - width - edge));
   callout.style.top = `${Math.round(y)}px`;
   callout.style.left = `${Math.round(x)}px`;
@@ -4867,7 +4950,8 @@ function positionTourSpotlight(rect, forceAbove = false) {
 function tourReposition() {
   if (byId("tourModal")?.classList.contains("hidden")) return;
   const step = LIVE_TOUR_STEPS[liveTourStep];
-  const el = step?.selector ? document.querySelector(step.selector) : null;
+  const el = step?.selector ? [...document.querySelectorAll(step.selector)].find(tourIsVisible) : null;
+  if (el && step.selector === ".vendor-card") lockTourTarget(el);
   positionTourSpotlight(el?.getBoundingClientRect?.() || null, step?.selector === "#bottomNav");
 }
 window.addEventListener("resize", () => {
@@ -4896,6 +4980,7 @@ async function tourBack() {
 
 function finishTour() {
   cancelTourTransition();
+  clearTourTargetLock();
   liveTourRunToken++;
   liveTourBusy = false;
   byId("tourModal")?.classList.add("hidden");
@@ -5967,70 +6052,43 @@ let notifSelectMode = false;
 let notifSelectedIds = new Set();
 
 async function refreshNotifications(renderPanel = true) {
-  notifCount = 0;
-  const notifWrap = byId("notifWrap");
-  if (!session || !profile) { notifWrap?.classList.add("hidden"); return; }
-  notifWrap?.classList.remove("hidden");
+  if (!session || !profile) {
+    notifCount = 0;
+    byId("notifWrap")?.classList.add("hidden");
+    return;
+  }
+  byId("notifWrap")?.classList.remove("hidden");
 
-  const { data: unreadItems } = await sb.from("notifications").select("id").eq("user_id", session.user.id).eq("archived", false).eq("read", false).is("deleted_at", null);
-  notifCount = (unreadItems || []).length;
+  // Independent badge/count reads run concurrently so one slow table cannot
+  // hold up unrelated UI state.
+  const unreadQ = sb.from("notifications").select("id").eq("user_id", session.user.id).eq("archived", false).eq("read", false).is("deleted_at", null);
+  const vendorQ = vendor ? sb.from("orders").select("id", { count: "exact", head: true }).eq("vendor_id", vendor.id).in("status", NON_TERMINAL_ORDER_STATUSES) : Promise.resolve({ count: 0 });
+  const buyerQ = sb.from("orders").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id).in("status", NON_TERMINAL_ORDER_STATUSES);
+  const suggestionQ = profile?.role === "admin" ? sb.rpc("get_platform_suggestions") : vendor ? sb.rpc("get_vendor_suggestions") : Promise.resolve({ data: [] });
+  const conversationsQ = sb.rpc("list_my_conversations");
+  const cartQ = profile?.role !== "admin" ? sb.from("cart_items").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id) : Promise.resolve({ count: 0 });
 
+  const [unreadRes, vendorRes, buyerRes, suggestionRes, conversationsRes, cartRes] = await Promise.all([
+    unreadQ, vendorQ, buyerQ, suggestionQ, conversationsQ, cartQ
+  ]);
+
+  notifCount = (unreadRes?.data || []).length;
   const dot = byId("notifDot");
   if (dot) {
     if (notifCount > 0) { dot.textContent = notifCount > 9 ? "9+" : notifCount; dot.classList.remove("hidden"); }
     else dot.classList.add("hidden");
   }
-
-  if (vendor) {
-    const { count } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("vendor_id", vendor.id).in("status", NON_TERMINAL_ORDER_STATUSES);
-    vendorPendingOrderCount = count || 0;
-  } else {
-    vendorPendingOrderCount = 0;
-  }
-
-  if (session && profile) {
-    const { count: buyerCount } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id).in("status", NON_TERMINAL_ORDER_STATUSES);
-    buyerPendingOrderCount = buyerCount || 0;
-  } else {
-    buyerPendingOrderCount = 0;
-  }
-
-  // No lightweight count RPC exists for suggestions, and the table's tiny,
-  // so just reuse the same RPC the inbox pages call and count "new" ones —
-  // this is what powers the unread badges on the Feedback/Suggestions nav.
-  if (profile?.role === "admin") {
-    const { data: sugg } = await sb.rpc("get_platform_suggestions");
-    unreadSuggestionCount = (sugg || []).filter((s) => s.status === "new").length;
-  } else if (vendor) {
-    const { data: sugg } = await sb.rpc("get_vendor_suggestions");
-    unreadSuggestionCount = (sugg || []).filter((s) => s.status === "new").length;
-  } else {
-    unreadSuggestionCount = 0;
-  }
-
-  const { data: convs } = await sb.rpc("list_my_conversations");
-  unreadMessageCount = (convs || []).reduce((s, c) => s + (c.unread_count > 0 ? 1 : 0), 0);
-
-  if (session && profile?.role !== "admin") {
-    const { count: cartCount } = await sb.from("cart_items").select("id", { count: "exact", head: true }).eq("buyer_id", session.user.id);
-    buyerCartCount = cartCount || 0;
-  } else {
-    buyerCartCount = 0;
-  }
+  vendorPendingOrderCount = vendor ? (vendorRes?.count || 0) : 0;
+  buyerPendingOrderCount = buyerRes?.count || 0;
+  unreadSuggestionCount = (suggestionRes?.data || []).filter((x) => x.status === "new").length;
+  unreadMessageCount = (conversationsRes?.data || []).reduce((sum, c) => sum + (c.unread_count > 0 ? 1 : 0), 0);
+  buyerCartCount = profile?.role !== "admin" ? (cartRes?.count || 0) : 0;
   updateCartFab();
 
-  // Every message sent to me that I haven't already "received" (i.e. my
-  // client has now synced it, whether or not I've actually opened that
-  // conversation) flips from single check to double check for the sender —
-  // this runs on basically every app refresh, so it fires the moment I'm
-  // back online, same idea as WhatsApp's grey double-tick.
-  sb.from("messages").update({ delivered_at: new Date().toISOString() }).is("delivered_at", null).neq("sender_id", session.user.id).then(() => {});
-
+  sb.from("messages").update({ delivered_at: new Date().toISOString() }).is("delivered_at", null).neq("sender_id", session.user.id).then(() => {}).catch(() => {});
   renderBottomNav();
-
   if (renderPanel && byId("notifPanel")) await renderNotifPanel();
 }
-
 async function renderNotifPanel() {
   const renderToken = ++notifRenderEpoch;
   const panel = byId("notifPanel");
@@ -6200,21 +6258,23 @@ function exitNotifSelectMode(rerender = true) {
 
 async function batchMarkNotifsRead(read) {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast(`Select at least one notification first.`, "info"); return; }
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
   notifRenderEpoch++;
-  const { error } = await sb.from("notifications").update({ read }).in("id", ids);
-  if (error) { showToast(error.message || "Couldn't update notifications.", "error"); return; }
   const panel = byId("notifPanel");
-  ids.forEach(id => {
-    const row = panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`);
-    if (row) row.classList.toggle("unread", !read);
-  });
+  const rows = ids.map((id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)).filter(Boolean);
+  const oldUnread = new Map(rows.map((row) => [String(row.dataset.id), row.classList.contains("unread")]));
+  rows.forEach((row) => { row.classList.toggle("unread", !read); row.classList.remove("selected"); row.setAttribute("aria-selected", "false"); });
   const count = ids.length;
   exitNotifSelectMode(false);
-  refreshNotifications(false);
+  refreshNotifications(false).catch(() => {});
   showToast(`${count} notification${count === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
+  const { error } = await sb.from("notifications").update({ read }).in("id", ids);
+  if (error) {
+    oldUnread.forEach((wasUnread, id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.classList.toggle("unread", wasUnread));
+    renderNotifPanel();
+    showToast(error.message || "Couldn't update notifications.", "error");
+  }
 }
-
 // ---- inbox <-> archive ----
 // Single-item quick actions below keep their undo-toast (fast, low-risk,
 // trivially reversible one at a time). Batch actions on a multi-select
@@ -6331,9 +6391,11 @@ function showUndoToast(message, undoFn) {
 async function markAllNotifsRead() {
   if (!session) return;
   if (!(await showConfirmDialog("Mark every notification as read?", { title: "Mark all as read", okLabel: "Mark all read" }))) return;
-  await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
+  const { error } = await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
+  if (error) { showToast(error.message || "Couldn't mark notifications as read.", "error"); return; }
+  notifCount = 0; byId("notifDot")?.classList.add("hidden");
   renderNotifPanel();
-  refreshNotifications();
+  refreshNotifications(false).catch(() => {});
   showToast("All marked as read.", "success");
 }
 async function markSingleNotifRead(id) {
@@ -6444,16 +6506,21 @@ async function refreshAuthState() {
   vendor = null;
   favoriteIds = new Set();
   if (session) {
-    const { data: p } = await sb.from("users").select("*").eq("id", session.user.id).single();
-    profile = p;
-    const { data: v } = await sb.from("vendors").select("*").eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
-    vendor = profile?.role === "admin" ? null : v;
-    const { data: favs } = await sb.from("favorites").select("product_id").eq("buyer_id", session.user.id);
-    favoriteIds = new Set((favs || []).map((f) => f.product_id));
+    const userId = session.user.id;
+    const [profileRes, vendorRes, favsRes] = await Promise.all([
+      sb.from("users").select("*").eq("id", userId).single(),
+      sb.from("vendors").select("*").eq("user_id", userId).is("deleted_at", null).maybeSingle(),
+      sb.from("favorites").select("product_id").eq("buyer_id", userId)
+    ]);
+    profile = profileRes.data;
+    vendor = profile?.role === "admin" ? null : vendorRes.data;
+    favoriteIds = new Set((favsRes.data || []).map((f) => f.product_id));
   }
   updateAuthUI();
   renderBottomNav();
-  await refreshNotifications();
+  // Badge/count refresh is independent of rendering the current page; do not
+  // hold the initial app screen hostage to those background reads.
+  refreshNotifications(false).catch(() => {});
   subscribeNotifications();
   subscribeOrderUpdates();
   loadAiVoices();
@@ -7991,18 +8058,28 @@ async function batchMarkChatsRead(read) {
   const ids = msgSelectedIds.size ? [...msgSelectedIds] : getVisibleChatIds();
   if (!ids.length) { showToast(`No chats to mark as ${read ? "read" : "unread"}.`, "info"); return; }
   if (!(await showConfirmDialog(`Mark ${ids.length} chat${ids.length === 1 ? "" : "s"} as ${read ? "read" : "unread"}?`, {
-    title: read ? "Mark as read" : "Mark as unread",
-    okLabel: read ? "Mark read" : "Mark unread"
+    title: read ? "Mark as read" : "Mark as unread", okLabel: read ? "Mark read" : "Mark unread"
   }))) return;
+  const convs = window.__conversations || [];
+  const idsSet = new Set(ids);
   const work = ids.map((id) => {
-    const c = (window.__conversations || []).find((x) => x.conversation_id === id);
+    const c = convs.find((x) => x.conversation_id === id);
     const currentlyUnread = Number(c?.unread_count || 0) > 0;
-    return currentlyUnread === !read ? Promise.resolve() : sb.rpc("toggle_conversation_unread", { p_conversation_id: id });
+    return currentlyUnread === !read ? Promise.resolve({ data: true }) : sb.rpc("toggle_conversation_unread", { p_conversation_id: id });
   });
-  await Promise.all(work);
+
+  // Paint immediately; the server remains authoritative and is reconciled in
+  // the background. This removes the visible 1–3 second pause after tapping.
+  convs.forEach((c) => { if (idsSet.has(c.conversation_id)) c.unread_count = read ? 0 : Math.max(1, Number(c.unread_count || 0)); });
   msgSelectMode = false; msgSelectedIds.clear();
-  await refreshNotifications();
-  navigate("messages", {}, false);
+  filterMsgList(); updateMsgSelectionBar(); renderBottomNav();
+  showToast(`${ids.length} chat${ids.length === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
+
+  Promise.allSettled(work).then((results) => {
+    const failed = results.filter((r) => r.status === "rejected" || r.value?.error).length;
+    if (failed) showToast(`${failed} chat${failed === 1 ? "" : "s"} could not be updated.`, "error");
+    refreshNotifications(false).catch(() => {});
+  });
 }
 function msgSelectionHeaderHtml() {
   if (!msgSelectMode) {
@@ -9021,7 +9098,6 @@ function renderVendorsDirectory() {
     <select id="vendorSectorFilter" onchange="filterVendorsDirectory()"><option value="">All sectors</option></select>
     <select id="vendorCityFilter" onchange="filterVendorsDirectory()"><option value="">All cities</option></select>
     <select id="vendorCategoryFilter" onchange="filterVendorsDirectory()"><option value="">Known for: anything</option></select>
-    <div id="vendorsLocationAction" class="vendors-location-action" aria-live="polite"></div>
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   html += `<div id="vendorsMapWrap" class="hidden">
@@ -9114,19 +9190,11 @@ async function showDistancesInVendorsList() {
 }
 
 function updateVendorsLocationUI() {
+  // Distances are intentionally unobtrusive: when automatic location is enabled
+  // the vendor cards own their distance chips. Do not render a status/banner here.
   const el = byId("vendorsLocationAction");
-  if (!el) return;
-  if (buyerLocation) {
-    el.innerHTML = `<span class="vendors-location-live"><i class="fa-solid fa-location-dot"></i> Distances updating automatically</span>`;
-    return;
-  }
-  if (!buyerDistanceAutoEnabled) {
-    el.innerHTML = `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Show distances</button>`;
-    return;
-  }
-  el.innerHTML = `<button class="btn btn-sm btn-outline" id="vendorsShowDistanceBtn" onclick="showDistancesInVendorsList()"><i class="fa-solid fa-location-crosshairs"></i> Turn on location</button>`;
+  if (el) el.replaceChildren();
 }
-
 
 let vendorsViewMode = "list";
 let vendorsMap = null;
@@ -13953,29 +14021,6 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
-<style id="automatic-location-distance-ui">
-  .vendors-location-action{display:flex;align-items:center;min-height:2.5rem;gap:.5rem;}
-  .vendors-location-live{display:inline-flex;align-items:center;gap:.4rem;padding:.48rem .72rem;border:1px solid color-mix(in srgb,var(--primary) 28%,var(--border));border-radius:999px;color:var(--primary);font-size:.78rem;font-weight:700;background:color-mix(in srgb,var(--primary) 7%,transparent);}
-  .vendors-location-live i{font-size:.72rem;}
-  .location-recovery-modal{max-width:430px;}
-  .location-prompt-state{margin-top:.55rem;font-size:.82rem;line-height:1.5;}
-  @media(max-width:720px){.vendors-location-action{width:100%;}.vendors-location-action .btn{width:100%;}.vendors-location-live{width:100%;justify-content:center;}}
-</style>
+
 </body>
 </html>
-
-/* FINAL TOUR STABILITY + CART BREATHING SPACE */
-#tourCallout{
-  transform:none !important;
-  transition:opacity .16s ease, top .20s ease, left .20s ease !important;
-  animation:none !important;
-  will-change:top,left,opacity;
-}
-#tourCallout.centered{transform:translate(-50%,-50%) !important;}
-#tourCallout.tour-enter{animation:tourFadeOnly .16s ease both !important;}
-@keyframes tourFadeOnly{from{opacity:0}to{opacity:1}}
-#tourSpotlightHole{transition:top .20s ease,left .20s ease,width .20s ease,height .20s ease,opacity .16s ease !important;}
-#tourSpotlightHole.centered{opacity:0 !important;}
-.cart-page-title{margin:0 0 1.15rem !important;padding:0 .1rem !important;line-height:1.2 !important;}
-.cart-vendor-card{margin-top:.15rem !important;}
-@media(max-width:720px){.cart-page-title{margin-bottom:1.25rem !important}.cart-vendor-card{margin-top:.1rem !important}}
