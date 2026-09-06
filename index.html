@@ -11558,64 +11558,59 @@ async function persistOrderItemVariants(orderId, selections) {
   for (const item of selections) {
     if (!item?.productId || (!item?.variantName && !item?.variantColor)) continue;
 
-    // The SECURITY DEFINER RPC is the authoritative persistence path. If it
-    // succeeds, the variation is saved; do not require a second client-side
-    // UPDATE that may legitimately be blocked by order_items RLS.
+    const expectedName = item.variantName || null;
+    const expectedColor = item.variantColor || null;
+
+    // The SECURITY DEFINER RPC is the ONE authoritative persistence path.
+    // create_sale_order / create_cart_order already create the order_items
+    // row(s) and commit before returning orderId, so there is no race to
+    // wait out here -- the row this RPC needs to update already exists.
+    let rpcError = null;
     try {
-      const { data: rpcResult, error: rpcError } = await sb.rpc("set_order_item_variant", {
+      const { error } = await sb.rpc("set_order_item_variant", {
         p_order_id: orderId,
         p_product_id: item.productId,
-        p_variant_name: item.variantName || null,
-        p_variant_color: item.variantColor || null,
+        p_variant_name: expectedName,
+        p_variant_color: expectedColor,
       });
-
-      if (!rpcError && rpcResult !== false) continue;
-      console.warn("Variant metadata RPC failed; trying direct sync", rpcError);
+      rpcError = error || null;
+      if (rpcError) {
+        console.warn("set_order_item_variant RPC failed:", rpcError.message, rpcError.code, rpcError.details, rpcError.hint);
+      }
     } catch (e) {
-      console.warn("Variant metadata RPC failed; trying direct sync", e);
+      rpcError = e;
+      console.warn("set_order_item_variant RPC threw:", e?.message, e?.code, e?.details, e?.hint);
     }
 
-    // Fallback only when the RPC itself failed. This is best-effort because
-    // RLS may intentionally prevent direct client updates.
+    // Verify against the actual row instead of trusting the RPC's return
+    // value (or, as before, a second client-side UPDATE that RLS may
+    // legitimately block). This SELECT is the same kind of read the order
+    // detail / vendor order pages already rely on, so it isn't subject to
+    // the write-side RLS restriction that made the old fallback unreliable.
+    // It also means a genuinely successful RPC is never reported as a
+    // failure, and a genuinely failed one is never reported as a success.
     try {
-      const { data: exactRows, error: exactErr } = await sb.from("order_items")
-        .select("id,product_id")
+      const { data: rows, error: selErr } = await sb.from("order_items")
+        .select("id,product_id,variant_name,variant_color")
         .eq("order_id", orderId)
         .eq("product_id", item.productId);
-      if (exactErr) throw exactErr;
+      if (selErr) throw selErr;
 
-      let rows = exactRows || [];
-      if (!rows.length) {
-        const { data: allRows, error: allErr } = await sb.from("order_items")
-          .select("id,product_id")
-          .eq("order_id", orderId);
-        if (allErr) throw allErr;
-        if ((allRows || []).length === 1) rows = allRows;
-      }
-      if (!rows.length) throw new Error("The order item could not be matched for variant sync.");
-
-      const ids = rows.map(r => r.id);
-      const { error: updateErr } = await sb.from("order_items")
-        .update({
-          variant_name: item.variantName || null,
-          variant_color: item.variantColor || null,
-        })
-        .in("id", ids);
-      if (updateErr) throw updateErr;
-
-      const { data: verifyRows, error: verifyErr } = await sb.from("order_items")
-        .select("id,variant_name,variant_color")
-        .in("id", ids);
-      if (verifyErr) throw verifyErr;
-
-      const verified = (verifyRows || []).every(r =>
-        (r.variant_name || null) === (item.variantName || null) &&
-        (r.variant_color || null) === (item.variantColor || null)
+      const matched = (rows || []).some(r =>
+        (r.variant_name || null) === expectedName &&
+        (r.variant_color || null) === expectedColor
       );
-      if (!verified) throw new Error("The selected product variation was not persisted.");
+
+      if (!matched) {
+        allOk = false;
+        console.warn("Order item variant verification did not match expected value.", { orderId, productId: item.productId, expectedName, expectedColor, rows, rpcError });
+      }
     } catch (e) {
-      allOk = false;
-      console.warn("Direct order variant sync failed", e);
+      // Couldn't verify at all. Fall back to the RPC's own outcome rather
+      // than guessing: a clean RPC call is treated as success, a failed one
+      // is reported as the real failure it is.
+      if (rpcError) allOk = false;
+      console.warn("Order item variant verification read failed:", e?.message, e?.code, e?.details, e?.hint);
     }
   }
 
