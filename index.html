@@ -147,9 +147,8 @@
   a:hover { text-decoration: underline; }
   .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: brightness(0) invert(1); }
   .ai-chat-header-logo { width: 1.4rem; height: 1.4rem; object-fit: contain; vertical-align: -0.3rem; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 55%, transparent)); }
-  .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; flex: 1 1 auto; }
-  .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex: 0 0 auto; margin-left: auto; min-width: max-content; }
-  #notifWrap { flex: 0 0 auto; }
+  .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+  .header-right { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
   .btn { padding: 0.6rem 1.4rem; border: none; border-radius: 9999px; background: var(--primary-grad); color: white; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: filter 0.15s, transform 0.1s, box-shadow 0.15s; }
   .btn:hover { filter: brightness(1.1); box-shadow: var(--shadow-float); }
   .btn:active { transform: scale(0.97); }
@@ -340,7 +339,9 @@
   .product-gallery-thumb.active { border-color:var(--primary); box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 18%,transparent); }
   .product-gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .product-gallery-count { position:absolute; right:0.7rem; bottom:0.7rem; padding:0.25rem 0.55rem; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; font-size:0.72rem; backdrop-filter:blur(5px); }
-
+  .variant-chip.active { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 10%,var(--card)); color:var(--primary); font-weight:700; }
+  .variant-row-head { font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:.3rem; padding:0 .15rem; }
+  @media (max-width:600px) { .variant-row { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; gap:.38rem; } .variant-row-head { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; } }
   .image-lightbox { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:1rem; }
   .image-lightbox.hidden { display:none; }
   .image-lightbox img { max-width:96vw; max-height:90vh; object-fit:contain; border-radius:0.5rem; }
@@ -1549,28 +1550,6 @@ h1,h2,h3,h4,h5,strong{letter-spacing:-.028em}
 .btn:active{transform:translateY(1px) !important}
 .btn-outline{border:1px solid color-mix(in srgb,var(--primary) 68%,var(--border));background:transparent}
 
-/* Header integrity: profile stays left; notification stays at the far right. */
-header .header-left{flex:1 1 auto !important;min-width:0 !important;}
-header .header-right{margin-left:auto !important;flex:0 0 auto !important;display:flex !important;align-items:center !important;justify-content:flex-end !important;min-width:max-content !important;}
-header #notifWrap{position:static !important;display:flex !important;align-items:center !important;flex:0 0 auto !important;}
-header .header-left, header .header-right{align-self:center !important;height:42px !important;}
-header h1{height:42px !important;display:inline-flex !important;align-items:center !important;}
-@media (max-width:720px){
-  header{align-items:center !important;}
-  header .header-left, header .header-right{align-items:center !important;}
-  header #notifWrap, header #notifWrap .icon-btn, header #profileWrap, header #profileWrap .icon-btn{align-self:center !important;}
-}
-
-/* Branded refresh splash: dark, centered Levromart mark — never a white
-   skeleton screen or green loading bar. */
-#levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .18s ease,visibility .18s ease;}
-#levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.levromart-splash-logo{position:relative;width:min(72vw,340px);height:64px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 24px rgba(45,212,191,.18));}
-/* IMPORTANT: mask layers start invisible. This prevents the raw gradient
-   rectangle from ever flashing before the data-URL mask has painted. */
-.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{position:absolute;inset:0;width:100%;height:64px;background:var(--primary-grad);-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain;opacity:0;visibility:hidden;}
-.levromart-splash-logo .splash-logo-circle{position:absolute;width:21%;height:64px;left:39.5%;top:0;object-fit:contain;filter:brightness(0) invert(1);opacity:0;visibility:hidden;}
-#levromartSplash.logo-ready .splash-logo-left,#levromartSplash.logo-ready .splash-logo-right,#levromartSplash.logo-ready .splash-logo-circle{opacity:1;visibility:visible;}
 /* Header: quiet, crisp, not toy-like */
 header{
   background:color-mix(in srgb,var(--bg) 86%,transparent);
@@ -4006,102 +3985,6 @@ body { min-width:0 !important; }
   outline:2.5px solid var(--primary) !important; outline-offset:2px !important;
 }
 
-
-/* ================================================================
-   FINAL HEADER + BRAND MARK + NOTIFICATION RELIABILITY PATCH
-   ================================================================ */
-
-/* Keep the header controls on one physical horizontal line on iPhone.
-   The notification control is anchored to the same vertical center as
-   the profile/logo row instead of participating in any flex wrapping. */
-header {
-  position: sticky !important;
-  position: -webkit-sticky !important;
-  align-items: center !important;
-  min-height: 68px !important;
-}
-header .header-left {
-  height: 42px !important;
-  min-height: 42px !important;
-  align-items: center !important;
-  flex: 1 1 auto !important;
-}
-header .header-left #profileWrap,
-header .header-left h1 {
-  height: 42px !important;
-  align-self: center !important;
-  align-items: center !important;
-}
-header .header-right {
-  position: absolute !important;
-  right: max(1rem, 3vw) !important;
-  top: calc(.7rem + env(safe-area-inset-top, 0px)) !important;
-  width: 42px !important;
-  height: 42px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  align-self: auto !important;
-}
-header #notifWrap,
-header #notifWrap .icon-btn {
-  width: 42px !important;
-  height: 42px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  align-self: center !important;
-  transform: none !important;
-}
-
-/* Leave enough room so the logo never collides with the right-side bell. */
-header .header-left {
-  padding-right: 54px !important;
-}
-
-/* Restore the header Levromart centre mark to its original size. */
-.brand-logo-circle {
-  transform: scale(1) !important;
-  transform-origin: center center !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  .brand-logo-circle { transform: scale(1) !important; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .brand-logo-circle { animation: logoPulse 3s ease-in-out infinite !important; }
-}
-
-/* The splash uses the same full-width transparent logo asset as the header.
-   The white mark occupies the centre of that source image; constraining the
-   <img> to 21% made the actual mark collapse into a tiny dot. Keep the full
-   source width so the mark is naturally centred and proportioned. */
-.levromart-splash-logo .splash-logo-circle {
-  width: 100% !important;
-  height: 64px !important;
-  left: 0 !important;
-  top: 0 !important;
-  object-fit: contain !important;
-  transform: none !important;
-  transform-origin: center center !important;
-}
-
-/* Notification actions: every mutation is scoped to the authenticated user,
-   checks the actual database result, and refreshes only after persistence. */
-#notifPanel .notif-item { -webkit-tap-highlight-color: transparent !important; }
-
-/* Critical mobile actions: never let gesture layers make buttons feel dead. */
-button.btn, button.icon-btn, .notif-mark-all-btn, #confirmModal button {
-  pointer-events:auto !important;
-  -webkit-user-select:none !important;
-  user-select:none !important;
-  touch-action:manipulation !important;
-  cursor:pointer !important;
-}
-#confirmModal { pointer-events:auto !important; }
-#confirmModal.hidden { pointer-events:none !important; }
-#notifPanel .notif-mark-all-btn { position:relative !important; z-index:5 !important; min-height:44px !important; padding:.55rem .25rem !important; }
-
 </style>
 
 
@@ -4844,7 +4727,6 @@ function setLogoMask(el, url) {
 }
 setLogoMask(document.getElementById("brandLogoLeft"), LEVROMART_LOGO_LEFT);
 document.getElementById("brandLogoCircle").src = LEVROMART_LOGO_CIRCLE;
-// Same exact Levromart logo assets are used for the refresh splash.
 setLogoMask(document.getElementById("splashLogoLeft"), LEVROMART_LOGO_LEFT);
 document.getElementById("splashLogoCircle").src = LEVROMART_LOGO_CIRCLE;
 // Branded loading indicator -- the logo sits still in the middle while two
@@ -4865,16 +4747,11 @@ function brandSpinnerHtml(label) {
 }
 setLogoMask(document.getElementById("brandLogoRight"), LEVROMART_LOGO_RIGHT);
 setLogoMask(document.getElementById("splashLogoRight"), LEVROMART_LOGO_RIGHT);
-// Do not expose the splash layers until all three logo pieces have been
-// assigned. This eliminates the one-frame green block seen on iOS refresh.
-(function revealSplashLogo(){
+(function initBrandedSplash(){
   const splash = document.getElementById("levromartSplash");
-  const circle = document.getElementById("splashLogoCircle");
-  if (!splash || !circle) return;
-  const reveal = () => requestAnimationFrame(() => splash.classList.add("logo-ready"));
-  if (circle.complete) reveal();
-  else { circle.addEventListener("load", reveal, {once:true}); circle.addEventListener("error", reveal, {once:true}); }
-  setTimeout(() => splash.classList.add("logo-ready"), 120);
+  if (!splash) return;
+  // All three layers start invisible so iOS can never paint a raw gradient block.
+  requestAnimationFrame(() => splash.classList.add("logo-ready"));
 })();
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
@@ -5950,60 +5827,26 @@ function showVerifyingPaymentScreen() {
   if (app) app.innerHTML = `<div class="empty-state">${brandSpinnerHtml("Confirming your payment…")}<p class="muted" style="font-size:0.85rem;">This only takes a moment. Please don't close this page.</p></div>`;
 }
 
-let activeConfirmResolver = null;
 function showConfirmDialog(message, opts = {}) {
   return new Promise((resolve) => {
     const modal = byId("confirmModal");
-    const titleEl = byId("confirmModalTitle");
-    const msgEl = byId("confirmModalMsg");
+    byId("confirmModalTitle").textContent = opts.title || "Please confirm";
+    byId("confirmModalMsg").textContent = message;
     const okBtn = byId("confirmModalOk");
     const cancelBtn = byId("confirmModalCancel");
-
-    // Never allow a second confirmation to orphan the first promise.
-    if (activeConfirmResolver) {
-      try { activeConfirmResolver(false); } catch (_) {}
-      activeConfirmResolver = null;
-    }
-
-    if (!modal || !titleEl || !msgEl || !okBtn || !cancelBtn) {
-      console.error("Levromart: confirmation dialog elements are missing.");
-      resolve(false);
-      return;
-    }
-
-    titleEl.textContent = opts.title || "Please confirm";
-    msgEl.textContent = message;
     okBtn.textContent = opts.okLabel || "Confirm";
     okBtn.className = opts.danger ? "btn btn-danger" : "btn";
-    okBtn.type = "button";
-    cancelBtn.type = "button";
-
-    let settled = false;
+    modal.classList.remove("hidden");
     const cleanup = (result) => {
-      if (settled) return;
-      settled = true;
-      if (activeConfirmResolver === finish) activeConfirmResolver = null;
       modal.classList.add("hidden");
-      modal.style.display = "";
-      modal.style.pointerEvents = "";
-      okBtn.onclick = null;
-      cancelBtn.onclick = null;
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
       resolve(result);
     };
-    const finish = (result) => cleanup(result);
-    activeConfirmResolver = finish;
-
-    // Use direct onclick properties rather than stacking anonymous listeners.
-    // This is more reliable on iOS Safari after dynamically rendered buttons.
-    okBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); finish(true); };
-    cancelBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); finish(false); };
-
-    modal.classList.remove("hidden");
-    modal.style.setProperty("display", "flex", "important");
-    modal.style.setProperty("pointer-events", "auto", "important");
-    modal.style.setProperty("z-index", "20000", "important");
-    modal.setAttribute("aria-hidden", "false");
-    requestAnimationFrame(() => okBtn.focus({ preventScroll: true }));
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
   });
 }
 // Same idea as showConfirmDialog but collects a short piece of text (e.g. a
@@ -6518,7 +6361,7 @@ async function renderNotifPanel() {
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const hasUnread = (items || []).some((n) => !n.read);
   const markAllBar = !notifSelectMode && notifViewMode !== "trash" && hasUnread
-    ? `<button type="button" id="notifMarkAllBtn" class="notif-mark-all-btn" onclick="markAllNotifsRead(event)"><i class="fa-solid fa-check-double"></i> Mark all as read</button>`
+    ? `<button class="notif-mark-all-btn" onclick="markAllNotifsRead()"><i class="fa-solid fa-check-double"></i> Mark all as read</button>`
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
@@ -6638,42 +6481,23 @@ function exitNotifSelectMode(rerender = true) {
 
 async function batchMarkNotifsRead(read) {
   const ids = [...notifSelectedIds].map(String);
-  if (!session || !ids.length) {
-    if (!ids.length) showToast("Select at least one notification first.", "info");
-    return;
-  }
-
-  const userId = session.user.id;
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
   const panel = byId("notifPanel");
-  const rows = ids.map(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
-  const previous = new Map(rows.map(row => [String(row.dataset.id), row.classList.contains("unread")]));
-
-  const { data, error } = await sb
-    .from("notifications")
-    .update({ read: !!read })
-    .eq("user_id", userId)
-    .in("id", ids)
-    .select("id,read");
-
-  if (error) {
-    showToast(error.message || "Couldn't update notifications.", "error");
-    return;
-  }
-
-  const changed = new Set((data || []).map(n => String(n.id)));
-  if (changed.size !== ids.length) {
-    previous.forEach((wasUnread, id) => {
-      const row = panel?.querySelector(`.notif-item[data-id="${CSS.escape(id)}"]`);
-      if (row) row.classList.toggle("unread", wasUnread);
-    });
-    await refreshNotifications();
-    showToast("Some notifications could not be updated.", "error");
-    return;
-  }
-
+  const rows = ids.map((id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)).filter(Boolean);
+  const oldUnread = new Map(rows.map((row) => [String(row.dataset.id), row.classList.contains("unread")]));
+  rows.forEach((row) => { row.classList.toggle("unread", !read); row.classList.remove("selected"); row.setAttribute("aria-selected", "false"); });
+  const count = ids.length;
   exitNotifSelectMode(false);
-  await refreshNotifications();
-  showToast(`${ids.length} notification${ids.length === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
+  showToast(`${count} notification${count === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
+  const { error } = await sb.from("notifications").update({ read }).in("id", ids);
+  if (error) {
+    oldUnread.forEach((wasUnread, id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.classList.toggle("unread", wasUnread));
+    renderNotifPanel();
+    showToast(error.message || "Couldn't update notifications.", "error");
+  } else {
+    refreshNotifications(false).catch(() => {});
+  }
 }
 // ---- inbox <-> archive ----
 // Single-item quick actions below keep their undo-toast (fast, low-risk,
@@ -6683,176 +6507,96 @@ async function batchMarkNotifsRead(read) {
 // actual count involved.
 async function batchArchiveOrRestoreSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!session || !ids.length) {
-    if (!ids.length) showToast("Select at least one notification first.", "info");
-    return;
-  }
-
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
   const restoring = notifViewMode === "archived";
-  const verb = restoring ? "restore" : "archive";
-  const { data, error } = await sb
-    .from("notifications")
-    .update({ archived: !restoring })
-    .eq("user_id", session.user.id)
-    .in("id", ids)
-    .select("id");
-
-  if (error) {
-    showToast(error.message || `Couldn't ${verb} notifications.`, "error");
-    return;
-  }
-
-  if ((data || []).length !== ids.length) {
-    await refreshNotifications();
-    showToast(`Some notifications could not be ${verb}d.`, "error");
-    return;
-  }
-
+  const verb = restoring ? "Restore" : "Archive";
+  const { error } = await sb.from("notifications").update({ archived: !restoring }).in("id", ids);
+  if (error) { showToast(error.message || `Couldn't ${verb.toLowerCase()} notifications.`, "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
+  const count = ids.length;
   exitNotifSelectMode(false);
-  await refreshNotifications();
-  showToast(restoring ? `${ids.length} restored.` : `${ids.length} archived.`, "success");
+  refreshNotifications(false);
+  showToast(restoring ? `${count} restored.` : `${count} archived.`, "success");
 }
 async function quickArchiveNotif(id) {
-  if (!session) return;
-  const { error } = await sb.from("notifications").update({ archived: true }).eq("id", id).eq("user_id", session.user.id);
-  if (error) { showToast(error.message || "Couldn't archive notification.", "error"); return; }
-  await refreshNotifications();
-  showUndoToast("Notification archived.", async () => {
-    if (!session) return;
-    const { error: undoError } = await sb.from("notifications").update({ archived: false }).eq("id", id).eq("user_id", session.user.id);
-    if (undoError) showToast(undoError.message || "Couldn't restore notification.", "error");
-    await refreshNotifications();
-  });
+  await sb.from("notifications").update({ archived: true }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification archived.", async () => { await sb.from("notifications").update({ archived: false }).eq("id", id); refreshNotifications(); });
 }
 async function quickUnarchiveNotif(id) {
-  if (!session) return;
-  const { error } = await sb.from("notifications").update({ archived: false }).eq("id", id).eq("user_id", session.user.id);
-  if (error) { showToast(error.message || "Couldn't restore notification.", "error"); return; }
-  await refreshNotifications();
-  showUndoToast("Notification restored.", async () => {
-    if (!session) return;
-    const { error: undoError } = await sb.from("notifications").update({ archived: true }).eq("id", id).eq("user_id", session.user.id);
-    if (undoError) showToast(undoError.message || "Couldn't archive notification.", "error");
-    await refreshNotifications();
-  });
+  await sb.from("notifications").update({ archived: false }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification restored.", async () => { await sb.from("notifications").update({ archived: true }).eq("id", id); refreshNotifications(); });
 }
+
 // ---- inbox/archive -> trash (soft delete) ----
 async function batchTrashSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!session || !ids.length) {
-    if (!ids.length) showToast("Select at least one notification first.", "info");
-    return;
-  }
-
-  const { data, error } = await sb
-    .from("notifications")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("user_id", session.user.id)
-    .in("id", ids)
-    .select("id");
-
-  if (error) {
-    showToast(error.message || "Couldn't move notifications to trash.", "error");
-    return;
-  }
-  if ((data || []).length !== ids.length) {
-    await refreshNotifications();
-    showToast("Some notifications could not be moved to trash.", "error");
-    return;
-  }
-
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
+  const now = new Date().toISOString();
+  const { error } = await sb.from("notifications").update({ deleted_at: now }).in("id", ids);
+  if (error) { showToast(error.message || "Couldn't move notifications to trash.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
+  const count = ids.length;
   exitNotifSelectMode(false);
-  await refreshNotifications();
-  showToast(`${ids.length} moved to trash.`, "success");
+  refreshNotifications(false);
+  showToast(`${count} moved to trash.`, "success");
 }
 async function quickTrashNotif(id) {
-  if (!session) return;
-  const { error } = await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("user_id", session.user.id);
-  if (error) { showToast(error.message || "Couldn't move notification to trash.", "error"); return; }
-  await refreshNotifications();
-  showUndoToast("Notification moved to trash.", async () => {
-    if (!session) return;
-    const { error: undoError } = await sb.from("notifications").update({ deleted_at: null }).eq("id", id).eq("user_id", session.user.id);
-    if (undoError) showToast(undoError.message || "Couldn't restore notification.", "error");
-    await refreshNotifications();
-  });
+  await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  refreshNotifications();
+  showUndoToast("Notification moved to trash.", async () => { await sb.from("notifications").update({ deleted_at: null }).eq("id", id); refreshNotifications(); });
 }
+
 // ---- trash -> restore ----
 async function batchRestoreSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!session || !ids.length) {
-    if (!ids.length) showToast("Select at least one notification first.", "info");
-    return;
-  }
-
-  const { data, error } = await sb
-    .from("notifications")
-    .update({ deleted_at: null })
-    .eq("user_id", session.user.id)
-    .in("id", ids)
-    .select("id");
-
-  if (error) {
-    showToast(error.message || "Couldn't restore notifications.", "error");
-    return;
-  }
-  if ((data || []).length !== ids.length) {
-    await refreshNotifications();
-    showToast("Some notifications could not be restored.", "error");
-    return;
-  }
-
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  notifRenderEpoch++;
+  const { error } = await sb.from("notifications").update({ deleted_at: null }).in("id", ids);
+  if (error) { showToast(error.message || "Couldn't restore notifications.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
+  const count = ids.length;
   exitNotifSelectMode(false);
-  await refreshNotifications();
-  showToast(`${ids.length} restored.`, "success");
+  refreshNotifications(false);
+  showToast(`${count} restored.`, "success");
 }
 async function quickRestoreFromTrash(id) {
-  if (!session) return;
-  const { error } = await sb.from("notifications").update({ deleted_at: null }).eq("id", id).eq("user_id", session.user.id);
-  if (error) { showToast(error.message || "Couldn't restore notification.", "error"); return; }
-  await refreshNotifications();
+  await sb.from("notifications").update({ deleted_at: null }).eq("id", id);
+  refreshNotifications();
   showToast("Notification restored.", "success");
 }
+
 // ---- trash -> gone forever (irreversible: always confirm) ----
 async function confirmPurgeOne(id) {
-  if (!session) return;
-  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete forever", okLabel: "Delete forever", danger: true }))) {
-    await renderNotifPanel();
-    return;
-  }
-  const { error } = await sb.from("notifications").delete().eq("id", id).eq("user_id", session.user.id);
-  if (error) { showToast(error.message || "Couldn't delete notification.", "error"); return; }
-  await refreshNotifications();
+  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete forever", okLabel: "Delete forever", danger: true }))) { renderNotifPanel(); return; }
+  await sb.from("notifications").delete().eq("id", id);
+  refreshNotifications();
 }
 async function batchPurgeSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!session || !ids.length) {
-    if (!ids.length) showToast("Select at least one notification first.", "info");
-    return;
-  }
+  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
   if (!(await showConfirmDialog(`Permanently delete ${ids.length} notification${ids.length === 1 ? "" : "s"}? This can't be undone.`, { title: "Delete forever", okLabel: "Delete forever", danger: true }))) return;
-
-  const { data, error } = await sb
-    .from("notifications")
-    .delete()
-    .eq("user_id", session.user.id)
-    .in("id", ids)
-    .select("id");
-
-  if (error) {
-    showToast(error.message || "Couldn't delete notifications.", "error");
-    return;
-  }
-  if ((data || []).length !== ids.length) {
-    await refreshNotifications();
-    showToast("Some notifications could not be deleted.", "error");
-    return;
-  }
-
+  notifRenderEpoch++;
+  const { error } = await sb.from("notifications").delete().in("id", ids);
+  if (error) { showToast(error.message || "Couldn't delete notifications.", "error"); return; }
+  const panel = byId("notifPanel");
+  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
+  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
+  const count = ids.length;
   exitNotifSelectMode(false);
-  await refreshNotifications();
-  showToast(`${ids.length} deleted permanently.`, "success");
+  refreshNotifications(false);
+  showToast(`${count} deleted permanently.`, "success");
 }
+
 function showUndoToast(message, undoFn) {
   playSound("notify");
   const wrap = byId("toastStack");
@@ -6868,59 +6612,30 @@ function showUndoToast(message, undoFn) {
   setTimeout(dismiss, 5000);
 }
 
-async function markAllNotifsRead(event) {
-  event?.preventDefault?.();
-  event?.stopPropagation?.();
-  if (!session) { showToast("Please sign in again to manage notifications.", "error"); return; }
+async function markAllNotifsRead() {
+  if (!session) return;
   if (!(await showConfirmDialog("Mark every notification as read?", { title: "Mark all as read", okLabel: "Mark all read" }))) return;
-
-  const archived = notifViewMode === "archived";
-  const { data, error } = await sb
-    .from("notifications")
-    .update({ read: true })
-    .eq("user_id", session.user.id)
-    .eq("read", false)
-    .eq("archived", archived)
-    .is("deleted_at", null)
-    .select("id");
-
-  if (error) {
-    showToast(error.message || "Couldn't mark notifications as read.", "error");
-    return;
-  }
-
-  notifCount = 0;
-  byId("notifDot")?.classList.add("hidden");
-  await refreshNotifications(false);
-  showToast(`${(data || []).length} notification${(data || []).length === 1 ? "" : "s"} marked as read.`, "success");
+  notifCount = 0; byId("notifDot")?.classList.add("hidden");
+  byId("notifPanel")?.querySelectorAll(".notif-item.unread").forEach(row => row.classList.remove("unread"));
+  showToast("All marked as read.", "success");
+  const { error } = await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
+  if (error) { renderNotifPanel(); showToast(error.message || "Couldn't mark notifications as read.", "error"); return; }
+  refreshNotifications(false).catch(() => {});
 }
 async function markSingleNotifRead(id) {
   if (!session) return;
-  const el = document.querySelector(`#notifPanel .notif-item[data-id="${CSS.escape(String(id))}"]`);
+  const el = document.querySelector(`.notif-item[data-id="${id}"]`);
   if (!el || !el.classList.contains("unread")) return;
-
-  const { error } = await sb
-    .from("notifications")
-    .update({ read: true })
-    .eq("id", id)
-    .eq("user_id", session.user.id);
-
-  if (error) {
-    showToast(error.message || "Couldn't mark notification as read.", "error");
-    return;
-  }
-
   el.classList.remove("unread");
+  await sb.from("notifications").update({ read: true }).eq("id", id);
   notifCount = Math.max(0, notifCount - 1);
   const dot = byId("notifDot");
   if (dot) {
-    if (notifCount > 0) {
-      dot.textContent = notifCount > 9 ? "9+" : notifCount;
-    } else {
-      dot.classList.add("hidden");
-    }
+    if (notifCount > 0) { dot.textContent = notifCount > 9 ? "9+" : notifCount; }
+    else { dot.classList.add("hidden"); }
   }
 }
+
 function subscribeNotifications() {
   if (notifChannel) { sb.removeChannel(notifChannel); notifChannel = null; }
   if (!session) return;
@@ -6993,7 +6708,7 @@ function subscribeOrderUpdates() {
   } else if (profile?.role !== "admin") {
     ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `buyer_id=eq.${session.user.id}` }, refreshVisibleOrderView);
   }
-  // Also catch item-level changes.
+  // Also catch item-level changes (including selected variation metadata).
   ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, refreshVisibleOrderView);
   ordersLiveChannel.subscribe();
 
@@ -8357,8 +8072,6 @@ async function clearStaleCartItems() {
   navigate("cart", {}, false);
 }
 async function checkoutCartVendor(vendorId) {
-  if (!session) { showLogin(); return; }
-  if (!(await ensureBuyerProfile(byId(`cartError-${vendorId}`)))) return;
   const group = window.__cartByVendor?.get(vendorId);
   const errorEl = byId(`cartError-${vendorId}`);
   if (!group) return;
@@ -9422,39 +9135,6 @@ function readDeliveryFields(prefix, errorEl) {
   return { method, address, phone };
 }
 
-async function persistOrderBuyerNote(orderId, note) {
-  if (!session?.user?.id || !orderId) return false;
-  const cleaned = String(note || "").trim().slice(0, 500);
-  if (!cleaned) return true;
-
-  // Preferred path: the dedicated RPC validates ownership server-side.
-  try {
-    const { error } = await sb.rpc("set_order_buyer_note", {
-      p_order_id: orderId,
-      p_note: cleaned
-    });
-    if (!error) return true;
-    console.warn("set_order_buyer_note RPC failed:", error);
-  } catch (e) {
-    console.warn("set_order_buyer_note RPC unavailable:", e);
-  }
-
-  // Compatibility fallback for deployments where the RPC has not been
-  // installed yet. RLS still scopes the update to the authenticated buyer.
-  try {
-    const { error } = await sb
-      .from("orders")
-      .update({ buyer_note: cleaned })
-      .eq("id", orderId)
-      .eq("buyer_id", session.user.id);
-    if (!error) return true;
-    console.warn("Direct buyer_note update failed:", error);
-  } catch (e) {
-    console.warn("Direct buyer_note update failed:", e);
-  }
-  return false;
-}
-
 async function confirmRental(vendorId, productId) {
   if (!session) { showLogin(); return; }
   const start = byId("rentStart").value;
@@ -9527,27 +9207,17 @@ async function buyNow(vendorId, productId) {
   const confirmMsg = `${verb} ${qty > 1 && !previewEl ? qty + "× " : ""}${productName}${totalText ? ` for ${totalText}` : ""}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
   if (!(await showConfirmDialog(confirmMsg, { title: `Confirm ${verb === "Book" ? "booking" : "purchase"}`, okLabel: `${verb} now` }))) return;
 
-  let orderId = null;
-  try {
-    const result = await sb.rpc("create_sale_order", {
-      p_vendor_id: vendorId,
-      p_product_id: productId,
-      p_quantity: qty,
-      p_delivery_method: delivery.method,
-      p_delivery_address: delivery.address,
-      p_delivery_phone: delivery.phone,
-      p_buyer_lat: buyerLocation?.lat ?? null,
-      p_buyer_lng: buyerLocation?.lng ?? null,
-    });
-    orderId = result.data;
-    if (result.error) throw result.error;
-    if (!orderId) throw new Error("The order could not be created.");
-  } catch (err) {
-    console.error("create_sale_order failed:", err);
-    errorEl.textContent = err?.message || "The order could not be placed. Please try again.";
-    errorEl.classList.remove("hidden");
-    return;
-  }
+  const { data: orderId, error } = await sb.rpc("create_sale_order", {
+    p_vendor_id: vendorId,
+    p_product_id: productId,
+    p_quantity: qty,
+    p_delivery_method: delivery.method,
+    p_delivery_address: delivery.address,
+    p_delivery_phone: delivery.phone,
+    p_buyer_lat: buyerLocation?.lat ?? null,
+    p_buyer_lng: buyerLocation?.lng ?? null,
+  });
+  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
 
   const noteSaved = buyerNote ? await persistOrderBuyerNote(orderId, buyerNote) : true;
   if (!noteSaved) showToast("Order placed, but your note could not be saved. Please refresh and try again.", "error");
@@ -11703,6 +11373,33 @@ function renderOrderListWrap() {
   if (!wrap) return;
   wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
 }
+function orderVariantSummary(order) {
+  const labels = (order?.items || []).map((it) => {
+    const name = it?.variant_name || it?.variant?.name || "";
+    const color = it?.variant_color || it?.variant?.color || "";
+    if (name && color) return `${name} · ${color}`;
+    return name || color;
+  }).filter(Boolean);
+  return [...new Set(labels)].join(", ");
+}
+
+async function persistOrderBuyerNote(orderId, note) {
+  if (!orderId) return false;
+  const clean = String(note || "").trim().slice(0, 500);
+  if (!clean) return true;
+  try {
+    const { data, error } = await sb.rpc("set_order_buyer_note", { p_order_id: orderId, p_note: clean });
+    if (error) {
+      console.warn("set_order_buyer_note failed:", error.message, error.code, error.details, error.hint);
+      return false;
+    }
+    return data !== false;
+  } catch (e) {
+    console.warn("set_order_buyer_note threw:", e?.message);
+    return false;
+  }
+}
+
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
   const total = orders.length;
@@ -11716,12 +11413,12 @@ function orderListHtml(orders, isBuyerView) {
     </tr></thead><tbody>${shown.map((o) => `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
       <td>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</td>
       <td style="text-transform:capitalize;">${esc(o.order_type)}</td>
-      <td>${naira(o.total_amount)}</td>
+      <td>${naira(o.total_amount)}${orderVariantSummary(o) ? `<div class="muted" style="font-size:.72rem;margin-top:.15rem;">${esc(orderVariantSummary(o))}</div>` : ""}</td>
       <td>${orderActivityIso(o) ? esc(orderActivityLabel(o)) : ""}</td>
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
-  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
+  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -11918,28 +11615,28 @@ const BUYER_CANCEL_WINDOW_HOURS = 5;
 function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   const buttons = [];
   if (isVendor) {
-    if (order.status === "pending") { buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
+    if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
     // Can't hand over what hasn't been paid for yet — avoids a mismatch
     // where the order's marked handed_over/completed but no payment ever
     // actually came in.
     if (order.status === "confirmed") {
-      if (feePaid) buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
+      if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
       else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this can be marked handed over.</p>`);
     }
-    if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
+    if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
   }
-  if (isBuyer && order.status === "pending") buttons.push(`<button type="button" class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
+  if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
   if (isBuyer && order.status === "confirmed") {
     const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
     const paidRow = order.payments.find((p) => p.payment_type === feeType && p.status === "paid");
     const hoursSincePaid = paidRow ? (Date.now() - new Date(paidRow.paid_at || paidRow.created_at).getTime()) / 3600000 : 0;
     if (!paidRow || hoursSincePaid <= BUYER_CANCEL_WINDOW_HOURS) {
-      buttons.push(`<button type="button" class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
+      buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
     } else {
       buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-circle-info"></i> The ${BUYER_CANCEL_WINDOW_HOURS}-hour self-serve cancellation window has passed. Report an issue below if something's wrong.</p>`);
     }
   }
-  if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
+  if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
   // Only the buyer confirms completion — that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
   // Also gated on feePaid for the same reason as the vendor's handover
@@ -11947,13 +11644,13 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   // actually paid for.
   if (isBuyer && order.status === "handed_over" && order.order_type === "sale") {
     if (feePaid) {
-      buttons.push(`<button type="button" class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
+      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
       buttons.push(notReceivedButtonHtml(order));
     } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
   if (isBuyer && order.status === "returned" && order.order_type === "rental") {
     if (feePaid) {
-      buttons.push(`<button type="button" class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
+      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
       buttons.push(notReceivedButtonHtml(order));
     } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
@@ -12915,6 +12612,42 @@ function exportFinancePdf() {
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
     
+
+/* --- FINAL HEADER + BRANDED REFRESH SPLASH --- */
+header { align-items:center !important; }
+header .header-left { flex:1 1 auto !important; min-width:0 !important; align-items:center !important; }
+header .header-right { margin-left:auto !important; flex:0 0 auto !important; display:flex !important; align-items:center !important; justify-content:flex-end !important; min-width:42px !important; height:42px !important; }
+header #notifWrap, header #notifWrap .icon-btn, header #profileWrap, header #profileWrap .icon-btn { align-self:center !important; }
+header #notifWrap { flex:0 0 auto !important; }
+
+#levromartSplash {
+  position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
+  background:#000; opacity:1; visibility:visible; pointer-events:auto;
+  transition:opacity .16s ease,visibility .16s ease;
+}
+#levromartSplash.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+.levromart-splash-logo {
+  position:relative; width:min(78vw,340px); height:78px;
+  display:flex; align-items:center; justify-content:center;
+  overflow:visible;
+}
+.levromart-splash-logo .splash-logo-left,
+.levromart-splash-logo .splash-logo-right {
+  position:absolute; inset:0; width:100%; height:78px;
+  background:var(--primary-grad);
+  -webkit-mask-repeat:no-repeat; -webkit-mask-position:center; -webkit-mask-size:contain;
+  mask-repeat:no-repeat; mask-position:center; mask-size:contain;
+  opacity:0; visibility:hidden;
+}
+.levromart-splash-logo .splash-logo-circle {
+  position:absolute; z-index:2; width:14.5%; height:78px; left:42.75%; top:0;
+  object-fit:contain; filter:brightness(0) invert(1);
+  opacity:0; visibility:hidden;
+}
+#levromartSplash.logo-ready .splash-logo-left,
+#levromartSplash.logo-ready .splash-logo-right,
+#levromartSplash.logo-ready .splash-logo-circle { opacity:1; visibility:visible; }
+@media (prefers-reduced-motion:reduce) { #levromartSplash { transition:none; } }
 </style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
@@ -14308,14 +14041,6 @@ document.addEventListener("input", (e) => {
   if (count) count.textContent = String(ta.value.length);
 });
 
-function hideLevromartSplash(){
-  const splash = byId("levromartSplash");
-  if (!splash) return;
-  splash.classList.add("is-hidden");
-  setTimeout(() => splash.remove(), 260);
-}
-setTimeout(hideLevromartSplash, 1800);
-
 (async function init() {
   initTheme();
   initAccent();
@@ -14333,7 +14058,6 @@ setTimeout(hideLevromartSplash, 1800);
     const token = urlParams.get("share");
     history.replaceState({ view: "sharedAiChat", params: { token } }, "", location.pathname);
     await navigate("sharedAiChat", { token }, false);
-    hideLevromartSplash();
     return;
   }
 
@@ -14350,7 +14074,7 @@ setTimeout(hideLevromartSplash, 1800);
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
     }
-    if (orderId) { await navigate("orderDetail", { orderId }); hideLevromartSplash(); return; }
+    if (orderId) { await navigate("orderDetail", { orderId }); return; }
   }
 
   if (urlParams.get("commissionPaid") === "1" && urlParams.get("reference")) {
@@ -14366,7 +14090,6 @@ setTimeout(hideLevromartSplash, 1800);
       showToast("Couldn't reach the payment verification service.", "error");
     }
     await navigate("vendorEditProfile");
-    hideLevromartSplash();
     return;
   }
 
@@ -14383,7 +14106,6 @@ setTimeout(hideLevromartSplash, 1800);
       showToast("Couldn't reach the payment verification service.", "error");
     }
     await navigate("vendorEditProfile");
-    hideLevromartSplash();
     return;
   }
 
@@ -14391,7 +14113,7 @@ setTimeout(hideLevromartSplash, 1800);
   if (urlParams.get("order")) {
     const orderId = urlParams.get("order");
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
-    if (session) { await navigate("orderDetail", { orderId }); hideLevromartSplash(); return; }
+    if (session) { await navigate("orderDetail", { orderId }); return; }
     showLogin();
   }
 
@@ -14401,7 +14123,7 @@ setTimeout(hideLevromartSplash, 1800);
     let params = {};
     try { params = JSON.parse(urlParams.get("nparams") || "{}"); } catch (e) {}
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
-    if (session) { await navigate(view, params); hideLevromartSplash(); return; }
+    if (session) { await navigate(view, params); return; }
     showLogin();
   }
 
@@ -14414,7 +14136,6 @@ setTimeout(hideLevromartSplash, 1800);
     if (last && last.view && last.view !== "home") { await navigate(last.view, last.params || {}, false); resumed = true; }
   } catch (e) {}
   if (!resumed) navigate("home");
-  hideLevromartSplash();
 
   // Offer the installable app to every visitor, not just after login — give
   // Chrome a moment to fire beforeinstallprompt first.
