@@ -825,8 +825,9 @@
   .chat-typing-dots i:nth-child(2){animation-delay:.15s;}
   .chat-typing-dots i:nth-child(3){animation-delay:.3s;}
   @keyframes chatTypingDot { 0%,60%,100%{transform:translateY(0);opacity:.4;} 30%{transform:translateY(-3px);opacity:1;} }
-  .reaction-picker { flex-wrap:wrap; max-width:290px; border-radius:18px; gap:.18rem; padding:.38rem; }
-  .reaction-picker button { min-width:2rem; min-height:2rem; }
+  .reaction-picker { flex-wrap:nowrap; width:min(92vw, 520px); max-width:min(92vw, 520px); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; white-space:nowrap; border-radius:18px; gap:.18rem; padding:.38rem; }
+  .reaction-picker::-webkit-scrollbar { display:none; }
+  .reaction-picker button { flex:0 0 auto; min-width:2rem; min-height:2rem; }
   .reaction-more-btn { font-size:.72rem !important; color:var(--text-muted); padding:.35rem .5rem !important; border-radius:999px !important; border:1px solid var(--border) !important; background:var(--card) !important; }
   .reaction-keyboard-row { width:100%; display:flex; gap:.3rem; align-items:center; margin-top:.25rem; }
   .reaction-keyboard-row input { flex:1; min-width:0; margin:0; height:2rem; padding:.25rem .5rem; font-size:.85rem; }
@@ -8728,7 +8729,17 @@ function chatSkeletonHtml(cached, cachedMessages) {
 }
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
-  if (activeMsgChannel) { clearTimeout(typingStopTimer); try { await activeMsgChannel.track({ user_id: session?.user?.id, typing: false, at: Date.now() }); } catch (_) {} await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
+  if (activeMsgChannel) {
+    clearTimeout(typingStopTimer);
+    clearTimeout(window.__levroTypingHideTimer);
+    try {
+      const payload = { user_id: session?.user?.id, typing: false, at: Date.now() };
+      await activeMsgChannel.track(payload);
+      await activeMsgChannel.send({ type: "broadcast", event: "typing", payload });
+    } catch (_) {}
+    await sb.removeChannel(activeMsgChannel);
+    activeMsgChannel = null;
+  }
   typingChannelConversationId = null;
   setChatTypingIndicator(false);
   activeConversationId = conversationId || null;
@@ -9122,6 +9133,8 @@ function scrollChatToBottom() {
 
 let typingStopTimer = null;
 let typingChannelConversationId = null;
+let typingChannelReady = false;
+let pendingTypingState = false;
 function setChatTypingIndicator(isTyping) {
   const el = byId("chatTypingIndicator");
   if (!el) return;
@@ -9130,8 +9143,14 @@ function setChatTypingIndicator(isTyping) {
   if (isTyping && chat) chat.scrollTop = chat.scrollHeight;
 }
 async function publishChatTyping(isTyping) {
-  if (!activeMsgChannel || !session || !typingChannelConversationId) return;
-  try { await activeMsgChannel.track({ user_id: session.user.id, typing: !!isTyping, at: Date.now() }); } catch (_) {}
+  pendingTypingState = !!isTyping;
+  if (!activeMsgChannel || !session || !typingChannelConversationId || !typingChannelReady) return;
+  const payload = { user_id: session.user.id, typing: !!isTyping, at: Date.now() };
+  try { await activeMsgChannel.track(payload); } catch (_) {}
+  // Broadcast the transient typing state as well. Presence is retained as a
+  // fallback, but broadcast makes the indicator react immediately and is
+  // more reliable across Safari/WebKit and mobile realtime connections.
+  try { await activeMsgChannel.send({ type: "broadcast", event: "typing", payload }); } catch (_) {}
 }
 function handleChatTyping(conversationId) {
   if (conversationId !== activeConversationId) return;
@@ -9154,17 +9173,32 @@ function refreshChatTypingIndicator() {
 function subscribeToConversation(conversationId) {
   clearTimeout(typingStopTimer);
   typingChannelConversationId = conversationId;
+  typingChannelReady = false;
+  pendingTypingState = false;
   setChatTypingIndicator(false);
-  activeMsgChannel = sb.channel(`conv-${conversationId}`, { config: { presence: { key: session?.user?.id || undefined } } })
+  const channel = sb.channel(`conv-${conversationId}`, { config: { presence: { key: session?.user?.id || undefined } } });
+  activeMsgChannel = channel;
+  channel
     .on("presence", { event: "sync" }, () => refreshChatTypingIndicator())
     .on("presence", { event: "join" }, () => refreshChatTypingIndicator())
     .on("presence", { event: "leave" }, () => refreshChatTypingIndicator())
+    .on("broadcast", { event: "typing" }, ({ payload }) => {
+      if (activeConversationId !== conversationId || !payload) return;
+      if (payload.user_id && payload.user_id !== session.user.id) {
+        setChatTypingIndicator(!!payload.typing);
+        if (payload.typing) {
+          clearTimeout(window.__levroTypingHideTimer);
+          window.__levroTypingHideTimer = setTimeout(() => setChatTypingIndicator(false), 2200);
+        }
+      }
+    })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
       if (activeConversationId !== conversationId) return;
       const el = byId("chatMessages");
       if (!el) return;
       if (payload.new.sender_id !== session.user.id) {
         setChatTypingIndicator(false);
+        clearTimeout(window.__levroTypingHideTimer);
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
         resolveVisibleAttachments(el);
@@ -9172,9 +9206,6 @@ function subscribeToConversation(conversationId) {
         sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
     })
-    // Ticks on my own messages update live while I'm sitting in this
-    // conversation — I don't have to leave and come back to see the other
-    // person's double-check turn blue.
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
       if (activeConversationId !== conversationId) return;
       if (payload.new.sender_id === session.user.id) {
@@ -9186,7 +9217,13 @@ function subscribeToConversation(conversationId) {
     })
     .subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
-        try { await activeMsgChannel.track({ user_id: session.user.id, typing: false, at: Date.now() }); } catch (_) {}
+        typingChannelReady = true;
+        try { await channel.track({ user_id: session.user.id, typing: false, at: Date.now() }); } catch (_) {}
+        // Flush any keystroke that happened while the mobile realtime channel
+        // was still connecting.
+        if (pendingTypingState) await publishChatTyping(true);
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        typingChannelReady = false;
       }
     });
 }
