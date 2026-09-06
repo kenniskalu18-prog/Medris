@@ -800,6 +800,7 @@
   .chat-messages, .ai-chat-messages, .ai-chat-history-panel { scrollbar-width: none; -ms-overflow-style: none; }
   .chat-messages::-webkit-scrollbar, .ai-chat-messages::-webkit-scrollbar, .ai-chat-history-panel::-webkit-scrollbar { display: none; }
   .chat-messages {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
     position: relative;
     /* Subtle repeating Levromart mark, WhatsApp-doodle style -- a texture,
@@ -808,7 +809,9 @@
     background-repeat: repeat; background-size: 96px 96px;
     background-color: var(--card);
   }
-  .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; touch-action: pan-y; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
+  .chat-bubble { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; touch-action: pan-y; font-size: 0.92rem; line-height: 1.4; word-break: break-word; cursor: default; }
+  .chat-bubble * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .chat-bubble.chat-long-pressing { transform: scale(0.995); transition: transform .08s ease; }
   .chat-bubble.mine { align-self: flex-end; background: var(--chat-mine-bg, var(--primary-grad)); color: white; border-bottom-right-radius: 0.25rem; }
   .chat-bubble.theirs { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); border-bottom-left-radius: 0.25rem; }
   .chat-bubble .chat-time { display: block; font-size: 0.68rem; opacity: 0.75; margin-top: 0.2rem; }
@@ -4617,6 +4620,26 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
     <div class="flex" style="justify-content:flex-end;">
       <button class="btn btn-sm" id="confirmModalCancel" style="background:#6b7280;">Cancel</button>
       <button class="btn btn-sm" id="confirmModalOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="vendorReviewModal" class="modal hidden" onclick="if(event.target===this) closeVendorReviewModal()">
+  <div class="modal-content" style="max-width:420px;">
+    <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:.75rem;">
+      <div>
+        <h3 style="margin:0;">How was your order?</h3>
+        <p id="vendorReviewModalVendor" class="muted" style="margin:.25rem 0 0;">Rate your experience with this vendor.</p>
+      </div>
+      <button type="button" class="icon-btn" aria-label="Close review" onclick="closeVendorReviewModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="vendorReviewModalError" class="error-text hidden" style="margin-top:.65rem;"></div>
+    <div id="vendorReviewModalStars" style="display:flex;justify-content:center;"></div>
+    <input type="hidden" id="vendorReviewModalRating" value="5" />
+    <textarea id="vendorReviewModalComment" rows="3" placeholder="Tell us about the order or vendor (optional)"></textarea>
+    <div class="flex" style="justify-content:flex-end;gap:.6rem;margin-top:.75rem;">
+      <button type="button" class="btn btn-sm btn-outline" onclick="closeVendorReviewModal()">Not now</button>
+      <button type="button" class="btn btn-sm" id="vendorReviewModalSubmit">Submit review</button>
     </div>
   </div>
 </div>
@@ -8884,7 +8907,6 @@ async function renderMessages(conversationId) {
         <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>
-    <p class="muted chat-edit-hint"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>
   </div>`;
 
   setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageInteractions(byId("chatMessages")); renderChatReplyPreview(); }, 0);
@@ -9226,29 +9248,81 @@ function setupMessageLongPress(root) {
   el.querySelectorAll?.(".chat-bubble[data-msg-id]").forEach((bubble) => {
     if (bubble.dataset.longPressBound) return;
     bubble.dataset.longPressBound = "1";
+    bubble.addEventListener("selectstart", (e) => e.preventDefault());
+    bubble.addEventListener("dragstart", (e) => e.preventDefault());
+    bubble.addEventListener("mousedown", (e) => e.preventDefault());
+
     let timer = null;
     let moved = false;
+    let activePointerId = null;
     let sx = 0, sy = 0;
+    const LONG_PRESS_MS = 460;
+    const MOVE_TOLERANCE = 14;
+
+    const clear = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      bubble.classList.remove("chat-long-pressing");
+      if (activePointerId != null && bubble.hasPointerCapture?.(activePointerId)) {
+        try { bubble.releasePointerCapture(activePointerId); } catch (_) {}
+      }
+      activePointerId = null;
+    };
+
     const start = (e) => {
-      if (e.button != null && e.button !== 0) return;
-      sx = e.clientX || 0; sy = e.clientY || 0; moved = false;
-      clearTimeout(timer);
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (chatSelectionMode && e.pointerType === "mouse" && e.button !== 0) return;
+      clear();
+      activePointerId = e.pointerId ?? null;
+      sx = e.clientX || 0;
+      sy = e.clientY || 0;
+      moved = false;
+      if (activePointerId != null) {
+        try { bubble.setPointerCapture(activePointerId); } catch (_) {}
+      }
+      // Do not prevent normal scrolling/taps. Only suppress the native
+      // long-press selection/context menu once the hold actually completes.
       timer = setTimeout(() => {
         if (moved) return;
-        if (navigator.vibrate) navigator.vibrate(15);
-        chatSuppressClickUntil = Date.now() + 650;
+        bubble.classList.remove("chat-long-pressing");
+        if (navigator.vibrate) navigator.vibrate(12);
+        chatSuppressClickUntil = Date.now() + 700;
         if (chatSelectionMode) toggleChatMessageSelection(bubble.dataset.msgId);
-        else { enterChatSelectionMode(bubble.dataset.msgId); showMessageActionMenu(bubble); }
-      }, 520);
+        else showMessageActionMenu(bubble);
+        timer = null;
+      }, LONG_PRESS_MS);
+      // Tiny visual feedback only after a real touch hold begins; it does
+      // not alter layout or the bubble dimensions.
+      if (e.pointerType === "touch" || e.pointerType === "pen") {
+        bubble.classList.add("chat-long-pressing");
+      }
     };
-    const move = (e) => { if (Math.hypot((e.clientX || 0) - sx, (e.clientY || 0) - sy) > 10) { moved = true; clearTimeout(timer); } };
-    const cancel = () => clearTimeout(timer);
-    bubble.addEventListener("pointerdown", start);
-    bubble.addEventListener("pointermove", move);
-    bubble.addEventListener("pointerup", cancel);
-    bubble.addEventListener("pointerleave", cancel);
-    bubble.addEventListener("pointercancel", cancel);
-    bubble.addEventListener("contextmenu", (e) => { e.preventDefault(); chatSuppressClickUntil = Date.now() + 650; if (chatSelectionMode) toggleChatMessageSelection(bubble.dataset.msgId); else { enterChatSelectionMode(bubble.dataset.msgId); showMessageActionMenu(bubble); } });
+    const move = (e) => {
+      if (!timer) return;
+      const dx = (e.clientX || 0) - sx;
+      const dy = (e.clientY || 0) - sy;
+      if (Math.hypot(dx, dy) > MOVE_TOLERANCE) {
+        moved = true;
+        clear();
+      }
+    };
+    const finish = () => clear();
+
+    bubble.addEventListener("pointerdown", start, { passive: true });
+    bubble.addEventListener("pointermove", move, { passive: true });
+    bubble.addEventListener("pointerup", finish, { passive: true });
+    bubble.addEventListener("pointercancel", finish, { passive: true });
+    bubble.addEventListener("pointerleave", (e) => {
+      // With pointer capture this normally won't fire until the gesture ends;
+      // keep it as a safe fallback for browsers that don't support capture.
+      if (e.pointerType !== "touch" && !bubble.hasPointerCapture?.(e.pointerId)) finish();
+    }, { passive: true });
+    bubble.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      clear();
+      chatSuppressClickUntil = Date.now() + 700;
+      if (chatSelectionMode) toggleChatMessageSelection(bubble.dataset.msgId);
+      else showMessageActionMenu(bubble);
+    });
   });
 }
 function setupMessageSwipeReply(root) {
@@ -9289,6 +9363,10 @@ function setupMessageInteractions(root) {
   setupMessageSwipeReply(root);
 }
 document.addEventListener("click", (e) => {
+  if (e.target.closest?.("#vendorReviewModalSubmit")) {
+    submitVendorReviewModal();
+    return;
+  }
   if (Date.now() < chatSuppressClickUntil) return;
   if (chatSelectionMode && e.target.closest?.(".chat-bubble[data-msg-id]") && !e.target.closest?.(".msg-action-menu")) {
     toggleChatMessageSelection(e.target.closest(".chat-bubble[data-msg-id]").dataset.msgId);
@@ -12286,6 +12364,9 @@ async function renderOrderDetail(orderId) {
   }
 
   html += `<button class="btn btn-sm" style="margin-top:1rem;background:#6b7280;" onclick="navigate('${isVendor ? "vendorOrders" : "buyerOrders"}',{status:'all'})"><i class='fa-solid fa-arrow-left'></i> Back to orders</button>`;
+  if (isBuyer && order.status === "completed" && !order.review) {
+    setTimeout(() => showVendorReviewModal(order.id, order.vendor?.id, order.vendor?.business_name || "this vendor"), 350);
+  }
   return html;
 }
 
@@ -12559,6 +12640,62 @@ async function recordOfflinePayment(orderId) {
     p_method: byId("rpMethod").value,
   });
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  navigate("orderDetail", { orderId });
+}
+
+let vendorReviewModalOrderId = null;
+let vendorReviewModalVendorId = null;
+let vendorReviewModalOpening = false;
+function showVendorReviewModal(orderId, vendorId, vendorName) {
+  if (!session?.user?.id || !orderId || !vendorId) return;
+  if (vendorReviewModalOpening) return;
+  const modal = byId("vendorReviewModal");
+  if (!modal) return;
+  vendorReviewModalOrderId = String(orderId);
+  vendorReviewModalVendorId = String(vendorId);
+  vendorReviewModalOpening = true;
+  byId("vendorReviewModalVendor").textContent = `Rate your experience with ${vendorName}.`;
+  byId("vendorReviewModalError").classList.add("hidden");
+  byId("vendorReviewModalComment").value = "";
+  byId("vendorReviewModalRating").value = "5";
+  byId("vendorReviewModalStars").innerHTML = starRatingWidgetHtml(5).replace('id="starRatingWidget"','id="vendorReviewModalStarRating"').replace(/onclick="setStarRating\((\d+)\)"/g, 'onclick="setVendorReviewModalRating($1)"').replace(/onmouseenter="previewStars\((\d+)\)"/g, '').replace(/onmouseleave="resetStarPreview\(\)"/g, '');
+  modal.classList.remove("hidden");
+  vendorReviewModalOpening = false;
+}
+function closeVendorReviewModal() {
+  const modal = byId("vendorReviewModal");
+  if (modal) modal.classList.add("hidden");
+  vendorReviewModalOrderId = null;
+  vendorReviewModalVendorId = null;
+}
+function setVendorReviewModalRating(n) {
+  byId("vendorReviewModalRating").value = n;
+  document.querySelectorAll("#vendorReviewModalStarRating i").forEach((el) => el.classList.toggle("active", Number(el.dataset.star) <= n));
+  playSound("click");
+}
+async function submitVendorReviewModal() {
+  const orderId = vendorReviewModalOrderId;
+  const vendorId = vendorReviewModalVendorId;
+  if (!orderId || !vendorId || !session?.user?.id) return;
+  const errorEl = byId("vendorReviewModalError");
+  const btn = byId("vendorReviewModalSubmit");
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  const { error } = await sb.from("reviews").insert({
+    order_id: orderId,
+    buyer_id: session.user.id,
+    vendor_id: vendorId,
+    rating: Number(byId("vendorReviewModalRating").value || 5),
+    comment: byId("vendorReviewModalComment").value.trim() || null,
+  });
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.classList.remove("hidden");
+    btn.disabled = false;
+    return;
+  }
+  closeVendorReviewModal();
+  showToast("Thanks for reviewing this vendor!", "success");
   navigate("orderDetail", { orderId });
 }
 
