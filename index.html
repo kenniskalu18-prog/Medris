@@ -6061,18 +6061,18 @@ function initTheme() {
 // Green/Emerald, Coral/Rose, Gold/Amber), so picking between them barely
 // changed anything. This set keeps one clearly distinct swatch per hue.
 const ACCENT_PALETTE = [
-  { name: "Teal (Default)", base: "#0f766e", light: "#14b8a6" },
-  { name: "Ocean Blue", base: "#1d4ed8", light: "#3b82f6" },
-  { name: "Royal Purple", base: "#7e22ce", light: "#a855f7" },
-  { name: "Rose", base: "#be123c", light: "#f43f5e" },
-  { name: "Amber", base: "#b45309", light: "#f59e0b" },
-  { name: "Emerald", base: "#047857", light: "#10b981" },
-  { name: "Indigo", base: "#4338ca", light: "#6366f1" },
-  { name: "Slate", base: "#334155", light: "#64748b" },
-  { name: "Cyan", base: "#0e7490", light: "#06b6d4" },
-  { name: "Sunset Orange", base: "#c2410c", light: "#fb923c" },
-  { name: "Magenta", base: "#a21caf", light: "#e879f9" },
-  { name: "Lime", base: "#4d7c0f", light: "#a3e635" },
+  { name: "Teal (Default)", base: "#0f766e", light: "#0f766e" },
+  { name: "Ocean Blue", base: "#2563eb", light: "#2563eb" },
+  { name: "Royal Purple", base: "#6d28d9", light: "#6d28d9" },
+  { name: "Rose", base: "#9f1239", light: "#9f1239" },
+  { name: "Amber", base: "#b45309", light: "#b45309" },
+  { name: "Emerald", base: "#047857", light: "#047857" },
+  { name: "Indigo", base: "#4338ca", light: "#4338ca" },
+  { name: "Slate", base: "#475569", light: "#475569" },
+  { name: "Cyan", base: "#0e7490", light: "#0e7490" },
+  { name: "Sunset Orange", base: "#c2410c", light: "#c2410c" },
+  { name: "Magenta", base: "#86198f", light: "#86198f" },
+  { name: "Olive", base: "#4d7c0f", light: "#4d7c0f" },
 ];
 const DEFAULT_ACCENT_INDEX = 5;
 let currentAccentIndex = DEFAULT_ACCENT_INDEX;
@@ -6093,17 +6093,12 @@ function applyAccent(index) {
   // for buttons/accents), a big bubble filled with that bright shade makes
   // the white text and read-receipt ticks on top of it hard to read.
   root.style.setProperty("--chat-mine-bg", preset.base);
-  if (theme === "light") {
-    root.style.setProperty("--primary", preset.base);
-    root.style.setProperty("--primary-light", preset.light);
-    root.style.setProperty("--primary-grad", `linear-gradient(135deg, ${preset.base}, ${preset.light} 60%, ${lightenHex(preset.light, 0.25)})`);
-  } else {
-    const p1 = lightenHex(preset.light, 0.15);
-    const p2 = lightenHex(preset.light, 0.55);
-    root.style.setProperty("--primary", p1);
-    root.style.setProperty("--primary-light", p2);
-    root.style.setProperty("--primary-grad", `linear-gradient(135deg, ${preset.base}, ${p1} 60%, ${p2})`);
-  }
+  // Accent colors are intentionally solid: no gradients or brightened end-stops.
+  // Keeping every accent surface on the same single tone makes the UI feel
+  // cleaner and more consistent, especially on dark/black themes.
+  root.style.setProperty("--primary", preset.base);
+  root.style.setProperty("--primary-light", preset.base);
+  root.style.setProperty("--primary-grad", preset.base);
 }
 function setAccent(index) {
   currentAccentIndex = index;
@@ -6114,7 +6109,7 @@ function setAccent(index) {
 function renderAccentSwatches() {
   const wrap = byId("accentSwatches");
   if (!wrap) return;
-  wrap.innerHTML = ACCENT_PALETTE.map((p, i) => `<span class="accent-swatch ${i === currentAccentIndex ? "active" : ""}" style="background:linear-gradient(135deg, ${p.base}, ${p.light});" title="${esc(p.name)}" onclick="setAccent(${i})"></span>`).join("");
+  wrap.innerHTML = ACCENT_PALETTE.map((p, i) => `<span class="accent-swatch ${i === currentAccentIndex ? "active" : ""}" style="background:${p.base};" title="${esc(p.name)}" onclick="setAccent(${i})"></span>`).join("");
 }
 function initAccent() {
   const saved = localStorage.getItem("medris-accent");
@@ -7070,7 +7065,7 @@ function hydrateSettingsPage(){
   const theme=document.documentElement.dataset.theme||localStorage.getItem("medris-theme")||"light";
   document.querySelectorAll("#settings-page .settings-choice").forEach(el=>{const on=el.dataset.themeChoice===theme;el.classList.toggle("active",on);el.dataset.active=String(on);});
   const accent=byId("accentSwatchesPage");
-  if(accent) accent.innerHTML=ACCENT_PALETTE.map((p,i)=>`<button type="button" class="accent-swatch ${i===currentAccentIndex?'active':''}" style="background:linear-gradient(135deg,${p.base},${p.light});" title="${esc(p.name)}" aria-label="${esc(p.name)}" onclick="setAccent(${i});setTimeout(hydrateSettingsPage,0)"></button>`).join("");
+  if(accent) accent.innerHTML=ACCENT_PALETTE.map((p,i)=>`<button type="button" class="accent-swatch ${i===currentAccentIndex?'active':''}" style="background:${p.base};" title="${esc(p.name)}" aria-label="${esc(p.name)}" onclick="setAccent(${i});setTimeout(hydrateSettingsPage,0)"></button>`).join("");
   const vis=byId("leviVisibleSettingRow");
   if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
   const consent=byId("settingsAiConsentPageRow");
