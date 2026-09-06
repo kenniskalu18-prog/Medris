@@ -803,7 +803,7 @@
     position: relative;
     /* Subtle repeating Levromart mark, WhatsApp-doodle style -- a texture,
        not a logo splash, so it never competes with the actual messages. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='%230f766e' fill-opacity='0.05'%3E%3Cpath d='M20 20c9 0 16 7 16 16v6a4 4 0 01-8 0v-6c0-4.4-3.6-8-8-8a4 4 0 010-8z'/%3E%3Cpath d='M76 76c-9 0-16-7-16-16v-6a4 4 0 018 0v6c0 4.4 3.6 8 8 8a4 4 0 010 8z'/%3E%3Ccircle cx='48' cy='48' r='7'/%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='%230f766e' fill-opacity='0.035'%3E%3Cpath d='M20 20c9 0 16 7 16 16v6a4 4 0 01-8 0v-6c0-4.4-3.6-8-8-8a4 4 0 010-8z'/%3E%3Cpath d='M76 76c-9 0-16-7-16-16v-6a4 4 0 018 0v6c0 4.4 3.6 8 8 8a4 4 0 010 8z'/%3E%3Ccircle cx='48' cy='48' r='7'/%3E%3C/g%3E%3C/svg%3E");
     background-repeat: repeat; background-size: 96px 96px;
     background-color: var(--card);
   }
@@ -4175,22 +4175,24 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .chat-page-header {
   display:flex; align-items:center; gap:0.7rem; flex-shrink:0;
   padding:calc(0.65rem + env(safe-area-inset-top,0px)) 0.85rem 0.65rem;
-  background:var(--primary-grad); color:#fff;
+  background:var(--bg); color:var(--text);
+  border-bottom:1px solid var(--ui-border, var(--border));
 }
-.chat-header-back { background:none; border:none; color:#fff; font-size:1.15rem; padding:0.3rem; cursor:pointer; flex-shrink:0; }
+.chat-header-back { background:none; border:none; color:var(--text); font-size:1.15rem; padding:0.3rem; cursor:pointer; flex-shrink:0; }
 .chat-header-avatar { width:2.35rem; height:2.35rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
-.chat-header-avatar-fallback { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.25); color:#fff; font-weight:700; font-size:0.9rem; }
+.chat-header-avatar-fallback { display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--primary) 16%, transparent); color:var(--primary); font-weight:700; font-size:0.9rem; }
 .chat-header-name-wrap { flex:1; min-width:0; }
-.chat-header-name { display:block; font-size:1rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-header-name { display:block; font-size:1rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .chat-header-actions { display:flex; align-items:center; gap:0.15rem; flex-shrink:0; position:relative; }
-.chat-header-icon-btn { background:none; border:none; color:#fff; font-size:1.05rem; width:2.2rem; height:2.2rem; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-.chat-header-icon-btn:hover { background:rgba(255,255,255,0.15); }
+.chat-header-icon-btn { background:none; border:none; color:var(--text); font-size:1.05rem; width:2.2rem; height:2.2rem; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.chat-header-icon-btn:hover { background:color-mix(in srgb, var(--text) 8%, transparent); }
 .chat-menu-dropdown { position:absolute; top:calc(100% + 0.5rem); right:0; z-index:70; width:210px; max-width:calc(100vw - 1.5rem); padding:0.4rem; border:1px solid var(--ui-hairline,var(--border)); border-radius:14px; background:var(--card); color:var(--text); box-shadow:0 20px 45px rgba(0,0,0,0.28); }
 .chat-menu-dropdown button { width:100%; display:flex; gap:0.65rem; align-items:center; text-align:left; border:0; background:transparent; color:var(--text); padding:0.6rem 0.65rem; border-radius:10px; cursor:pointer; font-family:inherit; font-size:0.85rem; }
 .chat-menu-dropdown button:hover { background:color-mix(in srgb, var(--primary) 8%, transparent); }
 .chat-menu-dropdown button i { width:18px; text-align:center; color:var(--primary); }
 .chat-page-wrap .chat-thread { flex:1; height:auto; min-height:0; border-radius:0; }
 .chat-page-wrap .chat-edit-hint { flex-shrink:0; margin:0; padding:0.35rem 0.85rem calc(0.35rem + env(safe-area-inset-bottom,0px)); font-size:0.7rem; text-align:center; }
+.chat-skeleton-spinner { flex:1; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--text-muted); }
 </style>
 
 </head>
@@ -7617,6 +7619,16 @@ async function navigate(view, params = {}, pushHistory = true) {
   // treatment (see #dedicated-chat-page-fix); the conversation list and
   // the admin's read-only viewer keep the normal in-app layout.
   document.body.classList.toggle("chat-full-page", view === "messages" && !!(params && params.conversationId) && profile?.role !== "admin");
+  // Instant paint: if we already have this conversation's name/photo from
+  // the inbox list, show the real header + a spinner right away instead of
+  // leaving the old screen sitting there while the network calls below
+  // (other-party lookup, conversation row, messages) are still in flight --
+  // that wait was what made opening a DM feel like it "popped" the inbox
+  // page first. The real render below still replaces this once it's ready.
+  if (view === "messages" && params?.conversationId && profile?.role !== "admin") {
+    const cachedConv = (window.__conversations || []).find((c) => c.conversation_id === params.conversationId);
+    if (cachedConv) app.innerHTML = chatSkeletonHtml(cachedConv);
+  }
   updateAuthUI();
   renderBottomNav();
   updateHeaderNavActive();
@@ -8567,6 +8579,32 @@ async function togglePinConversation(conversationId) {
   navigate("messages", {}, false);
 }
 
+// Lightweight instant-paint shell for opening a DM -- see the fast-path in
+// navigate(). Uses only what the inbox list already had cached, so it can
+// render before any network call for this conversation has resolved.
+function chatSkeletonHtml(cached) {
+  const name = cached.other_name || "Chat";
+  const avatar = cached.other_avatar;
+  return `<div class="chat-page-wrap">
+    <div class="chat-page-header">
+      <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+      ${avatar ? `<img src="${esc(avatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(name)}</div>`}
+      <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(name)}</strong></div>
+      <div class="chat-header-actions">
+        <button class="chat-header-icon-btn" style="opacity:0.4;" disabled title="Call"><i class="fa-solid fa-phone"></i></button>
+        <button class="chat-header-icon-btn" style="opacity:0.4;" disabled title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      </div>
+    </div>
+    <div class="chat-thread">
+      <div class="chat-messages"><div class="chat-skeleton-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      <div class="chat-input-row">
+        <button class="msg-attach-btn" disabled style="opacity:0.4;"><i class="fa-solid fa-paperclip"></i></button>
+        <textarea rows="1" placeholder="Type a message…" disabled></textarea>
+        <button class="btn btn-sm" disabled style="opacity:0.6;"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
   if (activeMsgChannel) { await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
@@ -8614,7 +8652,7 @@ async function renderMessages(conversationId) {
 
   const { data: other, error: otherErr } = await sb.rpc("get_conversation_other_party", { p_conversation_id: conversationId });
   const { data: conv } = await sb.from("conversations")
-    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id)")
+    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id, phone)")
     .eq("id", conversationId).maybeSingle();
   if (!conv || otherErr) return '<div class="empty-state">Conversation not found.</div>';
 
@@ -8634,6 +8672,14 @@ async function renderMessages(conversationId) {
   }
   chatMenuItems.push(`<button onclick="closeChatMenu();openChatListPicker('${conversationId}')"><i class="fa-solid fa-layer-group"></i><span>Add to a list</span></button>`);
   chatMenuItems.push(`<button onclick="closeChatMenu();toggleChatArchived('${conversationId}')"><i class="fa-solid ${chatArchived ? "fa-box-open" : "fa-box-archive"}"></i><span>${chatArchived ? "Restore chat" : "Archive chat"}</span></button>`);
+  // Levromart has no in-app calling -- the call icon just hands off to the
+  // device's own phone app with the vendor's on-file number (same gated
+  // check -- business hours -- as the "Call vendor" button elsewhere).
+  // There's no equivalent number on file for a buyer, so a vendor tapping
+  // it gets an honest "not available" toast instead of a dead redirect.
+  const callAction = !isVendorSide
+    ? (conv.vendor?.phone ? `callVendorGated(event,'${esc(conv.vendor.phone)}','${esc(conv.vendor.id)}')` : `chatNoCallNumber('vendor')`)
+    : `chatNoCallNumber('buyer')`;
 
   let html = `<div class="chat-page-wrap">
     <div class="chat-page-header">
@@ -8641,7 +8687,7 @@ async function renderMessages(conversationId) {
       ${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}
       <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>
       <div class="chat-header-actions">
-        <button class="chat-header-icon-btn" onclick="chatCallComingSoon()" title="Call"><i class="fa-solid fa-phone"></i></button>
+        <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
         <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div class="chat-menu-dropdown hidden" id="chatMenuDropdown">${chatMenuItems.join("")}</div>
       </div>
@@ -8664,14 +8710,15 @@ async function renderMessages(conversationId) {
   return html;
 }
 
+
 function toggleChatMenu(evt) {
   evt?.stopPropagation();
   byId("chatMenuDropdown")?.classList.toggle("hidden");
 }
 function closeChatMenu() { byId("chatMenuDropdown")?.classList.add("hidden"); }
-function chatCallComingSoon() {
+function chatNoCallNumber(who) {
   closeChatMenu();
-  showToast("Voice & video calls aren't available in Levromart yet.", "info");
+  showToast(who === "vendor" ? "This vendor hasn't added a phone number yet." : "This buyer's number isn't shared through chat.", "info");
 }
 document.addEventListener("click", (e) => {
   const menu = byId("chatMenuDropdown");
