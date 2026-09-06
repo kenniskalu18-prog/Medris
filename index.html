@@ -4362,7 +4362,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .vendor-card .badge { white-space:nowrap !important; display:inline-flex !important; align-items:center !important; vertical-align:middle !important; }
 
 /* OSM credit stays present, but the map no longer looks branded by Leaflet. */
-.leaflet-control-attribution { font-size:.5rem !important; padding:.1rem .25rem !important; background:color-mix(in srgb,var(--card) 74%,transparent) !important; }
+.leaflet-control-attribution { font-size:.45rem !important; line-height:1.15 !important; padding:.08rem .2rem !important; background:color-mix(in srgb,var(--card) 74%,transparent) !important; }
 .leaflet-control-attribution .leaflet-attribution-flag { display:none !important; }
 .leaflet-control-attribution a { text-decoration:none !important; }
 #vendorsMapStatus { margin-bottom:1.35rem !important; }
@@ -4385,6 +4385,16 @@ body.profile-reveal-dragging > #cartFab,
 body.profile-reveal-dragging > #aiChatFab { transition:none !important; }
 body.profile-reveal-open > .drawer-backdrop { background:rgba(0,0,0,.08) !important; }
 #profilePanel.profile-page-reveal { box-shadow:18px 0 45px rgba(0,0,0,.18) !important; }
+
+
+/* Profile drawer: simple tap-to-open / tap-to-close. No page-reveal movement. */
+body.profile-reveal-open > header,
+body.profile-reveal-open > #app,
+body.profile-reveal-open > footer.site-footer,
+body.profile-reveal-open > .bottom-nav,
+body.profile-reveal-open > #cartFab,
+body.profile-reveal-open > #aiChatFab { transform:none !important; }
+#profilePanel.profile-page-reveal { box-shadow:var(--shadow-float) !important; }
 
 /* Settings should end naturally instead of leaving a large flex spacer before the footer. */
 body:has(#settings-page) #app { flex:0 0 auto !important; }
@@ -5842,7 +5852,7 @@ function getCurrentPositionOnce() {
       // Accuracy is deliberately relaxed here. Distance is straight-line
       // city-scale distance, so waiting for a high-accuracy GPS lock only
       // makes the UI slower without materially improving the displayed value.
-      { enableHighAccuracy: false, maximumAge: 5 * 60 * 1000, timeout: 1500 }
+      { enableHighAccuracy: false, maximumAge: 60 * 1000, timeout: 8000 }
     );
   });
 }
@@ -6449,16 +6459,12 @@ function closeAllPanels() {
   document.body.style.removeProperty("--profile-reveal-x");
 }
 function openDrawer(id) {
-  const wasOpen = byId(id).classList.contains("open");
+  const target = byId(id);
+  if (!target) return;
+  const wasOpen = target.classList.contains("open");
   closeAllPanels();
   if (!wasOpen) {
-    const drawer = byId(id);
-    drawer.classList.add("open");
-    if (id === "profilePanel") {
-      drawer.classList.add("profile-page-reveal");
-      document.body.classList.add("profile-reveal-open");
-      document.body.style.setProperty("--profile-reveal-x", `${drawer.getBoundingClientRect().width || Math.min(window.innerWidth * .78, 304)}px`);
-    }
+    target.classList.add("open");
     byId("drawerBackdrop")?.classList.add("open");
     playSound("open");
   }
@@ -6539,74 +6545,10 @@ function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
 function setupDrawerSwipe(drawer, side) { /* legacy hook retained */ }
-let profileEdgeSwipeBound=false;
-function bindProfileEdgeSwipe(){
-  if(profileEdgeSwipeBound)return;
-  profileEdgeSwipeBound=true;
-  const panel=byId("profilePanel");
-  if(!panel)return;
-  let gesture=null;
-  const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
-  const canStart=(target)=>!target?.closest?.(ignoreSelector);
-  const shellEls=()=>[document.querySelector('body > header'),byId('app'),document.querySelector('body > footer.site-footer'),document.querySelector('body > .bottom-nav'),byId('cartFab'),byId('aiChatFab')].filter(Boolean);
-  const shellWidth=()=>panel.getBoundingClientRect().width||Math.min(window.innerWidth*.78,304);
-  const setShellX=(x)=>document.body.style.setProperty('--profile-reveal-x', `${Math.max(0,x)}px`);
-  const clearShell=()=>document.body.style.removeProperty('--profile-reveal-x');
-  const openNow=()=>{panel.classList.add('open','profile-page-reveal');byId('drawerBackdrop')?.classList.add('open');document.body.classList.add('profile-reveal-open');setShellX(shellWidth());};
-  const begin=(x,y,target)=>{
-    if(!session||!profile||!canStart(target))return;
-    const open=panel.classList.contains('open');
-    const w=window.innerWidth;
-    if(!open && x>w*.20)return;
-    if(open && x>shellWidth()+20 && panel.contains(target)) return;
-    gesture={sx:x,sy:y,open,horizontal:false};
-  };
-  const move=(x,y,e)=>{
-    if(!gesture)return;
-    const dx=x-gesture.sx,dy=y-gesture.sy;
-    if(!gesture.horizontal){
-      if(Math.hypot(dx,dy)<5)return;
-      if(Math.abs(dy)>Math.abs(dx)*.82){gesture=null;return;}
-      gesture.horizontal=true;
-      document.body.classList.add('profile-reveal-dragging');
-      if(!gesture.open) openNow();
-    }
-    if(e?.cancelable)e.preventDefault();
-    const width=shellWidth();
-    const xPos=gesture.open ? Math.max(0,Math.min(width,dx+width)) : Math.max(0,Math.min(width,dx));
-    setShellX(xPos);
-  };
-  const end=(x,y)=>{
-    if(!gesture)return;
-    const g=gesture;gesture=null;
-    const dx=x-g.sx,dy=y-g.sy,width=shellWidth();
-    if(!g.horizontal){document.body.classList.remove('profile-reveal-dragging');clearShell();return;}
-    const valid=Math.abs(dx)>Math.abs(dy)*1.05;
-    const threshold=Math.max(42,width*.18);
-    if(!g.open && valid && dx>threshold){
-      document.body.classList.remove('profile-reveal-dragging');
-      setShellX(width);
-      document.body.classList.add('profile-reveal-open');
-      return;
-    }
-    if(g.open && valid && dx < -threshold){
-      document.body.classList.remove('profile-reveal-dragging');
-      setShellX(0);
-      setTimeout(closeAllPanels,250);
-      return;
-    }
-    document.body.classList.remove('profile-reveal-dragging');
-    const shouldOpen=g.open ? dx>-threshold : dx>threshold;
-    if(shouldOpen){openNow();setShellX(width);}
-    else {setShellX(0);setTimeout(closeAllPanels,250);}
-  };
-  const cancel=()=>{if(!gesture)return;gesture=null;document.body.classList.remove('profile-reveal-dragging');clearShell();if(!panel.classList.contains('open'))closeAllPanels();};
-  document.addEventListener('touchstart',e=>{if(!e.touches?.[0])return;const t=e.touches[0];begin(t.clientX,t.clientY,e.target);},{passive:true});
-  document.addEventListener('touchmove',e=>{if(!gesture||!e.touches?.[0])return;const t=e.touches[0];move(t.clientX,t.clientY,e);},{passive:false});
-  document.addEventListener('touchend',e=>{if(!gesture||!e.changedTouches?.[0])return;const t=e.changedTouches[0];end(t.clientX,t.clientY);},{passive:true});
-  document.addEventListener('touchcancel',cancel,{passive:true});
-}
-bindProfileEdgeSwipe();
+// Profile is intentionally tap-open/tap-close on Android and iPhone.
+// Do not use an edge-swipe/page-reveal interaction here.
+function bindProfileEdgeSwipe(){ return; }
+
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
 // Swipe left/right ANYWHERE on the page (not just the bottom bar) moves to
@@ -7317,6 +7259,7 @@ function updateAuthUI() {
     const links = [];
     if (vendor && profile.role !== "admin") {
       links.push({ label: "My Shop", action: "navigate('vendorDashboard')" });
+      links.push({ label: "Edit Business Profile", action: "navigate('vendorEditProfile')" });
     } else if (profile.role !== "admin") {
       links.push({ label: "My Orders", action: "navigate('buyerOrders')" });
       links.push({ label: "Request an item", action: "navigate('requestEquipment')" });
@@ -10342,14 +10285,21 @@ async function renderVendorsMap() {
 
   let center = [6.5244, 3.3792]; // Lagos, used until/unless we know better
   let zoom = 11;
-  if (!buyerLocation && statusEl) statusEl.textContent = buyerDistanceAutoEnabled ? "Turn on location to see distances." : "Enable automatic distances to see vendors near you.";
-  try {
-    const loc = await requestBuyerLocation();
-    center = [loc.lat, loc.lng];
+  if (buyerLocation) {
+    center = [buyerLocation.lat, buyerLocation.lng];
     zoom = 13;
     if (statusEl) statusEl.textContent = "Showing vendors near you, closest first.";
-  } catch (err) {
-    if (statusEl) statusEl.textContent = "Showing all vendors on the map. Enable location to see how far each one is.";
+  } else if (buyerDistanceAutoEnabled && locationSharingEnabled) {
+    try {
+      const loc = await requestBuyerLocation(true);
+      center = [loc.lat, loc.lng];
+      zoom = 13;
+      if (statusEl) statusEl.textContent = "Showing vendors near you, closest first.";
+    } catch (err) {
+      if (statusEl) statusEl.textContent = "Showing all vendors on the map. Tap the location button to try again.";
+    }
+  } else if (statusEl) {
+    statusEl.textContent = "Showing all vendors on the map. Tap the location button to find you.";
   }
 
   const list = (window.__filteredVendors || []).filter((v) => v.lat != null && v.lng != null);
@@ -14572,7 +14522,11 @@ function speakAiChatMessage(text, btn) {
   const voice = getSelectedBrowserVoice();
   if (voice) utter.voice = voice;
   btn?.classList.add("speaking");
-  utter.onend = utter.onerror = () => btn?.classList.remove("speaking");
+  utter.onend = utter.onerror = () => {
+    btn?.classList.remove("speaking");
+    if (leviWakeEnabled && byId("aiChatPanel")?.classList.contains("hidden")) setTimeout(startLeviWakeRecognition, 300);
+  };
+  stopLeviWakeRecognition();
   speechSynthesis.speak(utter);
 }
 
@@ -14658,6 +14612,8 @@ function stopLeviWakeRecognition(){
 }
 function startLeviWakeRecognition(){
   if(!AiSpeechRecognition||!leviWakeEnabled||!session||!profile||!leviVisible||document.hidden)return;
+  if(byId("aiChatPanel") && !byId("aiChatPanel").classList.contains("hidden")) return;
+  if(("speechSynthesis" in window) && speechSynthesis.speaking) return;
   if(leviWakeRecognizer||leviWakeStarting)return;
   leviWakeStarting=true;
   const rec=new AiSpeechRecognition(); leviWakeRecognizer=rec;
@@ -14666,15 +14622,27 @@ function startLeviWakeRecognition(){
   rec.onresult=(e)=>{
     let heard=""; for(let i=e.resultIndex;i<e.results.length;i++) heard += ` ${e.results[i][0]?.transcript||""}`;
     const q=heard.toLowerCase().replace(/[’']/g,"'").replace(/\s+/g," ").trim();
-    if(/\b(?:hey|okay|ok)\s+levi\b/.test(q)){
-      stopLeviWakeRecognition();
-      if(byId("aiChatPanel")?.classList.contains("hidden")) toggleAiChat();
+    const match=q.match(/\bhey\s+levi\b([\s\S]*)$/);
+    if(!match)return;
+    stopLeviWakeRecognition();
+    if(byId("aiChatPanel")?.classList.contains("hidden")) toggleAiChat();
+    const command=(match[1]||"").trim().replace(/^[,.:;!?-]+\s*/,"");
+    if(command){
+      setTimeout(()=>{
+        const input=byId("aiChatInput");
+        if(!input)return;
+        input.value=command;
+        autoGrowChatInput(input);
+        sendAiChatMessage();
+      },120);
+    } else {
+      setTimeout(()=>{ if(byId("aiChatPanel") && !byId("aiChatPanel").classList.contains("hidden") && !aiChatListening) toggleAiChatMic(); },180);
     }
   };
   rec.onerror=()=>{};
   rec.onend=()=>{
     if(leviWakeRecognizer===rec) leviWakeRecognizer=null;
-    if(leviWakeEnabled&&session&&profile&&leviVisible&&!document.hidden) setTimeout(startLeviWakeRecognition,180);
+    if(leviWakeEnabled&&session&&profile&&leviVisible&&!document.hidden&&byId("aiChatPanel")?.classList.contains("hidden")&&!("speechSynthesis" in window && speechSynthesis.speaking)) setTimeout(startLeviWakeRecognition,350);
   };
   try{rec.start();}catch(_){leviWakeRecognizer=null;leviWakeStarting=false;}
 }
@@ -15054,14 +15022,33 @@ async function resolveLeviLocalAction(text) {
   if (!session) return null;
 
   // Deterministic navigation.
+  const closeLeviIfOpen = () => { if (byId("aiChatPanel") && !byId("aiChatPanel").classList.contains("hidden")) toggleAiChat(); };
   if (/^(open|show|take me to|go to|view)\s+(my\s+)?cart$/.test(q) || /\b(show|open)\s+my\s+cart\b/.test(q)) {
-    toggleAiChat(); await navigate("cart"); return { handled: true, reply: "Done - I opened your cart." };
+    closeLeviIfOpen(); await navigate("cart"); return { handled: true, reply: "Done - I opened your cart." };
+  }
+  if (/^(open|show|go to|take me to)\s+(settings|app settings)$/.test(q)) {
+    closeLeviIfOpen(); await navigate("settings"); return { handled: true, reply: "Done - I opened Settings." };
+  }
+  if (/^(open|show|go to|take me to)\s+(my\s+)?profile$/.test(q)) {
+    closeLeviIfOpen(); toggleProfilePanel(); return { handled: true, reply: "Done - I opened your profile." };
+  }
+  if (/^(open|show|go to|take me to)\s+(my\s+)?messages?$/.test(q)) {
+    closeLeviIfOpen(); await navigate("messages"); return { handled: true, reply: "Done - I opened your messages." };
+  }
+  if (/^(open|show|go to|take me to)\s+(my\s+)?orders?$/.test(q)) {
+    closeLeviIfOpen(); await navigate(vendor ? "vendorOrders" : "buyerOrders"); return { handled: true, reply: "Done - I opened your orders." };
+  }
+  if (/^(open|show|go to|take me to)\s+(my\s+)?wishlist$/.test(q)) {
+    closeLeviIfOpen(); await navigate("wishlist"); return { handled: true, reply: "Done - I opened your wishlist." };
   }
   if (/^(open|show|go to|take me to)\s+vendors?$/.test(q)) {
-    toggleAiChat(); await navigate("vendors"); return { handled: true, reply: "Done - here are the vendors." };
+    closeLeviIfOpen(); await navigate("vendors"); return { handled: true, reply: "Done - here are the vendors." };
   }
   if (/^(open|show|go to|take me to)\s+(my\s+)?shop$/.test(q) && vendor) {
-    toggleAiChat(); await navigate("vendorDashboard"); return { handled: true, reply: "Done - I opened your shop dashboard." };
+    closeLeviIfOpen(); await navigate("vendorDashboard"); return { handled: true, reply: "Done - I opened your shop dashboard." };
+  }
+  if (/^(open|show|go to|take me to)\s+(edit\s+business\s+profile|business\s+profile)$/.test(q) && vendor) {
+    closeLeviIfOpen(); await navigate("vendorEditProfile"); return { handled: true, reply: "Done - I opened your business profile editor." };
   }
 
   const addIntent = /\b(add|put|place)\b[\s\S]*\b(cart|basket)\b/.test(q) || /\b(add|put|place)\b.*\b(this|that)\b/.test(q);
