@@ -7627,7 +7627,11 @@ async function navigate(view, params = {}, pushHistory = true) {
   // page first. The real render below still replaces this once it's ready.
   if (view === "messages" && params?.conversationId && profile?.role !== "admin") {
     const cachedConv = (window.__conversations || []).find((c) => c.conversation_id === params.conversationId);
-    if (cachedConv) app.innerHTML = chatSkeletonHtml(cachedConv);
+    if (cachedConv) {
+      const cachedMessages = lastSeenMessagesByConv.get(params.conversationId);
+      app.innerHTML = chatSkeletonHtml(cachedConv, cachedMessages);
+      if (cachedMessages?.length) requestAnimationFrame(scrollChatToBottom);
+    }
   }
   updateAuthUI();
   renderBottomNav();
@@ -8215,6 +8219,11 @@ async function checkoutCartVendor(vendorId) {
 // see all their threads from a "Messages" nav entry.
 let activeMsgChannel = null;
 let activeConversationId = null;
+// Last-seen messages per conversation, kept only in memory for this tab.
+// Lets a re-opened DM paint its previous messages immediately (see the
+// fast-path in navigate()) instead of a spinner while the fresh fetch is
+// still in flight underneath.
+const lastSeenMessagesByConv = new Map();
 
 async function callVendorGated(event, phone, vendorId) {
   event.preventDefault();
@@ -8580,11 +8589,15 @@ async function togglePinConversation(conversationId) {
 }
 
 // Lightweight instant-paint shell for opening a DM -- see the fast-path in
-// navigate(). Uses only what the inbox list already had cached, so it can
-// render before any network call for this conversation has resolved.
-function chatSkeletonHtml(cached) {
+// navigate(). Uses only what's already cached client-side (inbox list +
+// last-seen messages), so it can render before any network call for this
+// conversation has resolved.
+function chatSkeletonHtml(cached, cachedMessages) {
   const name = cached.other_name || "Chat";
   const avatar = cached.other_avatar;
+  const messagesArea = cachedMessages && cachedMessages.length
+    ? chatMessagesWithDatesHtml(cachedMessages, chatBubbleHtml)
+    : `<div class="chat-skeleton-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
   return `<div class="chat-page-wrap">
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
@@ -8596,7 +8609,7 @@ function chatSkeletonHtml(cached) {
       </div>
     </div>
     <div class="chat-thread">
-      <div class="chat-messages"><div class="chat-skeleton-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      <div class="chat-messages" id="chatMessages">${messagesArea}</div>
       <div class="chat-input-row">
         <button class="msg-attach-btn" disabled style="opacity:0.4;"><i class="fa-solid fa-paperclip"></i></button>
         <textarea rows="1" placeholder="Type a message…" disabled></textarea>
@@ -8650,18 +8663,21 @@ async function renderMessages(conversationId) {
     return html;
   }
 
-  const { data: other, error: otherErr } = await sb.rpc("get_conversation_other_party", { p_conversation_id: conversationId });
-  const { data: conv } = await sb.from("conversations")
-    .select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id, phone)")
-    .eq("id", conversationId).maybeSingle();
+  // These three calls don't depend on each other, so run them together --
+  // awaiting them one at a time was most of the multi-second wait before
+  // the thread actually appeared.
+  const [{ data: other, error: otherErr }, { data: conv }, { data: messages }] = await Promise.all([
+    sb.rpc("get_conversation_other_party", { p_conversation_id: conversationId }),
+    sb.from("conversations").select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id, phone)").eq("id", conversationId).maybeSingle(),
+    sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }),
+  ]);
   if (!conv || otherErr) return '<div class="empty-state">Conversation not found.</div>';
 
   const isVendorSide = conv.vendor?.user_id === session.user.id;
   const op = (other && other[0]) || {};
   const otherName = op.name || (isVendorSide ? "Buyer" : conv.vendor?.business_name || "Vendor");
   const otherAvatar = op.avatar_url || (isVendorSide ? null : conv.vendor?.logo_url);
-
-  const { data: messages } = await sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
+  lastSeenMessagesByConv.set(conversationId, messages || []);
 
   sb.rpc("mark_conversation_opened", { p_conversation_id: conversationId }).then(() => refreshNotifications());
 
