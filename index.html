@@ -28,9 +28,9 @@
   #settingsAiConsentPageRow .settings-inline-btn { min-width: 4.25rem; justify-content:center; }
   :root {
     --brand-grad: linear-gradient(135deg, #14a894, #075c52);
-    --primary: #0f766e;
-    --primary-light: #14b8a6;
-    --primary-grad: linear-gradient(135deg, #0f766e, #14b8a6 60%, #2dd4bf);
+    --primary: #10b981;
+    --primary-light: #10b981;
+    --primary-grad: #10b981;
     --bg: #f5f7fa;
     --bg-wash: radial-gradient(at top left, rgba(20,184,166,0.10), transparent 55%), radial-gradient(at bottom right, rgba(15,118,110,0.08), transparent 50%);
     --card: #ffffff;
@@ -49,9 +49,9 @@
     color-scheme: light;
   }
   [data-theme="dark"] {
-    --primary: #2dd4bf;
-    --primary-light: #5eead4;
-    --primary-grad: linear-gradient(135deg, #0f766e, #2dd4bf 60%, #5eead4);
+    --primary: #10b981;
+    --primary-light: #10b981;
+    --primary-grad: #10b981;
     --bg: #0f172a;
     --bg-wash: radial-gradient(at top left, rgba(45,212,191,0.10), transparent 55%), radial-gradient(at bottom right, rgba(15,118,110,0.14), transparent 50%);
     --card: #1e293b;
@@ -66,9 +66,9 @@
     color-scheme: dark;
   }
   [data-theme="black"] {
-    --primary: #2dd4bf;
-    --primary-light: #5eead4;
-    --primary-grad: linear-gradient(135deg, #0f766e, #2dd4bf 60%, #5eead4);
+    --primary: #10b981;
+    --primary-light: #10b981;
+    --primary-grad: #10b981;
     --bg: #000000;
     --bg-wash: radial-gradient(at top left, rgba(45,212,191,0.08), transparent 55%), radial-gradient(at bottom right, rgba(15,118,110,0.10), transparent 50%);
     --card: #111111;
@@ -96,7 +96,7 @@
   /* Branded app splash: solid black backdrop with the real Levromart mark
      centered and sized generously, shown briefly on load/reload. Hiding is
      driven entirely from JS (prepareLevromartSplash/hideLevromartSplash),
-     which guarantees this can never stay stuck on screen — see the
+     which guarantees this can never stay stuck on screen - see the
      try/finally + hard safety timeout around init(). */
   #levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .28s ease,visibility .28s ease;}
   #levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
@@ -119,17 +119,17 @@
   .brand-logo-stack { position: relative; display: inline-block; height: 2rem; width: 7.88rem; vertical-align: middle; }
   .brand-logo-layer { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: contain; }
   /* The wordmark text ("Levro"/"Mart") used to be a flat teal PNG with no
-     theming at all — every other accent-colored element in the app (the
+     theming at all - every other accent-colored element in the app (the
      circle's glow, buttons, chips) already follows the user's chosen
      accent, but this stayed hardcoded teal regardless. Using the source
      image as a mask (its alpha shape) and filling that shape with the
      live --primary-grad, instead of rendering the image's own baked-in
      color, makes the wordmark follow the accent color like everything
-     else — this is why these are <span> masks now, not <img> tags. */
+     else - this is why these are <span> masks now, not <img> tags. */
   .brand-logo-text { background: var(--primary-grad); -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; mask-repeat: no-repeat; mask-position: center; mask-size: contain; transition: background 0.25s ease; }
   /* The circle mark itself is forced to plain white (brightness(0) invert(1)
      turns any non-transparent pixel white regardless of its original color)
-     — only the glow around it stays accent-colored, via drop-shadow. */
+     - only the glow around it stays accent-colored, via drop-shadow. */
   .brand-logo-circle { animation: logoPulse 3s ease-in-out infinite; }
   @keyframes logoPulse {
     0%, 100% { filter: brightness(0) invert(1) drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 45%, transparent)); transform: scale(1); }
@@ -166,7 +166,7 @@
   .auth-or-divider { display: flex; align-items: center; gap: 0.6rem; margin: 1.1rem 0; color: var(--text-muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0.04em; }
   .auth-or-divider::before, .auth-or-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   /* Plain <a> tags had no site-wide style at all, so they fell back to the
-     browser's default blue-underline — jarring against the rest of the
+     browser's default blue-underline - jarring against the rest of the
      app's palette. This is the one place that default gets overridden. */
   a { color: var(--primary); text-decoration: none; font-weight: 500; }
   a:hover { text-decoration: underline; }
@@ -192,7 +192,7 @@
     background: var(--primary-grad); display: flex; align-items: center; justify-content: center;
     box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 45%, transparent);
   }
-  .install-modal-badge img { width: 2.7rem; height: 2.7rem; object-fit: contain; }
+  .install-modal-badge img { width: 2.7rem; height: 2.7rem; object-fit: contain; filter: brightness(0) invert(1); }
   .tour-content .install-modal-badge img { filter: brightness(0) invert(1); }
   .install-modal-content h3 { margin: 0 0 0.4rem; font-size: 1.15rem; }
   .install-modal-content p.muted { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.4; }
@@ -287,7 +287,7 @@
   .ms-btn.open { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent), 0 4px 14px color-mix(in srgb, var(--primary) 14%, transparent); }
   optgroup { font-weight: 700; font-style: normal; color: var(--text-muted); }
   option { color: var(--text); background: var(--input-bg); }
-  /* Custom dropdown popup — replaces the native OS picker (radio-circle
+  /* Custom dropdown popup - replaces the native OS picker (radio-circle
      list, plain OS chrome) with something that actually looks like the
      rest of the app, glass panel included. */
   .ms-wrap { position: relative; }
@@ -534,7 +534,7 @@
   #myRequestsAccordion.open .accordion-body { max-height: 3000px; }
   #veHoursAccordion.open .accordion-body { max-height: 640px; }
   #appealsAccordion.open .accordion-body { max-height: 2000px; overflow-y: auto; }
-  /* Order history can run to dozens/hundreds of orders over time — scroll
+  /* Order history can run to dozens/hundreds of orders over time - scroll
      inside a capped height instead of clipping content past 320px. */
   #orderHistoryAccordion.open .accordion-body { max-height: 12000px; overflow: visible; }
   .order-stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -667,7 +667,7 @@
   [data-theme="dark"] .hero-aurora, [data-theme="black"] .hero-aurora { opacity: 0.38; }
   @media (prefers-reduced-motion: reduce) { .hero-aurora { animation: none; } }
   /* A soft strip of real product photos across the top of the hero, faded
-     into the page background — the same trick app-store banners use to
+     into the page background - the same trick app-store banners use to
      feel like a real, populated storefront instead of an empty template.
      Built from whatever's actually trending, so it's never staged/fake and
      naturally freshens as the catalog grows. */
@@ -676,7 +676,7 @@
   .hero-photo-row img { flex: 1 1 0; min-width: 0; height: 100%; object-fit: cover; }
   .hero-photo-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 30%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 55%, var(--bg) 94%), color-mix(in srgb, var(--primary) 18%, transparent); }
   /* Same photo-banner treatment, sized for a vendor's own storefront header
-     instead of the full home hero — built from that vendor's own products. */
+     instead of the full home hero - built from that vendor's own products. */
   .storefront-hero { position: relative; min-height: 7rem; border-radius: 1.1rem; margin-bottom: 0.9rem; padding: 1rem; overflow: visible; }
   .storefront-hero-content { position: relative; z-index: 1; }
   .hero-content { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
@@ -693,7 +693,7 @@
      and 2 on the second on wider phones). */
   .dash-actions.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; gap: 1.3rem 0.6rem; }
   /* Dashboard quick-links as an actual tab bar instead of a wall of icon
-     circles — one scannable row, no per-item background/shadow to compete
+     circles - one scannable row, no per-item background/shadow to compete
      with the page content below it. */
   .dash-tabs { display: flex; gap: 1.6rem; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 0.8rem 0 1.3rem; padding-bottom: 0; scrollbar-width: none; }
   .dash-tabs::-webkit-scrollbar { display: none; }
@@ -733,7 +733,7 @@
   .hscroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0.6rem 0.2rem 1rem; scrollbar-width: thin; scroll-snap-type: x proximity; scroll-behavior: smooth; }
   .hscroll > * { flex: 0 0 250px; scroll-snap-align: start; }
   /* On a wide (desktop/laptop) screen there's room to just show every card
-     at once — swipe-to-scroll with a fixed card width makes sense on a
+     at once - swipe-to-scroll with a fixed card width makes sense on a
      phone, but on a wide viewport it left a few cards on the left and a
      dead strip of empty space on the right instead of using the space.
      The threshold is set above phone-class viewport widths (including
@@ -822,6 +822,16 @@
   .msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; margin-right: 0.35rem; border: none; background: none; padding: 0; color: inherit; opacity: 0.65; cursor: pointer; font-size: 0.72rem; vertical-align: middle; }
   .msg-react:hover { opacity: 1; }
 .msg-voice-status{display:flex;align-items:center;gap:.65rem;margin:0 .65rem .45rem;padding:.55rem .7rem;border:1px solid color-mix(in srgb,var(--primary) 35%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--primary) 7%,var(--card));color:var(--text);box-shadow:var(--shadow-float);}
+.voice-recording-status{display:flex;align-items:center;gap:.65rem;margin:0 .15rem .45rem;padding:.5rem .65rem;border:1px solid color-mix(in srgb,var(--primary) 28%,var(--border));border-radius:16px;background:color-mix(in srgb,var(--primary) 6%,var(--card));color:var(--text);min-height:44px;}
+.voice-recording-status.hidden{display:none;}
+.voice-recording-status>span{flex:1;min-width:0;font-size:.78rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.voice-recording-status button{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:50%;background:transparent;color:var(--text);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+.voice-recording-status button:hover{background:var(--ui-soft);}
+.voice-wave{display:flex;align-items:center;justify-content:center;gap:3px;width:58px;height:28px;flex:0 0 58px;overflow:hidden;}
+.voice-wave i{display:block;width:3px;height:8px;border-radius:999px;background:var(--primary);animation:voiceWave .72s ease-in-out infinite;transform-origin:center;}
+.voice-wave i:nth-child(2){animation-delay:.08s}.voice-wave i:nth-child(3){animation-delay:.16s}.voice-wave i:nth-child(4){animation-delay:.24s}.voice-wave i:nth-child(5){animation-delay:.32s}.voice-wave i:nth-child(6){animation-delay:.40s}.voice-wave i:nth-child(7){animation-delay:.48s}
+@keyframes voiceWave{0%,100%{height:7px;opacity:.4}50%{height:23px;opacity:1}}
+@media(prefers-reduced-motion:reduce){.voice-wave i{animation:none;height:12px;opacity:.75;}}
 .msg-voice-status.hidden{display:none;}
 .msg-voice-wave{display:flex;align-items:center;justify-content:center;gap:3px;width:74px;height:28px;flex:0 0 74px;overflow:hidden;}
 .msg-voice-wave i{display:block;width:3px;height:8px;border-radius:999px;background:var(--primary);animation:msgVoiceWave .75s ease-in-out infinite;transform-origin:center;}
@@ -834,7 +844,9 @@
 .saved-location-select{flex:1;text-align:left;margin:0 !important;}
 .saved-location-delete{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;}
 .saved-location-delete:hover{color:var(--danger);border-color:var(--danger);}
-.ve-delivery-fee-label{display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
+.ve-delivery-fee-label{display:flex;align-items:flex-start;justify-content:space-between;gap:.65rem;flex-wrap:nowrap;width:100%;}
+.ve-delivery-fee-label > span:first-child{flex:1 1 auto;min-width:0;line-height:1.3;}
+.ve-delivery-fee-label .info-popover-wrap{flex:0 0 auto !important;margin-left:.15rem !important;margin-top:.05rem !important;}
 .ve-delivery-fee-label .info-popover-wrap{margin-left:auto !important;}
 .chat-whatsapp-btn{color:#25D366 !important;text-decoration:none;}
 
@@ -910,8 +922,8 @@
   @media (max-width: 720px) {
     body { padding-bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)); }
     .bottom-nav {
-      /* A floating, inset "pill" — margin on all sides plus a full stadium
-         radius — rather than a flat bar glued to the screen edges, so it
+      /* A floating, inset "pill" - margin on all sides plus a full stadium
+         radius - rather than a flat bar glued to the screen edges, so it
          reads as a translucent glass bubble sitting above the content
          (the look on modern iOS apps) instead of a plain toolbar. */
       display: flex; position: fixed; left: 0.7rem; right: 0.7rem; bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px)); z-index: 80; align-items: center; justify-content: space-around;
@@ -930,7 +942,7 @@
     .bottom-nav-item.active .bn-icon { background: color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 0.6rem; padding: 0.15rem 0.6rem; margin: -0.15rem -0.6rem; }
     .bottom-nav-item.active span:last-child { font-weight: 600; }
     /* Split into a left group / center button / right group grid instead of
-       a single flex row — that's what actually guarantees the "+" sits at
+       a single flex row - that's what actually guarantees the "+" sits at
        true horizontal center no matter how many icons land on each side
        (an odd icon count can't split evenly around a single flex item). */
     .bottom-nav.has-add { display: grid; grid-template-columns: 1fr auto 1fr; }
@@ -984,7 +996,7 @@
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card) !important; color: var(--text) !important; }
 
 /* ================================================================
-   LEVROMART UI REFRESH — restrained, product-led, professional
+   LEVROMART UI REFRESH - restrained, product-led, professional
    ================================================================ */
 :root {
   --ui-radius: 16px;
@@ -1119,7 +1131,7 @@ input:focus, select:focus, textarea:focus {
 .drawer-close-btn { width: 38px !important; height: 38px !important; border-radius: 10px !important; background: transparent !important; color: var(--text-muted); }
 .drawer-close-btn:hover { background: color-mix(in srgb, var(--text) 7%, transparent) !important; color: var(--text); }
 
-/* Profile drawer — clean list, no decorative icon blocks. */
+/* Profile drawer - clean list, no decorative icon blocks. */
 .profile-panel-header {
   display: flex !important;
   align-items: center !important;
@@ -1202,7 +1214,7 @@ input:focus, select:focus, textarea:focus {
 
 
 /* ================================================================
-   LEVROMART 2.0 — COMPLETE UI/UX POLISH
+   LEVROMART 2.0 - COMPLETE UI/UX POLISH
    Product-led, modern marketplace, calm glass surfaces, strong hierarchy.
    ================================================================ */
 :root {
@@ -1424,7 +1436,7 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
 
 
 /* ========================================================================
-   LEVROMART 3.0 — PRODUCT-GRADE MOBILE UI
+   LEVROMART 3.0 - PRODUCT-GRADE MOBILE UI
    Calm hierarchy, generous reading width, unboxed iconography, predictable
    sheets and a centered assistant. This block intentionally supersedes the
    older experimental drawer rules above rather than requiring a risky rewrite
@@ -1445,7 +1457,8 @@ input, textarea, select, [contenteditable="true"], [contenteditable="true"] * { 
 /* Levi mark: keep the exact logo artwork; in light mode give it only a soft
    accent-coloured halo so the white centre remains visible without adding a
    new coloured dot/circle inside the mark. */
-.settings-levi-logo-wrap { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 28%, transparent)); }
+.settings-levi-logo-wrap { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 32%, transparent)); }
+.settings-levi-logo { filter: brightness(0) invert(1) !important; }
 .settings-levi-logo-wrap::after { display:none !important; content:none !important; }
 html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after { display:none !important; content:none !important; }
 html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab { box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent), 0 0 18px color-mix(in srgb, var(--primary) 24%, transparent), 0 10px 28px rgba(0,0,0,.18) !important; }
@@ -1561,6 +1574,13 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab { box-shadow:
 .profile-nav-link-danger { border-bottom:0 !important; color:var(--danger) !important; margin-top:.25rem !important; }
 .profile-nav-link-danger .profile-item-icon { background:transparent !important; color:var(--danger); }
 
+/* Vendor dashboard alignment polish */
+.vendor-glance .accordion-trigger{padding:.65rem .35rem !important;}
+.vendor-glance .accordion-trigger span{gap:.55rem !important;}
+.vendor-glance .accordion-trigger span i{width:1.85rem !important;height:1.85rem !important;border-radius:.55rem !important;font-size:.86rem !important;}
+.vendor-glance .accordion-body{padding-left:.35rem !important;padding-right:.35rem !important;}
+.shop-tabs-rail .dash-tab{justify-content:center !important;}
+
 /* --- assistant: centered, spacious, not draggable --- */
 .ai-chat-panel {
   position:fixed !important; left:50% !important; top:50% !important; right:auto !important; bottom:auto !important;
@@ -1623,7 +1643,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab { box-shadow:
 
 
 /* =========================================================
-   LEVROMART FINAL POLISH — clean, native-feeling marketplace
+   LEVROMART FINAL POLISH - clean, native-feeling marketplace
    ========================================================= */
 :root{
   --ui-radius: 16px;
@@ -1680,7 +1700,7 @@ header{
 .header-right .icon-btn,
 #profileWrap .icon-btn{width:42px;height:42px}
 
-/* Search alignment — never let the glyph collide with input text */
+/* Search alignment - never let the glyph collide with input text */
 .hero-search{position:relative;overflow:visible;padding:.25rem}
 .hero-search-icon{left:1.05rem !important;z-index:2}
 .hero-search input{
@@ -1719,7 +1739,7 @@ header{
   box-shadow:0 3px 12px rgba(0,0,0,.14);
 }
 
-/* Drawers — compact like a real app side sheet */
+/* Drawers - compact like a real app side sheet */
 .side-drawer{
   width:min(360px,84vw) !important;
   max-width:360px !important;
@@ -1829,7 +1849,7 @@ header{
 .package-card,.pkg-card{margin-top:.9rem}
 h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 
-/* Sticky mobile nav — cleaner, lighter */
+/* Sticky mobile nav - cleaner, lighter */
 @media (max-width:720px){
   body{padding-bottom:calc(5.6rem + env(safe-area-inset-bottom,0px))}
   .bottom-nav{
@@ -1844,7 +1864,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
   .bottom-nav-item i,.bottom-nav-item .bn-icon{font-size:1.08rem !important}
 }
 
-/* Levi — centered, non-draggable, comfortable */
+/* Levi - centered, non-draggable, comfortable */
 .ai-chat-panel{
   position:fixed !important;
   left:50% !important;
@@ -1909,7 +1929,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 }
 
 
-/* Tour — no jumpy resize/restart, no accidental overlap */
+/* Tour - no jumpy resize/restart, no accidental overlap */
 .tour-callout{
   width:min(360px,calc(100vw - 28px)) !important;
   max-height:min(72dvh,560px) !important;
@@ -1929,7 +1949,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 .tour-content .install-modal-badge{animation:none !important}
 .tour-dots{margin:.6rem 0 1rem}
 
-/* Levi FAB — draggable and touch-friendly. Position is managed by setupDraggableFab(). */
+/* Levi FAB - draggable and touch-friendly. Position is managed by setupDraggableFab(). */
 .ai-chat-fab{
   position:fixed !important;
   cursor:grab !important;
@@ -1948,7 +1968,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 
 
 /* ================================================================
-   LEVROMART POLISH PASS — profile-style storefront + calmer sheets
+   LEVROMART POLISH PASS - profile-style storefront + calmer sheets
    ================================================================ */
 :root{
   --sheet-mobile-w:min(304px,78vw);
@@ -2012,7 +2032,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 #profilePanel .profile-nav-link:hover .profile-item-icon i{color:var(--text) !important;}
 #profilePanel .profile-nav-link-danger .profile-item-icon i,#profilePanel .profile-nav-link-danger .profile-nav-text{color:var(--danger) !important;}
 
-/* Vendor storefront — social profile hierarchy, marketplace actions. */
+/* Vendor storefront - social profile hierarchy, marketplace actions. */
 .storefront-profile{max-width:980px;margin:0 auto 1.25rem;}
 .storefront-cover{
   position:relative;height:176px;border-radius:22px 22px 0 0;overflow:hidden;
@@ -2080,7 +2100,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 
 
 /* ================================================================
-   STABILITY + POLISH PATCH — 05 Sep 2026
+   STABILITY + POLISH PATCH - 05 Sep 2026
    Fixes: settings clipping/overlap, profile wrapping, duplicate arrows,
    touch-hover jumps, search icon collisions, and viewport-safe sheets.
    ================================================================ */
@@ -2267,7 +2287,7 @@ h2 + .grid, h3 + .grid, .section-title + .grid{margin-top:.8rem}
 #profilePanel .profile-nav-arrow { display: none !important; }
 #profilePanel .profile-nav-link { min-height: 50px !important; }
 
-/* FINAL PROFILE CLEANUP — calm ChatGPT-style list: no visible scrollbar or trailing arrows. */
+/* FINAL PROFILE CLEANUP - calm ChatGPT-style list: no visible scrollbar or trailing arrows. */
 #profilePanel .profile-panel-scroll { scrollbar-width:none !important; -ms-overflow-style:none !important; }
 #profilePanel .profile-panel-scroll::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
 #profilePanel .profile-nav-arrow, #profilePanel .profile-nav-link::after { display:none !important; content:none !important; }
@@ -2319,7 +2339,7 @@ html { scroll-padding-top: 86px !important; }
 
 
 /* ================================================================
-   FINAL MOBILE STABILITY PATCH — 05 Sep 2026
+   FINAL MOBILE STABILITY PATCH - 05 Sep 2026
    Notifications, settings, storefront expansion, and Levi transport.
    This deliberately overrides earlier experimental UI layers so the
    rendered layout has one predictable source of truth.
@@ -2590,7 +2610,7 @@ html { scroll-padding-top: 86px !important; }
 .ai-chat-fab.dragging { cursor:grabbing !important; }
 
 /* ================================================================
-   TOUR MOBILE FIT — keep Levi's guide compact and keep the highlighted
+   TOUR MOBILE FIT - keep Levi's guide compact and keep the highlighted
    element visible instead of covering it with the callout.
    ================================================================ */
 #tourModal {
@@ -2672,7 +2692,7 @@ html { scroll-padding-top: 86px !important; }
 }
 
 /* ================================================================
-   FINAL TOUR + NOTIFICATION INTERACTION FIX — 05 Sep 2026
+   FINAL TOUR + NOTIFICATION INTERACTION FIX - 05 Sep 2026
    The previous tour animation applied translate(-50%) even after the
    callout had been positioned with a real left/top value. On mobile that
    pushed the card off-screen. Notifications also no longer use a flex
@@ -2819,7 +2839,7 @@ html { scroll-padding-top: 86px !important; }
 
 
 /* ================================================================
-   DEFINITIVE MOBILE UI FIX — 05 Sep 2026
+   DEFINITIVE MOBILE UI FIX - 05 Sep 2026
    ================================================================ */
 #notifPanel .notif-list-scroll {
   display:flex !important; flex-direction:column !important; align-items:stretch !important;
@@ -2960,7 +2980,7 @@ html { scroll-padding-top: 86px !important; }
 
 
 /* ================================================================
-   LEVROMART SETTINGS — FINAL RESPONSIVE UI
+   LEVROMART SETTINGS - FINAL RESPONSIVE UI
    Dedicated page, compact hierarchy, no oversized text, no cramped rows.
    ================================================================ */
 .settings-page{
@@ -3216,6 +3236,9 @@ html { scroll-padding-top: 86px !important; }
 }
 /* Do not let the global floating cart intrude into Settings. */
 body:has(#settings-page) .cart-fab{display:none !important;}
+body:has(#settings-page) #app{padding-bottom:5.25rem !important;}
+body:has(#settings-page) .settings-page{padding-bottom:1rem !important;}
+body:has(#settings-page) .settings-close-page{margin-bottom:.35rem !important;}
 /* Settings should be visually quieter than the marketplace hero. */
 body:has(#settings-page) #app{overflow-x:clip;}
 @media (max-width:720px){
@@ -3240,10 +3263,10 @@ body:has(#settings-page) #app{overflow-x:clip;}
 }
 
 
-/* ===== FINAL STANDARD UI PASS — valid CSS only ===== */
+/* ===== FINAL STANDARD UI PASS - valid CSS only ===== */
 
 /* ================================================================
-   FINAL ORDER LIST / HISTORY UI — clean responsive cards
+   FINAL ORDER LIST / HISTORY UI - clean responsive cards
    The order page must use real card layout; never let inline content
    collapse into a text stream on narrow screens.
    ================================================================ */
@@ -3601,7 +3624,7 @@ img, svg, video, canvas, iframe { max-width:100%; }
 .hscroll, .cat-row, .storefront-product-strip { max-width:100% !important; }
 
 /* ================================================================
-   FINAL UX PASS — 05 Sep 2026
+   FINAL UX PASS - 05 Sep 2026
    ================================================================ */
 html, body {
   width:100% !important;
@@ -3678,7 +3701,7 @@ body { min-width:0 !important; }
   border-radius:50% !important;
 }
 .settings-levi-logo-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 1.18rem;width:1.18rem;height:1.18rem;}
-.settings-levi-logo-wrap::after{content:"";position:absolute;width:.24rem;height:.24rem;border-radius:50%;background:var(--primary);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--card) 80%,transparent);}
+.settings-levi-logo-wrap::after{display:none !important;content:none !important;}
 html[data-theme="dark"] .settings-levi-logo-wrap::after,html[data-theme="black"] .settings-levi-logo-wrap::after{display:none;}
 html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{content:"";position:absolute;width:.26rem;height:.26rem;border-radius:50%;background:var(--primary);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.72);}
 .settings-toggle-row,
@@ -3828,7 +3851,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{conten
 
 
 /* ================================================================
-   FINAL UX POLISH — spacing, draggable Levi, safe gestures
+   FINAL UX POLISH - spacing, draggable Levi, safe gestures
    ================================================================ */
 /* Keep every primary/action button visibly separated. The main My Shop
    strip (Products/Packages/Orders/Requests/Earnings) must stay a single
@@ -3867,7 +3890,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{conten
 
 
 /* ================================================================
-   GLOBAL BUTTON / CARD SPACING — no touching controls
+   GLOBAL BUTTON / CARD SPACING - no touching controls
    ================================================================ */
 .card > .btn,
 .card > button.btn{
@@ -3981,7 +4004,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{conten
 @media(max-width:600px){#payOnlineBtn{width:100%!important;min-height:46px!important;margin-top:1.05rem!important}.card h3{margin-bottom:.15rem!important}}
 
   /* ================================================================
-     BATCH SELECTION — TAP ONLY, NO SWIPE
+     BATCH SELECTION - TAP ONLY, NO SWIPE
      ================================================================ */
   .conv-list-item, #notifPanel .notif-item {
     touch-action: manipulation !important;
@@ -4040,7 +4063,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{conten
   .notif-selection-action:disabled { opacity:.35 !important; pointer-events:none !important; }
   .notif-selection-actions { gap:.45rem !important; }
 
-  /* Clean notification/message batch selection — tap based. */
+  /* Clean notification/message batch selection - tap based. */
 .conv-row-wrap:last-child { border-bottom: none; }
   .conv-list-item { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
   .conv-list-item.selected { background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
@@ -4092,7 +4115,7 @@ html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{conten
 
 /* Fast, stable horizontal shop navigation. */
 .shop-tabs-rail {
-  display:flex !important; flex-wrap:nowrap !important;
+  display:flex !important; flex-wrap:nowrap !important; justify-content:center !important;
   overflow-x:auto !important; overflow-y:hidden !important;
   -webkit-overflow-scrolling:touch !important;
   overscroll-behavior-x:contain !important;
@@ -4705,7 +4728,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
   <div class="modal-content about-modal-content">
     <div class="about-brand-mark"><img src="" id="aboutLevromartLogo" alt="Levromart" /></div>
     <h3>Levromart</h3>
-    <p class="muted">A modern marketplace for buying, renting and requesting products — with Levi as your in-app assistant.</p>
+    <p class="muted">A modern marketplace for buying, renting and requesting products - with Levi as your in-app assistant.</p>
     <div class="about-meta-grid">
       <div><span>Assistant</span><strong>Levi</strong></div>
       <div><span>Year</span><strong id="aboutYear"></strong></div>
@@ -4821,6 +4844,12 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
   <input type="text" id="aiChatHistorySearch" placeholder="Search chats…" oninput="searchAiChatHistory()" />
   <div id="aiChatHistoryList" class="ai-chat-history-panel"></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
+  <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
+    <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span id="aiVoiceStatusText">Listening...</span>
+    <button type="button" onclick="toggleAiChatMic()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
+    <button type="button" onclick="cancelAiChatVoice()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
+  </div>
   <div class="ai-chat-input-row">
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
@@ -4830,7 +4859,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 
 <script>
 // ---------- SUPABASE ----------
-// Public project URL + anon key — safe to expose client-side. Row Level
+// Public project URL + anon key - safe to expose client-side. Row Level
 // Security on every table is what actually protects the data; this key
 // alone cannot bypass it. Never put the service-role key or a payment
 // provider's secret key in client-side code like this file.
@@ -4906,7 +4935,7 @@ async function ensureBuyerProfile(errorEl = null) {
   return buyerProfileRepairPromise;
 }
 
-// Brand logo — embedded inline (data URI) so the whole app stays one file.
+// Brand logo - embedded inline (data URI) so the whole app stays one file.
 const LEVROMART_LOGO_LEFT = "data:image/webp;base64,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";
 const LEVROMART_LOGO_CIRCLE = "data:image/webp;base64,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";
 
@@ -4993,7 +5022,7 @@ function dismissInstallPrompt() {
 }
 
 // ---------- PUSH NOTIFICATIONS (on top of email, not instead of) ----------
-// Public VAPID key — safe to expose client-side, same reasoning as the
+// Public VAPID key - safe to expose client-side, same reasoning as the
 // Supabase anon key above. The matching private key lives only in Vercel
 // (VAPID_PRIVATE_KEY), used by api/notify-push.js to actually send.
 const VAPID_PUBLIC_KEY = "BJ7h-JVsXaOpYXY5st5L7esSDOPjhRROincFPTT013a1ZY3U62WIKPAoFEDzBgFB8g3H2DBNX1iRw8GzdPWR88k";
@@ -5010,7 +5039,7 @@ function pushSupported() {
 function maybeShowNotifPrompt() {
   if (!session) return;
   if (!pushSupported()) return;
-  if (Notification.permission !== "default") return; // already granted or denied — nothing to ask
+  if (Notification.permission !== "default") return; // already granted or denied - nothing to ask
   if (localStorage.getItem("medris-notif-dismissed")) return;
   const installModal = byId("installPromptModal");
   if (installModal && !installModal.classList.contains("hidden")) return; // don't stack two popups
@@ -5062,10 +5091,10 @@ async function enablePushNotifications() {
   dismissNotifPrompt();
 }
 
-// ---------- FIRST-VISIT APP TOUR (live — walks the real pages, spotlights real elements) ----------
+// ---------- FIRST-VISIT APP TOUR (live - walks the real pages, spotlights real elements) ----------
 // Each step (except the intro/outro) names a real selector on a real page.
 // The tour navigates there with the actual navigate() function and points
-// at the actual DOM element — nothing here is a mockup or a slide.
+// at the actual DOM element - nothing here is a mockup or a slide.
 const LIVE_TOUR_STEPS = [
   { icon: "fa-hand-sparkles", title: "Hi, I'm Levi", body: "I'll walk you through the app myself, live, on the actual site. Just follow me around.", selector: null, view: "home" },
   { icon: "fa-house", title: "This is Home", body: "Tap the Levromart logo any time, from anywhere in the app, and I'll bring you straight back here.", selector: "header h1", view: "home" },
@@ -5357,7 +5386,7 @@ function esc(s) { const d = document.createElement("div"); d.textContent = s ?? 
 
 // Swaps a plain <select>'s open state for a styled popup matching the rest
 // of the app, instead of the bare OS picker (the native list of radio
-// circles you get on Android/iOS) — the closed-state look was already
+// circles you get on Android/iOS) - the closed-state look was already
 // fine, this only replaces what happens when you tap it. The original
 // <select> stays in the DOM (invisible) so existing value/onchange code
 // keeps working untouched.
@@ -5381,7 +5410,7 @@ function enhanceSelect(sel) {
   wrap.appendChild(list);
 
   // Long lists (a category picker with 20-30 entries across several
-  // groups, say) are unusable as a plain scroll — a search box to filter
+  // groups, say) are unusable as a plain scroll - a search box to filter
   // as you type, plus keeping each <optgroup>'s label visible as a
   // section header, makes a big list navigable instead of just long.
   const searchThreshold = 8;
@@ -5470,7 +5499,7 @@ function enhanceSelectsIn(root) {
 }
 // Generic small overflow menu (reuses the .ms-list/.ms-item dropdown look)
 // for grouping secondary actions behind a single "More" button instead of
-// a row of same-weight buttons — the global outside-click handler below
+// a row of same-weight buttons - the global outside-click handler below
 // already closes any .ms-list, so this needs no extra wiring.
 function toggleInlineMenu(id, evt) {
   evt?.stopPropagation();
@@ -5501,7 +5530,7 @@ document.addEventListener("click", (event) => {
   document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
 });
 // Small "i" button + floating bubble, for swapping a paragraph of helper
-// text out of the page flow and behind a tap — keeps cards short by
+// text out of the page flow and behind a tap - keeps cards short by
 // default while still putting the full explanation one tap away.
 function infoPopoverHtml(id, text) {
   return `<span class="info-popover-wrap"><button type="button" class="info-btn" onclick="toggleInfoPopover('${id}',event)">i</button><div class="info-popover hidden" id="${id}">${text}</div></span>`;
@@ -5582,8 +5611,8 @@ function positionInfoPopover(el) {
 
 function byId(id) { return document.getElementById(id); }
 
-// Splash screen shown on load/reload: brief, branded, and — unlike the
-// earlier version — impossible to leave stuck on screen. Three independent
+// Splash screen shown on load/reload: brief, branded, and - unlike the
+// earlier version - impossible to leave stuck on screen. Three independent
 // triggers can hide it (first successful navigate(), init()'s finally
 // block, and a hard 4s timeout in init()); whichever fires first wins.
 // __levroSplashShownAt enforces a minimum visible time so a fast load
@@ -6045,7 +6074,7 @@ function showToast(message, type = "info") {
   }, 4200);
 }
 // Shown the instant we're back from Paystack, before verify-payment even
-// starts — otherwise there's a gap of a few seconds where the page just
+// starts - otherwise there's a gap of a few seconds where the page just
 // looks stuck instead of clearly "still working on it."
 function showVerifyingPaymentScreen() {
   const app = byId("app");
@@ -6187,7 +6216,7 @@ function setTheme(theme) {
     el.classList.toggle("active", el.dataset.themeChoice === theme);
   });
   // The real, currently-rendered settings page uses .settings-choice, not
-  // .theme-option (that selector above matches an older/unused panel) —
+  // .theme-option (that selector above matches an older/unused panel) -
   // without this, the checkmark only caught up the next time the settings
   // page happened to re-render, not immediately when tapped.
   document.querySelectorAll("#settings-page .settings-choice").forEach((el) => {
@@ -6204,12 +6233,12 @@ function initTheme() {
 
 // ---------- ACCENT COLOR ----------
 // A broad 35-color palette, grouped by hue so the picker stays easy to scan.
-// The default remains Levromart teal; every other option is a clearly
+// The default is Levromart green; every other option is a clearly
 // distinguishable shade rather than a near-duplicate.
 const ACCENT_PALETTE = [
   { name: "Teal", group: "Greens", base: "#0f766e", light: "#0f766e" },
-  { name: "Mint", group: "Greens", base: "#10b981", light: "#10b981" },
-  { name: "Emerald (Default)", group: "Greens", base: "#047857", light: "#047857" },
+  { name: "Mint (Default)", group: "Greens", base: "#10b981", light: "#10b981" },
+  { name: "Emerald", group: "Greens", base: "#047857", light: "#047857" },
   { name: "Forest", group: "Greens", base: "#166534", light: "#166534" },
   { name: "WhatsApp Green", group: "Greens", base: "#25D366", light: "#25D366" },
   { name: "Sky", group: "Blues", base: "#0284c7", light: "#0284c7" },
@@ -6243,7 +6272,7 @@ const ACCENT_PALETTE = [
   { name: "Indigo", group: "Purples", base: "#4338ca", light: "#4338ca" },
   { name: "Deep Purple", group: "Purples", base: "#4c1d95", light: "#4c1d95" },
 ];
-const DEFAULT_ACCENT_INDEX = 2;
+const DEFAULT_ACCENT_INDEX = 1;
 let currentAccentIndex = DEFAULT_ACCENT_INDEX;
 function lightenHex(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
@@ -6307,11 +6336,9 @@ function toggleAccentPalettePage() {
 }
 function initAccent() {
   const saved = localStorage.getItem("medris-accent");
-  // Index 5 was the previous accidental blue default. Migrate that value once
-  // so existing installations return to Levromart's original green instead of
-  // continuing to display blue after this update. Other user-selected colors
-  // remain untouched.
-  if (saved === "0" || saved === "5") {
+  // Migrate legacy/default accent values to the new Levromart green default.
+  // Other user-selected colors remain untouched.
+  if (saved === "0" || saved === "2" || saved === "5") {
     currentAccentIndex = DEFAULT_ACCENT_INDEX;
     try { localStorage.setItem("medris-accent", String(DEFAULT_ACCENT_INDEX)); } catch (e) {}
   } else {
@@ -6345,7 +6372,7 @@ function openDrawer(id) {
 }
 function toggleSettingsPanel() { navigate("settings"); }
 
-// Manual, always-available versions of the one-time auto-popups — so
+// Manual, always-available versions of the one-time auto-popups - so
 // someone who dismissed the popup (or whose browser fired it before they
 // were ready) still has a way to install the app / turn on notifications
 // later, instead of only ever getting one shot at it.
@@ -6429,17 +6456,19 @@ function bindProfileEdgeSwipe(){
   profileEdgeSwipeBound=true;
   const panel=byId("profilePanel");
   if(!panel)return;
-  // Android: follow the finger during the gesture so opening AND closing feel immediate.
+  // Use the same gesture model for real touch events and pointer events.
+  // Android browsers do not consistently expose touch swipes as PointerEvents,
+  // so the old pointer-only path made closing the profile drawer unreliable.
   let gesture=null;
   const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
   const canStart=(target)=>!target?.closest?.(ignoreSelector);
-  const setDrag=(on)=>{panel.style.transition=on?'none':'transform .26s cubic-bezier(.22,1,.36,1)';};
+  const setDrag=(on)=>{panel.style.transition=on?'none':'transform .24s cubic-bezier(.22,1,.36,1)';};
   const reset=()=>{panel.style.transform='';panel.style.transition='';};
   const begin=(x,y,target,id,type)=>{
     if(!session||!profile||!canStart(target))return;
     const open=panel.classList.contains('open');
     const w=window.innerWidth;
-    if(!open && (x<w*.18 || x>w*.82))return;
+    if(!open && x>w*.22)return;
     if(open && !panel.contains(target))return;
     gesture={id,sx:x,sy:y,open,horizontal:false,type};
   };
@@ -6449,16 +6478,16 @@ function bindProfileEdgeSwipe(){
     if(!gesture.horizontal){
       if(Math.hypot(dx,dy)<5)return;
       if(Math.abs(dy)>Math.abs(dx)*.82){gesture=null;return;}
-      gesture.horizontal=true;setDrag(true);
+      gesture.horizontal=true;
+      setDrag(true);
       if(!gesture.open){panel.classList.add('open');byId('drawerBackdrop')?.classList.add('open');}
     }
     if(e?.cancelable)e.preventDefault();
     const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
-    // Profile is a LEFT drawer: opening travels right from the edge; closing
-    // travels right-to-left from the open position. Keep the panel under the
-    // finger in both directions so Android doesn't feel like it ignores the
-    // back swipe.
-    const tx=gesture.open ? Math.max(0,Math.min(width,dx)) : Math.max(-width,Math.min(0,dx-width));
+    // LEFT drawer: opening follows a rightward edge swipe; closing follows a
+    // right-to-left swipe from the open drawer. The drawer stays under the
+    // finger throughout the gesture, which makes Android feel native.
+    const tx=gesture.open ? Math.max(-width,Math.min(0,dx)) : Math.max(0,Math.min(width,dx));
     panel.style.transform=`translate3d(${tx}px,0,0)`;
   };
   const end=(x,y)=>{
@@ -6466,38 +6495,55 @@ function bindProfileEdgeSwipe(){
     const g=gesture;gesture=null;
     const dx=x-g.sx,dy=y-g.sy;
     const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
-    if(!g.horizontal){reset();if(!g.open)panel.classList.remove('open');return;}
+    if(!g.horizontal){reset();return;}
     const valid=Math.abs(dx)>Math.abs(dy)*1.05;
-    const threshold=Math.max(40,width*.16);
+    const threshold=Math.max(42,width*.16);
     if(!g.open && valid && dx>threshold){
       setDrag(false);panel.style.transform='translate3d(0,0,0)';
-      setTimeout(reset,270);return;
+      setTimeout(reset,250);return;
     }
-    if(g.open && valid && dx>threshold){
-      setDrag(false);panel.style.transform=`translate3d(${width+8}px,0,0)`;
-      setTimeout(closeAllPanels,270);return;
+    if(g.open && valid && dx < -threshold){
+      setDrag(false);panel.style.transform=`translate3d(${-width-8}px,0,0)`;
+      setTimeout(closeAllPanels,250);return;
     }
-    setDrag(false);panel.style.transform=g.open?'translate3d(0,0,0)':'translate3d(-105%,0,0)';
-    setTimeout(()=>{if(!g.open)panel.classList.remove('open');reset();},280);
+    setDrag(false);
+    panel.style.transform=g.open?'translate3d(0,0,0)':'translate3d(-105%,0,0)';
+    setTimeout(()=>{if(!g.open){panel.classList.remove('open');byId('drawerBackdrop')?.classList.remove('open');}reset();},260);
   };
+  const cancel=()=>{if(!gesture)return;gesture=null;setDrag(false);panel.style.transform=panel.classList.contains('open')?'translate3d(0,0,0)':'translate3d(-105%,0,0)';setTimeout(reset,260);};
+
+  document.addEventListener('touchstart',e=>{
+    if(!e.touches?.[0])return;
+    const t=e.touches[0];
+    begin(t.clientX,t.clientY,e.target,'touch','touch');
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!gesture||gesture.type!=='touch'||!e.touches?.[0])return;
+    const t=e.touches[0];
+    move(t.clientX,t.clientY,e);
+  },{passive:false});
+  document.addEventListener('touchend',e=>{
+    if(!gesture||gesture.type!=='touch'||!e.changedTouches?.[0])return;
+    const t=e.changedTouches[0];
+    end(t.clientX,t.clientY);
+  },{passive:true});
+  document.addEventListener('touchcancel',cancel,{passive:true});
+
+  // Keep mouse/stylus support too, but let touch events own touch gestures.
   document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;begin(e.clientX,e.clientY,e.target,e.pointerId,'pointer');},{passive:true});
   document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)move(e.clientX,e.clientY,e);},{passive:false});
   document.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)end(e.clientX,e.clientY);},{passive:true});
-  document.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'){gesture=null;reset();}},{passive:true});
-  document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];begin(t.clientX,t.clientY,e.target,'touch','touch');},{passive:true});
-  document.addEventListener('touchmove',e=>{if(gesture?.type!=='touch'||e.touches.length!==1)return;const t=e.touches[0];move(t.clientX,t.clientY,e);},{passive:false});
-  document.addEventListener('touchend',e=>{if(gesture?.type!=='touch')return;const t=e.changedTouches[0];if(t)end(t.clientX,t.clientY);else{gesture=null;reset();}},{passive:true});
-  document.addEventListener('touchcancel',()=>{if(gesture?.type==='touch'){gesture=null;reset();}},{passive:true});
 }
+
 bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
 // Swipe left/right ANYWHERE on the page (not just the bottom bar) moves to
-// the next/previous bottom-nav tab — e.g. swipe from Home and land on
+// the next/previous bottom-nav tab - e.g. swipe from Home and land on
 // Messages, without touching the bar itself. This replaces an earlier
 // swipe-anywhere gesture that opened the notification/profile panels
 // instead; that was confusing (an invisible trigger for a side effect that
-// looked unrelated to the swipe) and is gone now — panels open via their
+// looked unrelated to the swipe) and is gone now - panels open via their
 // icon buttons only, swiping always means "change page." The outermost
 // sliver of each edge is left alone so it doesn't fight the phone's own OS
 // back-gesture, and touches starting inside scrollable rails, form
@@ -7200,8 +7246,6 @@ function updateAuthUI() {
     const links = [];
     if (vendor && profile.role !== "admin") {
       links.push({ label: "My Shop", action: "navigate('vendorDashboard')" });
-      links.push({ label: "Buyer requests", action: "navigate('vendorRequests')" });
-      links.push({ label: "Edit business profile", action: "navigate('vendorEditProfile')" });
     } else if (profile.role !== "admin") {
       links.push({ label: "My Orders", action: "navigate('buyerOrders')" });
       links.push({ label: "Request an item", action: "navigate('requestEquipment')" });
@@ -7302,7 +7346,7 @@ function hydrateSettingsPage(){
   if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent})">${profile.ai_data_consent?'On':'Off'}</button>`;
   const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
   if(install&&oldInstall) install.innerHTML=oldInstall.innerHTML;if(notif&&oldNotif) notif.innerHTML=oldNotif.innerHTML;
-  const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'} settings-row-icon"></i><span class="settings-row-copy"><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} — nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
+  const loc=byId("locationSettingPageRow");if(loc)loc.innerHTML=`<i class="fa-solid ${locationSharingEnabled?'fa-location-dot':'fa-location-crosshairs'} settings-row-icon"></i><span class="settings-row-copy"><strong>Location sharing</strong><small>${locationSharingEnabled?'On':'Off'} - nearby vendors and distance sorting</small></span><button class="settings-inline-btn ${locationSharingEnabled?'active':''}" onclick="toggleLocationSetting();setTimeout(hydrateSettingsPage,0)">${locationSharingEnabled?'On':'Off'}</button>`;
   const src=byId("voiceSelect"),page=byId("voiceSelectPage");if(src&&page){page.innerHTML=src.innerHTML;page.value=src.value||localStorage.getItem("medris-ai-voice")||"";page.onchange=function(){setAiVoice(this.value);};}
 }
 
@@ -7385,8 +7429,8 @@ function renderBottomNav() {
   }
   const itemHtml = (it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}" onclick="${it.action}"><span class="bn-icon">${it.icon}${it.badge ? `<span class="bn-badge">${it.badge > 9 ? "9+" : it.badge}</span>` : ""}</span><span>${it.label}</span></button>`;
   if (vendor) {
-    // Split evenly into two groups either side of the "+" — a dedicated
-    // center grid column, not a flex item — so it's always dead-center
+    // Split evenly into two groups either side of the "+" - a dedicated
+    // center grid column, not a flex item - so it's always dead-center
     // regardless of whether the counts on each side match.
     const mid = Math.ceil(items.length / 2);
     nav.classList.add("has-add");
@@ -7446,7 +7490,7 @@ function applyAuthMode() {
 
 // Only one active login per account: right after a successful sign-in,
 // revoke every other device/browser's session for this user (their end
-// only actually logs out once it next tries to refresh its token — see
+// only actually logs out once it next tries to refresh its token - see
 // the onAuthStateChange listener below for the "signed out elsewhere"
 // message that fires when that happens).
 let manualLogout = false;
@@ -7585,7 +7629,7 @@ async function finishLoginSuccess(view) {
 
 // Admin-only email OTP, required after the password on every fresh login
 // (not on ordinary page reloads). See api/send-login-otp.js /
-// verify-login-otp.js — this account has real power (approve/delete
+// verify-login-otp.js - this account has real power (approve/delete
 // vendors, finance access), so it gets the extra step; buyer/vendor
 // accounts don't have anything worth adding that friction for.
 let pendingOtpAccessToken = null;
@@ -7863,7 +7907,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   updateHeaderNavActive();
   if (pushHistory) history.pushState({ view, params }, "", location.pathname + location.search);
   // Mobile browsers (and installed PWAs especially) routinely discard a
-  // backgrounded tab's JS state and reload it fresh when you switch back —
+  // backgrounded tab's JS state and reload it fresh when you switch back -
   // that's not a bug we can prevent, but without this, every one of those
   // silent reloads dumped you back to Home. sessionStorage survives a
   // reload within the same tab/session, so init() below can resume here
@@ -7954,7 +7998,7 @@ function setupAutoScroll(container, { interval = 3200, pauseAfterInteraction = 8
     if (maxScroll <= 4) return;
     const step = Math.max(container.clientWidth * 0.85, 200);
     let next = container.scrollLeft + step;
-    if (next >= maxScroll - 2) next = 0; // reached the end — slide back to the start
+    if (next >= maxScroll - 2) next = 0; // reached the end - slide back to the start
     container.scrollTo({ left: next, behavior: "smooth" });
   }, interval);
   autoScrollTimers.push(timer);
@@ -7975,7 +8019,7 @@ async function renderHome() {
   const activeSector = sectors.find((s) => s.id === currentSectorId) || null;
 
   // Filtered by the product's own category's sector, not the vendor's
-  // registered sector — a vendor can list across any sector now, so
+  // registered sector - a vendor can list across any sector now, so
   // "browsing Fashion" should surface a Fashion product even from a
   // vendor whose primary sector is Healthcare.
   let vendorQuery = sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, view_count, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)")
@@ -8078,7 +8122,7 @@ function syncHeroSearch() {
   const val = byId("heroSearch").value;
   const target = byId("searchInput");
   if (target) { target.value = val; filterHomeProducts(); }
-  // No auto-scroll here — the suggestions dropdown already shows matches
+  // No auto-scroll here - the suggestions dropdown already shows matches
   // right under the search bar as you type; jumping the whole page down on
   // every keystroke was disorienting. Only Enter (submitHeroSearch) jumps
   // to the full results, as a deliberate action.
@@ -8127,7 +8171,7 @@ function hideSearchSuggestions() { byId("heroSearchSuggest")?.classList.add("hid
 
 const PRODUCT_LIST_SELECT = "id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, vendor:vendors!inner(id, business_name, verification_status, logo_url), category:categories(sector_id)";
 
-// Used whenever a search/filter comes up empty — instead of a dead end,
+// Used whenever a search/filter comes up empty - instead of a dead end,
 // show what IS available so the buyer isn't stuck looking at nothing.
 async function fetchFallbackProducts(excludeIds) {
   let q = sb
@@ -8160,13 +8204,13 @@ async function filterHomeProducts() {
     // search_product_ids does word-by-word + typo-tolerant matching (not
     // just "the whole query as one substring"), so "blue traditional
     // dress" can find a product named "Aso-Ebi Blue" filed under
-    // Traditional Wear — and it returns best-match-first, which the plain
+    // Traditional Wear - and it returns best-match-first, which the plain
     // .order("created_at") below would otherwise throw away.
     const { data: idRows } = await sb.rpc("search_product_ids", { p_query: search });
     matchingIds = (idRows || []).map((r) => r.id);
     if (matchingIds.length === 0) {
       const fallback = await fetchFallbackProducts();
-      grid.innerHTML = noResultsWithFallbackHtml(`No product named "${search}" yet — but here's what's available:`, fallback);
+      grid.innerHTML = noResultsWithFallbackHtml(`No product named "${search}" yet - but here's what's available:`, fallback);
       return;
     }
   }
@@ -8182,7 +8226,7 @@ async function filterHomeProducts() {
   if (listing === "rent") query = query.in("listing_type", ["rent", "both"]);
   if (listing === "sale") query = query.in("listing_type", ["sale", "both"]);
   if (catId) query = query.eq("category_id", catId);
-  // Filtered by the product's own category's sector — a vendor can list
+  // Filtered by the product's own category's sector - a vendor can list
   // across any sector, so this must not depend on vendor.sector_id.
   if (currentSectorId) query = query.eq("category.sector_id", currentSectorId);
 
@@ -8190,8 +8234,8 @@ async function filterHomeProducts() {
   if (error || !products || products.length === 0) {
     const fallback = await fetchFallbackProducts();
     const message = search
-      ? `No exact match for "${search}" with these filters — but here's what's available:`
-      : "No products match these filters — but here's what's available:";
+      ? `No exact match for "${search}" with these filters - but here's what's available:`
+      : "No products match these filters - but here's what's available:";
     grid.innerHTML = noResultsWithFallbackHtml(message, fallback);
     return;
   }
@@ -8229,7 +8273,7 @@ function productCardHtml(p) {
 
 // Color-codes the rating itself (not just a flat badge) so a strong vendor
 // literally reads as "green" and a weak one as "red" at a glance, scanning
-// down a list of cards — matches the 1-5 star scale users already know.
+// down a list of cards - matches the 1-5 star scale users already know.
 function ratingBadgeClass(rating) {
   const r = Number(rating);
   if (r >= 4.5) return "success";
@@ -8437,7 +8481,7 @@ async function checkoutCartVendor(vendorId) {
 }
 
 // ---------- IN-APP MESSAGING ----------
-// One continuous text thread per (buyer, vendor) pair — replaces direct
+// One continuous text thread per (buyer, vendor) pair - replaces direct
 // WhatsApp contact so conversations stay evidence-grade for disputes
 // (messages can't be edited or deleted, enforced server-side, not just in
 // this UI). Buyers open a thread from a product/storefront page; vendors
@@ -8534,7 +8578,7 @@ async function submitSuggestion() {
 
 // Admin-only: jump to the (read-only) chat thread between the two parties
 // on a disputed order, as evidence. Doesn't create a conversation if none
-// exists yet — an admin viewing a dispute shouldn't be the one starting a
+// exists yet - an admin viewing a dispute shouldn't be the one starting a
 // buyer-vendor thread.
 async function openDisputeChat(buyerId, vendorId) {
   const { data: conversationId, error } = await sb.rpc("admin_find_conversation", { p_buyer_id: buyerId, p_vendor_id: vendorId });
@@ -8734,7 +8778,7 @@ function filterMsgList() {
     const listId = msgListFilter.slice(5);
     const list = myChatLists.find((l) => l.id === listId);
     shown = list ? convs.filter((c) => list.conversation_ids.includes(c.conversation_id) && !archivedIds.has(c.conversation_id)) : [];
-    emptyReason = `No chats in "${list?.name || "this list"}" yet — tap the list icon on a chat to add it.`;
+    emptyReason = `No chats in "${list?.name || "this list"}" yet - tap the list icon on a chat to add it.`;
   }
   if (msgListFilter === "all") shown = shown.filter((c) => !archivedIds.has(c.conversation_id));
   if (q) shown = shown.filter((c) => (c.other_name || "").toLowerCase().includes(q) || (c.last_message || "").toLowerCase().includes(q));
@@ -8893,7 +8937,7 @@ async function renderMessages(conversationId) {
     return html;
   }
 
-  // Admin viewing as a third party (e.g. from a dispute) — read-only, both
+  // Admin viewing as a third party (e.g. from a dispute) - read-only, both
   // participants labeled by name rather than left/right "me" bubbles,
   // since neither side is "you" here.
   if (profile?.role === "admin") {
@@ -8963,8 +9007,8 @@ async function renderMessages(conversationId) {
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
       ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
-        <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
         ${!isVendorSide && conv.vendor?.whatsapp_visible && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
+        <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
         <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div class="chat-menu-dropdown hidden" id="chatMenuDropdown">${chatMenuItems.join("")}</div>
       </div>
@@ -8972,6 +9016,12 @@ async function renderMessages(conversationId) {
     <div class="chat-thread">
       <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}<div id="chatTypingIndicator" class="chat-typing-indicator hidden" aria-live="polite"><span class="chat-typing-dots"><i></i><i></i><i></i></span><span>Typing…</span></div></div>
       <div id="chatReplyPreview" class="chat-reply-preview hidden"></div>
+      <div id="msgVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
+        <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span id="msgVoiceStatusText">Listening...</span>
+        <button type="button" onclick="toggleMsgMicPause()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
+        <button type="button" onclick="cancelMsgVoiceRecording()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
+      </div>
       <div class="chat-input-row">
         <input type="file" id="chatFileInput" class="chat-file-input" accept="image/*,.heic,.heif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="handleChatFileSelected(event,'${conversationId}')" />
         <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
@@ -9018,7 +9068,7 @@ document.addEventListener("click", (e) => {
 
 // Sent (single check) -> delivered, i.e. synced to the other person's
 // device (double check, gray) -> read, i.e. they actually opened this
-// conversation (double check, blue) — only shown on your own messages,
+// conversation (double check, blue) - only shown on your own messages,
 // same as WhatsApp.
 function messageTicksHtml(m) {
   if (m.read_at) return `<i class="fa-solid fa-check-double chat-tick read"></i>`;
@@ -9613,7 +9663,7 @@ function subscribeToConversation(conversationId) {
 }
 
 // On a touch device there's no easy Shift+Enter, so Enter has to just be a
-// normal newline — the Send button is the only way to send. Desktop keeps
+// normal newline - the Send button is the only way to send. Desktop keeps
 // Enter-to-send (Shift+Enter for a newline) since a keyboard makes that
 // combo trivial and it's the expected chat-app convention there.
 function isCoarsePointer() {
@@ -10063,7 +10113,7 @@ function renderVendorsDirectory() {
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   html += `<div id="vendorsMapWrap" class="hidden">
-    <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;margin:0 0 0.75rem;line-height:1.45;"></p>
+    <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;margin:0 0 1rem;line-height:1.45;"></p>
     <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);position:relative;isolation:isolate;z-index:0;"></div>
   </div>`;
   setTimeout(async () => {
@@ -10090,7 +10140,7 @@ async function loadVendorsDirectory() {
     (productTextByVendor[p.vendor_id] ||= []).push(p.name, p.description, name);
   });
 
-  // Lets the vendor search box double as a product search — typing "paracetamol"
+  // Lets the vendor search box double as a product search - typing "paracetamol"
   // or "iron" surfaces any vendor who lists a matching product, not just a
   // vendor whose own business name happens to match.
   window.__allVendors = (vendors || []).map((v) => ({
@@ -10312,7 +10362,6 @@ async function renderStorefront(vendorId) {
         <div class="storefront-profile-actions">
           ${profile?.role !== "admin" ? (v.whatsapp_visible && v.whatsapp_number ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm" type="button" onclick="toggleInlineMenu('storefrontMessageMenu',event)"><i class='fa-regular fa-comment'></i> Message</button><div class="ms-list hidden" id="storefrontMessageMenu" style="left:0;right:auto;width:max-content;min-width:180px;"><button class="ms-item" onclick="startConversationWithVendor('${v.id}');closeInlineMenu('storefrontMessageMenu')"><i class="fa-solid fa-comments"></i> Message in app</button><a class="ms-item" href="${waLink(v.whatsapp_number)}" target="_blank" rel="noopener" onclick="closeInlineMenu('storefrontMessageMenu')"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a></div></div>` : `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-regular fa-comment'></i> Message</button>`) : ""}
           ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}" onclick="callVendorGated(event,'${esc(v.phone)}','${v.id}')"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
-          ${v.whatsapp_visible && v.whatsapp_number ? `<a class="btn btn-sm btn-outline btn-whatsapp" href="${waLink(v.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
           ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm btn-outline" type="button" aria-label="More vendor details" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button><div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:180px;">${storefrontMoreItems}</div></div>` : ""}
         </div>
       </div>
@@ -10431,9 +10480,9 @@ function storefrontTableHtml(list) {
     </tr></thead>
     <tbody>${list.map((p) => `<tr style="cursor:pointer;" onclick="navigate('productDetail',{productId:'${p.id}'})">
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.name)}</td>
-      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.category?.name || "—")}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${esc(p.category?.name || "-")}</td>
       <td style="padding:0.5rem;border-bottom:1px solid var(--border);white-space:nowrap;">${p.is_service ? `${naira(p.sale_price)}${servicePriceSuffix(p)}` : [p.sale_price != null ? `Buy: ${naira(p.sale_price)}` : "", p.rental_rate != null ? `Rent: ${naira(p.rental_rate)}/${p.rental_rate_unit}` : ""].filter(Boolean).join(" · ")}</td>
-      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.is_service ? "—" : p.quantity_available}</td>
+      <td style="padding:0.5rem;border-bottom:1px solid var(--border);">${p.is_service ? "-" : p.quantity_available}</td>
     </tr>`).join("")}</tbody>
   </table>`;
 }
@@ -10569,7 +10618,7 @@ async function submitEquipmentRequest() {
   const title = byId("reqTitle").value.trim();
   if (!title) { errorEl.textContent = "Please describe what you need."; errorEl.classList.remove("hidden"); return; }
   const categoryId = byId("reqCategory").value;
-  if (!categoryId) { errorEl.textContent = "Pick a category so this reaches the right vendors — not everyone on Levromart."; errorEl.classList.remove("hidden"); return; }
+  if (!categoryId) { errorEl.textContent = "Pick a category so this reaches the right vendors - not everyone on Levromart."; errorEl.classList.remove("hidden"); return; }
   const requestType = document.querySelector('input[name="reqType"]:checked')?.value || "rent";
   const { error } = await sb.from("equipment_requests").insert({
     buyer_id: session.user.id,
@@ -10783,7 +10832,7 @@ async function renderVendorDashboard() {
     <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
   </div>`;
-  html += `<div class="accordion-section" style="max-width:700px;margin-bottom:1.4rem;">
+  html += `<div class="accordion-section vendor-glance" style="width:100%;max-width:700px;margin:0 auto 1.4rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> At a glance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
     <div class="accordion-body">
       <table class="order-stats-table">
@@ -10819,7 +10868,7 @@ function vendorEarningsNet(totalAmount, commissionPct) {
   return Math.round(Number(totalAmount || 0) * (1 - commissionPct / 100));
 }
 // Paystack settles a subaccount split the next business day after the
-// buyer's payment (T+1) — not whenever our own order status happened to
+// buyer's payment (T+1) - not whenever our own order status happened to
 // change to "handed over". Weekends push it to the following Monday.
 // This is our best estimate of when it actually lands, since Paystack
 // doesn't send us a separate settlement webhook to confirm the exact date.
@@ -10908,8 +10957,8 @@ function renderVendorEarningsBody() {
       const items = (o.items || []).map((it) => `${esc(it.product?.name || "Item")} ×${it.quantity}`).join(", ") || (o.order_type === "rental" ? "Rental" : "Sale");
       html += `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
         <td>${items}</td>
-        <td>${esc(o.buyer?.name || "—")}</td>
-        <td style="text-align:center;">${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">—</span>'}</td>
+        <td>${esc(o.buyer?.name || "-")}</td>
+        <td style="text-align:center;">${o.buyerPaidAt ? esc(formatEarningsDateTime(o.buyerPaidAt)) : '<span class="muted">-</span>'}</td>
         <td style="text-align:center;">${esc(o.payoutDate.toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }))}</td>
         <td style="text-align:center;">${naira(vendorEarningsNet(o.total_amount, commissionPct))}</td>
       </tr>`;
@@ -11072,14 +11121,14 @@ async function renderVendorEditProfile() {
       <span class="switch-label-text">Show WhatsApp number to buyers</span>
       <label class="switch-toggle"><input type="checkbox" id="veWhatsappVisible" ${v.whatsapp_visible === true ? "checked" : ""} ${v.whatsapp_number ? "" : "disabled"} onchange="toggleVendorWhatsappVisibility()" /><span class="switch-toggle-track"></span></label>
     </div>
-    <label id="veDeliveryFeeLabel" class="ve-delivery-fee-label"><span>Delivery fee</span>${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere. Distance-based charges purely by the per-km rate below (buyer's shared location to your shop pin) — this flat amount is then only used as a fallback if you haven't pinned your shop's location yet. Leave amounts at 0 for free delivery.")}</label>
+    <label id="veDeliveryFeeLabel" class="ve-delivery-fee-label"><span>Delivery fee</span>${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere. Distance-based charges purely by the per-km rate below (buyer's shared location to your shop pin) - this flat amount is then only used as a fallback if you haven't pinned your shop's location yet. Leave amounts at 0 for free delivery.")}</label>
     <select id="veDeliveryFeeMode" onchange="toggleVendorDeliveryFeeMode()">
       <option value="flat" ${v.delivery_fee_mode !== "distance" ? "selected" : ""}>Flat fee</option>
       <option value="distance" ${v.delivery_fee_mode === "distance" ? "selected" : ""}>Distance-based</option>
     </select>
     <input id="veDeliveryFee" type="number" min="0" step="50" placeholder="e.g. 1500" value="${v.delivery_fee || 0}" />
     <div id="veDeliveryPerKmRow" class="${v.delivery_fee_mode === "distance" ? "" : "hidden"}">
-      <label>₦ per km <span class="muted" style="font-weight:400;">(the only charge — no flat amount added on top)</span></label>
+      <label>₦ per km <span class="muted" style="font-weight:400;">(the only charge - no flat amount added on top)</span></label>
       <input id="veDeliveryPerKm" type="number" min="0" step="10" placeholder="e.g. 100" value="${v.delivery_fee_per_km || 0}" oninput="updateVeDeliveryPerKmExample()" />
       <p class="muted" id="veDeliveryPerKmExample" style="font-size:0.8rem;margin-top:0.3rem;"></p>
     </div>
@@ -11147,7 +11196,7 @@ async function renderVendorEditProfile() {
       <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="monthly" ${v.billing_model === "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Monthly per listing</label>
     </div>
     ${v.billing_model === "monthly" ? `
-      ${v.monthly_billing_status === "active" ? `<div class="banner banner-success"><strong><i class="fa-solid fa-circle-check"></i> Monthly billing active.</strong> ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(bp.amount)}/month · next charge ${v.next_monthly_charge_at ? new Date(v.next_monthly_charge_at).toLocaleDateString() : "—"}</div>`
+      ${v.monthly_billing_status === "active" ? `<div class="banner banner-success"><strong><i class="fa-solid fa-circle-check"></i> Monthly billing active.</strong> ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(bp.amount)}/month · next charge ${v.next_monthly_charge_at ? new Date(v.next_monthly_charge_at).toLocaleDateString() : "-"}</div>`
       : v.monthly_billing_status === "past_due" ? `<div class="banner banner-danger"><strong><i class="fa-solid fa-triangle-exclamation"></i> Payment failed, storefront paused.</strong> Set up billing again to reactivate.</div>`
       : `<div class="banner banner-warning"><strong><i class="fa-solid fa-circle-info"></i> Card not set up yet.</strong> Currently: ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(Math.max(bp.amount, 1000))} due today to activate.</div>`}
       <button class="btn btn-sm" id="setupBillingBtn" onclick="setupMonthlyBilling()">${v.monthly_billing_status === "active" ? "Update card" : "Set up monthly billing"}</button>
@@ -11156,7 +11205,7 @@ async function renderVendorEditProfile() {
 }
 
 // Small hardcoded fallback for if the live Paystack bank list can't be
-// reached — loadBankOptions() below replaces this with Paystack's full,
+// reached - loadBankOptions() below replaces this with Paystack's full,
 // current list (every bank, microfinance bank and fintech they support)
 // on every render of this page, so vendors aren't limited to this subset.
 const NIGERIAN_BANKS = [
@@ -11181,7 +11230,7 @@ async function loadBankOptions() {
     select.innerHTML = json.banks.map((b) => `<option value="${esc(b.code)}" ${b.code === currentBank ? "selected" : ""}>${esc(b.name)}</option>`).join("");
     if (select.dataset.msEnhanced) select.dispatchEvent(new Event("change", { bubbles: true }));
   } catch (e) {
-    // Fine — the hardcoded NIGERIAN_BANKS list already rendered as a fallback.
+    // Fine - the hardcoded NIGERIAN_BANKS list already rendered as a fallback.
   }
 }
 
@@ -11205,8 +11254,10 @@ async function saveVendorBankDetails() {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not save payout details.");
+    const keepScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     showToast(`Payouts set up for ${json.account_name}.`, "success");
-    navigate("vendorEditProfile", {}, false);
+    await navigate("vendorEditProfile", {}, false);
+    requestAnimationFrame(() => window.scrollTo({ top: keepScrollY, left: 0, behavior: "auto" }));
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.classList.remove("hidden");
@@ -11290,8 +11341,10 @@ async function submitVendorEditProfile() {
   vendor.whatsapp_visible = !!byId("veWhatsappVisible")?.checked && !!vendor.whatsapp_number;
   vendor.business_hours = business_hours;
   vendor.allow_after_hours_messages = byId("veAllowAfterHours").checked;
+  const keepScrollY = window.scrollY || document.documentElement.scrollTop || 0;
   showToast("Business profile saved.", "success");
-  navigate("vendorEditProfile", {}, false);
+  await navigate("vendorEditProfile", {}, false);
+  requestAnimationFrame(() => window.scrollTo({ top: keepScrollY, left: 0, behavior: "auto" }));
 }
 
 async function uploadVendorLogo(event) {
@@ -11475,11 +11528,11 @@ async function renderVendorProducts() {
         <td>${esc(p.name)}</td>
         <td>${esc(p.category?.name || "Uncategorized")}</td>
         <td>${p.sale_price != null ? naira(p.sale_price) + servicePriceSuffix(p) : ""}${p.sale_price != null && p.rental_rate != null ? " / " : ""}${p.rental_rate != null ? naira(p.rental_rate) + "/" + p.rental_rate_unit : ""}</td>
-        <td>${p.is_service ? "—" : `${p.quantity_available} / ${p.quantity_total}`}</td>
+        <td>${p.is_service ? "-" : `${p.quantity_available} / ${p.quantity_total}`}</td>
         <td>${p.view_count || 0}</td>
         <td>${favCountByProduct[p.id] ?? 0}</td>
         <td>${naira(revenueByProduct[p.id] || 0)}</td>
-        <td>${topRegion ? `<a href="#" onclick="event.stopPropagation();showProductRegions('${p.id}','${esc(p.name).replace(/'/g, "\\'")}');return false;">${esc(topRegion.city)} (${topRegion.order_count})</a>` : `<span class="muted">—</span>`}</td>
+        <td>${topRegion ? `<a href="#" onclick="event.stopPropagation();showProductRegions('${p.id}','${esc(p.name).replace(/'/g, "\\'")}');return false;">${esc(topRegion.city)} (${topRegion.order_count})</a>` : `<span class="muted">-</span>`}</td>
         <td><span class="badge ${p.status === "active" ? "success" : p.status === "paused" ? "warning" : "danger"}">${esc(p.status)}</span></td>
       </tr>`;
     });
@@ -11558,7 +11611,7 @@ async function openEditProductModal(productId) {
 
 // A vendor can list products under any sector, not just the one they
 // registered under (e.g. a mostly-healthcare vendor who also sells
-// clothing) — so the modal offers every sector's category tree, not just
+// clothing) - so the modal offers every sector's category tree, not just
 // vendor.sector_id's. The product's own category_id is all that's stored;
 // its "sector" is just whatever sector that category belongs to.
 let productModalCategories = [];
@@ -11614,7 +11667,7 @@ async function showProductModal() {
     sectorSelect.value = vendor.sector_id || productModalSectors[0]?.id || "";
   }
   // Fires the custom dropdown's own resync (see enhanceSelect) as well as
-  // the plain onchange="loadProdCategoriesForSector()" on the real select —
+  // the plain onchange="loadProdCategoriesForSector()" on the real select -
   // the explicit call right after is what actually applies presetCategoryId.
   sectorSelect.dispatchEvent(new Event("change", { bubbles: true }));
   loadProdCategoriesForSector(presetCategoryId);
@@ -11655,7 +11708,7 @@ function removeExistingPhoto(url) {
   renderExistingPhotos();
 }
 
-// Live thumbnails for photos just picked but not yet uploaded — so "Add
+// Live thumbnails for photos just picked but not yet uploaded - so "Add
 // photos" actually shows what you chose instead of staying blank until
 // after Save.
 function syncNewProductPhotoInput() {
@@ -12011,7 +12064,7 @@ const ORDER_TYPE_TABS = [
 ];
 
 // A service booking is stored as order_type "sale" (it goes through the
-// same checkout as a sale) — the only way to tell it apart is whether the
+// same checkout as a sale) - the only way to tell it apart is whether the
 // product behind it is flagged is_service, so that's what this checks.
 function orderCategory(order) {
   if (order.order_type === "rental") return "rental";
@@ -12103,7 +12156,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo) {
   window.__orderStatsOrders = safeStatsOrders;
 
   // Three rows of tab pills used to wrap into an unreadable jumble on
-  // narrow screens — compact dropdowns plus a date range say the same
+  // narrow screens - compact dropdowns plus a date range say the same
   // thing in a fraction of the space.
   let html = `<h2>Orders</h2>`;
   html += orderStatsHtml(safeStatsOrders);
@@ -12205,13 +12258,13 @@ function orderStatusBadgeClass(status) {
   if (status === "completed") return "success";
   if (status === "handed_over" || status === "returned") return "warning";
   if (status === "confirmed") return "info";
-  return ""; // pending — plain accent color
+  return ""; // pending - plain accent color
 }
 
 // Pending and confirmed orders need action right now, so they float to the
 // top regardless of when they came in. Handed-over/returned (still in
 // progress) sit next, then finished (completed) orders. Disputed sinks to
-// the bottom with cancelled — a dispute needs an admin's attention, not
+// the bottom with cancelled - a dispute needs an admin's attention, not
 // day-to-day action from the vendor, so it doesn't need to compete for
 // top-of-list space. Everything stays newest-first within its own group.
 function orderActivityIso(order) {
@@ -12235,7 +12288,7 @@ function sortOrdersForList(orders) {
   return [...(orders || [])].sort((a, b) => new Date(orderActivityIso(b) || 0) - new Date(orderActivityIso(a) || 0));
 }
 
-// Generic search-any-table helper — hides <tr> rows (and, if a table ends
+// Generic search-any-table helper - hides <tr> rows (and, if a table ends
 // up with none left visible, its own preceding date-group header) whose
 // text doesn't match. Reused across every data table on the site instead
 // of writing bespoke filter logic per table.
@@ -12378,7 +12431,7 @@ async function renderOrderDetail(orderId) {
   const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
   const feePaid = order.payments.some((p) => p.payment_type === feeType && p.status === "paid");
   const depositPaid = order.deposit_amount === 0 || order.payments.some((p) => p.payment_type === "deposit" && p.status === "paid");
-  // Payment only opens up once the vendor has confirmed — paying at
+  // Payment only opens up once the vendor has confirmed - paying at
   // "pending" meant a decline afterward left the buyer waiting on a
   // refund for something that should never have been charged at all.
   const canRecordPayment = isVendor && !(feePaid && depositPaid) && order.status === "confirmed";
@@ -12536,7 +12589,7 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   const buttons = [];
   if (isVendor) {
     if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
-    // Can't hand over what hasn't been paid for yet — avoids a mismatch
+    // Can't hand over what hasn't been paid for yet - avoids a mismatch
     // where the order's marked handed_over/completed but no payment ever
     // actually came in.
     if (order.status === "confirmed") {
@@ -12557,10 +12610,10 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
     }
   }
   if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
-  // Only the buyer confirms completion — that's what releases an escrowed
+  // Only the buyer confirms completion - that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
   // Also gated on feePaid for the same reason as the vendor's handover
-  // button — shouldn't be possible to complete an order that was never
+  // button - shouldn't be possible to complete an order that was never
   // actually paid for.
   if (isBuyer && order.status === "handed_over" && order.order_type === "sale") {
     if (feePaid) {
@@ -12577,7 +12630,7 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   return buttons.join("");
 }
 
-// The buyer's "I have not received this" escape hatch — deliberately held
+// The buyer's "I have not received this" escape hatch - deliberately held
 // back for a few hours after handover (real deliveries take time) and
 // gated behind re-entering the account password (raising a dispute has
 // real consequences for the vendor, so it shouldn't be one accidental tap).
@@ -12677,7 +12730,7 @@ async function submitNotReceived() {
   btn.disabled = true;
   try {
     // Re-authenticating (same pattern as the voluntary change-password
-    // flow) is the proof-of-identity for a report this consequential —
+    // flow) is the proof-of-identity for a report this consequential -
     // it can trigger a refund out of the platform's own balance.
     const { error: reauthError } = await sb.auth.signInWithPassword({ email: session.user.email, password });
     if (reauthError) { errorEl.textContent = "Password is incorrect."; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
@@ -12691,7 +12744,7 @@ async function submitNotReceived() {
   }
 }
 
-// The buyer's "I've received this" / "Confirm & complete" action — unlike
+// The buyer's "I've received this" / "Confirm & complete" action - unlike
 // every other status change, this one also has to actually move money, so
 // it goes through a serverless endpoint instead of a plain RPC call.
 async function confirmReceiveOrder(orderId) {
@@ -12739,9 +12792,12 @@ async function payCommission() {
 }
 
 async function submitVendorBillingModel(billingModel) {
+  const keepScrollY = window.scrollY || document.documentElement.scrollTop || 0;
   const { error } = await sb.rpc("set_vendor_billing_model", { p_billing_model: billingModel });
   if (error) { showToast(error.message, "error"); return; }
-  navigate("vendorEditProfile", {}, false);
+  if (vendor) vendor.billing_model = billingModel;
+  await navigate("vendorEditProfile", {}, false);
+  requestAnimationFrame(() => window.scrollTo({ top: keepScrollY, left: 0, behavior: "auto" }));
 }
 
 async function setupMonthlyBilling() {
@@ -12944,7 +13000,7 @@ async function renderAdminPanel(status) {
       </div>
       <p class="muted" style="margin:0.3rem 0;">Applicant: ${esc(v.applicant?.name || "")} (${esc(v.applicant?.email || "")})</p>
       <p class="muted" style="margin:0.3rem 0;">${[v.address, v.city].filter(Boolean).map(esc).join(", ") || "No address given (online-only)"}</p>
-      <p class="muted" style="margin:0.3rem 0;"><i class='fa-solid fa-phone'></i> ${esc(v.phone || "—")}${v.whatsapp_number ? " · WhatsApp " + esc(v.whatsapp_number) : ""}${v.cac_number ? " · CAC " + esc(v.cac_number) : ""}</p>
+      <p class="muted" style="margin:0.3rem 0;"><i class='fa-solid fa-phone'></i> ${esc(v.phone || "-")}${v.whatsapp_number ? " · WhatsApp " + esc(v.whatsapp_number) : ""}${v.cac_number ? " · CAC " + esc(v.cac_number) : ""}</p>
       ${v.bio ? `<p style="margin:0.3rem 0;">${esc(v.bio)}</p>` : ""}
       <p class="muted" style="margin:0.3rem 0;">${doc ? `<a href="#" onclick="viewVendorDoc('${doc}');return false;"><i class='fa-solid fa-file-lines'></i> View submitted document</a>` : "No document uploaded"} · applied ${new Date(v.created_at).toLocaleDateString()}</p>
       <div class="flex" style="margin-top:0.5rem;">
@@ -12965,13 +13021,13 @@ async function viewVendorDoc(path) {
 
 // Deleting a vendor is restricted to this one super-admin account, even
 // though other admins can be promoted later. The client-side check here is
-// just so the button doesn't render for anyone else — the real enforcement
+// just so the button doesn't render for anyone else - the real enforcement
 // is server-side, in admin_delete_vendor(), which checks the caller's email
 // itself and can't be bypassed from the browser.
 const SUPER_ADMIN_EMAIL = "kenniskalu18@gmail.com";
 
 // Client-side password prompt for the two "hurts a vendor" admin actions
-// (reject, pause). This is a fat-finger guard, not real security — anyone
+// (reject, pause). This is a fat-finger guard, not real security - anyone
 // with admin access already passed real auth to get this far, and this
 // password is visible to anyone who reads the page source.
 const ADMIN_ACTION_PASSWORD = "medris2026";
@@ -13019,7 +13075,7 @@ function promptAdminPassword(actionLabel) {
 }
 
 // Immutable trail of the actions that actually affect a vendor's ability
-// to trade — who did what, and when. Insert-only; nothing can edit or
+// to trade - who did what, and when. Insert-only; nothing can edit or
 // delete rows here (see the RLS policy), so it stays trustworthy.
 async function logAdminAction(action, targetType, targetId, targetLabel) {
   await sb.from("admin_actions").insert({
@@ -13072,7 +13128,7 @@ async function adminToggleVendorActive(vendorId, currentlyActive, businessName) 
 }
 
 // ---------- ADMIN: MANAGE ADMINS ----------
-// A plain directory of every registered account — separate from "Admins"
+// A plain directory of every registered account - separate from "Admins"
 // below, which is only for promoting/demoting admin access. This is just
 // for seeing who's actually on the platform and how many of each kind.
 async function renderAdminPeople() {
@@ -13121,10 +13177,10 @@ async function renderAdminPeople() {
     <th>Name</th><th>Email</th><th>Role</th><th>City</th><th>Joined</th><th>Status</th><th></th>
   </tr></thead><tbody>`;
   html += (people || []).map((p) => `<tr>
-    <td>${esc(p.name || "—")}</td>
+    <td>${esc(p.name || "-")}</td>
     <td>${esc(p.email)}</td>
     <td><span class="badge">${esc(p.role)}</span></td>
-    <td>${esc(p.city || "—")}</td>
+    <td>${esc(p.city || "-")}</td>
     <td>${new Date(p.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
     <td>${p.suspended_at ? `<span class="badge danger" title="${esc(p.suspended_reason || "")}">Suspended</span>` : `<span class="badge success">Active</span>`}${appealByUser[p.id] ? ` <span class="badge warning">Appealed</span>` : ""}</td>
     <td>${p.role === "admin" ? "" : p.suspended_at
@@ -13304,9 +13360,9 @@ async function renderAdminLog() {
       const meta = ACTION_LABEL[entry.action] || { text: entry.action, icon: "fa-circle-info", cls: "" };
       html += `<tr>
         <td>${new Date(entry.created_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" })}</td>
-        <td>${esc(entry.admin_name || "—")}</td>
+        <td>${esc(entry.admin_name || "-")}</td>
         <td><span class="badge ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${esc(meta.text)}</span></td>
-        <td>${esc(entry.target_label || entry.target_id || "—")}</td>
+        <td>${esc(entry.target_label || entry.target_id || "-")}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
@@ -13446,7 +13502,7 @@ function renderAdminFinanceRange() {
   }
 }
 
-// A smooth glowing line/area chart (SVG) instead of plain bars — dots on
+// A smooth glowing line/area chart (SVG) instead of plain bars - dots on
 // each point double as tap/hover targets showing that day's exact figure.
 function buildRevenueChart(paidTxns, range, opts) {
   const field = opts?.field || "platform_cut";
@@ -13540,7 +13596,7 @@ function buildRevenueChart(paidTxns, range, opts) {
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     const loopId = setInterval(drawIn, 9000);
     // Charts get replaced wholesale on every range switch/re-render rather
-    // than updated in place, so the old wrap element is simply discarded —
+    // than updated in place, so the old wrap element is simply discarded -
     // stop its interval once it's no longer in the document to avoid
     // leaking timers into elements nobody can see anymore.
     const stopIfDetached = setInterval(() => {
@@ -13635,7 +13691,7 @@ async function renderAdminDisputes() {
 async function resolveDispute(id, orderId, payoutStatus) {
   const notes = byId(`notes-${id}`).value.trim() || "Resolved.";
   const newStatus = byId(`newstatus-${id}`).value || undefined;
-  // Resolving a dispute has to always move the order out of "disputed" —
+  // Resolving a dispute has to always move the order out of "disputed" -
   // leaving it there was the whole bug: the dispute itself would show as
   // resolved, but the order stayed stuck showing "disputed" forever with
   // no way to close it out afterward.
@@ -13649,7 +13705,7 @@ async function resolveDispute(id, orderId, payoutStatus) {
     return;
   }
 
-  // A held payment can't just have its status flipped to "completed" —
+  // A held payment can't just have its status flipped to "completed" -
   // that has to actually move the money too, so it goes through the same
   // release endpoint the buyer's own "I've received this" button uses.
   if (newStatus === "completed" && payoutStatus === "held") {
@@ -13690,7 +13746,7 @@ async function adminRefundOrder(orderId, payoutStatus) {
 }
 
 // ---------- INIT ----------
-// Fires on sign-in, sign-out, and token refresh — including the background
+// Fires on sign-in, sign-out, and token refresh - including the background
 // sign-in Supabase performs when a user lands here via an email
 // confirmation link. Re-running the full profile lookup (not just the bare
 // session) is what keeps the header in sync with that background event.
@@ -13827,7 +13883,7 @@ sb.auth.onAuthStateChange((_event) => {
   refreshAuthStateOnce();
 });
 
-// Voluntary change — from Settings, while already logged in, no email link
+// Voluntary change - from Settings, while already logged in, no email link
 // needed. Reuses the exact same modal/submit path as the forced
 // PASSWORD_RECOVERY flow above (same sb.auth.updateUser call), just adds a
 // Cancel button since this entry point isn't a "you must set one" moment.
@@ -13856,10 +13912,10 @@ async function submitNewPassword() {
   btn.disabled = true;
   try {
     // Voluntary changes (already logged in, from Settings) must prove they
-    // know the current password first — re-authenticating with it is the
+    // know the current password first - re-authenticating with it is the
     // standard way to do that with Supabase Auth, since there's no separate
     // "verify password" call. The forced PASSWORD_RECOVERY flow (from the
-    // emailed reset link) skips this — the email link itself is the proof.
+    // emailed reset link) skips this - the email link itself is the proof.
     if (isVoluntaryPasswordChange) {
       const currentPassword = byId("currentPasswordInput").value;
       if (!currentPassword) { errorEl.textContent = "Enter your current password."; errorEl.classList.remove("hidden"); btn.disabled = false; return; }
@@ -14079,7 +14135,7 @@ document.addEventListener("click", (e) => {
   syncLeviFabVisibility();
 });
 // Tapping the empty space around an open conversation (not the chat thread,
-// input, or header — those all have their own click handlers already)
+// input, or header - those all have their own click handlers already)
 // closes it back to the conversation list, instead of only the explicit
 // "All conversations" button.
 document.addEventListener("click", (e) => {
@@ -14088,10 +14144,10 @@ document.addEventListener("click", (e) => {
   navigate("messages");
 });
 // Levi ends a reply with an invisible [[NAV:view|param=value]] tag when it
-// wants to offer taking the person somewhere — this splits that off from
+// wants to offer taking the person somewhere - this splits that off from
 // the text that actually gets displayed/spoken/re-sent as history.
 // Not anchored to the end of the string and tolerates stray backticks
-// around it — the model is told to emit this silently with nothing else,
+// around it - the model is told to emit this silently with nothing else,
 // but occasionally narrates it instead ("tag: `[[NAV:vendors]]` since...").
 // Finding it anywhere (not just as the literal last characters) and
 // stripping just the matched tag keeps that kind of slip from ever
@@ -14129,7 +14185,7 @@ function parseAiNavTag(content) {
   if (!view || !AI_NAV_ALLOWED_VIEWS.has(view)) return { text: text || content, nav: null };
   return { text: text || "Here, let me show you.", nav: { view, params } };
 }
-// [[DRAFTMSG vendorId=<id>]]message text[[/DRAFTMSG]] — a message drafted
+// [[DRAFTMSG vendorId=<id>]]message text[[/DRAFTMSG]] - a message drafted
 // for review, never auto-sent. Uses an open/close pair rather than the
 // single-line NAV format since a message body can contain any characters
 // (|, ], quotes, newlines) that would otherwise need escaping.
@@ -14297,7 +14353,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
     }
     if (role === "assistant" && msgId) attachAiReactionUI(el, msgId, existingReaction);
     if (nav) {
-      // Auto-navigates rather than waiting for a tap — a beat to actually
+      // Auto-navigates rather than waiting for a tap - a beat to actually
       // read the reply first, then Levi points the way and takes you there.
       const navHint = document.createElement("div");
       navHint.className = "ai-chat-nav-hint";
@@ -14342,7 +14398,7 @@ function appendAiChatMessage(role, content, autoSpeak, isReplay, msgId, existing
         if (addResult.added) parts.push(`${addResult.added} added`);
         if (addResult.failed) parts.push(`${addResult.failed} couldn't be added`);
         if (removeResult.removed) parts.push(`${removeResult.removed} removed`);
-        navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} — taking you there…`;
+        navHint.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${parts.join(", ") || "Cart updated"} - taking you there…`;
         setTimeout(() => { toggleAiChat(); navigate("cart"); }, 900);
       });
     }
@@ -14384,7 +14440,7 @@ async function reactToAiMessage(evt, msgId, emoji) {
 // ---------- LEVI VOICE ----------
 let aiVoices = []; // browser speechSynthesis voices
 
-// Browser/device voices only — no cloud voice service. Reused by both
+// Browser/device voices only - no cloud voice service. Reused by both
 // Levi and, further down, buyer↔vendor messages (speakMessageBubble).
 function stopAiSpeaking() {
   if ("speechSynthesis" in window) speechSynthesis.cancel();
@@ -14409,7 +14465,7 @@ function speakAiChatMessage(text, btn) {
 // Picking a good default voice (network/"enhanced" voices tend to sound
 // noticeably less robotic than the compact on-device ones) so Levi doesn't
 // just take the browser's arbitrary first voice. Still limited by whatever
-// the phone/browser actually ships — there's no code-side way to make the
+// the phone/browser actually ships - there's no code-side way to make the
 // built-in engine itself sound more human than that.
 function getAiVoicePreset() { return { rate: 0.96, pitch: 1.0 }; }
 function scoreAiVoice(v) {
@@ -14469,24 +14525,42 @@ if ("speechSynthesis" in window) {
 }
 
 // Tap-to-talk: fills the input from speech rather than auto-sending, so a
-// mis-heard word can be fixed before it goes anywhere. Feature-detected —
+// mis-heard word can be fixed before it goes anywhere. Feature-detected -
 // support (especially on iOS Safari) is inconsistent, so the mic button
 // stays hidden entirely rather than showing something that might not work.
 const AiSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let aiChatRecognizer = null;
 let aiChatListening = false;
+let aiChatVoicePaused = false;
 // Talked to Levi instead of typing? Its reply reads itself aloud
-// automatically, same as a real conversation — typed messages stay
+// automatically, same as a real conversation - typed messages stay
 // text-only unless the speaker icon is tapped manually.
 let aiChatLastInputVoice = false;
 function initAiChatMic() {
   const btn = byId("aiChatMicBtn");
   if (btn && AiSpeechRecognition) btn.classList.remove("hidden");
 }
+function updateAiVoiceStatus() {
+  const status = byId("aiVoiceStatus");
+  const text = byId("aiVoiceStatusText");
+  const btn = byId("aiChatMicBtn");
+  if (!status || !text) return;
+  status.classList.toggle("hidden", !aiChatListening && !aiChatVoicePaused);
+  text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Listening...";
+  const pauseBtn = status.querySelector("button:first-of-type i");
+  if (pauseBtn) pauseBtn.className = `fa-solid ${aiChatVoicePaused ? "fa-play" : "fa-pause"}`;
+  if (btn) { btn.classList.toggle("listening", aiChatListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
+}
+function scrollAiVoiceIntoView() {
+  const messages = byId("aiChatMessages");
+  if (messages) messages.scrollTop = messages.scrollHeight;
+  const input = byId("aiChatInput");
+  if (input) input.scrollTop = input.scrollHeight;
+}
 function toggleAiChatMic() {
   if (!AiSpeechRecognition) return;
   const btn = byId("aiChatMicBtn");
-  // Tapping the mic always means "let me talk" — if Levi's mid-reply,
+  // Tapping the mic always means "let me talk" - if Levi's mid-reply,
   // barge in and stop it immediately rather than talking over each other.
   if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
   if (aiChatListening) { aiChatRecognizer?.stop(); return; }
@@ -14494,21 +14568,32 @@ function toggleAiChatMic() {
   aiChatRecognizer.lang = "en-NG";
   aiChatRecognizer.interimResults = true; // show words as they're heard, not just after you stop talking
   aiChatRecognizer.maxAlternatives = 1;
-  aiChatRecognizer.onstart = () => { aiChatListening = true; btn.classList.add("listening"); byId("aiChatInput").focus(); };
+  aiChatRecognizer.onstart = () => { aiChatListening = true; aiChatVoicePaused = false; updateAiVoiceStatus(); byId("aiChatInput").focus(); };
   aiChatRecognizer.onresult = (e) => {
     let transcript = "";
     for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    if (transcript) { const el = byId("aiChatInput"); el.value = transcript; autoGrowChatInput(el); aiChatLastInputVoice = true; }
+    if (transcript) { const el = byId("aiChatInput"); el.value = transcript; autoGrowChatInput(el); el.scrollTop = el.scrollHeight; aiChatLastInputVoice = true; scrollAiVoiceIntoView(); }
+    updateAiVoiceStatus();
   };
   aiChatRecognizer.onerror = (e) => {
     if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
   };
-  aiChatRecognizer.onend = () => { aiChatListening = false; btn.classList.remove("listening"); };
+  aiChatRecognizer.onend = () => { aiChatListening = false; updateAiVoiceStatus(); };
   try { aiChatRecognizer.start(); } catch (e) { /* already running */ }
+  updateAiVoiceStatus();
+}
+async function cancelAiChatVoice() {
+  if (!aiChatListening && !aiChatVoicePaused) return;
+  const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
+  if (!confirmed) return;
+  try { aiChatRecognizer?.abort(); } catch (_) {}
+  aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; aiChatLastInputVoice = false;
+  const input = byId("aiChatInput"); if (input) resetChatInput(input);
+  updateAiVoiceStatus();
 }
 
 // Same tap-to-talk pattern, for the ordinary buyer↔vendor message
-// compose box rather than the Levi chat — separate recognizer instance so
+// compose box rather than the Levi chat - separate recognizer instance so
 // the two never fight over which input box is being filled.
 let msgRecognizer = null;
 let msgListening = false;
@@ -14521,8 +14606,10 @@ function renderMsgVoiceState() {
   const btn = byId("msgMicBtn");
   if (!status || !text) return;
   status.classList.toggle("hidden", !msgListening && !msgVoicePaused);
-  text.textContent = msgVoicePaused ? "Paused — tap resume to continue" : (msgVoiceInterimTranscript || msgVoiceFinalTranscript ? (msgVoiceFinalTranscript + (msgVoiceInterimTranscript ? " " + msgVoiceInterimTranscript : "")).trim() : "Listening…");
-  if (btn) { btn.classList.toggle("listening", msgListening); btn.innerHTML = `<i class="fa-solid ${msgVoicePaused ? "fa-microphone" : "fa-microphone"}"></i>`; }
+  text.textContent = msgVoicePaused ? "Paused - tap resume to continue" : (msgVoiceInterimTranscript || msgVoiceFinalTranscript ? (msgVoiceFinalTranscript + (msgVoiceInterimTranscript ? " " + msgVoiceInterimTranscript : "")).trim() : "Listening...");
+  if (btn) { btn.classList.toggle("listening", msgListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
+  const pauseBtn = status.querySelector("button:first-of-type i");
+  if (pauseBtn) pauseBtn.className = `fa-solid ${msgVoicePaused ? "fa-play" : "fa-pause"}`;
 }
 function applyMsgVoiceTranscript() {
   const input = byId("chatInput");
@@ -14530,6 +14617,8 @@ function applyMsgVoiceTranscript() {
   const combined = `${msgVoiceFinalTranscript}${msgVoiceInterimTranscript ? (msgVoiceFinalTranscript ? " " : "") + msgVoiceInterimTranscript : ""}`.trim();
   input.value = combined;
   autoGrowChatInput(input);
+  input.scrollTop = input.scrollHeight;
+  scrollChatToBottom();
   handleChatTyping(activeConversationId);
 }
 function startMsgVoiceRecognition() {
@@ -14540,7 +14629,7 @@ function startMsgVoiceRecognition() {
   msgRecognizer.interimResults = true;
   msgRecognizer.continuous = true;
   msgRecognizer.maxAlternatives = 1;
-  msgRecognizer.onstart = () => { msgListening = true; msgVoicePaused = false; byId("msgMicBtn")?.classList.add("listening"); renderMsgVoiceState(); };
+  msgRecognizer.onstart = () => { msgListening = true; msgVoicePaused = false; byId("msgMicBtn")?.classList.add("listening"); renderMsgVoiceState(); scrollChatToBottom(); };
   msgRecognizer.onresult = (e) => {
     let interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -14604,15 +14693,15 @@ function leviOfflineFallback(text) {
   }
   if (/\b(open|show|take me to|go to)\b.*\b(cart|basket)\b/.test(q)) {
     navigate('cart');
-    return 'Done — I opened your cart.';
+    return 'Done - I opened your cart.';
   }
   if (/\b(open|show|go to|take me to)\b.*\b(my shop|shop)\b/.test(q) && vendor) {
     navigate('vendorDashboard');
-    return 'Done — I opened your shop.';
+    return 'Done - I opened your shop.';
   }
   if (/\b(open|show|go to|take me to)\b.*\b(vendors?|vendor directory)\b/.test(q)) {
     navigate('vendors');
-    return 'Done — here are the vendors.';
+    return 'Done - here are the vendors.';
   }
   return `I'm Levi. I can help with Levromart products, vendors, orders, your cart, wishlist, and how the marketplace works. Try asking me what to buy, where to find something, or what you want me to do in the app.`;
 }
@@ -14650,7 +14739,7 @@ async function sendAiChatMessage() {
   const wasVoice = aiChatLastInputVoice;
   aiChatLastInputVoice = false;
   if (!text) return;
-  if (aiChatListening) aiChatRecognizer?.stop();
+  if (aiChatListening || aiChatVoicePaused) { try { aiChatRecognizer?.abort(); } catch (_) {} aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; updateAiVoiceStatus(); }
   resetChatInput(input);
   appendAiChatMessage("user", text);
   persistAiMessage("user", text);
@@ -14795,13 +14884,13 @@ async function resolveLeviLocalAction(text) {
 
   // Deterministic navigation.
   if (/^(open|show|take me to|go to|view)\s+(my\s+)?cart$/.test(q) || /\b(show|open)\s+my\s+cart\b/.test(q)) {
-    toggleAiChat(); await navigate("cart"); return { handled: true, reply: "Done — I opened your cart." };
+    toggleAiChat(); await navigate("cart"); return { handled: true, reply: "Done - I opened your cart." };
   }
   if (/^(open|show|go to|take me to)\s+vendors?$/.test(q)) {
-    toggleAiChat(); await navigate("vendors"); return { handled: true, reply: "Done — here are the vendors." };
+    toggleAiChat(); await navigate("vendors"); return { handled: true, reply: "Done - here are the vendors." };
   }
   if (/^(open|show|go to|take me to)\s+(my\s+)?shop$/.test(q) && vendor) {
-    toggleAiChat(); await navigate("vendorDashboard"); return { handled: true, reply: "Done — I opened your shop dashboard." };
+    toggleAiChat(); await navigate("vendorDashboard"); return { handled: true, reply: "Done - I opened your shop dashboard." };
   }
 
   const addIntent = /\b(add|put|place)\b[\s\S]*\b(cart|basket)\b/.test(q) || /\b(add|put|place)\b.*\b(this|that)\b/.test(q);
@@ -14854,7 +14943,7 @@ async function resolveLeviLocalAction(text) {
         return { handled: true, reply: `I found more than one cart match: ${names.join(", ")}. Tell me which one you mean.` };
       }
       return { handled: true, reply: [
-        ok.length ? `Done — I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "",
+        ok.length ? `Done - I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "",
         failed.length ? `I couldn't remove ${failed.map(r => r.product.name).join(", ")} right now.` : "",
         missing.length ? `I couldn't find ${missing.map(r => `“${r.part}”`).join(", ")} in your cart.` : "",
       ].filter(Boolean).join(" ") || "I couldn't find that item in your cart." };
@@ -14901,7 +14990,7 @@ async function resolveLeviLocalAction(text) {
 
   if (mode === "add") {
     const lines = [];
-    if (ok.length) lines.push(`Done — I added ${ok.map(r => `${quantity > 1 ? `${quantity} × ` : ""}${r.product.name}`).join(", ")} to your cart.`);
+    if (ok.length) lines.push(`Done - I added ${ok.map(r => `${quantity > 1 ? `${quantity} × ` : ""}${r.product.name}`).join(", ")} to your cart.`);
     if (empty.length) lines.push(`${empty.map(r => r.product.name).join(", ")} ${empty.length === 1 ? "is" : "are"} out of stock.`);
     if (failed.length) lines.push(`I couldn't add ${failed.map(r => r.product.name).join(", ")} right now.`);
     if (missing.length) lines.push(`I couldn't find ${missing.map(r => `“${r.part}”`).join(", ")}.`);
@@ -14909,13 +14998,13 @@ async function resolveLeviLocalAction(text) {
     return { handled: true, reply: lines.join(" ") || "Tell me the product name, or open the product and say “add this to my cart”." };
   }
   if (mode === "remove") {
-    return { handled: true, reply: ok.length ? `Done — I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "I couldn't find that item in your cart." };
+    return { handled: true, reply: ok.length ? `Done - I removed ${ok.map(r => r.product.name).join(", ")} from your cart.` : "I couldn't find that item in your cart." };
   }
-  return { handled: true, reply: ok.length ? `Done — ${ok.map(r => r.product.name).join(", ")} ${ok.length === 1 ? "is" : "are"} on your wishlist.` : "I couldn't save that item right now." };
+  return { handled: true, reply: ok.length ? `Done - ${ok.map(r => r.product.name).join(", ")} ${ok.length === 1 ? "is" : "are"} on your wishlist.` : "I couldn't save that item right now." };
 }
 
 
-// Draggable floating action button — tap to fire onTap, drag to reposition
+// Draggable floating action button - tap to fire onTap, drag to reposition
 // (and it remembers where you leave it). Shared by the Levi FAB and the
 // cart FAB, which each just pass their own element/storage key/tap action.
 function setupDraggableFab(fab, storageKey, onTap) {
@@ -14999,7 +15088,7 @@ function closeLeviAfterCartAction(){
 // A handful of plain, non-destructive popups should close like a native
 // sheet: tap outside, or press the phone's back button, same as tapping
 // Cancel. Deliberately NOT applied to confirmModal/adminPasswordModal/
-// deleteAccountModal/resetPasswordModal — those need an explicit choice,
+// deleteAccountModal/resetPasswordModal - those need an explicit choice,
 // not an accidental dismiss.
 let dismissibleModalId = null;
 const DISMISSIBLE_MODAL_CLOSERS = {
@@ -15124,7 +15213,7 @@ window.addEventListener("popstate", (e) => {
     showLogin();
   }
 
-  // No deep-link param claimed this load — resume wherever the user last
+  // No deep-link param claimed this load - resume wherever the user last
   // was in this tab/session (see the sessionStorage write in navigate())
   // instead of always restarting at Home.
   let resumed = false;
@@ -15134,7 +15223,7 @@ window.addEventListener("popstate", (e) => {
   } catch (e) {}
   if (!resumed) navigate("home");
 
-  // Offer the installable app to every visitor, not just after login — give
+  // Offer the installable app to every visitor, not just after login - give
   // Chrome a moment to fire beforeinstallprompt first.
   awaitingInstallPromptForLogin = true;
   setTimeout(maybeShowInstallPrompt, 2500);
@@ -15142,7 +15231,7 @@ window.addEventListener("popstate", (e) => {
   // in an earlier session won't see it again, so give the notification
   // prompt its own independent chance to show too.
   setTimeout(maybeShowNotifPrompt, 3200);
-  // Same idea for the first-visit tour — it's chained after the notification
+  // Same idea for the first-visit tour - it's chained after the notification
   // prompt normally, but this catches anyone who already cleared both of the
   // earlier popups in a previous session.
   setTimeout(maybeShowTour, 4000);
