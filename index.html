@@ -1553,16 +1553,24 @@ h1,h2,h3,h4,h5,strong{letter-spacing:-.028em}
 header .header-left{flex:1 1 auto !important;min-width:0 !important;}
 header .header-right{margin-left:auto !important;flex:0 0 auto !important;display:flex !important;align-items:center !important;justify-content:flex-end !important;min-width:max-content !important;}
 header #notifWrap{position:static !important;display:flex !important;align-items:center !important;flex:0 0 auto !important;}
+header .header-left, header .header-right{align-self:center !important;height:42px !important;}
+header h1{height:42px !important;display:inline-flex !important;align-items:center !important;}
+@media (max-width:720px){
+  header{align-items:center !important;}
+  header .header-left, header .header-right{align-items:center !important;}
+  header #notifWrap, header #notifWrap .icon-btn, header #profileWrap, header #profileWrap .icon-btn{align-self:center !important;}
+}
 
 /* Branded refresh splash: dark, centered Levromart mark — never a white
    skeleton screen or green loading bar. */
 #levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .18s ease,visibility .18s ease;}
 #levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.levromart-splash-logo{position:relative;width:min(72vw,340px);height:auto;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 24px rgba(45,212,191,.18));}
-.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{position:absolute;inset:0;width:100%;height:100%;background:var(--primary-grad);-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain;}
-.levromart-splash-logo .splash-logo-circle{position:absolute;width:21%;height:100%;left:39.5%;top:0;object-fit:contain;filter:brightness(0) invert(1);}
-.levromart-splash-logo{height:64px;}
-.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{height:64px;}
+.levromart-splash-logo{position:relative;width:min(72vw,340px);height:64px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 24px rgba(45,212,191,.18));}
+/* IMPORTANT: mask layers start invisible. This prevents the raw gradient
+   rectangle from ever flashing before the data-URL mask has painted. */
+.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{position:absolute;inset:0;width:100%;height:64px;background:var(--primary-grad);-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain;opacity:0;visibility:hidden;}
+.levromart-splash-logo .splash-logo-circle{position:absolute;width:21%;height:64px;left:39.5%;top:0;object-fit:contain;filter:brightness(0) invert(1);opacity:0;visibility:hidden;}
+#levromartSplash.logo-ready .splash-logo-left,#levromartSplash.logo-ready .splash-logo-right,#levromartSplash.logo-ready .splash-logo-circle{opacity:1;visibility:visible;}
 /* Header: quiet, crisp, not toy-like */
 header{
   background:color-mix(in srgb,var(--bg) 86%,transparent);
@@ -4761,6 +4769,17 @@ function brandSpinnerHtml(label) {
 }
 setLogoMask(document.getElementById("brandLogoRight"), LEVROMART_LOGO_RIGHT);
 setLogoMask(document.getElementById("splashLogoRight"), LEVROMART_LOGO_RIGHT);
+// Do not expose the splash layers until all three logo pieces have been
+// assigned. This eliminates the one-frame green block seen on iOS refresh.
+(function revealSplashLogo(){
+  const splash = document.getElementById("levromartSplash");
+  const circle = document.getElementById("splashLogoCircle");
+  if (!splash || !circle) return;
+  const reveal = () => requestAnimationFrame(() => splash.classList.add("logo-ready"));
+  if (circle.complete) reveal();
+  else { circle.addEventListener("load", reveal, {once:true}); circle.addEventListener("error", reveal, {once:true}); }
+  setTimeout(() => splash.classList.add("logo-ready"), 120);
+})();
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("tourLeviLogo").src = MEDRIS_LOGO;
