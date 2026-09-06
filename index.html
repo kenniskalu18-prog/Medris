@@ -4090,6 +4090,18 @@ header .header-left {
    checks the actual database result, and refreshes only after persistence. */
 #notifPanel .notif-item { -webkit-tap-highlight-color: transparent !important; }
 
+/* Critical mobile actions: never let gesture layers make buttons feel dead. */
+button.btn, button.icon-btn, .notif-mark-all-btn, #confirmModal button {
+  pointer-events:auto !important;
+  -webkit-user-select:none !important;
+  user-select:none !important;
+  touch-action:manipulation !important;
+  cursor:pointer !important;
+}
+#confirmModal { pointer-events:auto !important; }
+#confirmModal.hidden { pointer-events:none !important; }
+#notifPanel .notif-mark-all-btn { position:relative !important; z-index:5 !important; min-height:44px !important; padding:.55rem .25rem !important; }
+
 </style>
 
 
@@ -5938,26 +5950,60 @@ function showVerifyingPaymentScreen() {
   if (app) app.innerHTML = `<div class="empty-state">${brandSpinnerHtml("Confirming your payment…")}<p class="muted" style="font-size:0.85rem;">This only takes a moment. Please don't close this page.</p></div>`;
 }
 
+let activeConfirmResolver = null;
 function showConfirmDialog(message, opts = {}) {
   return new Promise((resolve) => {
     const modal = byId("confirmModal");
-    byId("confirmModalTitle").textContent = opts.title || "Please confirm";
-    byId("confirmModalMsg").textContent = message;
+    const titleEl = byId("confirmModalTitle");
+    const msgEl = byId("confirmModalMsg");
     const okBtn = byId("confirmModalOk");
     const cancelBtn = byId("confirmModalCancel");
+
+    // Never allow a second confirmation to orphan the first promise.
+    if (activeConfirmResolver) {
+      try { activeConfirmResolver(false); } catch (_) {}
+      activeConfirmResolver = null;
+    }
+
+    if (!modal || !titleEl || !msgEl || !okBtn || !cancelBtn) {
+      console.error("Levromart: confirmation dialog elements are missing.");
+      resolve(false);
+      return;
+    }
+
+    titleEl.textContent = opts.title || "Please confirm";
+    msgEl.textContent = message;
     okBtn.textContent = opts.okLabel || "Confirm";
     okBtn.className = opts.danger ? "btn btn-danger" : "btn";
-    modal.classList.remove("hidden");
+    okBtn.type = "button";
+    cancelBtn.type = "button";
+
+    let settled = false;
     const cleanup = (result) => {
+      if (settled) return;
+      settled = true;
+      if (activeConfirmResolver === finish) activeConfirmResolver = null;
       modal.classList.add("hidden");
-      okBtn.removeEventListener("click", onOk);
-      cancelBtn.removeEventListener("click", onCancel);
+      modal.style.display = "";
+      modal.style.pointerEvents = "";
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
       resolve(result);
     };
-    const onOk = () => cleanup(true);
-    const onCancel = () => cleanup(false);
-    okBtn.addEventListener("click", onOk);
-    cancelBtn.addEventListener("click", onCancel);
+    const finish = (result) => cleanup(result);
+    activeConfirmResolver = finish;
+
+    // Use direct onclick properties rather than stacking anonymous listeners.
+    // This is more reliable on iOS Safari after dynamically rendered buttons.
+    okBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); finish(true); };
+    cancelBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); finish(false); };
+
+    modal.classList.remove("hidden");
+    modal.style.setProperty("display", "flex", "important");
+    modal.style.setProperty("pointer-events", "auto", "important");
+    modal.style.setProperty("z-index", "20000", "important");
+    modal.setAttribute("aria-hidden", "false");
+    requestAnimationFrame(() => okBtn.focus({ preventScroll: true }));
   });
 }
 // Same idea as showConfirmDialog but collects a short piece of text (e.g. a
@@ -6472,7 +6518,7 @@ async function renderNotifPanel() {
   const emptyMsg = { inbox: "You're all caught up.", archived: "No archived notifications.", trash: "Trash is empty." }[notifViewMode];
   const hasUnread = (items || []).some((n) => !n.read);
   const markAllBar = !notifSelectMode && notifViewMode !== "trash" && hasUnread
-    ? `<button class="notif-mark-all-btn" onclick="markAllNotifsRead()"><i class="fa-solid fa-check-double"></i> Mark all as read</button>`
+    ? `<button type="button" id="notifMarkAllBtn" class="notif-mark-all-btn" onclick="markAllNotifsRead(event)"><i class="fa-solid fa-check-double"></i> Mark all as read</button>`
     : "";
   const list = (items && items.length)
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
@@ -6822,8 +6868,10 @@ function showUndoToast(message, undoFn) {
   setTimeout(dismiss, 5000);
 }
 
-async function markAllNotifsRead() {
-  if (!session) return;
+async function markAllNotifsRead(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  if (!session) { showToast("Please sign in again to manage notifications.", "error"); return; }
   if (!(await showConfirmDialog("Mark every notification as read?", { title: "Mark all as read", okLabel: "Mark all read" }))) return;
 
   const archived = notifViewMode === "archived";
@@ -8309,6 +8357,8 @@ async function clearStaleCartItems() {
   navigate("cart", {}, false);
 }
 async function checkoutCartVendor(vendorId) {
+  if (!session) { showLogin(); return; }
+  if (!(await ensureBuyerProfile(byId(`cartError-${vendorId}`)))) return;
   const group = window.__cartByVendor?.get(vendorId);
   const errorEl = byId(`cartError-${vendorId}`);
   if (!group) return;
@@ -9372,6 +9422,39 @@ function readDeliveryFields(prefix, errorEl) {
   return { method, address, phone };
 }
 
+async function persistOrderBuyerNote(orderId, note) {
+  if (!session?.user?.id || !orderId) return false;
+  const cleaned = String(note || "").trim().slice(0, 500);
+  if (!cleaned) return true;
+
+  // Preferred path: the dedicated RPC validates ownership server-side.
+  try {
+    const { error } = await sb.rpc("set_order_buyer_note", {
+      p_order_id: orderId,
+      p_note: cleaned
+    });
+    if (!error) return true;
+    console.warn("set_order_buyer_note RPC failed:", error);
+  } catch (e) {
+    console.warn("set_order_buyer_note RPC unavailable:", e);
+  }
+
+  // Compatibility fallback for deployments where the RPC has not been
+  // installed yet. RLS still scopes the update to the authenticated buyer.
+  try {
+    const { error } = await sb
+      .from("orders")
+      .update({ buyer_note: cleaned })
+      .eq("id", orderId)
+      .eq("buyer_id", session.user.id);
+    if (!error) return true;
+    console.warn("Direct buyer_note update failed:", error);
+  } catch (e) {
+    console.warn("Direct buyer_note update failed:", e);
+  }
+  return false;
+}
+
 async function confirmRental(vendorId, productId) {
   if (!session) { showLogin(); return; }
   const start = byId("rentStart").value;
@@ -9444,17 +9527,27 @@ async function buyNow(vendorId, productId) {
   const confirmMsg = `${verb} ${qty > 1 && !previewEl ? qty + "× " : ""}${productName}${totalText ? ` for ${totalText}` : ""}, with ${delivery.method === "delivery" ? "delivery" : "pickup"}?`;
   if (!(await showConfirmDialog(confirmMsg, { title: `Confirm ${verb === "Book" ? "booking" : "purchase"}`, okLabel: `${verb} now` }))) return;
 
-  const { data: orderId, error } = await sb.rpc("create_sale_order", {
-    p_vendor_id: vendorId,
-    p_product_id: productId,
-    p_quantity: qty,
-    p_delivery_method: delivery.method,
-    p_delivery_address: delivery.address,
-    p_delivery_phone: delivery.phone,
-    p_buyer_lat: buyerLocation?.lat ?? null,
-    p_buyer_lng: buyerLocation?.lng ?? null,
-  });
-  if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
+  let orderId = null;
+  try {
+    const result = await sb.rpc("create_sale_order", {
+      p_vendor_id: vendorId,
+      p_product_id: productId,
+      p_quantity: qty,
+      p_delivery_method: delivery.method,
+      p_delivery_address: delivery.address,
+      p_delivery_phone: delivery.phone,
+      p_buyer_lat: buyerLocation?.lat ?? null,
+      p_buyer_lng: buyerLocation?.lng ?? null,
+    });
+    orderId = result.data;
+    if (result.error) throw result.error;
+    if (!orderId) throw new Error("The order could not be created.");
+  } catch (err) {
+    console.error("create_sale_order failed:", err);
+    errorEl.textContent = err?.message || "The order could not be placed. Please try again.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
 
   const noteSaved = buyerNote ? await persistOrderBuyerNote(orderId, buyerNote) : true;
   if (!noteSaved) showToast("Order placed, but your note could not be saved. Please refresh and try again.", "error");
@@ -11825,28 +11918,28 @@ const BUYER_CANCEL_WINDOW_HOURS = 5;
 function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   const buttons = [];
   if (isVendor) {
-    if (order.status === "pending") { buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
+    if (order.status === "pending") { buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','confirmed')">Confirm order</button>`); buttons.push(`<button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}','cancelled')">Decline</button>`); }
     // Can't hand over what hasn't been paid for yet — avoids a mismatch
     // where the order's marked handed_over/completed but no payment ever
     // actually came in.
     if (order.status === "confirmed") {
-      if (feePaid) buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
+      if (feePaid) buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','handed_over')">Mark handed over</button>`);
       else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this can be marked handed over.</p>`);
     }
-    if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
+    if (order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">Mark returned</button>`);
   }
-  if (isBuyer && order.status === "pending") buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
+  if (isBuyer && order.status === "pending") buttons.push(`<button type="button" class="btn btn-sm" style="background:#6b7280;" onclick="updateOrderStatus('${order.id}','cancelled')">Cancel order</button>`);
   if (isBuyer && order.status === "confirmed") {
     const feeType = order.order_type === "sale" ? "sale_price" : "rental_fee";
     const paidRow = order.payments.find((p) => p.payment_type === feeType && p.status === "paid");
     const hoursSincePaid = paidRow ? (Date.now() - new Date(paidRow.paid_at || paidRow.created_at).getTime()) / 3600000 : 0;
     if (!paidRow || hoursSincePaid <= BUYER_CANCEL_WINDOW_HOURS) {
-      buttons.push(`<button class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
+      buttons.push(`<button type="button" class="btn btn-sm" style="background:#6b7280;" onclick="buyerCancelOrder('${order.id}',${feePaid ? "true" : "false"})">Cancel order</button>`);
     } else {
       buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-circle-info"></i> The ${BUYER_CANCEL_WINDOW_HOURS}-hour self-serve cancellation window has passed. Report an issue below if something's wrong.</p>`);
     }
   }
-  if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
+  if (isBuyer && order.status === "handed_over" && order.order_type === "rental") buttons.push(`<button type="button" class="btn btn-sm" onclick="updateOrderStatus('${order.id}','returned')">I've returned this equipment</button>`);
   // Only the buyer confirms completion — that's what releases an escrowed
   // payment to the vendor, so it can't be something the vendor self-marks.
   // Also gated on feePaid for the same reason as the vendor's handover
@@ -11854,13 +11947,13 @@ function orderActionButtonsHtml(order, isBuyer, isVendor, feePaid) {
   // actually paid for.
   if (isBuyer && order.status === "handed_over" && order.order_type === "sale") {
     if (feePaid) {
-      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
+      buttons.push(`<button type="button" class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> I've received this</button>`);
       buttons.push(notReceivedButtonHtml(order));
     } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
   if (isBuyer && order.status === "returned" && order.order_type === "rental") {
     if (feePaid) {
-      buttons.push(`<button class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
+      buttons.push(`<button type="button" class="btn btn-sm" onclick="confirmReceiveOrder('${order.id}')"><i class="fa-solid fa-check"></i> Confirm &amp; complete</button>`);
       buttons.push(notReceivedButtonHtml(order));
     } else buttons.push(`<p class="muted" style="font-size:0.82rem;margin:0;"><i class="fa-solid fa-hourglass-half"></i> Waiting on payment before this order can be completed.</p>`);
   }
