@@ -3624,6 +3624,10 @@ body { min-width:0 !important; }
   flex:0 0 1.18rem !important;
   border-radius:50% !important;
 }
+.settings-levi-logo-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 1.18rem;width:1.18rem;height:1.18rem;}
+.settings-levi-logo-wrap::after{content:"";position:absolute;width:.24rem;height:.24rem;border-radius:50%;background:var(--primary);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--card) 80%,transparent);}
+html[data-theme="dark"] .settings-levi-logo-wrap::after,html[data-theme="black"] .settings-levi-logo-wrap::after{display:none;}
+html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after{content:"";position:absolute;width:.26rem;height:.26rem;border-radius:50%;background:var(--primary);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.72);}
 .settings-toggle-row,
 .settings-simple-row {
   grid-template-columns:1.3rem minmax(0,1fr) auto !important;
@@ -6372,82 +6376,61 @@ function bindProfileEdgeSwipe(){
   profileEdgeSwipeBound=true;
   const panel=byId("profilePanel");
   if(!panel)return;
-  // Profile drawer gesture: use Pointer Events for mouse/pen, but use the
-  // native touch events on phones. Android Chrome can cancel a pointer stream
-  // as soon as it decides the gesture is scrolling; the touch fallback keeps
-  // the horizontal profile swipe reliable without disturbing vertical scroll.
+  // Android: follow the finger during the gesture so opening AND closing feel immediate.
   let gesture=null;
   const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
   const canStart=(target)=>!target?.closest?.(ignoreSelector);
+  const setDrag=(on)=>{panel.style.transition=on?'none':'transform .26s cubic-bezier(.22,1,.36,1)';};
+  const reset=()=>{panel.style.transform='';panel.style.transition='';};
   const begin=(x,y,target,id,type)=>{
-    if(!session || !profile || !canStart(target))return false;
+    if(!session||!profile||!canStart(target))return;
     const open=panel.classList.contains('open');
     const w=window.innerWidth;
-    // Avoid fighting the phone's own edge-back gesture. A closed drawer can
-    // be opened from the comfortable middle 60% of the screen; an open drawer
-    // can only be closed from inside the drawer itself.
-    if(!open){
-      if(x < w*0.20 || x > w*0.80)return false;
-    }else if(!panel.contains(target))return false;
-    gesture={id,sx:x,sy:y,open,moved:false,horizontal:false,type};
-    return true;
+    if(!open && (x<w*.18 || x>w*.82))return;
+    if(open && !panel.contains(target))return;
+    gesture={id,sx:x,sy:y,open,horizontal:false,type};
   };
-  const update=(x,y,ev)=>{
-    if(!gesture)return false;
+  const move=(x,y,e)=>{
+    if(!gesture)return;
     const dx=x-gesture.sx,dy=y-gesture.sy;
-    if(!gesture.moved){
-      if(Math.hypot(dx,dy)<8)return true;
-      // A clear vertical intent belongs to the drawer's normal scrolling.
-      if(Math.abs(dy)>=Math.abs(dx)*0.9){gesture=null;return false;}
-      gesture.moved=true;gesture.horizontal=true;
+    if(!gesture.horizontal){
+      if(Math.hypot(dx,dy)<5)return;
+      if(Math.abs(dy)>Math.abs(dx)*.82){gesture=null;return;}
+      gesture.horizontal=true;setDrag(true);
+      if(!gesture.open){panel.classList.add('open');byId('drawerBackdrop')?.classList.add('open');}
     }
-    if(gesture.horizontal && ev?.cancelable)ev.preventDefault();
-    return true;
+    if(e?.cancelable)e.preventDefault();
+    const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
+    const tx=gesture.open?Math.max(-width,Math.min(0,dx)):Math.max(-width,Math.min(0,dx-width));
+    panel.style.transform=`translate3d(${tx}px,0,0)`;
   };
-  const finish=(x,y)=>{
+  const end=(x,y)=>{
     if(!gesture)return;
     const g=gesture;gesture=null;
     const dx=x-g.sx,dy=y-g.sy;
-    if(!g.horizontal || Math.abs(dx)<52 || Math.abs(dx)<Math.abs(dy)*1.08)return;
-    if(!g.open && dx>0){openDrawer('profilePanel');return;}
-    if(g.open && dx<0){closeAllPanels();return;}
+    const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
+    if(!g.horizontal){reset();if(!g.open)panel.classList.remove('open');return;}
+    const valid=Math.abs(dx)>Math.abs(dy)*1.05;
+    const threshold=Math.max(40,width*.16);
+    if(!g.open && valid && dx>threshold){
+      setDrag(false);panel.style.transform='translate3d(0,0,0)';
+      setTimeout(reset,270);return;
+    }
+    if(g.open && valid && dx<-threshold){
+      setDrag(false);panel.style.transform=`translate3d(${-width-8}px,0,0)`;
+      setTimeout(closeAllPanels,270);return;
+    }
+    setDrag(false);panel.style.transform=g.open?'translate3d(0,0,0)':'translate3d(-105%,0,0)';
+    setTimeout(()=>{if(!g.open)panel.classList.remove('open');reset();},280);
   };
-
-  document.addEventListener('pointerdown',(e)=>{
-    if(e.pointerType==='touch')return;
-    if(e.pointerType==='mouse' && e.button!==0)return;
-    begin(e.clientX,e.clientY,e.target,e.pointerId,'pointer');
-  },{passive:true});
-  document.addEventListener('pointermove',(e)=>{
-    if(e.pointerType==='touch')return;
-    if(!gesture || gesture.type!=='pointer' || e.pointerId!==gesture.id)return;
-    update(e.clientX,e.clientY,e);
-  },{passive:false});
-  document.addEventListener('pointerup',(e)=>{
-    if(e.pointerType==='touch')return;
-    if(gesture?.type==='pointer' && e.pointerId===gesture.id)finish(e.clientX,e.clientY);
-  },{passive:true});
-  document.addEventListener('pointercancel',(e)=>{
-    if(e.pointerType==='touch')return;
-    if(gesture?.type==='pointer' && e.pointerId===gesture.id)gesture=null;
-  },{passive:true});
-
-  document.addEventListener('touchstart',(e)=>{
-    if(e.touches.length!==1)return;
-    const t=e.touches[0];
-    begin(t.clientX,t.clientY,e.target,'touch','touch');
-  },{passive:true});
-  document.addEventListener('touchmove',(e)=>{
-    if(!gesture || gesture.type!=='touch' || e.touches.length!==1)return;
-    const t=e.touches[0];
-    update(t.clientX,t.clientY,e);
-  },{passive:false});
-  document.addEventListener('touchend',(e)=>{
-    if(!gesture || gesture.type!=='touch')return;
-    const t=e.changedTouches[0];
-    if(t)finish(t.clientX,t.clientY);else gesture=null;
-  },{passive:true});
-  document.addEventListener('touchcancel',()=>{if(gesture?.type==='touch')gesture=null;},{passive:true});
+  document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;begin(e.clientX,e.clientY,e.target,e.pointerId,'pointer');},{passive:true});
+  document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)move(e.clientX,e.clientY,e);},{passive:false});
+  document.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)end(e.clientX,e.clientY);},{passive:true});
+  document.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'){gesture=null;reset();}},{passive:true});
+  document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];begin(t.clientX,t.clientY,e.target,'touch','touch');},{passive:true});
+  document.addEventListener('touchmove',e=>{if(gesture?.type!=='touch'||e.touches.length!==1)return;const t=e.touches[0];move(t.clientX,t.clientY,e);},{passive:false});
+  document.addEventListener('touchend',e=>{if(gesture?.type!=='touch')return;const t=e.changedTouches[0];if(t)end(t.clientX,t.clientY);else{gesture=null;reset();}},{passive:true});
+  document.addEventListener('touchcancel',()=>{if(gesture?.type==='touch'){gesture=null;reset();}},{passive:true});
 }
 bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
@@ -7160,6 +7143,7 @@ function updateAuthUI() {
     const links = [];
     if (vendor && profile.role !== "admin") {
       links.push({ label: "My Shop", action: "navigate('vendorDashboard')" });
+      links.push({ label: "Orders", action: "navigate('vendorOrders',{status:'all'})" });
       links.push({ label: "Buyer requests", action: "navigate('vendorRequests')" });
       links.push({ label: "Edit business profile", action: "navigate('vendorEditProfile')" });
     } else if (profile.role !== "admin") {
@@ -7244,7 +7228,7 @@ function renderSettingsPage(){
     <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
     <section class="settings-page-section"><button type="button" class="accent-page-dropdown-trigger" onclick="toggleAccentPalettePage()" aria-expanded="false"><span><i class="fa-solid fa-droplet"></i><span><strong>Accent color</strong><small>Choose the accent used across Levromart.</small></span></span><i class="fa-solid fa-chevron-down" id="accentPalettePageChevron"></i></button><div class="accent-page-dropdown-body hidden" id="accentPalettePageBody"><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-text-height"></i> Text size</h3><p class="settings-section-note">Make Levromart easier to read. This changes the app's text scale on this device.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Font size</strong><span>Choose a comfortable size from 85% to 125%.</span></div><div class="levi-size-value" id="levroFontScaleValue">${Math.round(getLevromartFontScale()*100)}%</div><input class="levi-size-range" id="levroFontScaleRange" type="range" min="0.85" max="1.25" step="0.05" value="${getLevromartFontScale()}" aria-label="Levromart font size" oninput="setLevromartFontScale(this.value)" onchange="setLevromartFontScale(this.value)" /></div></section>
-    <section class="settings-page-section"><h3><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
+    <section class="settings-page-section"><h3><span class="settings-levi-logo-wrap"><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /></span> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row settings-action-danger" onclick="startDeleteAccount()"><i class="fa-solid fa-user-xmark"></i><span><strong>Delete account permanently</strong><small>${vendor ? "Vendors must clear all active orders and unsettled commission first." : "Permanently close this Levromart account. Pending buyer orders do not block deletion."}</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
     <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
@@ -10700,8 +10684,6 @@ async function renderVendorDashboard() {
   html += `<div class="dash-tabs shop-tabs-rail" aria-label="My Shop sections">
     <button class="dash-tab" onclick="navigate('vendorProducts')"><i class="fa-solid fa-box"></i> Products</button>
     <button class="dash-tab" onclick="navigate('vendorPackages')"><i class="fa-solid fa-boxes-packing"></i> Packages</button>
-    <button class="dash-tab" onclick="navigate('vendorOrders',{status:'all'})"><i class="fa-solid fa-receipt"></i> Orders</button>
-    <button class="dash-tab" onclick="navigate('vendorRequests')"><i class="fa-solid fa-clipboard-list"></i> Requests</button>
     <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
     <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
