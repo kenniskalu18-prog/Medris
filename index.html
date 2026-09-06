@@ -4158,6 +4158,41 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
 #profilePanel .profile-panel-scroll{touch-action:pan-y !important;}
 </style>
 
+<style id="dedicated-chat-page-fix">
+/* Dedicated full-page conversation view (WhatsApp-style): while a single
+   DM thread is open, the app's outer chrome -- top header, bottom nav,
+   footer, cart FAB, Levi FAB -- is hidden and the thread owns the whole
+   screen, with its own header (back arrow, photo, name, call, menu). */
+body.chat-full-page { overflow:hidden !important; padding-top:0 !important; }
+body.chat-full-page > header,
+body.chat-full-page > .bottom-nav,
+body.chat-full-page > .site-footer,
+body.chat-full-page > #cartFab,
+body.chat-full-page > #aiChatFab { display:none !important; }
+body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-width:none !important; width:100% !important; }
+
+.chat-page-wrap { position:fixed; inset:0; z-index:210; display:flex; flex-direction:column; height:100dvh; background:var(--card); }
+.chat-page-header {
+  display:flex; align-items:center; gap:0.7rem; flex-shrink:0;
+  padding:calc(0.65rem + env(safe-area-inset-top,0px)) 0.85rem 0.65rem;
+  background:var(--primary-grad); color:#fff;
+}
+.chat-header-back { background:none; border:none; color:#fff; font-size:1.15rem; padding:0.3rem; cursor:pointer; flex-shrink:0; }
+.chat-header-avatar { width:2.35rem; height:2.35rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
+.chat-header-avatar-fallback { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.25); color:#fff; font-weight:700; font-size:0.9rem; }
+.chat-header-name-wrap { flex:1; min-width:0; }
+.chat-header-name { display:block; font-size:1rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-header-actions { display:flex; align-items:center; gap:0.15rem; flex-shrink:0; position:relative; }
+.chat-header-icon-btn { background:none; border:none; color:#fff; font-size:1.05rem; width:2.2rem; height:2.2rem; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.chat-header-icon-btn:hover { background:rgba(255,255,255,0.15); }
+.chat-menu-dropdown { position:absolute; top:calc(100% + 0.5rem); right:0; z-index:70; width:210px; max-width:calc(100vw - 1.5rem); padding:0.4rem; border:1px solid var(--ui-hairline,var(--border)); border-radius:14px; background:var(--card); color:var(--text); box-shadow:0 20px 45px rgba(0,0,0,0.28); }
+.chat-menu-dropdown button { width:100%; display:flex; gap:0.65rem; align-items:center; text-align:left; border:0; background:transparent; color:var(--text); padding:0.6rem 0.65rem; border-radius:10px; cursor:pointer; font-family:inherit; font-size:0.85rem; }
+.chat-menu-dropdown button:hover { background:color-mix(in srgb, var(--primary) 8%, transparent); }
+.chat-menu-dropdown button i { width:18px; text-align:center; color:var(--primary); }
+.chat-page-wrap .chat-thread { flex:1; height:auto; min-height:0; border-radius:0; }
+.chat-page-wrap .chat-edit-hint { flex-shrink:0; margin:0; padding:0.35rem 0.85rem calc(0.35rem + env(safe-area-inset-bottom,0px)); font-size:0.7rem; text-align:center; }
+</style>
+
 </head>
 <body>
 <div id="levromartSplash" aria-hidden="true"><img class="levromart-splash-logo" alt="" onerror="this.style.display='none'" /></div>
@@ -7578,6 +7613,10 @@ async function navigate(view, params = {}, pushHistory = true) {
   if (view !== "messages" && activeMsgChannel) { await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; activeConversationId = null; }
   currentView = view;
   currentViewParams = params || {};
+  // A single open DM thread gets the dedicated, chrome-free full-page
+  // treatment (see #dedicated-chat-page-fix); the conversation list and
+  // the admin's read-only viewer keep the normal in-app layout.
+  document.body.classList.toggle("chat-full-page", view === "messages" && !!(params && params.conversationId) && profile?.role !== "admin");
   updateAuthUI();
   renderBottomNav();
   updateHeaderNavActive();
@@ -8588,27 +8627,56 @@ async function renderMessages(conversationId) {
 
   sb.rpc("mark_conversation_opened", { p_conversation_id: conversationId }).then(() => refreshNotifications());
 
-  let html = `<button class="btn btn-sm" style="margin-bottom:0.8rem;background:#6b7280;" onclick="navigate('messages')"><i class="fa-solid fa-arrow-left"></i> All conversations</button>`;
-  html += `<div class="flex" style="margin-bottom:0.6rem;">
-    ${otherAvatar ? `<img src="${esc(otherAvatar)}" class="avatar-circle" style="width:2.4rem;height:2.4rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(otherName)}</div>`}
-    <strong>${esc(otherName)}</strong>
-  </div>`;
-  html += `<div class="chat-thread">
-    <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}</div>
-    <div class="chat-input-row">
-      <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelected(event,'${conversationId}')" />
-      <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
-      ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
-      <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
-      <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
+  const chatArchived = isChatArchived(conversationId);
+  const chatMenuItems = [];
+  if (!isVendorSide && conv.vendor?.id) {
+    chatMenuItems.push(`<button onclick="closeChatMenu();navigate('storefront',{vendorId:'${conv.vendor.id}'})"><i class="fa-solid fa-store"></i><span>View store</span></button>`);
+  }
+  chatMenuItems.push(`<button onclick="closeChatMenu();openChatListPicker('${conversationId}')"><i class="fa-solid fa-layer-group"></i><span>Add to a list</span></button>`);
+  chatMenuItems.push(`<button onclick="closeChatMenu();toggleChatArchived('${conversationId}')"><i class="fa-solid ${chatArchived ? "fa-box-open" : "fa-box-archive"}"></i><span>${chatArchived ? "Restore chat" : "Archive chat"}</span></button>`);
+
+  let html = `<div class="chat-page-wrap">
+    <div class="chat-page-header">
+      <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+      ${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}
+      <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>
+      <div class="chat-header-actions">
+        <button class="chat-header-icon-btn" onclick="chatCallComingSoon()" title="Call"><i class="fa-solid fa-phone"></i></button>
+        <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <div class="chat-menu-dropdown hidden" id="chatMenuDropdown">${chatMenuItems.join("")}</div>
+      </div>
     </div>
-  </div>
-  <p class="muted" style="font-size:0.78rem;margin-top:0.5rem;"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>`;
+    <div class="chat-thread">
+      <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}</div>
+      <div class="chat-input-row">
+        <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelected(event,'${conversationId}')" />
+        <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
+        ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
+        <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
+        <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+    <p class="muted chat-edit-hint"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>
+  </div>`;
 
   setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageLongPress(byId("chatMessages")); }, 0);
   subscribeToConversation(conversationId);
   return html;
 }
+
+function toggleChatMenu(evt) {
+  evt?.stopPropagation();
+  byId("chatMenuDropdown")?.classList.toggle("hidden");
+}
+function closeChatMenu() { byId("chatMenuDropdown")?.classList.add("hidden"); }
+function chatCallComingSoon() {
+  closeChatMenu();
+  showToast("Voice & video calls aren't available in Levromart yet.", "info");
+}
+document.addEventListener("click", (e) => {
+  const menu = byId("chatMenuDropdown");
+  if (menu && !menu.classList.contains("hidden") && !e.target.closest("#chatMenuDropdown, #chatMenuBtn")) menu.classList.add("hidden");
+});
 
 // Sent (single check) -> delivered, i.e. synced to the other person's
 // device (double check, gray) -> read, i.e. they actually opened this
