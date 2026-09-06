@@ -5926,7 +5926,7 @@ function applyLevromartFontScale(){setLevromartFontScale(getLevromartFontScale()
 // ---------- LEVI FAB SIZE ----------
 const LEVI_FAB_MIN_SIZE=44;
 const LEVI_FAB_MAX_SIZE=74;
-function getLeviFabSize(){const n=Number(localStorage.getItem("medris-levi-fab-size"));return Number.isFinite(n)?Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(n))):LEVI_FAB_MAX_SIZE;}
+function getLeviFabSize(){const n=Number(localStorage.getItem("medris-levi-fab-size"));return Number.isFinite(n)?Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(n))):54;}
 function setLeviFabSize(value){const size=Math.max(LEVI_FAB_MIN_SIZE,Math.min(LEVI_FAB_MAX_SIZE,Math.round(Number(value)||LEVI_FAB_MAX_SIZE)));localStorage.setItem("medris-levi-fab-size",String(size));document.documentElement.style.setProperty("--levi-fab-size",`${size}px`);const fab=byId("aiChatFab");if(fab){fab.style.setProperty("width",`${size}px`,"important");fab.style.setProperty("height",`${size}px`,"important");fab.style.setProperty("min-width",`${size}px`,"important");fab.style.setProperty("min-height",`${size}px`,"important");}const out=byId("leviSizeValue");if(out)out.textContent=`${size}px`;const range=byId("leviSizeRange");if(range)range.value=String(size);}
 function applyLeviFabSize(){setLeviFabSize(getLeviFabSize());}
 
@@ -6372,50 +6372,82 @@ function bindProfileEdgeSwipe(){
   profileEdgeSwipeBound=true;
   const panel=byId("profilePanel");
   if(!panel)return;
-  // ONLY the profile panel gets this horizontal page gesture.  Scrollable
-  // controls (tables, maps, galleries, rails, forms, messages) are ignored.
+  // Profile drawer gesture: use Pointer Events for mouse/pen, but use the
+  // native touch events on phones. Android Chrome can cancel a pointer stream
+  // as soon as it decides the gesture is scrolling; the touch fallback keeps
+  // the horizontal profile swipe reliable without disturbing vertical scroll.
   let gesture=null;
   const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
   const canStart=(target)=>!target?.closest?.(ignoreSelector);
-
-  function start(e){
-    if(e.pointerType==='mouse' && e.button!==0)return;
-    if(!session || !profile || !canStart(e.target))return;
+  const begin=(x,y,target,id,type)=>{
+    if(!session || !profile || !canStart(target))return false;
     const open=panel.classList.contains('open');
     const w=window.innerWidth;
-    // Opening starts comfortably inside the screen so the OS edge-back gesture
-    // remains untouched. Closing starts only inside the profile drawer.
+    // Avoid fighting the phone's own edge-back gesture. A closed drawer can
+    // be opened from the comfortable middle 60% of the screen; an open drawer
+    // can only be closed from inside the drawer itself.
     if(!open){
-      if(e.clientX < w*0.20 || e.clientX > w*0.80)return;
-    }else if(!panel.contains(e.target))return;
-    gesture={id:e.pointerId,sx:e.clientX,sy:e.clientY,open,moved:false,horizontal:false};
-    try{e.target.setPointerCapture?.(e.pointerId);}catch(_){}
-  }
-
-  function move(e){
-    if(!gesture || e.pointerId!==gesture.id)return;
-    const dx=e.clientX-gesture.sx,dy=e.clientY-gesture.sy;
+      if(x < w*0.20 || x > w*0.80)return false;
+    }else if(!panel.contains(target))return false;
+    gesture={id,sx:x,sy:y,open,moved:false,horizontal:false,type};
+    return true;
+  };
+  const update=(x,y,ev)=>{
+    if(!gesture)return false;
+    const dx=x-gesture.sx,dy=y-gesture.sy;
     if(!gesture.moved){
-      if(Math.hypot(dx,dy)<9)return;
-      if(Math.abs(dy)>=Math.abs(dx)*0.92){gesture=null;return;}
-      gesture.moved=true; gesture.horizontal=true;
+      if(Math.hypot(dx,dy)<8)return true;
+      // A clear vertical intent belongs to the drawer's normal scrolling.
+      if(Math.abs(dy)>=Math.abs(dx)*0.9){gesture=null;return false;}
+      gesture.moved=true;gesture.horizontal=true;
     }
-    if(gesture.horizontal && e.cancelable)e.preventDefault();
-  }
-
-  function end(e){
-    if(!gesture || e.pointerId!==gesture.id)return;
-    const g=gesture; gesture=null;
-    const dx=e.clientX-g.sx,dy=e.clientY-g.sy;
-    if(!g.horizontal || Math.abs(dx)<58 || Math.abs(dx)<Math.abs(dy)*1.12)return;
+    if(gesture.horizontal && ev?.cancelable)ev.preventDefault();
+    return true;
+  };
+  const finish=(x,y)=>{
+    if(!gesture)return;
+    const g=gesture;gesture=null;
+    const dx=x-g.sx,dy=y-g.sy;
+    if(!g.horizontal || Math.abs(dx)<52 || Math.abs(dx)<Math.abs(dy)*1.08)return;
     if(!g.open && dx>0){openDrawer('profilePanel');return;}
     if(g.open && dx<0){closeAllPanels();return;}
-  }
+  };
 
-  document.addEventListener('pointerdown',start,{passive:true});
-  document.addEventListener('pointermove',move,{passive:false});
-  document.addEventListener('pointerup',end,{passive:true});
-  document.addEventListener('pointercancel',()=>{gesture=null;},{passive:true});
+  document.addEventListener('pointerdown',(e)=>{
+    if(e.pointerType==='touch')return;
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    begin(e.clientX,e.clientY,e.target,e.pointerId,'pointer');
+  },{passive:true});
+  document.addEventListener('pointermove',(e)=>{
+    if(e.pointerType==='touch')return;
+    if(!gesture || gesture.type!=='pointer' || e.pointerId!==gesture.id)return;
+    update(e.clientX,e.clientY,e);
+  },{passive:false});
+  document.addEventListener('pointerup',(e)=>{
+    if(e.pointerType==='touch')return;
+    if(gesture?.type==='pointer' && e.pointerId===gesture.id)finish(e.clientX,e.clientY);
+  },{passive:true});
+  document.addEventListener('pointercancel',(e)=>{
+    if(e.pointerType==='touch')return;
+    if(gesture?.type==='pointer' && e.pointerId===gesture.id)gesture=null;
+  },{passive:true});
+
+  document.addEventListener('touchstart',(e)=>{
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    begin(t.clientX,t.clientY,e.target,'touch','touch');
+  },{passive:true});
+  document.addEventListener('touchmove',(e)=>{
+    if(!gesture || gesture.type!=='touch' || e.touches.length!==1)return;
+    const t=e.touches[0];
+    update(t.clientX,t.clientY,e);
+  },{passive:false});
+  document.addEventListener('touchend',(e)=>{
+    if(!gesture || gesture.type!=='touch')return;
+    const t=e.changedTouches[0];
+    if(t)finish(t.clientX,t.clientY);else gesture=null;
+  },{passive:true});
+  document.addEventListener('touchcancel',()=>{if(gesture?.type==='touch')gesture=null;},{passive:true});
 }
 bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
