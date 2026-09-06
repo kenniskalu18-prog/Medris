@@ -841,6 +841,7 @@
   .chat-input-row { display: flex; gap: 0.5rem; padding: 0.7rem; border-top: 1px solid var(--border); align-items: flex-end; }
   .chat-input-row textarea { margin: 0; flex: 1; resize: none; max-height: 7.5rem; overflow-y: auto; line-height: 1.35; }
   .chat-input-row .btn { flex-shrink: 0; }
+  .chat-file-input { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; opacity:0 !important; }
   .msg-attach-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: none; background: none; color: var(--text-muted); cursor: pointer; flex-shrink: 0; font-size: 1rem; }
   .msg-attach-btn:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
   .msg-attachment { display: block; margin-bottom: 0.4rem; }
@@ -889,6 +890,7 @@
 
   /* ---- toasts (replace native alert) ---- */
   .toast-stack { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 0.6rem; align-items: center; width: min(420px, 92vw); pointer-events: none; }
+  .toast-stack > .toast { max-width:100%; }
   @media (max-width: 720px) { .toast-stack { bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)); } }
   .toast { display: flex; align-items: center; gap: 0.6rem; background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid var(--glass-border); color: var(--text); padding: 0.8rem 1.1rem; border-radius: 0.8rem; box-shadow: 0 12px 30px rgba(0,0,0,0.25); font-size: 0.88rem; opacity: 0; transform: translateY(16px); transition: opacity 0.25s ease, transform 0.25s ease; width: 100%; }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -4181,6 +4183,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .chat-header-back { background:none; border:none; color:var(--text); font-size:1.15rem; padding:0.3rem; cursor:pointer; flex-shrink:0; }
 .chat-header-avatar { width:2.35rem; height:2.35rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
 .chat-header-avatar-fallback { display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--primary) 16%, transparent); color:var(--primary); font-weight:700; font-size:0.9rem; }
+.chat-header-profile-link { display:flex; align-items:center; gap:0.7rem; flex:1; min-width:0; padding:0; border:0; background:none; color:inherit; text-align:left; cursor:pointer; font:inherit; }
 .chat-header-name-wrap { flex:1; min-width:0; }
 .chat-header-name { display:block; font-size:1rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .chat-header-actions { display:flex; align-items:center; gap:0.15rem; flex-shrink:0; position:relative; }
@@ -5884,16 +5887,28 @@ document.addEventListener("click", (e) => {
 function showToast(message, type = "info") {
   playSound(type === "error" ? "error" : "notify");
   const wrap = byId("toastStack");
-  if (!wrap) { return; }
-  const el = document.createElement("div");
-  el.className = `toast toast-${type}`;
+  if (!wrap) return;
   const icon = type === "error" ? "fa-circle-exclamation" : type === "success" ? "fa-circle-check" : "fa-circle-info";
-  el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${esc(message)}</span>`;
-  wrap.appendChild(el);
-  requestAnimationFrame(() => el.classList.add("show"));
-  setTimeout(() => {
+  let el = window.__activeToast;
+  if (!el || !el.isConnected) {
+    el = document.createElement("div");
+    el.className = "toast";
+    wrap.replaceChildren(el);
+    window.__activeToast = el;
+  } else {
+    clearTimeout(window.__activeToastTimer);
+    clearTimeout(window.__activeToastRemoveTimer);
     el.classList.remove("show");
-    setTimeout(() => el.remove(), 300);
+  }
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${esc(message)}</span>`;
+  requestAnimationFrame(() => el.classList.add("show"));
+  window.__activeToastTimer = setTimeout(() => {
+    el.classList.remove("show");
+    window.__activeToastRemoveTimer = setTimeout(() => {
+      if (el === window.__activeToast) window.__activeToast = null;
+      el.remove();
+    }, 300);
   }, 4200);
 }
 // Shown the instant we're back from Paystack, before verify-payment even
@@ -6687,15 +6702,26 @@ function showUndoToast(message, undoFn) {
   playSound("notify");
   const wrap = byId("toastStack");
   if (!wrap) return;
-  const el = document.createElement("div");
+  clearTimeout(window.__activeToastTimer);
+  clearTimeout(window.__activeToastRemoveTimer);
+  let el = window.__activeToast;
+  if (!el || !el.isConnected) {
+    el = document.createElement("div");
+    wrap.replaceChildren(el);
+    window.__activeToast = el;
+  }
   el.className = "toast toast-info";
   el.innerHTML = `<i class="fa-solid fa-circle-info"></i><span style="flex:1;">${esc(message)}</span><button class="toast-undo-btn">Undo</button>`;
-  wrap.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
   let done = false;
-  const dismiss = () => { if (done) return; done = true; el.classList.remove("show"); setTimeout(() => el.remove(), 300); };
+  const dismiss = () => {
+    if (done) return;
+    done = true;
+    el.classList.remove("show");
+    window.__activeToastRemoveTimer = setTimeout(() => { if (el === window.__activeToast) window.__activeToast = null; el.remove(); }, 300);
+  };
   el.querySelector(".toast-undo-btn").addEventListener("click", () => { undoFn(); dismiss(); });
-  setTimeout(dismiss, 5000);
+  window.__activeToastTimer = setTimeout(dismiss, 5000);
 }
 
 async function markAllNotifsRead() {
@@ -8672,6 +8698,7 @@ async function renderMessages(conversationId) {
   const op = (other && other[0]) || {};
   const otherName = op.name || (isVendorSide ? "Buyer" : conv.vendor?.business_name || "Vendor");
   const otherAvatar = op.avatar_url || (isVendorSide ? null : conv.vendor?.logo_url);
+  const otherPhone = op.phone || "";
   lastSeenMessagesByConv.set(conversationId, messages || []);
 
   sb.rpc("mark_conversation_opened", { p_conversation_id: conversationId }).then(() => refreshNotifications());
@@ -8679,7 +8706,7 @@ async function renderMessages(conversationId) {
   const chatArchived = isChatArchived(conversationId);
   const chatMenuItems = [];
   if (!isVendorSide && conv.vendor?.id) {
-    chatMenuItems.push(`<button onclick="closeChatMenu();navigate('storefront',{vendorId:'${conv.vendor.id}'})"><i class="fa-solid fa-store"></i><span>View store</span></button>`);
+    chatMenuItems.push(`<button onclick="closeChatMenu();navigate('storefront',{vendorId:'${conv.vendor.id}'})"><i class="fa-solid fa-store"></i><span>View storefront</span></button>`);
   }
   chatMenuItems.push(`<button onclick="closeChatMenu();openChatListPicker('${conversationId}')"><i class="fa-solid fa-layer-group"></i><span>Add to a list</span></button>`);
   chatMenuItems.push(`<button onclick="closeChatMenu();toggleChatArchived('${conversationId}')"><i class="fa-solid ${chatArchived ? "fa-box-open" : "fa-box-archive"}"></i><span>${chatArchived ? "Restore chat" : "Archive chat"}</span></button>`);
@@ -8690,13 +8717,12 @@ async function renderMessages(conversationId) {
   // it gets an honest "not available" toast instead of a dead redirect.
   const callAction = !isVendorSide
     ? (conv.vendor?.phone ? `callVendorGated(event,'${esc(conv.vendor.phone)}','${esc(conv.vendor.id)}')` : `chatNoCallNumber('vendor')`)
-    : `chatNoCallNumber('buyer')`;
+    : (otherPhone ? `callChatParty(event,'${esc(otherPhone)}')` : `chatNoCallNumber('buyer')`);
 
   let html = `<div class="chat-page-wrap">
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
-      ${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}
-      <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>
+      ${!isVendorSide && conv.vendor?.id ? `<button type="button" class="chat-header-profile-link" onclick="navigate('storefront',{vendorId:'${conv.vendor.id}'})" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></button>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
         <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
         <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -8706,7 +8732,7 @@ async function renderMessages(conversationId) {
     <div class="chat-thread">
       <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}</div>
       <div class="chat-input-row">
-        <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelected(event,'${conversationId}')" />
+        <input type="file" id="chatFileInput" class="chat-file-input" accept="image/*,.heic,.heif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="handleChatFileSelected(event,'${conversationId}')" />
         <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
         ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
         <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
@@ -8727,9 +8753,15 @@ function toggleChatMenu(evt) {
   byId("chatMenuDropdown")?.classList.toggle("hidden");
 }
 function closeChatMenu() { byId("chatMenuDropdown")?.classList.add("hidden"); }
+function callChatParty(event, phone) {
+  event?.preventDefault?.();
+  closeChatMenu();
+  if (!phone) { chatNoCallNumber("buyer"); return; }
+  window.location.href = telLink(phone);
+}
 function chatNoCallNumber(who) {
   closeChatMenu();
-  showToast(who === "vendor" ? "This vendor hasn't added a phone number yet." : "This buyer's number isn't shared through chat.", "info");
+  showToast(who === "vendor" ? "This vendor hasn't added a phone number yet." : "This buyer hasn't shared a phone number for calls.", "info");
 }
 document.addEventListener("click", (e) => {
   const menu = byId("chatMenuDropdown");
