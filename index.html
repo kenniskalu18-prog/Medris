@@ -808,7 +808,7 @@
     background-repeat: repeat; background-size: 96px 96px;
     background-color: var(--card);
   }
-  .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
+  .chat-bubble { max-width: 75%; padding: 0.55rem 0.85rem; border-radius: 1rem; touch-action: pan-y; font-size: 0.92rem; line-height: 1.4; word-break: break-word; }
   .chat-bubble.mine { align-self: flex-end; background: var(--chat-mine-bg, var(--primary-grad)); color: white; border-bottom-right-radius: 0.25rem; }
   .chat-bubble.theirs { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); border-bottom-left-radius: 0.25rem; }
   .chat-bubble .chat-time { display: block; font-size: 0.68rem; opacity: 0.75; margin-top: 0.2rem; }
@@ -842,6 +842,27 @@
   .reaction-picker { position: absolute; bottom: calc(100% + 0.3rem); z-index: 20; display: flex; gap: 0.3rem; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.3rem 0.4rem; box-shadow: var(--shadow-float); }
   .chat-bubble-wrap.mine .reaction-picker { right: 0; }
   .chat-bubble-wrap.theirs .reaction-picker { left: 0; }
+  .chat-message-selection-bar { display:flex; align-items:center; gap:.55rem; min-height:3.4rem; padding:.55rem .75rem; background:var(--card); border-bottom:1px solid var(--border); position:relative; z-index:30; }
+  .chat-message-selection-bar.hidden { display:none; }
+  .chat-message-selection-bar .selection-count { font-weight:700; font-size:1rem; min-width:2rem; text-align:center; }
+  .chat-message-selection-bar .selection-actions { margin-left:auto; display:flex; align-items:center; gap:.2rem; }
+  .chat-message-selection-bar button { border:0; background:transparent; color:var(--text); width:2.25rem; height:2.25rem; border-radius:50%; cursor:pointer; }
+  .chat-message-selection-bar button:hover { background:color-mix(in srgb, var(--primary) 12%, transparent); }
+  .chat-bubble.chat-selected { outline:2px solid var(--primary); outline-offset:2px; }
+  .chat-reply-preview { display:flex; align-items:center; gap:.55rem; padding:.45rem .65rem; border-top:1px solid var(--border); background:var(--input-bg); min-height:2.8rem; }
+  .chat-reply-preview.hidden { display:none; }
+  .chat-reply-preview .reply-accent { width:3px; align-self:stretch; border-radius:999px; background:var(--primary); flex:0 0 3px; }
+  .chat-reply-preview .reply-copy { min-width:0; flex:1; }
+  .chat-reply-preview .reply-label { font-size:.72rem; font-weight:700; color:var(--primary); }
+  .chat-reply-preview .reply-text { font-size:.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-reply-preview .reply-close { width:2rem; height:2rem; border:0; border-radius:50%; background:transparent; color:var(--text-muted); cursor:pointer; }
+  .chat-reply-quote { display:block; margin:-.1rem 0 .45rem; padding:.38rem .55rem; border-left:3px solid currentColor; border-radius:.35rem; background:color-mix(in srgb, var(--text) 7%, transparent); color:inherit; opacity:.82; }
+  .chat-bubble.mine .chat-reply-quote { background:rgba(255,255,255,.10); }
+  .chat-reply-quote .reply-quote-label { display:block; font-size:.68rem; font-weight:700; margin-bottom:.1rem; opacity:.9; }
+  .chat-reply-quote .reply-quote-text { display:block; font-size:.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-bubble-wrap.chat-swipe-active .chat-bubble { transition:none; }
+  .chat-bubble-wrap.chat-swipe-reply .chat-bubble { animation:chatReplyNudge .22s ease-out; }
+  @keyframes chatReplyNudge { 0%{transform:translateX(0)} 45%{transform:translateX(7px)} 100%{transform:translateX(0)} }
   .msg-action-menu { position: absolute; bottom: calc(100% + 0.3rem); right: 0; z-index: 21; display: flex; flex-direction: column; background: var(--glass-bg); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--glass-border); border-radius: 0.8rem; padding: 0.3rem; box-shadow: var(--shadow-float); min-width: 130px; }
   .msg-action-menu button { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; color: var(--text); font-size: 0.85rem; font-family: inherit; padding: 0.5rem 0.6rem; border-radius: 0.5rem; cursor: pointer; text-align: left; width: 100%; }
   .chat-edit-textarea { display: block; width: 100%; min-width: 12rem; color: var(--text) !important; border: none; border-radius: 0.6rem; padding: 0.5rem 0.6rem; font-family: inherit; font-size: 0.92rem; line-height: 1.4; resize: none; }
@@ -8727,6 +8748,15 @@ function chatSkeletonHtml(cached, cachedMessages) {
     </div>
   </div>`;
 }
+async function enrichMessageReplies(messages) {
+  const list = messages || [];
+  const ids = [...new Set(list.map(m => m.reply_to_id).filter(Boolean))];
+  if (!ids.length) return list;
+  const { data } = await sb.from("messages").select("id,sender_id,body,attachment_name,deleted_at").in("id", ids);
+  const byId = new Map((data || []).map(m => [m.id, m]));
+  list.forEach(m => { if (m.reply_to_id) m.reply_to = byId.get(m.reply_to_id) || null; });
+  return list;
+}
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
   if (activeMsgChannel) {
@@ -8741,6 +8771,10 @@ async function renderMessages(conversationId) {
     activeMsgChannel = null;
   }
   typingChannelConversationId = null;
+  chatReplyTarget = null;
+  chatSelectionMode = false;
+  chatSelectedIds.clear();
+  updateChatSelectionUi();
   setChatTypingIndicator(false);
   activeConversationId = conversationId || null;
 
@@ -8793,6 +8827,7 @@ async function renderMessages(conversationId) {
     sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }),
   ]);
   if (!conv || otherErr) return '<div class="empty-state">Conversation not found.</div>';
+  await enrichMessageReplies(messages || []);
 
   const isVendorSide = conv.vendor?.user_id === session.user.id;
   const op = (other && other[0]) || {};
@@ -8820,6 +8855,15 @@ async function renderMessages(conversationId) {
     : (otherPhone ? `callChatParty(event,'${esc(otherPhone)}')` : `chatNoCallNumber('buyer')`);
 
   let html = `<div class="chat-page-wrap">
+    <div id="chatMessageSelectionBar" class="chat-message-selection-bar hidden">
+      <button type="button" aria-label="Close selection" onclick="exitChatSelectionMode()"><i class="fa-solid fa-arrow-left"></i></button>
+      <span class="selection-count">0</span>
+      <div class="selection-actions">
+        <button type="button" title="Copy" onclick="copySelectedChatMessages()"><i class="fa-regular fa-copy"></i></button>
+        <button type="button" data-selection-action="edit" title="Edit" onclick="editSelectedChatMessage()"><i class="fa-solid fa-pen"></i></button>
+        <button type="button" data-selection-action="delete" title="Delete" onclick="deleteSelectedChatMessages()"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
       ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
@@ -8831,6 +8875,7 @@ async function renderMessages(conversationId) {
     </div>
     <div class="chat-thread">
       <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}<div id="chatTypingIndicator" class="chat-typing-indicator hidden" aria-live="polite"><span class="chat-typing-dots"><i></i><i></i><i></i></span><span>Typing…</span></div></div>
+      <div id="chatReplyPreview" class="chat-reply-preview hidden"></div>
       <div class="chat-input-row">
         <input type="file" id="chatFileInput" class="chat-file-input" accept="image/*,.heic,.heif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="handleChatFileSelected(event,'${conversationId}')" />
         <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
@@ -8842,7 +8887,7 @@ async function renderMessages(conversationId) {
     <p class="muted chat-edit-hint"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>
   </div>`;
 
-  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageLongPress(byId("chatMessages")); setupMessageDoubleTap(byId("chatMessages")); }, 0);
+  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageInteractions(byId("chatMessages")); renderChatReplyPreview(); }, 0);
   subscribeToConversation(conversationId);
   return html;
 }
@@ -8949,17 +8994,25 @@ function chatMessagesWithDatesHtml(messages, bubbleFn) {
   return html;
 }
 
+function replyQuoteHtml(m) {
+  const r = m?.reply_to;
+  if (!r) return "";
+  const who = r.sender_id === session?.user?.id ? "You" : "Reply";
+  const text = r.deleted_at ? "This message was deleted" : (r.body || r.attachment_name || "Attachment");
+  return `<div class="chat-reply-quote"><span class="reply-quote-label">${esc(who)}</span><span class="reply-quote-text">${esc(text)}</span></div>`;
+}
 function chatBubbleHtml(m) {
   const mine = m.sender_id === session.user.id;
   const time = new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   if (m.deleted_at) {
     return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
-      <div class="chat-bubble ${mine ? "mine" : "theirs"} deleted" data-msg-id="${m.id}"><span class="chat-bubble-text muted" style="font-style:italic;"><i class="fa-solid fa-ban"></i> This message was deleted</span><span class="chat-time"><span class="chat-time-text">${time}</span></span></div>
+      <div class="chat-bubble ${mine ? "mine" : "theirs"} deleted" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}"><span class="chat-bubble-text muted" style="font-style:italic;"><i class="fa-solid fa-ban"></i> This message was deleted</span><span class="chat-time"><span class="chat-time-text">${time}</span></span></div>
+      <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
     </div>`;
   }
   const editedTag = m.edited_at ? `<span class="muted" style="font-size:0.7rem;">(edited)</span>` : "";
-  return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
-    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${editedTag}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
+  return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}" data-msg-wrap-id="${m.id}">
+    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}">${replyQuoteHtml(m)}${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${editedTag}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
     <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
   </div>`;
 }
@@ -9015,8 +9068,141 @@ async function reactToMessage(evt, msgId, emoji) {
   if (row) row.innerHTML = reactionsRowHtml({ reactions: data });
 }
 
-// ---------- EDIT/DELETE OWN MESSAGES (long-press, 30-minute window) ----------
+// ---------- WHATSAPP-STYLE MESSAGE ACTIONS / SELECTION / REPLIES ----------
 const MESSAGE_EDIT_WINDOW_MS = 30 * 60 * 1000;
+let editOriginalBubbleHtml = new Map();
+let chatSelectedIds = new Set();
+let chatSelectionMode = false;
+let chatReplyTarget = null;
+let chatLongPressTimer = null;
+let chatSwipeState = null;
+let chatSuppressClickUntil = 0;
+
+function getChatMessageById(msgId) {
+  const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
+  if (!bubble) return null;
+  return {
+    id: msgId,
+    body: bubble.querySelector(".chat-bubble-text")?.textContent || "",
+    created_at: bubble.dataset.createdAt || "",
+    sender_id: bubble.classList.contains("mine") ? session?.user?.id : null,
+    deleted_at: bubble.classList.contains("deleted") ? new Date().toISOString() : null,
+    attachment_name: bubble.querySelector(".msg-attachment-file")?.textContent?.trim() || (bubble.querySelector(".msg-attachment-img") ? "Photo" : "")
+  };
+}
+function clearMessageActionOverlays() {
+  document.querySelectorAll(".msg-action-menu, .reaction-picker").forEach((p) => p.remove());
+}
+function updateChatSelectionUi() {
+  document.querySelectorAll(".chat-bubble[data-msg-id]").forEach((b) => b.classList.toggle("chat-selected", chatSelectedIds.has(b.dataset.msgId)));
+  const bar = byId("chatMessageSelectionBar");
+  if (!bar) return;
+  bar.classList.toggle("hidden", !chatSelectionMode);
+  const header = document.querySelector(".chat-page-header");
+  if (header) header.classList.toggle("hidden", chatSelectionMode);
+  if (!chatSelectionMode) return;
+  const count = bar.querySelector(".selection-count");
+  if (count) count.textContent = `${chatSelectedIds.size}`;
+  const canEdit = chatSelectedIds.size === 1 && (() => {
+    const b = document.querySelector(`.chat-bubble.mine[data-msg-id="${[...chatSelectedIds][0]}"]`);
+    return !!b && b.dataset.createdAt && Date.now() - new Date(b.dataset.createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS;
+  })();
+  const editBtn = bar.querySelector("[data-selection-action=edit]");
+  if (editBtn) editBtn.classList.toggle("hidden", !canEdit);
+  const canDelete = chatSelectedIds.size > 0 && [...chatSelectedIds].every((id) => {
+    const b = document.querySelector(`.chat-bubble.mine[data-msg-id="${id}"]`);
+    return !!b && b.dataset.createdAt && Date.now() - new Date(b.dataset.createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS;
+  });
+  const deleteBtn = bar.querySelector("[data-selection-action=delete]");
+  if (deleteBtn) { deleteBtn.classList.toggle("hidden", !canDelete); deleteBtn.disabled = !canDelete; }
+}
+function exitChatSelectionMode() {
+  chatSelectionMode = false;
+  chatSelectedIds.clear();
+  clearMessageActionOverlays();
+  updateChatSelectionUi();
+}
+function enterChatSelectionMode(msgId) {
+  clearMessageActionOverlays();
+  chatSelectionMode = true;
+  chatSelectedIds.clear();
+  chatSelectedIds.add(String(msgId));
+  updateChatSelectionUi();
+}
+function toggleChatMessageSelection(msgId) {
+  msgId = String(msgId);
+  if (chatSelectedIds.has(msgId)) chatSelectedIds.delete(msgId); else chatSelectedIds.add(msgId);
+  if (!chatSelectedIds.size) exitChatSelectionMode(); else updateChatSelectionUi();
+}
+function copySelectedChatMessages() {
+  const ids = [...chatSelectedIds];
+  const texts = ids.map((id) => document.querySelector(`.chat-bubble[data-msg-id="${id}"] .chat-bubble-text`)?.textContent || "").filter(Boolean);
+  if (!texts.length) { showToast("Nothing to copy.", "info"); return; }
+  navigator.clipboard?.writeText(texts.join("\n" )).then(() => { showToast("Copied.", "info"); exitChatSelectionMode(); }).catch(() => showToast("Couldn't copy this message.", "error"));
+}
+async function deleteSelectedChatMessages() {
+  const ids = [...chatSelectedIds];
+  if (!ids.length) return;
+  if (!(await showConfirmDialog(`Delete ${ids.length} selected message${ids.length === 1 ? "" : "s"}? This can't be undone.`, { title: "Delete messages", okLabel: "Delete", danger: true }))) return;
+  for (const id of ids) {
+    const { error } = await sb.rpc("delete_message", { p_message_id: id });
+    if (error) { showToast(error.message, "error"); return; }
+  }
+  exitChatSelectionMode();
+  const convId = activeConversationId;
+  if (convId) await renderMessages(convId).then((html) => { const main = byId("mainContent"); if (main) { main.innerHTML = html; setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageInteractions(byId("chatMessages")); }, 0); } });
+}
+function editSelectedChatMessage() {
+  if (chatSelectedIds.size !== 1) return;
+  const id = [...chatSelectedIds][0];
+  exitChatSelectionMode();
+  startEditMessage(id);
+}
+function setChatReplyTarget(msgId) {
+  const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
+  if (!bubble) return;
+  chatReplyTarget = { id: msgId, body: bubble.querySelector(".chat-bubble-text")?.textContent || "", attachment: bubble.querySelector(".msg-attachment-file")?.textContent?.trim() || (bubble.querySelector(".msg-attachment-img") ? "Photo" : "") };
+  clearMessageActionOverlays();
+  exitChatSelectionMode();
+  renderChatReplyPreview();
+  byId("chatInput")?.focus();
+}
+function clearChatReplyTarget() { chatReplyTarget = null; renderChatReplyPreview(); }
+function renderChatReplyPreview() {
+  const box = byId("chatReplyPreview");
+  if (!box) return;
+  if (!chatReplyTarget) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  const text = chatReplyTarget.body || chatReplyTarget.attachment || "Attachment";
+  box.innerHTML = `<span class="reply-accent"></span><div class="reply-copy"><div class="reply-label">Replying to ${document.querySelector(`.chat-bubble[data-msg-id="${chatReplyTarget.id}"]`)?.classList.contains("mine") ? "yourself" : "message"}</div><div class="reply-text">${esc(text)}</div></div><button class="reply-close" type="button" aria-label="Cancel reply" onclick="clearChatReplyTarget()"><i class="fa-solid fa-xmark"></i></button>`;
+  box.classList.remove("hidden");
+}
+function showMessageActionMenu(bubble) {
+  clearMessageActionOverlays();
+  const msgId = bubble.dataset.msgId;
+  const mine = bubble.classList.contains("mine");
+  const createdAt = bubble.dataset.createdAt;
+  const withinEditWindow = !!createdAt && Date.now() - new Date(createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS;
+  const wrap = bubble.closest(".chat-bubble-wrap");
+  if (!wrap) return;
+  const menu = document.createElement("div");
+  menu.className = "msg-action-menu";
+  const actions = [
+    `<button type="button" onclick="setChatReplyTarget('${msgId}')"><i class="fa-solid fa-reply"></i> Reply</button>`,
+    `<button type="button" onclick="enterChatSelectionMode('${msgId}')"><i class="fa-regular fa-square-check"></i> Select</button>`,
+    `<button type="button" onclick="copySingleChatMessage('${msgId}')"><i class="fa-regular fa-copy"></i> Copy</button>`
+  ];
+  if (mine && withinEditWindow) {
+    actions.push(`<button type="button" onclick="startEditMessage('${msgId}')"><i class="fa-solid fa-pen"></i> Edit</button>`);
+    actions.push(`<button type="button" onclick="confirmDeleteMessage('${msgId}')"><i class="fa-solid fa-trash"></i> Delete</button>`);
+  }
+  menu.innerHTML = actions.join("");
+  wrap.appendChild(menu);
+}
+function copySingleChatMessage(msgId) {
+  const text = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"] .chat-bubble-text`)?.textContent || "";
+  clearMessageActionOverlays();
+  navigator.clipboard?.writeText(text).then(() => showToast("Copied.", "info")).catch(() => showToast("Couldn't copy this message.", "error"));
+}
 function setupMessageDoubleTap(root) {
   const el = root || document;
   el.querySelectorAll?.(".chat-bubble[data-msg-id]").forEach((bubble) => {
@@ -9025,53 +9211,96 @@ function setupMessageDoubleTap(root) {
     if (isCoarsePointer()) {
       let lastTap = 0;
       bubble.addEventListener("touchend", (e) => {
+        if (chatSelectionMode || bubble.classList.contains("deleted")) return;
         const now = Date.now();
         if (now - lastTap < 320) { e.preventDefault(); openReactionPicker(e, bubble.dataset.msgId); lastTap = 0; }
         else lastTap = now;
       }, { passive: false });
     } else {
-      bubble.addEventListener("dblclick", (e) => openReactionPicker(e, bubble.dataset.msgId));
+      bubble.addEventListener("dblclick", (e) => { if (!chatSelectionMode) openReactionPicker(e, bubble.dataset.msgId); });
     }
   });
 }
 function setupMessageLongPress(root) {
-  (root || document).querySelectorAll(".chat-bubble.mine[data-msg-id]").forEach((bubble) => {
+  const el = root || document;
+  el.querySelectorAll?.(".chat-bubble[data-msg-id]").forEach((bubble) => {
     if (bubble.dataset.longPressBound) return;
     bubble.dataset.longPressBound = "1";
     let timer = null;
-    const start = () => { clearTimeout(timer); timer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(15); showMessageActionMenu(bubble); }, 500); };
+    let moved = false;
+    let sx = 0, sy = 0;
+    const start = (e) => {
+      if (e.button != null && e.button !== 0) return;
+      sx = e.clientX || 0; sy = e.clientY || 0; moved = false;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (moved) return;
+        if (navigator.vibrate) navigator.vibrate(15);
+        chatSuppressClickUntil = Date.now() + 650;
+        if (chatSelectionMode) toggleChatMessageSelection(bubble.dataset.msgId);
+        else { enterChatSelectionMode(bubble.dataset.msgId); showMessageActionMenu(bubble); }
+      }, 520);
+    };
+    const move = (e) => { if (Math.hypot((e.clientX || 0) - sx, (e.clientY || 0) - sy) > 10) { moved = true; clearTimeout(timer); } };
     const cancel = () => clearTimeout(timer);
     bubble.addEventListener("pointerdown", start);
+    bubble.addEventListener("pointermove", move);
     bubble.addEventListener("pointerup", cancel);
     bubble.addEventListener("pointerleave", cancel);
     bubble.addEventListener("pointercancel", cancel);
-    bubble.addEventListener("contextmenu", (e) => { e.preventDefault(); showMessageActionMenu(bubble); });
+    bubble.addEventListener("contextmenu", (e) => { e.preventDefault(); chatSuppressClickUntil = Date.now() + 650; if (chatSelectionMode) toggleChatMessageSelection(bubble.dataset.msgId); else { enterChatSelectionMode(bubble.dataset.msgId); showMessageActionMenu(bubble); } });
   });
 }
-function showMessageActionMenu(bubble) {
-  document.querySelectorAll(".msg-action-menu, .reaction-picker").forEach((p) => p.remove());
-  const msgId = bubble.dataset.msgId;
-  const createdAt = bubble.dataset.createdAt;
-  if (!createdAt || Date.now() - new Date(createdAt).getTime() > MESSAGE_EDIT_WINDOW_MS) {
-    showToast("The 30-minute window to edit or delete this message has passed.", "info");
-    return;
-  }
-  const wrap = bubble.closest(".chat-bubble-wrap");
-  if (!wrap) return;
-  const menu = document.createElement("div");
-  menu.className = "msg-action-menu";
-  menu.innerHTML = `<button type="button" onclick="startEditMessage('${msgId}')"><i class="fa-solid fa-pen"></i> Edit</button><button type="button" onclick="confirmDeleteMessage('${msgId}')"><i class="fa-solid fa-trash"></i> Delete</button>`;
-  wrap.appendChild(menu);
+function setupMessageSwipeReply(root) {
+  const el = root || document;
+  el.querySelectorAll?.(".chat-bubble-wrap[data-msg-wrap-id]").forEach((wrap) => {
+    if (wrap.dataset.swipeReplyBound) return;
+    wrap.dataset.swipeReplyBound = "1";
+    let sx = 0, sy = 0, dx = 0, active = false;
+    const bubble = wrap.querySelector(".chat-bubble[data-msg-id]");
+    if (!bubble || bubble.classList.contains("deleted")) return;
+    bubble.addEventListener("pointerdown", (e) => {
+      if (chatSelectionMode || e.button !== 0) return;
+      sx = e.clientX; sy = e.clientY; dx = 0; active = true;
+      wrap.classList.add("chat-swipe-active");
+    });
+    bubble.addEventListener("pointermove", (e) => {
+      if (!active) return;
+      dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+      if (Math.abs(dy) > Math.abs(dx) * 1.15) { active = false; wrap.classList.remove("chat-swipe-active"); return; }
+      if (Math.abs(dx) > 8) e.preventDefault();
+      const shift = Math.max(-48, Math.min(48, dx * 0.42));
+      bubble.style.transform = `translateX(${shift}px)`;
+    });
+    const finish = () => {
+      if (!active) return;
+      active = false; wrap.classList.remove("chat-swipe-active"); bubble.style.transform = "";
+      if (Math.abs(dx) >= 70) { wrap.classList.add("chat-swipe-reply"); setChatReplyTarget(bubble.dataset.msgId); setTimeout(() => wrap.classList.remove("chat-swipe-reply"), 250); }
+    };
+    bubble.addEventListener("pointerup", finish);
+    bubble.addEventListener("pointercancel", finish);
+    bubble.addEventListener("pointerleave", finish);
+  });
+}
+function setupMessageInteractions(root) {
+  setupMessageLongPress(root);
+  setupMessageDoubleTap(root);
+  setupMessageSwipeReply(root);
 }
 document.addEventListener("click", (e) => {
+  if (Date.now() < chatSuppressClickUntil) return;
+  if (chatSelectionMode && e.target.closest?.(".chat-bubble[data-msg-id]") && !e.target.closest?.(".msg-action-menu")) {
+    toggleChatMessageSelection(e.target.closest(".chat-bubble[data-msg-id]").dataset.msgId);
+    return;
+  }
   if (!e.target.closest(".msg-action-menu")) document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
-}, true);
+});
 // Edits happen in place, right inside the message bubble itself -- not a
 // separate popup dialog and not the main compose bar -- so it's obvious
 // this is changing that exact message, not drafting a new one (which was
 // easy to confuse with the old popup and risked sending the same message
 // twice: once as the "edit", once again if they also retyped it below).
-let editOriginalBubbleHtml = new Map();
 function startEditMessage(msgId) {
   document.querySelectorAll(".msg-action-menu").forEach((m) => m.remove());
   const bubble = document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`);
@@ -9192,17 +9421,21 @@ function subscribeToConversation(conversationId) {
         }
       }
     })
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, async (payload) => {
       if (activeConversationId !== conversationId) return;
       const el = byId("chatMessages");
       if (!el) return;
       if (payload.new.sender_id !== session.user.id) {
+        if (payload.new.reply_to_id) {
+          const { data: parent } = await sb.from("messages").select("id,sender_id,body,attachment_name,deleted_at").eq("id", payload.new.reply_to_id).maybeSingle();
+          payload.new.reply_to = parent || null;
+        }
         setChatTypingIndicator(false);
         clearTimeout(window.__levroTypingHideTimer);
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
         resolveVisibleAttachments(el);
-        setupMessageDoubleTap(el);
+        setupMessageInteractions(el);
         sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
     })
@@ -9256,11 +9489,16 @@ async function sendChatMessage(conversationId) {
   clearTimeout(typingStopTimer);
   publishChatTyping(false);
   resetChatInput(input);
-  const { data, error } = await sb.from("messages").insert({ conversation_id: conversationId, sender_id: session.user.id, body }).select("*").single();
+  const replyToId = chatReplyTarget?.id || null;
+  const { data, error } = await sb.from("messages").insert({ conversation_id: conversationId, sender_id: session.user.id, body, reply_to_id: replyToId }).select("*").single();
   if (error) { showToast(error.message, "error"); return; }
+  const replyTargetSnapshot = chatReplyTarget ? { ...chatReplyTarget } : null;
+  if (replyTargetSnapshot) data.reply_to = { id: replyTargetSnapshot.id, body: replyTargetSnapshot.body, attachment_name: replyTargetSnapshot.attachment, sender_id: document.querySelector(`.chat-bubble[data-msg-id="${replyTargetSnapshot.id}"]`)?.classList.contains("mine") ? session.user.id : "" };
+  chatReplyTarget = null;
+  renderChatReplyPreview();
   byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
   scrollChatToBottom();
-  setupMessageLongPress(byId("chatMessages"));
+  setupMessageInteractions(byId("chatMessages"));
 }
 async function handleChatFileSelected(evt, conversationId) {
   const file = evt.target.files[0];
@@ -9276,15 +9514,20 @@ async function handleChatFileSelected(evt, conversationId) {
     publishChatTyping(false);
     const body = input.value.trim();
     resetChatInput(input);
+    const replyToId = chatReplyTarget?.id || null;
     const { data, error } = await sb.from("messages").insert({
-      conversation_id: conversationId, sender_id: session.user.id, body,
+      conversation_id: conversationId, sender_id: session.user.id, body, reply_to_id: replyToId,
       attachment_url: path, attachment_name: file.name, attachment_type: file.type || "application/octet-stream", attachment_size: file.size,
     }).select("*").single();
     if (error) { showToast(error.message, "error"); return; }
+    const replyTargetSnapshot = chatReplyTarget ? { ...chatReplyTarget } : null;
+    if (replyTargetSnapshot) data.reply_to = { id: replyTargetSnapshot.id, body: replyTargetSnapshot.body, attachment_name: replyTargetSnapshot.attachment, sender_id: document.querySelector(`.chat-bubble[data-msg-id="${replyTargetSnapshot.id}"]`)?.classList.contains("mine") ? session.user.id : "" };
+    chatReplyTarget = null;
+    renderChatReplyPreview();
     byId("chatMessages")?.insertAdjacentHTML("beforeend", chatBubbleHtml(data));
     scrollChatToBottom();
     resolveVisibleAttachments(byId("chatMessages"));
-    setupMessageLongPress(byId("chatMessages"));
+    setupMessageInteractions(byId("chatMessages"));
   } catch (err) {
     showToast(err.message || "Could not attach that file.", "error");
   }
