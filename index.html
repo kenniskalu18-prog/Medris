@@ -4006,6 +4006,87 @@ body { min-width:0 !important; }
   outline:2.5px solid var(--primary) !important; outline-offset:2px !important;
 }
 
+
+/* ================================================================
+   FINAL HEADER + BRAND MARK + NOTIFICATION RELIABILITY PATCH
+   ================================================================ */
+
+/* Keep the header controls on one physical horizontal line on iPhone.
+   The notification control is anchored to the same vertical center as
+   the profile/logo row instead of participating in any flex wrapping. */
+header {
+  position: sticky !important;
+  position: -webkit-sticky !important;
+  align-items: center !important;
+  min-height: 68px !important;
+}
+header .header-left {
+  height: 42px !important;
+  min-height: 42px !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+}
+header .header-left #profileWrap,
+header .header-left h1 {
+  height: 42px !important;
+  align-self: center !important;
+  align-items: center !important;
+}
+header .header-right {
+  position: absolute !important;
+  right: max(1rem, 3vw) !important;
+  top: calc(.7rem + env(safe-area-inset-top, 0px)) !important;
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: auto !important;
+}
+header #notifWrap,
+header #notifWrap .icon-btn {
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: center !important;
+  transform: none !important;
+}
+
+/* Leave enough room so the logo never collides with the right-side bell. */
+header .header-left {
+  padding-right: 54px !important;
+}
+
+/* Make the centre white Levromart mark visually match the intended logo
+   proportions instead of looking undersized inside the transparent source. */
+.brand-logo-circle {
+  transform: scale(1.34) !important;
+  transform-origin: center center !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo-circle { transform: scale(1.34) !important; }
+}
+@keyframes logoPulseLarge {
+  0%, 100% {
+    filter: brightness(0) invert(1) drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 45%, transparent));
+    transform: scale(1.34);
+  }
+  50% {
+    filter: brightness(0) invert(1) drop-shadow(0 0 15px color-mix(in srgb, var(--primary-light) 80%, transparent));
+    transform: scale(1.43);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brand-logo-circle { animation: logoPulseLarge 3s ease-in-out infinite !important; }
+}
+
+/* Notification actions: every mutation is scoped to the authenticated user,
+   checks the actual database result, and refreshes only after persistence. */
+#notifPanel .notif-item { -webkit-tap-highlight-color: transparent !important; }
+
 </style>
 
 
@@ -6508,23 +6589,42 @@ function exitNotifSelectMode(rerender = true) {
 
 async function batchMarkNotifsRead(read) {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
-  notifRenderEpoch++;
-  const panel = byId("notifPanel");
-  const rows = ids.map((id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)).filter(Boolean);
-  const oldUnread = new Map(rows.map((row) => [String(row.dataset.id), row.classList.contains("unread")]));
-  rows.forEach((row) => { row.classList.toggle("unread", !read); row.classList.remove("selected"); row.setAttribute("aria-selected", "false"); });
-  const count = ids.length;
-  exitNotifSelectMode(false);
-  showToast(`${count} notification${count === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
-  const { error } = await sb.from("notifications").update({ read }).in("id", ids);
-  if (error) {
-    oldUnread.forEach((wasUnread, id) => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.classList.toggle("unread", wasUnread));
-    renderNotifPanel();
-    showToast(error.message || "Couldn't update notifications.", "error");
-  } else {
-    refreshNotifications(false).catch(() => {});
+  if (!session || !ids.length) {
+    if (!ids.length) showToast("Select at least one notification first.", "info");
+    return;
   }
+
+  const userId = session.user.id;
+  const panel = byId("notifPanel");
+  const rows = ids.map(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
+  const previous = new Map(rows.map(row => [String(row.dataset.id), row.classList.contains("unread")]));
+
+  const { data, error } = await sb
+    .from("notifications")
+    .update({ read: !!read })
+    .eq("user_id", userId)
+    .in("id", ids)
+    .select("id,read");
+
+  if (error) {
+    showToast(error.message || "Couldn't update notifications.", "error");
+    return;
+  }
+
+  const changed = new Set((data || []).map(n => String(n.id)));
+  if (changed.size !== ids.length) {
+    previous.forEach((wasUnread, id) => {
+      const row = panel?.querySelector(`.notif-item[data-id="${CSS.escape(id)}"]`);
+      if (row) row.classList.toggle("unread", wasUnread);
+    });
+    await refreshNotifications();
+    showToast("Some notifications could not be updated.", "error");
+    return;
+  }
+
+  exitNotifSelectMode(false);
+  await refreshNotifications();
+  showToast(`${ids.length} notification${ids.length === 1 ? "" : "s"} marked ${read ? "read" : "unread"}.`, "success");
 }
 // ---- inbox <-> archive ----
 // Single-item quick actions below keep their undo-toast (fast, low-risk,
@@ -6534,96 +6634,176 @@ async function batchMarkNotifsRead(read) {
 // actual count involved.
 async function batchArchiveOrRestoreSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
-  notifRenderEpoch++;
+  if (!session || !ids.length) {
+    if (!ids.length) showToast("Select at least one notification first.", "info");
+    return;
+  }
+
   const restoring = notifViewMode === "archived";
-  const verb = restoring ? "Restore" : "Archive";
-  const { error } = await sb.from("notifications").update({ archived: !restoring }).in("id", ids);
-  if (error) { showToast(error.message || `Couldn't ${verb.toLowerCase()} notifications.`, "error"); return; }
-  const panel = byId("notifPanel");
-  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
-  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
-  const count = ids.length;
+  const verb = restoring ? "restore" : "archive";
+  const { data, error } = await sb
+    .from("notifications")
+    .update({ archived: !restoring })
+    .eq("user_id", session.user.id)
+    .in("id", ids)
+    .select("id");
+
+  if (error) {
+    showToast(error.message || `Couldn't ${verb} notifications.`, "error");
+    return;
+  }
+
+  if ((data || []).length !== ids.length) {
+    await refreshNotifications();
+    showToast(`Some notifications could not be ${verb}d.`, "error");
+    return;
+  }
+
   exitNotifSelectMode(false);
-  refreshNotifications(false);
-  showToast(restoring ? `${count} restored.` : `${count} archived.`, "success");
+  await refreshNotifications();
+  showToast(restoring ? `${ids.length} restored.` : `${ids.length} archived.`, "success");
 }
 async function quickArchiveNotif(id) {
-  await sb.from("notifications").update({ archived: true }).eq("id", id);
-  refreshNotifications();
-  showUndoToast("Notification archived.", async () => { await sb.from("notifications").update({ archived: false }).eq("id", id); refreshNotifications(); });
+  if (!session) return;
+  const { error } = await sb.from("notifications").update({ archived: true }).eq("id", id).eq("user_id", session.user.id);
+  if (error) { showToast(error.message || "Couldn't archive notification.", "error"); return; }
+  await refreshNotifications();
+  showUndoToast("Notification archived.", async () => {
+    if (!session) return;
+    const { error: undoError } = await sb.from("notifications").update({ archived: false }).eq("id", id).eq("user_id", session.user.id);
+    if (undoError) showToast(undoError.message || "Couldn't restore notification.", "error");
+    await refreshNotifications();
+  });
 }
 async function quickUnarchiveNotif(id) {
-  await sb.from("notifications").update({ archived: false }).eq("id", id);
-  refreshNotifications();
-  showUndoToast("Notification restored.", async () => { await sb.from("notifications").update({ archived: true }).eq("id", id); refreshNotifications(); });
+  if (!session) return;
+  const { error } = await sb.from("notifications").update({ archived: false }).eq("id", id).eq("user_id", session.user.id);
+  if (error) { showToast(error.message || "Couldn't restore notification.", "error"); return; }
+  await refreshNotifications();
+  showUndoToast("Notification restored.", async () => {
+    if (!session) return;
+    const { error: undoError } = await sb.from("notifications").update({ archived: true }).eq("id", id).eq("user_id", session.user.id);
+    if (undoError) showToast(undoError.message || "Couldn't archive notification.", "error");
+    await refreshNotifications();
+  });
 }
-
 // ---- inbox/archive -> trash (soft delete) ----
 async function batchTrashSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
-  notifRenderEpoch++;
-  const now = new Date().toISOString();
-  const { error } = await sb.from("notifications").update({ deleted_at: now }).in("id", ids);
-  if (error) { showToast(error.message || "Couldn't move notifications to trash.", "error"); return; }
-  const panel = byId("notifPanel");
-  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
-  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
-  const count = ids.length;
+  if (!session || !ids.length) {
+    if (!ids.length) showToast("Select at least one notification first.", "info");
+    return;
+  }
+
+  const { data, error } = await sb
+    .from("notifications")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("user_id", session.user.id)
+    .in("id", ids)
+    .select("id");
+
+  if (error) {
+    showToast(error.message || "Couldn't move notifications to trash.", "error");
+    return;
+  }
+  if ((data || []).length !== ids.length) {
+    await refreshNotifications();
+    showToast("Some notifications could not be moved to trash.", "error");
+    return;
+  }
+
   exitNotifSelectMode(false);
-  refreshNotifications(false);
-  showToast(`${count} moved to trash.`, "success");
+  await refreshNotifications();
+  showToast(`${ids.length} moved to trash.`, "success");
 }
 async function quickTrashNotif(id) {
-  await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-  refreshNotifications();
-  showUndoToast("Notification moved to trash.", async () => { await sb.from("notifications").update({ deleted_at: null }).eq("id", id); refreshNotifications(); });
+  if (!session) return;
+  const { error } = await sb.from("notifications").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("user_id", session.user.id);
+  if (error) { showToast(error.message || "Couldn't move notification to trash.", "error"); return; }
+  await refreshNotifications();
+  showUndoToast("Notification moved to trash.", async () => {
+    if (!session) return;
+    const { error: undoError } = await sb.from("notifications").update({ deleted_at: null }).eq("id", id).eq("user_id", session.user.id);
+    if (undoError) showToast(undoError.message || "Couldn't restore notification.", "error");
+    await refreshNotifications();
+  });
 }
-
 // ---- trash -> restore ----
 async function batchRestoreSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
-  notifRenderEpoch++;
-  const { error } = await sb.from("notifications").update({ deleted_at: null }).in("id", ids);
-  if (error) { showToast(error.message || "Couldn't restore notifications.", "error"); return; }
-  const panel = byId("notifPanel");
-  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
-  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
-  const count = ids.length;
+  if (!session || !ids.length) {
+    if (!ids.length) showToast("Select at least one notification first.", "info");
+    return;
+  }
+
+  const { data, error } = await sb
+    .from("notifications")
+    .update({ deleted_at: null })
+    .eq("user_id", session.user.id)
+    .in("id", ids)
+    .select("id");
+
+  if (error) {
+    showToast(error.message || "Couldn't restore notifications.", "error");
+    return;
+  }
+  if ((data || []).length !== ids.length) {
+    await refreshNotifications();
+    showToast("Some notifications could not be restored.", "error");
+    return;
+  }
+
   exitNotifSelectMode(false);
-  refreshNotifications(false);
-  showToast(`${count} restored.`, "success");
+  await refreshNotifications();
+  showToast(`${ids.length} restored.`, "success");
 }
 async function quickRestoreFromTrash(id) {
-  await sb.from("notifications").update({ deleted_at: null }).eq("id", id);
-  refreshNotifications();
+  if (!session) return;
+  const { error } = await sb.from("notifications").update({ deleted_at: null }).eq("id", id).eq("user_id", session.user.id);
+  if (error) { showToast(error.message || "Couldn't restore notification.", "error"); return; }
+  await refreshNotifications();
   showToast("Notification restored.", "success");
 }
-
 // ---- trash -> gone forever (irreversible: always confirm) ----
 async function confirmPurgeOne(id) {
-  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete forever", okLabel: "Delete forever", danger: true }))) { renderNotifPanel(); return; }
-  await sb.from("notifications").delete().eq("id", id);
-  refreshNotifications();
+  if (!session) return;
+  if (!(await showConfirmDialog("Delete this notification permanently? This can't be undone.", { title: "Delete forever", okLabel: "Delete forever", danger: true }))) {
+    await renderNotifPanel();
+    return;
+  }
+  const { error } = await sb.from("notifications").delete().eq("id", id).eq("user_id", session.user.id);
+  if (error) { showToast(error.message || "Couldn't delete notification.", "error"); return; }
+  await refreshNotifications();
 }
 async function batchPurgeSelected() {
   const ids = [...notifSelectedIds].map(String);
-  if (!ids.length) { showToast("Select at least one notification first.", "info"); return; }
+  if (!session || !ids.length) {
+    if (!ids.length) showToast("Select at least one notification first.", "info");
+    return;
+  }
   if (!(await showConfirmDialog(`Permanently delete ${ids.length} notification${ids.length === 1 ? "" : "s"}? This can't be undone.`, { title: "Delete forever", okLabel: "Delete forever", danger: true }))) return;
-  notifRenderEpoch++;
-  const { error } = await sb.from("notifications").delete().in("id", ids);
-  if (error) { showToast(error.message || "Couldn't delete notifications.", "error"); return; }
-  const panel = byId("notifPanel");
-  ids.forEach(id => panel?.querySelector(`.notif-item[data-id="${CSS.escape(String(id))}"]`)?.closest(".notif-item-wrap")?.remove());
-  window.__notifPanelIds = getVisibleNotifIds().filter(id => !ids.includes(String(id)));
-  const count = ids.length;
-  exitNotifSelectMode(false);
-  refreshNotifications(false);
-  showToast(`${count} deleted permanently.`, "success");
-}
 
+  const { data, error } = await sb
+    .from("notifications")
+    .delete()
+    .eq("user_id", session.user.id)
+    .in("id", ids)
+    .select("id");
+
+  if (error) {
+    showToast(error.message || "Couldn't delete notifications.", "error");
+    return;
+  }
+  if ((data || []).length !== ids.length) {
+    await refreshNotifications();
+    showToast("Some notifications could not be deleted.", "error");
+    return;
+  }
+
+  exitNotifSelectMode(false);
+  await refreshNotifications();
+  showToast(`${ids.length} deleted permanently.`, "success");
+}
 function showUndoToast(message, undoFn) {
   playSound("notify");
   const wrap = byId("toastStack");
@@ -6642,27 +6822,54 @@ function showUndoToast(message, undoFn) {
 async function markAllNotifsRead() {
   if (!session) return;
   if (!(await showConfirmDialog("Mark every notification as read?", { title: "Mark all as read", okLabel: "Mark all read" }))) return;
-  notifCount = 0; byId("notifDot")?.classList.add("hidden");
-  byId("notifPanel")?.querySelectorAll(".notif-item.unread").forEach(row => row.classList.remove("unread"));
-  showToast("All marked as read.", "success");
-  const { error } = await sb.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false).eq("archived", notifViewMode === "archived").is("deleted_at", null);
-  if (error) { renderNotifPanel(); showToast(error.message || "Couldn't mark notifications as read.", "error"); return; }
-  refreshNotifications(false).catch(() => {});
+
+  const archived = notifViewMode === "archived";
+  const { data, error } = await sb
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", session.user.id)
+    .eq("read", false)
+    .eq("archived", archived)
+    .is("deleted_at", null)
+    .select("id");
+
+  if (error) {
+    showToast(error.message || "Couldn't mark notifications as read.", "error");
+    return;
+  }
+
+  notifCount = 0;
+  byId("notifDot")?.classList.add("hidden");
+  await refreshNotifications(false);
+  showToast(`${(data || []).length} notification${(data || []).length === 1 ? "" : "s"} marked as read.`, "success");
 }
 async function markSingleNotifRead(id) {
   if (!session) return;
-  const el = document.querySelector(`.notif-item[data-id="${id}"]`);
+  const el = document.querySelector(`#notifPanel .notif-item[data-id="${CSS.escape(String(id))}"]`);
   if (!el || !el.classList.contains("unread")) return;
+
+  const { error } = await sb
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", id)
+    .eq("user_id", session.user.id);
+
+  if (error) {
+    showToast(error.message || "Couldn't mark notification as read.", "error");
+    return;
+  }
+
   el.classList.remove("unread");
-  await sb.from("notifications").update({ read: true }).eq("id", id);
   notifCount = Math.max(0, notifCount - 1);
   const dot = byId("notifDot");
   if (dot) {
-    if (notifCount > 0) { dot.textContent = notifCount > 9 ? "9+" : notifCount; }
-    else { dot.classList.add("hidden"); }
+    if (notifCount > 0) {
+      dot.textContent = notifCount > 9 ? "9+" : notifCount;
+    } else {
+      dot.classList.add("hidden");
+    }
   }
 }
-
 function subscribeNotifications() {
   if (notifChannel) { sb.removeChannel(notifChannel); notifChannel = null; }
   if (!session) return;
