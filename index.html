@@ -469,8 +469,9 @@
   .ai-chat-msg { max-width: 84%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; font-size: 0.87rem; line-height: 1.4; white-space: pre-wrap; position: relative; }
   .ai-chat-msg.user { align-self: flex-end; background: var(--primary-grad); color: white; border-bottom-right-radius: 0.2rem; }
   .ai-chat-msg.assistant { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 0.2rem; }
-  .ai-chat-msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; margin-top: 0.4rem; margin-left: 0.3rem; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; opacity: 0.6; transition: opacity 0.15s ease; }
+  .ai-chat-msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; margin-top: 0.4rem; margin-left: 0.3rem; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; opacity: 0.6; transition: opacity 0.15s ease, transform 0.12s ease; touch-action: manipulation; }
   .ai-chat-msg-react:hover { opacity: 1; }
+  .ai-chat-msg-react:active { transform: scale(.92); }
   .ai-chat-nav-btn { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; background: var(--primary-grad); color: #fff; border: none; border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent); transition: transform 0.15s ease; }
   .ai-chat-nav-btn:hover { transform: translateY(-1px); }
   .ai-chat-nav-hint { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.55rem; color: var(--primary); font-size: 0.78rem; font-weight: 600; opacity: 0.85; }
@@ -4334,6 +4335,90 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .chat-skeleton-spinner { flex:1; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--text-muted); }
 </style>
 
+
+<style id="levromart-2026-09-07-polish">
+/* Trending: keep the horizontal browse rail compact so the next listing is always visible. */
+@media (max-width: 720px) {
+  .hscroll.trending-scroll { gap:.7rem !important; padding:.45rem .15rem .85rem !important; }
+  .hscroll.trending-scroll > .product-card-wrap { flex:0 0 205px !important; max-width:205px !important; }
+  .hscroll.trending-scroll .product-card-wrap .card { padding:.65rem !important; border-radius:14px !important; }
+  .hscroll.trending-scroll .product-card-wrap .product-img { aspect-ratio:1 / .92 !important; }
+  .hscroll.trending-scroll .product-card-wrap h4 { font-size:.84rem !important; margin:.45rem 0 .18rem !important; }
+  .hscroll.trending-scroll .product-card-wrap p.muted { font-size:.67rem !important; }
+}
+@media (max-width:420px) {
+  .hscroll.trending-scroll > .product-card-wrap { flex-basis:195px !important; max-width:195px !important; }
+}
+
+/* My Shop tabs: distribute evenly instead of packing everything to one side. */
+.shop-tabs-rail { width:100% !important; justify-content:center !important; align-items:stretch !important; gap:.35rem !important; overflow-x:hidden !important; }
+.shop-tabs-rail .dash-tab { flex:1 1 0 !important; max-width:140px !important; min-width:0 !important; justify-content:center !important; text-align:center !important; }
+.shop-tabs-rail .dash-tab span:not(.dash-tab-dot) { white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; max-width:100% !important; }
+.vendor-glance .accordion-trigger { padding:.65rem .85rem !important; }
+.vendor-glance .accordion-body { padding:.1rem .85rem .7rem !important; }
+.vendor-glance .order-stats-table td { padding:.55rem .05rem !important; }
+
+/* Distance chips must never break "0 m away" into separate lines. */
+.vendor-card .badge { white-space:nowrap !important; display:inline-flex !important; align-items:center !important; vertical-align:middle !important; }
+
+/* OSM credit stays present, but the map no longer looks branded by Leaflet. */
+.leaflet-control-attribution { font-size:.5rem !important; padding:.1rem .25rem !important; background:color-mix(in srgb,var(--card) 74%,transparent) !important; }
+.leaflet-control-attribution .leaflet-attribution-flag { display:none !important; }
+.leaflet-control-attribution a { text-decoration:none !important; }
+#vendorsMapStatus { margin-bottom:1.35rem !important; }
+
+/* The profile experience is a page reveal, like a native app side menu. */
+body.profile-reveal-open > header,
+body.profile-reveal-open > #app,
+body.profile-reveal-open > footer.site-footer,
+body.profile-reveal-open > .bottom-nav,
+body.profile-reveal-open > #cartFab,
+body.profile-reveal-open > #aiChatFab {
+  transform:translate3d(var(--profile-reveal-x, min(304px,78vw)),0,0) !important;
+  transition:transform .24s cubic-bezier(.22,1,.36,1) !important;
+}
+body.profile-reveal-dragging > header,
+body.profile-reveal-dragging > #app,
+body.profile-reveal-dragging > footer.site-footer,
+body.profile-reveal-dragging > .bottom-nav,
+body.profile-reveal-dragging > #cartFab,
+body.profile-reveal-dragging > #aiChatFab { transition:none !important; }
+body.profile-reveal-open > .drawer-backdrop { background:rgba(0,0,0,.08) !important; }
+#profilePanel.profile-page-reveal { box-shadow:18px 0 45px rgba(0,0,0,.18) !important; }
+
+/* Settings should end naturally instead of leaving a large flex spacer before the footer. */
+body:has(#settings-page) #app { flex:0 0 auto !important; }
+body:has(#settings-page) .site-footer { margin-top:.55rem !important; }
+
+/* Levi mark in every floating/header context is white for reliable contrast. */
+.ai-chat-fab-logo, .settings-levi-logo { filter:brightness(0) invert(1) !important; }
+
+/* Levi reactions: keep the picker fully inside the chat panel. The previous
+   right-anchoring made the left side of the emoji rail disappear off-screen
+   on narrow phones. */
+.ai-chat-msg { overflow: visible !important; }
+.ai-chat-msg .reaction-picker {
+  left: 0 !important;
+  right: auto !important;
+  max-width: min(92vw, 520px) !important;
+  width: max-content !important;
+  transform: none !important;
+}
+.ai-chat-msg.assistant .reaction-picker {
+  left: 0 !important;
+  right: auto !important;
+}
+
+/* Settings: keep the return button close to the legal footer instead of
+   leaving a large dead zone underneath the account section. */
+body:has(#settings-page) .settings-page { padding-bottom: .25rem !important; }
+body:has(#settings-page) .settings-close-page { margin-top: .05rem !important; margin-bottom: .1rem !important; }
+body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-top: .8rem !important; padding-bottom: .8rem !important; }
+
+/* Wake-up setting */
+.levi-wake-note { margin:.35rem 0 0 !important; color:var(--text-muted); font-size:.68rem !important; line-height:1.4; }
+</style>
+
 </head>
 <body>
 <div id="levromartSplash" aria-hidden="true"><img class="levromart-splash-logo" alt="" onerror="this.style.display='none'" /></div>
@@ -5721,7 +5806,7 @@ function estimateDeliveryRange(distanceKm) {
   const low = Math.max(15, Math.round(((prepMin + travelMin * 0.7) / 5)) * 5);
   const high = Math.max(low + 10, Math.round(((prepMin + travelMin * 1.3) / 5)) * 5);
   const fmt = (m) => (m >= 60 ? `${(m / 60).toFixed(m % 60 === 0 ? 0 : 1)} hr` : `${m} min`);
-  return `${fmt(low)}–${fmt(high)}`;
+  return `${fmt(low)} - ${fmt(high)}`;
 }
 // Fast location strategy: render from the last known position immediately,
 // then quietly refresh from the browser. This avoids making the Vendors page
@@ -6029,7 +6114,7 @@ function toggleLeviVisible() {
   renderLeviVisibleToggle();
   showToast(leviVisible ? "Levi is back." : "Levi is hidden. Turn this back on here any time.", "success");
 }
-function applyLeviVisibility() { syncLeviFabVisibility(); }
+function applyLeviVisibility() { syncLeviFabVisibility(); if (!leviVisible) stopLeviWakeRecognition(); else if (leviWakeEnabled) startLeviWakeRecognition(); }
 function renderLeviVisibleToggle() {
   const el = byId("leviVisibleToggleOption");
   if (!el) return;
@@ -6358,14 +6443,22 @@ function toggleAccordion(trigger) {
 // ---------- SLIDE-IN DRAWERS ----------
 function closeAllPanels() {
   closeAllInfoPopovers();
-  document.querySelectorAll(".side-drawer.open").forEach((d) => { d.classList.remove("open"); d.style.transform = ""; });
+  document.querySelectorAll(".side-drawer.open").forEach((d) => { d.classList.remove("open"); d.style.transform = ""; d.classList.remove("profile-page-reveal"); });
   byId("drawerBackdrop")?.classList.remove("open");
+  document.body.classList.remove("profile-reveal-open", "profile-reveal-dragging");
+  document.body.style.removeProperty("--profile-reveal-x");
 }
 function openDrawer(id) {
   const wasOpen = byId(id).classList.contains("open");
   closeAllPanels();
   if (!wasOpen) {
-    byId(id).classList.add("open");
+    const drawer = byId(id);
+    drawer.classList.add("open");
+    if (id === "profilePanel") {
+      drawer.classList.add("profile-page-reveal");
+      document.body.classList.add("profile-reveal-open");
+      document.body.style.setProperty("--profile-reveal-x", `${drawer.getBoundingClientRect().width || Math.min(window.innerWidth * .78, 304)}px`);
+    }
     byId("drawerBackdrop")?.classList.add("open");
     playSound("open");
   }
@@ -6445,32 +6538,28 @@ async function setAiDataConsent(value) {
 function toggleNotifPanel() { notifViewMode = "inbox"; exitNotifSelectMode(false); openDrawer("notifPanel"); renderNotifPanel(); }
 function toggleProfilePanel() { openDrawer("profilePanel"); }
 
-function setupDrawerSwipe(drawer, side) {
-  if(!drawer||drawer.dataset.swipeReady==="1")return;drawer.dataset.swipeReady="1";let sx=0,sy=0,active=false;
-  drawer.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t)return;sx=t.clientX;sy=t.clientY;active=true;},{passive:true});
-  drawer.addEventListener("touchend",e=>{if(!active||!e.changedTouches[0])return;active=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<54||Math.abs(dx)<Math.abs(dy)*1.15)return;if(side==="left"&&dx<0)closeAllPanels();if(side==="right"&&dx>0)closeAllPanels();},{passive:true});
-}
+function setupDrawerSwipe(drawer, side) { /* legacy hook retained */ }
 let profileEdgeSwipeBound=false;
 function bindProfileEdgeSwipe(){
   if(profileEdgeSwipeBound)return;
   profileEdgeSwipeBound=true;
   const panel=byId("profilePanel");
   if(!panel)return;
-  // Use the same gesture model for real touch events and pointer events.
-  // Android browsers do not consistently expose touch swipes as PointerEvents,
-  // so the old pointer-only path made closing the profile drawer unreliable.
   let gesture=null;
   const ignoreSelector='input,textarea,select,button,a,.modal,.ai-chat-panel,.conv-list-item,.conv-row-wrap,.notif-item,.notif-item-wrap,.hero-photo-link,.hscroll,.cat-row,.range-tabs,.product-gallery-thumbs,.table-wrap,.storefront-product-strip,.dash-tabs,.dash-tabs-secondary,.tabs,.leaflet-container,.leaflet-control-container,.leaflet-pane,.leaflet-marker-icon,.map,.map-container,#vendorMap,[data-map],[data-horizontal-scroll],[style*="overflow-x"]';
   const canStart=(target)=>!target?.closest?.(ignoreSelector);
-  const setDrag=(on)=>{panel.style.transition=on?'none':'transform .24s cubic-bezier(.22,1,.36,1)';};
-  const reset=()=>{panel.style.transform='';panel.style.transition='';};
-  const begin=(x,y,target,id,type)=>{
+  const shellEls=()=>[document.querySelector('body > header'),byId('app'),document.querySelector('body > footer.site-footer'),document.querySelector('body > .bottom-nav'),byId('cartFab'),byId('aiChatFab')].filter(Boolean);
+  const shellWidth=()=>panel.getBoundingClientRect().width||Math.min(window.innerWidth*.78,304);
+  const setShellX=(x)=>document.body.style.setProperty('--profile-reveal-x', `${Math.max(0,x)}px`);
+  const clearShell=()=>document.body.style.removeProperty('--profile-reveal-x');
+  const openNow=()=>{panel.classList.add('open','profile-page-reveal');byId('drawerBackdrop')?.classList.add('open');document.body.classList.add('profile-reveal-open');setShellX(shellWidth());};
+  const begin=(x,y,target)=>{
     if(!session||!profile||!canStart(target))return;
     const open=panel.classList.contains('open');
     const w=window.innerWidth;
-    if(!open && x>w*.22)return;
-    if(open && !panel.contains(target))return;
-    gesture={id,sx:x,sy:y,open,horizontal:false,type};
+    if(!open && x>w*.20)return;
+    if(open && x>shellWidth()+20 && panel.contains(target)) return;
+    gesture={sx:x,sy:y,open,horizontal:false};
   };
   const move=(x,y,e)=>{
     if(!gesture)return;
@@ -6479,62 +6568,44 @@ function bindProfileEdgeSwipe(){
       if(Math.hypot(dx,dy)<5)return;
       if(Math.abs(dy)>Math.abs(dx)*.82){gesture=null;return;}
       gesture.horizontal=true;
-      setDrag(true);
-      if(!gesture.open){panel.classList.add('open');byId('drawerBackdrop')?.classList.add('open');}
+      document.body.classList.add('profile-reveal-dragging');
+      if(!gesture.open) openNow();
     }
     if(e?.cancelable)e.preventDefault();
-    const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
-    // LEFT drawer: opening follows a rightward edge swipe; closing follows a
-    // right-to-left swipe from the open drawer. The drawer stays under the
-    // finger throughout the gesture, which makes Android feel native.
-    const tx=gesture.open ? Math.max(-width,Math.min(0,dx)) : Math.max(0,Math.min(width,dx));
-    panel.style.transform=`translate3d(${tx}px,0,0)`;
+    const width=shellWidth();
+    const xPos=gesture.open ? Math.max(0,Math.min(width,dx+width)) : Math.max(0,Math.min(width,dx));
+    setShellX(xPos);
   };
   const end=(x,y)=>{
     if(!gesture)return;
     const g=gesture;gesture=null;
-    const dx=x-g.sx,dy=y-g.sy;
-    const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
-    if(!g.horizontal){reset();return;}
+    const dx=x-g.sx,dy=y-g.sy,width=shellWidth();
+    if(!g.horizontal){document.body.classList.remove('profile-reveal-dragging');clearShell();return;}
     const valid=Math.abs(dx)>Math.abs(dy)*1.05;
-    const threshold=Math.max(42,width*.16);
+    const threshold=Math.max(42,width*.18);
     if(!g.open && valid && dx>threshold){
-      setDrag(false);panel.style.transform='translate3d(0,0,0)';
-      setTimeout(reset,250);return;
+      document.body.classList.remove('profile-reveal-dragging');
+      setShellX(width);
+      document.body.classList.add('profile-reveal-open');
+      return;
     }
     if(g.open && valid && dx < -threshold){
-      setDrag(false);panel.style.transform=`translate3d(${-width-8}px,0,0)`;
-      setTimeout(closeAllPanels,250);return;
+      document.body.classList.remove('profile-reveal-dragging');
+      setShellX(0);
+      setTimeout(closeAllPanels,250);
+      return;
     }
-    setDrag(false);
-    panel.style.transform=g.open?'translate3d(0,0,0)':'translate3d(-105%,0,0)';
-    setTimeout(()=>{if(!g.open){panel.classList.remove('open');byId('drawerBackdrop')?.classList.remove('open');}reset();},260);
+    document.body.classList.remove('profile-reveal-dragging');
+    const shouldOpen=g.open ? dx>-threshold : dx>threshold;
+    if(shouldOpen){openNow();setShellX(width);}
+    else {setShellX(0);setTimeout(closeAllPanels,250);}
   };
-  const cancel=()=>{if(!gesture)return;gesture=null;setDrag(false);panel.style.transform=panel.classList.contains('open')?'translate3d(0,0,0)':'translate3d(-105%,0,0)';setTimeout(reset,260);};
-
-  document.addEventListener('touchstart',e=>{
-    if(!e.touches?.[0])return;
-    const t=e.touches[0];
-    begin(t.clientX,t.clientY,e.target,'touch','touch');
-  },{passive:true});
-  document.addEventListener('touchmove',e=>{
-    if(!gesture||gesture.type!=='touch'||!e.touches?.[0])return;
-    const t=e.touches[0];
-    move(t.clientX,t.clientY,e);
-  },{passive:false});
-  document.addEventListener('touchend',e=>{
-    if(!gesture||gesture.type!=='touch'||!e.changedTouches?.[0])return;
-    const t=e.changedTouches[0];
-    end(t.clientX,t.clientY);
-  },{passive:true});
+  const cancel=()=>{if(!gesture)return;gesture=null;document.body.classList.remove('profile-reveal-dragging');clearShell();if(!panel.classList.contains('open'))closeAllPanels();};
+  document.addEventListener('touchstart',e=>{if(!e.touches?.[0])return;const t=e.touches[0];begin(t.clientX,t.clientY,e.target);},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!gesture||!e.touches?.[0])return;const t=e.touches[0];move(t.clientX,t.clientY,e);},{passive:false});
+  document.addEventListener('touchend',e=>{if(!gesture||!e.changedTouches?.[0])return;const t=e.changedTouches[0];end(t.clientX,t.clientY);},{passive:true});
   document.addEventListener('touchcancel',cancel,{passive:true});
-
-  // Keep mouse/stylus support too, but let touch events own touch gestures.
-  document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;begin(e.clientX,e.clientY,e.target,e.pointerId,'pointer');},{passive:true});
-  document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)move(e.clientX,e.clientY,e);},{passive:false});
-  document.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;if(gesture?.type==='pointer'&&gesture.id===e.pointerId)end(e.clientX,e.clientY);},{passive:true});
 }
-
 bindProfileEdgeSwipe();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllPanels(); });
 
@@ -7328,7 +7399,7 @@ function renderSettingsPage(){
     <section class="settings-page-section"><h3><i class="fa-solid fa-palette"></i> Appearance</h3><p class="settings-section-note">Choose how Levromart looks on this device.</p><div class="settings-choice-list"><button class="settings-choice" data-theme-choice="light" onclick="setTheme('light')"><i class="fa-solid fa-sun"></i><span><strong>Light</strong><small>Bright and clean</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="dark" onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i><span><strong>Dark</strong><small>Comfortable for low light</small></span><i class="fa-solid fa-check settings-choice-check"></i></button><button class="settings-choice" data-theme-choice="black" onclick="setTheme('black')"><i class="fa-solid fa-circle"></i><span><strong>Deep black</strong><small>OLED-friendly black</small></span><i class="fa-solid fa-check settings-choice-check"></i></button></div></section>
     <section class="settings-page-section"><button type="button" class="accent-page-dropdown-trigger" onclick="toggleAccentPalettePage()" aria-expanded="false"><span><i class="fa-solid fa-droplet"></i><span><strong>Accent color</strong><small>Choose the accent used across Levromart.</small></span></span><i class="fa-solid fa-chevron-down" id="accentPalettePageChevron"></i></button><div class="accent-page-dropdown-body hidden" id="accentPalettePageBody"><div class="accent-swatches settings-page-swatches" id="accentSwatchesPage"></div></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-text-height"></i> Text size</h3><p class="settings-section-note">Make Levromart easier to read. This changes the app's text scale on this device.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Font size</strong><span>Choose a comfortable size from 85% to 125%.</span></div><div class="levi-size-value" id="levroFontScaleValue">${Math.round(getLevromartFontScale()*100)}%</div><input class="levi-size-range" id="levroFontScaleRange" type="range" min="0.85" max="1.25" step="0.05" value="${getLevromartFontScale()}" aria-label="Levromart font size" oninput="setLevromartFontScale(this.value)" onchange="setLevromartFontScale(this.value)" /></div></section>
-    <section class="settings-page-section"><h3><span class="settings-levi-logo-wrap"><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /></span> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button></div></section>
+    <section class="settings-page-section"><h3><span class="settings-levi-logo-wrap"><img class="settings-levi-logo" src="${esc(MEDRIS_LOGO)}" alt="" /></span> Levi</h3><p class="settings-section-note">Adjust Levi's size, visibility, data preference and voice.</p><div class="settings-control-row levi-size-control"><div class="settings-control-copy"><strong>Levi size</strong><span>Drag the scale to make Levi smaller or restore the current maximum.</span></div><div class="levi-size-value" id="leviSizeValue">${getLeviFabSize()}px</div><input class="levi-size-range" id="leviSizeRange" type="range" min="44" max="74" step="1" value="${getLeviFabSize()}" aria-label="Levi size" oninput="setLeviFabSize(this.value)" /></div><div class="settings-divider"></div><div class="settings-toggle-row" id="leviVisibleSettingRow"></div><div class="settings-divider"></div><div class="settings-toggle-row" id="settingsAiConsentPageRow"></div><div class="settings-divider"></div><div class="settings-voice-wrap"><div class="settings-control-copy"><strong>Levi's voice</strong><span>Choose from the voices available on your device.</span></div><select id="voiceSelectPage" class="settings-select" aria-label="Levi voice"></select><button class="btn btn-outline settings-full-btn" onclick="previewAiVoice()"><i class="fa-solid fa-play"></i> Preview voice</button><div class="settings-divider" style="margin:.8rem 0 .1rem;"></div><div class="settings-toggle-row" id="leviWakeSettingRow"></div></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-sliders"></i> App preferences</h3><div class="settings-simple-row" id="settingsInstallPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="settingsNotifPageRow"></div><div class="settings-divider"></div><div class="settings-simple-row" id="locationSettingPageRow"></div></section>
     <section class="settings-page-section"><h3><i class="fa-solid fa-lock"></i> Account</h3><button class="settings-action-row" onclick="showChangePassword()"><i class="fa-solid fa-key"></i><span><strong>Change password</strong><small>Update your account password</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="resetLevromartPreferences()"><i class="fa-solid fa-arrow-rotate-left"></i><span><strong>Reset preferences</strong><small>Restore appearance and interface defaults</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row" onclick="showLevromartAbout()"><i class="fa-solid fa-circle-info"></i><span><strong>About Levromart</strong><small>Version and platform information</small></span><i class="fa-solid fa-chevron-right"></i></button><div class="settings-divider"></div><button class="settings-action-row settings-action-danger" onclick="startDeleteAccount()"><i class="fa-solid fa-user-xmark"></i><span><strong>Delete account permanently</strong><small>${vendor ? "Vendors must clear all active orders and unsettled commission first." : "Permanently close this Levromart account. Pending buyer orders do not block deletion."}</small></span><i class="fa-solid fa-chevron-right"></i></button></section>
     <button class="settings-close-page" onclick="navigate(lastNonSettingsView||'home')">Back to Levromart</button>
@@ -7342,6 +7413,7 @@ function hydrateSettingsPage(){
   if(accent) renderAccentSwatches("accentSwatchesPage");
   const vis=byId("leviVisibleSettingRow");
   if(vis) vis.innerHTML=`<i class="fa-solid ${leviVisible?'fa-comment-dots':'fa-comment-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Levi assistant</strong><small>${leviVisible?'Shown on the app':'Hidden from the app'}</small></span><button class="settings-inline-btn" onclick="toggleLeviVisible();setTimeout(hydrateSettingsPage,0)">${leviVisible?'Hide':'Show'}</button>`;
+  renderLeviWakeSetting();
   const consent=byId("settingsAiConsentPageRow");
   if(consent&&profile) consent.innerHTML=`<i class="fa-solid fa-chart-line settings-row-icon"></i><span class="settings-row-copy"><strong>Help improve Levi</strong><small>Your product-improvement preference</small></span><button class="settings-inline-btn ${profile.ai_data_consent?'active':''}" onclick="setAiDataConsent(${!profile.ai_data_consent})">${profile.ai_data_consent?'On':'Off'}</button>`;
   const oldInstall=byId("settingsInstallRow"),oldNotif=byId("settingsNotifRow"),install=byId("settingsInstallPageRow"),notif=byId("settingsNotifPageRow");
@@ -7808,6 +7880,9 @@ async function resetLevromartPreferences() {
   if (!confirmed) return;
   ["medris-theme", "medris-accent", "medris-install-dismissed", "medris-notif-dismissed", "medris-ai-chat-expanded", "medris-levi-fab-size", "medris-levi-visible", "medris-ai-voice", "levromart-font-scale", "levromart_ai_fab_pos", "levromart_cart_fab_pos", "levromart_ai_panel_pos"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
   currentAccentIndex = DEFAULT_ACCENT_INDEX;
+  leviWakeEnabled = false;
+  localStorage.removeItem("levromart-levi-wake");
+  stopLeviWakeRecognition();
   leviVisible = true;
   setTheme("light");
   setAccent(DEFAULT_ACCENT_INDEX);
@@ -8085,7 +8160,7 @@ async function renderHome() {
   }
 
   if (trending && trending.length) {
-    html += `<h3 class="section-title"><i class='fa-solid fa-fire'></i> Trending now</h3><div class="hscroll">${trending.map(productCardHtml).join("")}</div>`;
+    html += `<h3 class="section-title"><i class='fa-solid fa-fire'></i> Trending now</h3><div class="hscroll trending-scroll">${trending.map(productCardHtml).join("")}</div>`;
   }
   if (topVendors && topVendors.length) {
     html += `<h3 class="section-title"><span><i class='fa-solid fa-medal'></i> Top-rated vendors</span><a class="section-title-link" onclick="navigate('vendors')">See all <i class="fa-solid fa-arrow-right"></i></a></h3><div class="hscroll">${topVendors.map(vendorCardHtml).join("")}</div>`;
@@ -8701,7 +8776,7 @@ async function batchMarkChatsRead(read) {
   });
 
   // Paint immediately; the server remains authoritative and is reconciled in
-  // the background. This removes the visible 1–3 second pause after tapping.
+  // the background. This removes the visible 1 - 3 second pause after tapping.
   convs.forEach((c) => { if (idsSet.has(c.conversation_id)) c.unread_count = read ? 0 : Math.max(1, Number(c.unread_count || 0)); });
   msgSelectMode = false; msgSelectedIds.clear();
   filterMsgList(); updateMsgSelectionBar(); renderBottomNav();
@@ -9007,7 +9082,7 @@ async function renderMessages(conversationId) {
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
       ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
-        ${!isVendorSide && conv.vendor?.whatsapp_visible && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
+        ${!isVendorSide && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
         <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
         <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div class="chat-menu-dropdown hidden" id="chatMenuDropdown">${chatMenuItems.join("")}</div>
@@ -11031,14 +11106,14 @@ function collectBusinessHoursFromForm() {
   });
   return hours;
 }
-// Groups consecutive days sharing identical hours into one line (e.g. "Mon–Fri
-// 8:00 AM–9:00 PM") for the storefront/order-detail text summary, instead of
+// Groups consecutive days sharing identical hours into one line (e.g. "Mon - Fri
+// 8:00 AM - 9:00 PM") for the storefront/order-detail text summary, instead of
 // listing all seven days out -- this is what keeps opening_hours readable.
 function summarizeBusinessHours(hours) {
   if (!hours) return "";
   const segs = HOURS_DAYS.map(({ key, label }) => {
     const d = hours[key];
-    return { label, text: d && !d.closed ? `${formatTime12(d.open)}–${formatTime12(d.close)}` : "Closed" };
+    return { label, text: d && !d.closed ? `${formatTime12(d.open)} - ${formatTime12(d.close)}` : "Closed" };
   });
   const groups = [];
   segs.forEach((seg) => {
@@ -11046,7 +11121,7 @@ function summarizeBusinessHours(hours) {
     if (last && last.text === seg.text) last.labels.push(seg.label);
     else groups.push({ text: seg.text, labels: [seg.label] });
   });
-  return groups.map((g) => `${g.labels.length > 1 ? `${g.labels[0]}–${g.labels[g.labels.length - 1]}` : g.labels[0]} ${g.text}`).join(", ");
+  return groups.map((g) => `${g.labels.length > 1 ? `${g.labels[0]} - ${g.labels[g.labels.length - 1]}` : g.labels[0]} ${g.text}`).join(", ");
 }
 function nowInLagos() {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Lagos", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
@@ -11067,7 +11142,7 @@ function vendorHoursStatus(v) {
     return { configured: true, isOpen: false, todayLabel, todayText: "Closed today" };
   }
   const isOpen = hhmm >= today.open && hhmm <= today.close;
-  return { configured: true, isOpen, todayLabel, todayText: `${formatTime12(today.open)}–${formatTime12(today.close)}` };
+  return { configured: true, isOpen, todayLabel, todayText: `${formatTime12(today.open)} - ${formatTime12(today.close)}` };
 }
 function canMessageVendorNow(v) {
   if (v?.allow_after_hours_messages !== false) return true;
@@ -13841,7 +13916,7 @@ function renderRefundPolicy() {
     <p class="muted">Last updated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
 
     <h3>1. Before a vendor confirms your order</h3>
-    <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5–10 business days, per Paystack's processing time).</p>
+    <p>You can cancel freely from your Orders page. Any payment already made online is refunded in full to your original payment method via Paystack (refunds typically reflect within 5 - 10 business days, per Paystack's processing time).</p>
 
     <h3>2. After a vendor confirms your order</h3>
     <p>If you haven't paid yet, you can still cancel freely from your Orders page any time before the vendor marks your order as handed over. If you have paid, you can cancel and get a full refund yourself within 5 hours of paying. After that window (or once the order is handed over, whichever comes first), cancellations go through Levromart's dispute process instead. For rentals, once equipment has been handed over, the rental fee is non-refundable; only the refundable deposit (if any) is returned, and only after the equipment is returned in its original condition.</p>
@@ -13952,6 +14027,8 @@ function toggleAiChat() {
   const wasHidden = panel.classList.contains("hidden");
   panel.classList.toggle("hidden");
   const isOpen = !panel.classList.contains("hidden");
+  if (isOpen) stopLeviWakeRecognition();
+  else if (leviWakeEnabled) startLeviWakeRecognition();
   // The FAB follows the panel state, while still respecting the user's Levi visibility preference.
   syncLeviFabVisibility();
   if (isOpen) {
@@ -14414,19 +14491,56 @@ function attachAiReactionUI(el, msgId, existingReaction) {
   const reactBtn = document.createElement("button");
   reactBtn.className = "ai-chat-msg-react";
   reactBtn.title = "React";
+  reactBtn.setAttribute("aria-label", "React to Levi's message");
   reactBtn.innerHTML = existingReaction ? existingReaction : `<i class="fa-regular fa-face-smile"></i>`;
   reactBtn.onclick = (evt) => toggleAiReactionPicker(evt, msgId, el);
   el.appendChild(reactBtn);
+
+  // Mobile-friendly double tap: react directly to a Levi message without
+  // requiring the small reaction button. Ignore controls, links and the
+  // picker itself so normal interaction remains untouched.
+  let lastTap = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+  const isMessageSurface = (target) => {
+    if (!target || target.closest?.('button,a,input,textarea,select,.reaction-picker,.ai-chat-nav-hint,.ai-chat-draft-card')) return false;
+    return target.closest?.('.ai-chat-msg') === el;
+  };
+  el.addEventListener('dblclick', (evt) => {
+    if (isMessageSurface(evt.target)) {
+      evt.preventDefault();
+      toggleAiReactionPicker(evt, msgId, el);
+    }
+  });
+  el.addEventListener('touchend', (evt) => {
+    if (!isMessageSurface(evt.target)) return;
+    const touch = evt.changedTouches?.[0];
+    if (!touch) return;
+    const now = Date.now();
+    const dx = touch.clientX - lastTapX;
+    const dy = touch.clientY - lastTapY;
+    if (now - lastTap < 360 && Math.hypot(dx, dy) < 34) {
+      evt.preventDefault();
+      lastTap = 0;
+      toggleAiReactionPicker(evt, msgId, el);
+    } else {
+      lastTap = now;
+      lastTapX = touch.clientX;
+      lastTapY = touch.clientY;
+    }
+  }, { passive: false });
 }
 async function toggleAiReactionPicker(evt, msgId, el) {
   evt.stopPropagation();
+  if (evt.type === "dblclick") evt.preventDefault();
   const existing = el.querySelector(".reaction-picker");
   document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
   if (existing) return;
   const picker = document.createElement("div");
   picker.className = "reaction-picker";
-  picker.style.right = "0";
-  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" onclick="reactToAiMessage(event,'${msgId}','${e}')">${e}</button>`).join("");
+  picker.setAttribute("role", "toolbar");
+  picker.setAttribute("aria-label", "Choose a reaction");
+  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" aria-label="React ${e}" onclick="reactToAiMessage(event,'${msgId}','${e}')">${e}</button>`).join("");
   el.appendChild(picker);
 }
 async function reactToAiMessage(evt, msgId, emoji) {
@@ -14529,6 +14643,50 @@ if ("speechSynthesis" in window) {
 // support (especially on iOS Safari) is inconsistent, so the mic button
 // stays hidden entirely rather than showing something that might not work.
 const AiSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let leviWakeEnabled = localStorage.getItem("levromart-levi-wake") === "1";
+let leviWakeRecognizer = null;
+let leviWakeStarting = false;
+function renderLeviWakeSetting() {
+  const row=byId("leviWakeSettingRow");
+  if(!row)return;
+  const supported=!!AiSpeechRecognition;
+  row.innerHTML=`<i class="fa-solid ${leviWakeEnabled?'fa-ear-listen':'fa-microphone-slash'} settings-row-icon"></i><span class="settings-row-copy"><strong>Voice wake-up</strong><small>${supported ? (leviWakeEnabled ? 'Listening for “Hey Levi” while the app is open.' : 'Say “Hey Levi” to open Levi hands-free.') : 'Not supported by this browser.'}</small></span><button class="settings-inline-btn ${leviWakeEnabled?'active':''}" ${supported?'':'disabled'} onclick="toggleLeviWake()">${leviWakeEnabled?'On':'Off'}</button>`;
+}
+function stopLeviWakeRecognition(){
+  try{leviWakeRecognizer?.abort();}catch(_){ }
+  leviWakeRecognizer=null;leviWakeStarting=false;
+}
+function startLeviWakeRecognition(){
+  if(!AiSpeechRecognition||!leviWakeEnabled||!session||!profile||!leviVisible||document.hidden)return;
+  if(leviWakeRecognizer||leviWakeStarting)return;
+  leviWakeStarting=true;
+  const rec=new AiSpeechRecognition(); leviWakeRecognizer=rec;
+  rec.lang="en-NG"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+  rec.onstart=()=>{leviWakeStarting=false;};
+  rec.onresult=(e)=>{
+    let heard=""; for(let i=e.resultIndex;i<e.results.length;i++) heard += ` ${e.results[i][0]?.transcript||""}`;
+    const q=heard.toLowerCase().replace(/[’']/g,"'").replace(/\s+/g," ").trim();
+    if(/\b(?:hey|okay|ok)\s+levi\b/.test(q)){
+      stopLeviWakeRecognition();
+      if(byId("aiChatPanel")?.classList.contains("hidden")) toggleAiChat();
+    }
+  };
+  rec.onerror=()=>{};
+  rec.onend=()=>{
+    if(leviWakeRecognizer===rec) leviWakeRecognizer=null;
+    if(leviWakeEnabled&&session&&profile&&leviVisible&&!document.hidden) setTimeout(startLeviWakeRecognition,180);
+  };
+  try{rec.start();}catch(_){leviWakeRecognizer=null;leviWakeStarting=false;}
+}
+function toggleLeviWake(){
+  if(!AiSpeechRecognition){showToast("Voice wake-up is not supported by this browser.","info");return;}
+  leviWakeEnabled=!leviWakeEnabled; localStorage.setItem("levromart-levi-wake",leviWakeEnabled?"1":"0");
+  if(leviWakeEnabled) startLeviWakeRecognition(); else stopLeviWakeRecognition();
+  renderLeviWakeSetting();
+  showToast(leviWakeEnabled?'Voice wake-up enabled. Say “Hey Levi”.':'Voice wake-up disabled.','success');
+}
+function initLeviWake(){renderLeviWakeSetting();if(leviWakeEnabled)startLeviWakeRecognition();}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopLeviWakeRecognition();else if(leviWakeEnabled)startLeviWakeRecognition();});
 let aiChatRecognizer = null;
 let aiChatListening = false;
 let aiChatVoicePaused = false;
@@ -14658,7 +14816,7 @@ function startMsgVoiceRecognition() {
 }
 function toggleMsgMic() {
   if (!AiSpeechRecognition) return;
-  if (msgListening) { toggleMsgMicPause(); return; }
+  if (msgListening) { stopMsgVoiceRecording(); return; }
   if (msgVoicePaused && msgRecognizer) {
     msgVoicePaused = false;
     try { msgRecognizer.start(); } catch (_) {}
@@ -14674,6 +14832,19 @@ function toggleMsgMicPause() {
   if (!msgRecognizer) return;
   if (msgListening) { msgVoicePaused = true; msgVoiceInterimTranscript = ""; try { msgRecognizer.stop(); } catch (_) {} renderMsgVoiceState(); }
   else { msgVoicePaused = false; try { msgRecognizer.start(); } catch (_) {} renderMsgVoiceState(); }
+}
+function stopMsgVoiceRecording() {
+  try { msgRecognizer?.abort(); } catch (_) {}
+  msgRecognizer = null;
+  msgListening = false;
+  msgVoicePaused = false;
+  msgVoiceInterimTranscript = "";
+  const status = byId("msgVoiceStatus");
+  status?.classList.add("hidden");
+  byId("msgMicBtn")?.classList.remove("listening");
+  renderMsgVoiceState();
+  const input = byId("chatInput");
+  if (input) { autoGrowChatInput(input); input.scrollTop = input.scrollHeight; }
 }
 async function cancelMsgVoiceRecording() {
   if (!msgListening && !msgVoicePaused) return;
@@ -14710,7 +14881,7 @@ async function fetchLeviReply(payload) {
   const urls = ['/api/chat', '/api/chat.js'];
   let lastError = null;
   for (const url of urls) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 1; attempt++) {
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -14727,7 +14898,7 @@ async function fetchLeviReply(payload) {
       } catch (err) {
         lastError = err;
       }
-      if (attempt === 0) await new Promise(r => setTimeout(r, 550));
+      if (attempt === 0 && url === urls[0]) await new Promise(r => setTimeout(r, 120));
     }
   }
   throw lastError || new Error('Levi service unavailable.');
@@ -15135,9 +15306,11 @@ window.addEventListener("popstate", (e) => {
   initLocationSetting();
   initLeviVisible();
   initAiChatMic();
+  initLeviWake();
   byId("footerYear").textContent = new Date().getFullYear();
   history.replaceState({ view: "home", params: {} }, "", location.pathname + location.search);
   await refreshAuthStateOnce();
+  if (leviWakeEnabled) startLeviWakeRecognition();
 
   const urlParams = new URLSearchParams(location.search);
   if (urlParams.get("share")) {
