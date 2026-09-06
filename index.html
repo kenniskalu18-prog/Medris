@@ -339,9 +339,7 @@
   .product-gallery-thumb.active { border-color:var(--primary); box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 18%,transparent); }
   .product-gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .product-gallery-count { position:absolute; right:0.7rem; bottom:0.7rem; padding:0.25rem 0.55rem; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; font-size:0.72rem; backdrop-filter:blur(5px); }
-  .variant-chip.active { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 10%,var(--card)); color:var(--primary); font-weight:700; }
-  .variant-row-head { font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:.3rem; padding:0 .15rem; }
-  @media (max-width:600px) { .variant-row { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; gap:.38rem; } .variant-row-head { grid-template-columns:minmax(0,1fr) minmax(82px,.7fr) 64px 2.25rem; } }
+
   .image-lightbox { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:1rem; }
   .image-lightbox.hidden { display:none; }
   .image-lightbox img { max-width:96vw; max-height:90vh; object-fit:contain; border-radius:0.5rem; }
@@ -4135,13 +4133,6 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
 
 </head>
 <body>
-<div id="levromartSplash" aria-hidden="true">
-  <div class="levromart-splash-logo" id="levromartSplashLogo">
-    <span class="splash-logo-left" id="splashLogoLeft" aria-hidden="true"></span>
-    <img class="splash-logo-circle" id="splashLogoCircle" alt="" />
-    <span class="splash-logo-right" id="splashLogoRight" aria-hidden="true"></span>
-  </div>
-</div>
 <header>
   <div class="header-left">
     <div class="icon-wrap" id="profileWrap">
@@ -4727,8 +4718,6 @@ function setLogoMask(el, url) {
 }
 setLogoMask(document.getElementById("brandLogoLeft"), LEVROMART_LOGO_LEFT);
 document.getElementById("brandLogoCircle").src = LEVROMART_LOGO_CIRCLE;
-setLogoMask(document.getElementById("splashLogoLeft"), LEVROMART_LOGO_LEFT);
-document.getElementById("splashLogoCircle").src = LEVROMART_LOGO_CIRCLE;
 // Branded loading indicator -- the logo sits still in the middle while two
 // arcs chase each other around it, used anywhere the app is waiting on
 // something (page navigation, payment confirmation) instead of plain
@@ -4746,13 +4735,6 @@ function brandSpinnerHtml(label) {
   </div></div>`;
 }
 setLogoMask(document.getElementById("brandLogoRight"), LEVROMART_LOGO_RIGHT);
-setLogoMask(document.getElementById("splashLogoRight"), LEVROMART_LOGO_RIGHT);
-(function initBrandedSplash(){
-  const splash = document.getElementById("levromartSplash");
-  if (!splash) return;
-  // All three layers start invisible so iOS can never paint a raw gradient block.
-  requestAnimationFrame(() => splash.classList.add("logo-ready"));
-})();
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("tourLeviLogo").src = MEDRIS_LOGO;
@@ -6708,7 +6690,7 @@ function subscribeOrderUpdates() {
   } else if (profile?.role !== "admin") {
     ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `buyer_id=eq.${session.user.id}` }, refreshVisibleOrderView);
   }
-  // Also catch item-level changes (including selected variation metadata).
+  // Also catch item-level changes.
   ordersLiveChannel.on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, refreshVisibleOrderView);
   ordersLiveChannel.subscribe();
 
@@ -11373,33 +11355,6 @@ function renderOrderListWrap() {
   if (!wrap) return;
   wrap.innerHTML = orderListHtml(window.__orderListOrders || [], !!window.__orderListIsBuyer);
 }
-function orderVariantSummary(order) {
-  const labels = (order?.items || []).map((it) => {
-    const name = it?.variant_name || it?.variant?.name || "";
-    const color = it?.variant_color || it?.variant?.color || "";
-    if (name && color) return `${name} · ${color}`;
-    return name || color;
-  }).filter(Boolean);
-  return [...new Set(labels)].join(", ");
-}
-
-async function persistOrderBuyerNote(orderId, note) {
-  if (!orderId) return false;
-  const clean = String(note || "").trim().slice(0, 500);
-  if (!clean) return true;
-  try {
-    const { data, error } = await sb.rpc("set_order_buyer_note", { p_order_id: orderId, p_note: clean });
-    if (error) {
-      console.warn("set_order_buyer_note failed:", error.message, error.code, error.details, error.hint);
-      return false;
-    }
-    return data !== false;
-  } catch (e) {
-    console.warn("set_order_buyer_note threw:", e?.message);
-    return false;
-  }
-}
-
 function orderListHtml(orders, isBuyerView) {
   if (!orders || orders.length === 0) return '<div class="empty-state">No orders here.</div>';
   const total = orders.length;
@@ -11413,12 +11368,12 @@ function orderListHtml(orders, isBuyerView) {
     </tr></thead><tbody>${shown.map((o) => `<tr onclick="navigate('orderDetail',{orderId:'${o.id}'})" style="cursor:pointer;">
       <td>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</td>
       <td style="text-transform:capitalize;">${esc(o.order_type)}</td>
-      <td>${naira(o.total_amount)}${orderVariantSummary(o) ? `<div class="muted" style="font-size:.72rem;margin-top:.15rem;">${esc(orderVariantSummary(o))}</div>` : ""}</td>
+      <td>${naira(o.total_amount)}</td>
       <td>${orderActivityIso(o) ? esc(orderActivityLabel(o)) : ""}</td>
       <td><span class="badge ${orderStatusBadgeClass(o.status)}">${o.status.replace("_", " ")}</span></td>
     </tr>`).join("")}</tbody></table></div>${moreBtn}`;
   }
-  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderVariantSummary(o) ? `<small><i class="fa-solid fa-sliders"></i> ${esc(orderVariantSummary(o))}</small>` : ""}${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
+  return shown.map((o) => `<button type="button" class="order-list-card" onclick="navigate('orderDetail',{orderId:'${o.id}'})"><span class="order-list-main"><strong>${isBuyerView ? esc(o.vendor?.business_name || "") : esc(o.buyer?.name || "")}</strong><span>${esc(o.order_type)} · ${naira(o.total_amount)}</span>${orderActivityIso(o) ? `<small><i class="fa-regular fa-clock"></i> ${esc(orderActivityLabel(o))}</small>` : ""}</span><span class="badge ${orderStatusBadgeClass(o.status)} order-list-status">${o.status === "cancelled" ? "Cancelled" : o.status === "completed" ? "Completed" : esc(o.status.replace("_", " "))}</span></button>`).join("") + moreBtn;
 }
 
 // ---------- ORDER DETAIL ----------
@@ -12612,42 +12567,6 @@ function exportFinancePdf() {
       .stat{border:1px solid #e2e8f0;border-radius:8px;padding:0.8rem 1.2rem;}
       .stat b{display:block;font-size:1.3rem;color:#0e8f7f;}
     
-
-/* --- FINAL HEADER + BRANDED REFRESH SPLASH --- */
-header { align-items:center !important; }
-header .header-left { flex:1 1 auto !important; min-width:0 !important; align-items:center !important; }
-header .header-right { margin-left:auto !important; flex:0 0 auto !important; display:flex !important; align-items:center !important; justify-content:flex-end !important; min-width:42px !important; height:42px !important; }
-header #notifWrap, header #notifWrap .icon-btn, header #profileWrap, header #profileWrap .icon-btn { align-self:center !important; }
-header #notifWrap { flex:0 0 auto !important; }
-
-#levromartSplash {
-  position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
-  background:#000; opacity:1; visibility:visible; pointer-events:auto;
-  transition:opacity .16s ease,visibility .16s ease;
-}
-#levromartSplash.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
-.levromart-splash-logo {
-  position:relative; width:min(78vw,340px); height:78px;
-  display:flex; align-items:center; justify-content:center;
-  overflow:visible;
-}
-.levromart-splash-logo .splash-logo-left,
-.levromart-splash-logo .splash-logo-right {
-  position:absolute; inset:0; width:100%; height:78px;
-  background:var(--primary-grad);
-  -webkit-mask-repeat:no-repeat; -webkit-mask-position:center; -webkit-mask-size:contain;
-  mask-repeat:no-repeat; mask-position:center; mask-size:contain;
-  opacity:0; visibility:hidden;
-}
-.levromart-splash-logo .splash-logo-circle {
-  position:absolute; z-index:2; width:14.5%; height:78px; left:42.75%; top:0;
-  object-fit:contain; filter:brightness(0) invert(1);
-  opacity:0; visibility:hidden;
-}
-#levromartSplash.logo-ready .splash-logo-left,
-#levromartSplash.logo-ready .splash-logo-right,
-#levromartSplash.logo-ready .splash-logo-circle { opacity:1; visibility:visible; }
-@media (prefers-reduced-motion:reduce) { #levromartSplash { transition:none; } }
 </style></head><body>
     <h1>Levromart Transactions</h1>
     <p class="muted">Range: ${rangeLabel(adminFinanceRange)} · Generated ${new Date().toLocaleString()}</p>
