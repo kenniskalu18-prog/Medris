@@ -821,6 +821,23 @@
   .msg-speak:hover, .msg-speak.speaking { opacity: 1; }
   .msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; margin-right: 0.35rem; border: none; background: none; padding: 0; color: inherit; opacity: 0.65; cursor: pointer; font-size: 0.72rem; vertical-align: middle; }
   .msg-react:hover { opacity: 1; }
+.msg-voice-status{display:flex;align-items:center;gap:.65rem;margin:0 .65rem .45rem;padding:.55rem .7rem;border:1px solid color-mix(in srgb,var(--primary) 35%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--primary) 7%,var(--card));color:var(--text);box-shadow:var(--shadow-float);}
+.msg-voice-status.hidden{display:none;}
+.msg-voice-wave{display:flex;align-items:center;justify-content:center;gap:3px;width:74px;height:28px;flex:0 0 74px;overflow:hidden;}
+.msg-voice-wave i{display:block;width:3px;height:8px;border-radius:999px;background:var(--primary);animation:msgVoiceWave .75s ease-in-out infinite;transform-origin:center;}
+.msg-voice-wave i:nth-child(2){animation-delay:.08s}.msg-voice-wave i:nth-child(3){animation-delay:.16s}.msg-voice-wave i:nth-child(4){animation-delay:.24s}.msg-voice-wave i:nth-child(5){animation-delay:.32s}.msg-voice-wave i:nth-child(6){animation-delay:.4s}.msg-voice-wave i:nth-child(7){animation-delay:.48s}
+@keyframes msgVoiceWave{0%,100%{height:7px;opacity:.45}50%{height:23px;opacity:1}}
+.msg-voice-status>span{flex:1;min-width:0;font-size:.8rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.msg-voice-status button{width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+.msg-voice-status button:hover{background:var(--ui-soft);}
+.saved-location-row{display:flex;align-items:center;gap:.4rem;margin:.4rem 0 0;}
+.saved-location-select{flex:1;text-align:left;margin:0 !important;}
+.saved-location-delete{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;}
+.saved-location-delete:hover{color:var(--danger);border-color:var(--danger);}
+.ve-delivery-fee-label{display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
+.ve-delivery-fee-label .info-popover-wrap{margin-left:auto !important;}
+.chat-whatsapp-btn{color:#25D366 !important;text-decoration:none;}
+
   .chat-typing-indicator { display:flex; align-items:center; gap:.45rem; align-self:flex-start; margin:.15rem .55rem .35rem; padding:.38rem .7rem; border:1px solid var(--border); border-radius:999px; background:var(--card); color:var(--text-muted); font-size:.78rem; box-shadow:var(--shadow-float); }
   .chat-typing-indicator.hidden { display:none; }
   .chat-typing-dots { display:inline-flex; gap:3px; align-items:center; }
@@ -939,8 +956,31 @@
   .toast-undo-btn { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; pointer-events: auto; font-family: inherit; }
   .vendor-map-pin-inner { width: 32px; height: 32px; border-radius: 50% 50% 50% 0; background: var(--primary-grad); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.35); border: 2px solid #fff; }
   .vendor-map-pin-inner i { transform: rotate(45deg); color: #fff; font-size: 0.85rem; }
-  .leaflet-control-attribution { background: color-mix(in srgb, var(--card) 85%, transparent) !important; color: var(--text-muted) !important; font-size: 0.62rem !important; padding: 0.1rem 0.4rem !important; border-radius: 0.4rem 0 0 0; }
+  /* Map polish: keep required OSM attribution discreet, while removing the
+     unnecessary Leaflet branding. The attribution itself must remain visible
+     when using OSM tiles. */
+  .leaflet-control-attribution {
+    background: color-mix(in srgb, var(--card) 82%, transparent) !important;
+    color: var(--text-muted) !important;
+    font-size: 0.55rem !important;
+    line-height: 1.15 !important;
+    padding: 0.12rem 0.32rem !important;
+    border-radius: 0.35rem 0 0 0;
+    box-shadow: 0 -1px 5px rgba(0,0,0,.05);
+  }
   .leaflet-control-attribution a { color: var(--text-muted) !important; }
+  .leaflet-control-attribution.leaflet-control { margin: 0 !important; }
+  .vendors-map-recenter-control {
+    width: 38px; height: 38px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card) !important; color: var(--text) !important;
+    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent) !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,.16);
+    cursor: pointer; font-size: 1rem;
+  }
+  .vendors-map-recenter-control:hover { color: var(--primary) !important; }
+  .vendors-map-recenter-control:active { transform: scale(.94); }
+  .vendors-map-recenter-control.is-loading { opacity: .65; pointer-events: none; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card) !important; color: var(--text) !important; }
 
 /* ================================================================
@@ -1396,6 +1436,19 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
   --ui-hairline: color-mix(in srgb, var(--text) 10%, transparent);
   --ui-soft: color-mix(in srgb, var(--text) 5%, transparent);
 }
+
+/* Native text selection is intentionally disabled across the app UI, matching the
+   touch-first WhatsApp-style interaction model. Form fields remain selectable/editable. */
+html, body, #app, #app * { -webkit-user-select:none !important; user-select:none !important; -webkit-touch-callout:none; }
+input, textarea, select, [contenteditable="true"], [contenteditable="true"] * { -webkit-user-select:text !important; user-select:text !important; -webkit-touch-callout:default; }
+
+/* Levi mark: keep the exact logo artwork; in light mode give it only a soft
+   accent-coloured halo so the white centre remains visible without adding a
+   new coloured dot/circle inside the mark. */
+.settings-levi-logo-wrap { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 28%, transparent)); }
+.settings-levi-logo-wrap::after { display:none !important; content:none !important; }
+html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after { display:none !important; content:none !important; }
+html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab { box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent), 0 0 18px color-mix(in srgb, var(--primary) 24%, transparent), 0 10px 28px rgba(0,0,0,.18) !important; }
 
 /* --- stable sheets --- */
 .side-drawer {
@@ -6401,7 +6454,11 @@ function bindProfileEdgeSwipe(){
     }
     if(e?.cancelable)e.preventDefault();
     const width=panel.getBoundingClientRect().width||Math.min(window.innerWidth*.86,320);
-    const tx=gesture.open?Math.max(-width,Math.min(0,dx)):Math.max(-width,Math.min(0,dx-width));
+    // Profile is a LEFT drawer: opening travels right from the edge; closing
+    // travels right-to-left from the open position. Keep the panel under the
+    // finger in both directions so Android doesn't feel like it ignores the
+    // back swipe.
+    const tx=gesture.open ? Math.max(0,Math.min(width,dx)) : Math.max(-width,Math.min(0,dx-width));
     panel.style.transform=`translate3d(${tx}px,0,0)`;
   };
   const end=(x,y)=>{
@@ -6416,8 +6473,8 @@ function bindProfileEdgeSwipe(){
       setDrag(false);panel.style.transform='translate3d(0,0,0)';
       setTimeout(reset,270);return;
     }
-    if(g.open && valid && dx<-threshold){
-      setDrag(false);panel.style.transform=`translate3d(${-width-8}px,0,0)`;
+    if(g.open && valid && dx>threshold){
+      setDrag(false);panel.style.transform=`translate3d(${width+8}px,0,0)`;
       setTimeout(closeAllPanels,270);return;
     }
     setDrag(false);panel.style.transform=g.open?'translate3d(0,0,0)':'translate3d(-105%,0,0)';
@@ -7143,7 +7200,6 @@ function updateAuthUI() {
     const links = [];
     if (vendor && profile.role !== "admin") {
       links.push({ label: "My Shop", action: "navigate('vendorDashboard')" });
-      links.push({ label: "Orders", action: "navigate('vendorOrders',{status:'all'})" });
       links.push({ label: "Buyer requests", action: "navigate('vendorRequests')" });
       links.push({ label: "Edit business profile", action: "navigate('vendorEditProfile')" });
     } else if (profile.role !== "admin") {
@@ -8862,7 +8918,7 @@ async function renderMessages(conversationId) {
   // the thread actually appeared.
   const [{ data: other, error: otherErr }, { data: conv }, { data: messages }] = await Promise.all([
     sb.rpc("get_conversation_other_party", { p_conversation_id: conversationId }),
-    sb.from("conversations").select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id, phone)").eq("id", conversationId).maybeSingle(),
+    sb.from("conversations").select("id, buyer_id, vendor:vendors(id, business_name, logo_url, user_id, phone, whatsapp_number, whatsapp_visible)").eq("id", conversationId).maybeSingle(),
     sb.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true }),
   ]);
   if (!conv || otherErr) return '<div class="empty-state">Conversation not found.</div>';
@@ -8908,6 +8964,7 @@ async function renderMessages(conversationId) {
       ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
         <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
+        ${!isVendorSide && conv.vendor?.whatsapp_visible && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
         <button class="chat-header-icon-btn" id="chatMenuBtn" onclick="toggleChatMenu(event)" title="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div class="chat-menu-dropdown hidden" id="chatMenuDropdown">${chatMenuItems.join("")}</div>
       </div>
@@ -9579,7 +9636,7 @@ async function sendChatMessage(conversationId) {
   const input = byId("chatInput");
   const body = input.value.trim();
   if (!body) return;
-  if (msgListening) msgRecognizer?.stop(); // still-listening mic can otherwise refill the box right after this clears it
+  if (msgListening || msgVoicePaused) { try { msgRecognizer?.abort(); } catch (_) {} msgRecognizer = null; msgListening = false; msgVoicePaused = false; msgVoiceFinalTranscript = ""; msgVoiceInterimTranscript = ""; renderMsgVoiceState(); }
   clearTimeout(typingStopTimer);
   publishChatTyping(false);
   resetChatInput(input);
@@ -10006,7 +10063,7 @@ function renderVendorsDirectory() {
   </div>`;
   html += `<div class="grid" id="vendorsGrid"><p class="muted">Loading…</p></div>`;
   html += `<div id="vendorsMapWrap" class="hidden">
-    <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;"></p>
+    <p class="muted" id="vendorsMapStatus" style="font-size:0.82rem;margin:0 0 0.75rem;line-height:1.45;"></p>
     <div id="vendorsMap" style="height:min(60vh,420px);border-radius:0.9rem;overflow:hidden;background:var(--border);position:relative;isolation:isolate;z-index:0;"></div>
   </div>`;
   setTimeout(async () => {
@@ -10113,6 +10170,40 @@ function switchVendorsView(mode) {
   if (mode === "map") renderVendorsMap();
 }
 
+function addVendorsMapRecenterControl(map) {
+  if (map.__levroRecenterControl) return;
+  const RecenterControl = window.L.Control.extend({
+    options: { position: "topright" },
+    onAdd() {
+      const btn = window.L.DomUtil.create("button", "vendors-map-recenter-control");
+      btn.type = "button";
+      btn.title = "Recenter on my location";
+      btn.setAttribute("aria-label", "Recenter map on my location");
+      btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+      window.L.DomEvent.disableClickPropagation(btn);
+      window.L.DomEvent.on(btn, "click", async (e) => {
+        window.L.DomEvent.stop(e);
+        btn.classList.add("is-loading");
+        try {
+          let loc = buyerLocation;
+          if (!loc) loc = await requestBuyerLocation(true);
+          else if (buyerDistanceAutoEnabled) loc = await requestBuyerLocation(true);
+          if (loc) {
+            map.setView([loc.lat, loc.lng], Math.max(map.getZoom(), 13), { animate: true, duration: 0.45 });
+          }
+        } catch (err) {
+          showToast(err?.message || "Unable to get your location.", "error");
+        } finally {
+          btn.classList.remove("is-loading");
+        }
+      });
+      return btn;
+    }
+  });
+  map.addControl(new RecenterControl());
+  map.__levroRecenterControl = true;
+}
+
 async function renderVendorsMap() {
   const mapEl = byId("vendorsMap");
   const statusEl = byId("vendorsMapStatus");
@@ -10139,10 +10230,14 @@ async function renderVendorsMap() {
   const list = (window.__filteredVendors || []).filter((v) => v.lat != null && v.lng != null);
 
   if (!vendorsMap) {
-    vendorsMap = window.L.map("vendorsMap").setView(center, zoom);
+    vendorsMap = window.L.map("vendorsMap", { attributionControl: true, zoomControl: true, zoomControlOptions: { position: "topleft" } }).setView(center, zoom);
+    // Remove the "Leaflet" attribution prefix but retain the required OSM credit.
+    vendorsMap.attributionControl.setPrefix(false);
     addBasemapTileLayer(vendorsMap);
+    addVendorsMapRecenterControl(vendorsMap);
   } else {
-    vendorsMap.setView(center, zoom);
+    // Do not reset the user's map position every time filters/location refresh.
+    // The recenter control is the explicit way to jump back to the buyer.
     setTimeout(() => vendorsMap.invalidateSize(), 0);
   }
 
@@ -10215,13 +10310,14 @@ async function renderStorefront(vendorId) {
       <div class="storefront-avatar-row">
         ${logo}
         <div class="storefront-profile-actions">
-          ${profile?.role !== "admin" ? `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-regular fa-comment'></i> Message</button>` : ""}
+          ${profile?.role !== "admin" ? (v.whatsapp_visible && v.whatsapp_number ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm" type="button" onclick="toggleInlineMenu('storefrontMessageMenu',event)"><i class='fa-regular fa-comment'></i> Message</button><div class="ms-list hidden" id="storefrontMessageMenu" style="left:0;right:auto;width:max-content;min-width:180px;"><button class="ms-item" onclick="startConversationWithVendor('${v.id}');closeInlineMenu('storefrontMessageMenu')"><i class="fa-solid fa-comments"></i> Message in app</button><a class="ms-item" href="${waLink(v.whatsapp_number)}" target="_blank" rel="noopener" onclick="closeInlineMenu('storefrontMessageMenu')"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a></div></div>` : `<button class="btn btn-sm" onclick="startConversationWithVendor('${v.id}')"><i class='fa-regular fa-comment'></i> Message</button>`) : ""}
           ${v.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(v.phone)}" onclick="callVendorGated(event,'${esc(v.phone)}','${v.id}')"><i class='fa-solid fa-phone'></i> Call</a>` : ""}
+          ${v.whatsapp_visible && v.whatsapp_number ? `<a class="btn btn-sm btn-outline btn-whatsapp" href="${waLink(v.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class='fa-brands fa-whatsapp'></i></a>` : ""}
           ${storefrontMoreItems ? `<div class="ms-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm btn-outline" type="button" aria-label="More vendor details" onclick="toggleInlineMenu('storefrontMoreMenu',event)"><i class="fa-solid fa-ellipsis"></i></button><div class="ms-list hidden" id="storefrontMoreMenu" style="left:auto;right:0;width:max-content;min-width:180px;">${storefrontMoreItems}</div></div>` : ""}
         </div>
       </div>
       <h1 class="storefront-profile-name">${vendorNameWithFormerly(v)}</h1>
-      <div class="storefront-meta"><span><i class="fa-solid fa-location-dot"></i> ${location}</span><span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span></div>
+      <div class="storefront-meta"><span><i class="fa-solid fa-location-dot"></i> ${location}</span><span class="badge success"><i class='fa-solid fa-circle-check'></i> Verified</span>${v.whatsapp_visible && v.whatsapp_number ? `<a class="badge" href="${waLink(v.whatsapp_number)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> ${esc(v.whatsapp_number)}</a>` : ""}</div>
       ${v.bio ? `<p class="storefront-bio">${esc(v.bio)}</p>` : ""}
       <div class="storefront-stats">
         <span><strong>${allProducts.length}</strong> listing${allProducts.length === 1 ? "" : "s"}</span>
@@ -10686,7 +10782,6 @@ async function renderVendorDashboard() {
     <button class="dash-tab" onclick="navigate('vendorPackages')"><i class="fa-solid fa-boxes-packing"></i> Packages</button>
     <button class="dash-tab" onclick="navigate('vendorEarnings')"><i class="fa-solid fa-sack-dollar"></i> Earnings</button>
     <button class="dash-tab" onclick="navigate('vendorSuggestionsInbox')"><i class="fa-solid fa-inbox"></i> Suggestions${unreadSuggestionCount > 0 ? `<span class="dash-tab-dot">${unreadSuggestionCount > 9 ? "9+" : unreadSuggestionCount}</span>` : ""}</button>
-    <button class="dash-tab" onclick="navigate('vendorEditProfile')"><i class="fa-solid fa-pen"></i> Edit profile</button>
   </div>`;
   html += `<div class="accordion-section" style="max-width:700px;margin-bottom:1.4rem;">
     <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-chart-simple"></i> At a glance</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
@@ -10972,8 +11067,12 @@ async function renderVendorEditProfile() {
     <label>Address (leave blank if you're an online-only business)</label><input id="veAddress" value="${esc(v.address || "")}" />
     <label>City</label><input id="veCity" value="${esc(v.city || "")}" />
     <label>Phone *</label><input id="vePhone" type="tel" value="${esc(v.phone || "")}" />
-    <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" />
-    <label id="veDeliveryFeeLabel">Delivery fee ${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere. Distance-based charges purely by the per-km rate below (buyer's shared location to your shop pin) — this flat amount is then only used as a fallback if you haven't pinned your shop's location yet. Leave amounts at 0 for free delivery.")}</label>
+    <label>WhatsApp number</label><input id="veWhatsapp" type="tel" value="${esc(v.whatsapp_number || "")}" oninput="const w=byId('veWhatsappVisible'); if(w) w.disabled=!this.value.trim();" />
+    <div class="switch-row" style="margin-top:.45rem;">
+      <span class="switch-label-text">Show WhatsApp number to buyers</span>
+      <label class="switch-toggle"><input type="checkbox" id="veWhatsappVisible" ${v.whatsapp_visible === true ? "checked" : ""} ${v.whatsapp_number ? "" : "disabled"} onchange="toggleVendorWhatsappVisibility()" /><span class="switch-toggle-track"></span></label>
+    </div>
+    <label id="veDeliveryFeeLabel" class="ve-delivery-fee-label"><span>Delivery fee</span>${infoPopoverHtml("veDeliveryFeeInfo", "Charged when a buyer chooses delivery instead of pickup. Flat charges the same amount everywhere. Distance-based charges purely by the per-km rate below (buyer's shared location to your shop pin) — this flat amount is then only used as a fallback if you haven't pinned your shop's location yet. Leave amounts at 0 for free delivery.")}</label>
     <select id="veDeliveryFeeMode" onchange="toggleVendorDeliveryFeeMode()">
       <option value="flat" ${v.delivery_fee_mode !== "distance" ? "selected" : ""}>Flat fee</option>
       <option value="distance" ${v.delivery_fee_mode === "distance" ? "selected" : ""}>Distance-based</option>
@@ -11019,7 +11118,7 @@ async function renderVendorEditProfile() {
     <p class="muted" style="font-size:0.78rem;margin-top:0.55rem;"><i class="fa-solid fa-hand-pointer"></i> Tap anywhere on the map to choose a shop location, or drag the pin.</p>
     <div class="flex" style="margin-top:0.8rem;">
       <button class="btn btn-sm" id="veUseLocationBtn" onclick="useMyLocationForVendor()"><i class="fa-solid fa-location-crosshairs"></i> Use my current location</button>
-      <button class="btn btn-sm btn-outline" onclick="saveVendorLocation()">Save location</button><button class="btn btn-sm btn-outline" onclick="saveVendorLocationPreset()"><i class="fa-solid fa-bookmark"></i> Save as location</button>
+      <button class="btn btn-sm btn-outline" onclick="saveVendorLocationPreset()"><i class="fa-solid fa-bookmark"></i> Save as location</button>
     </div>
     <div class="vendor-location-presets" id="veLocationPresets"></div>
   </div>
@@ -11041,7 +11140,7 @@ async function renderVendorEditProfile() {
   </div>
 
   <div class="card" style="max-width:480px;margin:1.2rem auto 0;">
-    <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart ${infoPopoverHtml("billingInfo", `Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,500 per active listing, charged to a saved card. Better if your sales are hard to track (e.g. you take payment off-platform a lot).`)}</h2>
+    <h2><i class="fa-solid fa-file-invoice-dollar"></i> How you pay Levromart ${infoPopoverHtml("billingInfo", `Commission-based deducts ${Number(v.commission_pct ?? 3)}% from each sale automatically. Monthly is a flat ₦1,000 per active listing, charged to a saved card. Better if your sales are hard to track (e.g. you take payment off-platform a lot).`)}</h2>
     <div id="billingError" class="error-text hidden"></div>
     <div class="flex" style="gap:1.2rem;margin:0.6rem 0;">
       <label style="display:flex;align-items:center;gap:0.4rem;margin:0;font-weight:400;"><input type="radio" name="veBillingModel" value="commission" ${v.billing_model !== "monthly" ? "checked" : ""} onchange="submitVendorBillingModel(this.value)" style="width:auto;margin:0;" /> Commission-based</label>
@@ -11050,7 +11149,7 @@ async function renderVendorEditProfile() {
     ${v.billing_model === "monthly" ? `
       ${v.monthly_billing_status === "active" ? `<div class="banner banner-success"><strong><i class="fa-solid fa-circle-check"></i> Monthly billing active.</strong> ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(bp.amount)}/month · next charge ${v.next_monthly_charge_at ? new Date(v.next_monthly_charge_at).toLocaleDateString() : "—"}</div>`
       : v.monthly_billing_status === "past_due" ? `<div class="banner banner-danger"><strong><i class="fa-solid fa-triangle-exclamation"></i> Payment failed, storefront paused.</strong> Set up billing again to reactivate.</div>`
-      : `<div class="banner banner-warning"><strong><i class="fa-solid fa-circle-info"></i> Card not set up yet.</strong> Currently: ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(Math.max(bp.amount, 1500))} due today to activate.</div>`}
+      : `<div class="banner banner-warning"><strong><i class="fa-solid fa-circle-info"></i> Card not set up yet.</strong> Currently: ${bp.listing_count} active listing${bp.listing_count === 1 ? "" : "s"} · ${naira(Math.max(bp.amount, 1000))} due today to activate.</div>`}
       <button class="btn btn-sm" id="setupBillingBtn" onclick="setupMonthlyBilling()">${v.monthly_billing_status === "active" ? "Update card" : "Set up monthly billing"}</button>
     ` : ""}
   </div>`;
@@ -11107,7 +11206,7 @@ async function saveVendorBankDetails() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not save payout details.");
     showToast(`Payouts set up for ${json.account_name}.`, "success");
-    navigate("vendorEditProfile");
+    navigate("vendorEditProfile", {}, false);
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.classList.remove("hidden");
@@ -11147,6 +11246,17 @@ async function toggleVendorAfterHours() {
   vendor.allow_after_hours_messages = checked;
   showToast(checked ? "Buyers can now message or call you outside working hours." : "After-hours contact turned off.", "success");
 }
+async function toggleVendorWhatsappVisibility() {
+  const checkbox = byId("veWhatsappVisible");
+  const number = byId("veWhatsapp")?.value.trim() || "";
+  if (!checkbox) return;
+  if (checkbox.checked && !number) { checkbox.checked = false; showToast("Add a WhatsApp number first.", "info"); return; }
+  const { error } = await sb.from("vendors").update({ whatsapp_visible: checkbox.checked }).eq("id", vendor.id);
+  if (error) { checkbox.checked = !checkbox.checked; showToast(error.message, "error"); return; }
+  vendor.whatsapp_visible = checkbox.checked;
+  showToast(checkbox.checked ? "WhatsApp contact is now visible to buyers." : "WhatsApp contact hidden from buyers.", "success");
+}
+
 async function submitVendorEditProfile() {
   const errorEl = byId("vendorEditError");
   errorEl.classList.add("hidden");
@@ -11164,6 +11274,7 @@ async function submitVendorEditProfile() {
     city: byId("veCity").value.trim() || null,
     phone,
     whatsapp_number: byId("veWhatsapp").value.trim() || null,
+    whatsapp_visible: !!byId("veWhatsappVisible")?.checked && !!byId("veWhatsapp").value.trim(),
     opening_hours: summarizeBusinessHours(business_hours) || null,
     business_hours,
     allow_after_hours_messages: byId("veAllowAfterHours").checked,
@@ -11175,10 +11286,12 @@ async function submitVendorEditProfile() {
   if (error) { errorEl.textContent = error.message; errorEl.classList.remove("hidden"); return; }
   vendor.business_name = business_name;
   vendor.phone = phone;
+  vendor.whatsapp_number = byId("veWhatsapp").value.trim() || null;
+  vendor.whatsapp_visible = !!byId("veWhatsappVisible")?.checked && !!vendor.whatsapp_number;
   vendor.business_hours = business_hours;
   vendor.allow_after_hours_messages = byId("veAllowAfterHours").checked;
   showToast("Business profile saved.", "success");
-  navigate("vendorEditProfile");
+  navigate("vendorEditProfile", {}, false);
 }
 
 async function uploadVendorLogo(event) {
@@ -11193,7 +11306,7 @@ async function uploadVendorLogo(event) {
   const { error } = await sb.from("vendors").update({ logo_url: url }).eq("id", vendor.id);
   if (error) { showToast(error.message, "error"); return; }
   vendor.logo_url = url;
-  navigate("vendorEditProfile");
+  navigate("vendorEditProfile", {}, false);
   showToast("Business logo updated.", "success");
 }
 
@@ -11225,26 +11338,55 @@ async function initVendorLocationMap() {
   renderVendorLocationPresets();
 }
 
-function vendorLocationPresetKey(){return `levromart-vendor-location-presets:${vendor?.id||""}`;}
-function getVendorLocationPresets(){try{return JSON.parse(localStorage.getItem(vendorLocationPresetKey())||"[]").filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng)));}catch(e){return [];}}
-function renderVendorLocationPresets(){const el=byId("veLocationPresets");if(!el)return;const list=getVendorLocationPresets();el.innerHTML=list.length?`<div class="muted" style="font-size:.78rem;margin-top:.75rem;">Saved locations</div>`+list.map((x,i)=>`<button type="button" class="btn btn-sm btn-outline" style="margin:.4rem .35rem 0 0;" onclick="selectVendorLocationPreset(${i})"><i class="fa-solid fa-location-dot"></i> ${esc(x.name||`Location ${i+1}`)}</button>`).join(""):"";}
-function saveVendorLocationPreset(){const lat=parseFloat(byId("veLat")?.value),lng=parseFloat(byId("veLng")?.value);if(!Number.isFinite(lat)||!Number.isFinite(lng)){showToast("Choose a location on the map first.","error");return;}const list=getVendorLocationPresets();const name=`Location ${list.length+1}`;list.push({name,lat,lng});try{localStorage.setItem(vendorLocationPresetKey(),JSON.stringify(list.slice(-8)));}catch(e){}renderVendorLocationPresets();showToast(`${name} saved on this device.`,"success");}
-function selectVendorLocationPreset(index){const x=getVendorLocationPresets()[index];if(!x)return;byId("veLat").value=x.lat;byId("veLng").value=x.lng;if(veMarker)veMarker.setLatLng([x.lat,x.lng]);if(veMap)veMap.setView([x.lat,x.lng],16);showToast(`${x.name} selected. Save location to make it your active shop location.`,"info");}
+function vendorLocationPresetKey(){return "levromart-vendor-location-presets:"+(vendor?.id||"");}
+function getVendorLocationPresets(){try{return JSON.parse(localStorage.getItem(vendorLocationPresetKey())||"[]").filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).slice(0,3);}catch(e){return [];}}
+function renderVendorLocationPresets(){
+  const el=byId("veLocationPresets"); if(!el)return;
+  const list=getVendorLocationPresets();
+  if(!list.length){el.innerHTML="";return;}
+  el.innerHTML='<div class="muted" style="font-size:.78rem;margin-top:.75rem;">Saved locations</div>'+list.map((x,i)=>{
+    const name=esc(x.name||("Location "+(i+1)));
+    return '<div class="saved-location-row"><button type="button" class="btn btn-sm btn-outline saved-location-select" onclick="selectVendorLocationPreset('+i+')"><i class="fa-solid fa-location-dot"></i> '+name+'</button><button type="button" class="saved-location-delete" onclick="deleteVendorLocationPreset('+i+')" aria-label="Delete saved location" title="Delete saved location"><i class="fa-solid fa-trash"></i></button></div>';
+  }).join("");
+}
+function saveVendorLocationPreset(){
+  const lat=parseFloat(byId("veLat")?.value), lng=parseFloat(byId("veLng")?.value);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)){showToast("Choose a location on the map first.","error");return;}
+  const list=getVendorLocationPresets();
+  if(list.length>=3){showToast("You can save up to 3 locations.","info");return;}
+  const name="Location "+(list.length+1); list.push({name,lat,lng});
+  try{localStorage.setItem(vendorLocationPresetKey(),JSON.stringify(list));}catch(e){}
+  renderVendorLocationPresets(); showToast(name+" saved on this device.","success");
+}
+function deleteVendorLocationPreset(index){
+  const list=getVendorLocationPresets(); if(index<0||index>=list.length)return;
+  list.splice(index,1); list.forEach((x,i)=>x.name="Location "+(i+1));
+  try{localStorage.setItem(vendorLocationPresetKey(),JSON.stringify(list));}catch(e){}
+  renderVendorLocationPresets(); showToast("Saved location removed.","success");
+}
+function selectVendorLocationPreset(index){
+  const x=getVendorLocationPresets()[index]; if(!x)return;
+  byId("veLat").value=x.lat; byId("veLng").value=x.lng;
+  if(veMarker)veMarker.setLatLng([x.lat,x.lng]); if(veMap)veMap.setView([x.lat,x.lng],16);
+  showToast((x.name||"Saved location")+" selected. Drag the pin to fine-tune or use the current-location action to update the active shop location.","info");
+}
 
 async function useMyLocationForVendor() {
   const btn = byId("veUseLocationBtn");
+  if (!btn) return;
+  const confirmed = await showConfirmDialog("Use your current device location as your shop location? This will replace the shop location currently saved on Levromart.", { title: "Use current location", okLabel: "Use this location" });
+  if (!confirmed) return;
   btn.disabled = true;
   const original = btn.innerHTML;
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating…`;
   try {
     const loc = await getCurrentPositionOnce();
-    byId("veLat").value = loc.lat;
-    byId("veLng").value = loc.lng;
-    if (veMap && veMarker) {
-      veMarker.setLatLng([loc.lat, loc.lng]);
-      veMap.setView([loc.lat, loc.lng], 16);
-    }
-    showToast("Location captured. Drag the pin to fine-tune, then save.", "success");
+    const { error } = await sb.from("vendors").update({ lat: loc.lat, lng: loc.lng }).eq("id", vendor.id);
+    if (error) throw error;
+    vendor.lat = loc.lat; vendor.lng = loc.lng;
+    byId("veLat").value = loc.lat; byId("veLng").value = loc.lng;
+    if (veMap && veMarker) { veMarker.setLatLng([loc.lat, loc.lng]); veMap.setView([loc.lat, loc.lng], 16); }
+    showToast("Current location saved as your shop location.", "success");
   } catch (err) {
     showToast(err.message, "error");
   } finally {
@@ -12599,7 +12741,7 @@ async function payCommission() {
 async function submitVendorBillingModel(billingModel) {
   const { error } = await sb.rpc("set_vendor_billing_model", { p_billing_model: billingModel });
   if (error) { showToast(error.message, "error"); return; }
-  navigate("vendorEditProfile");
+  navigate("vendorEditProfile", {}, false);
 }
 
 async function setupMonthlyBilling() {
@@ -14370,39 +14512,88 @@ function toggleAiChatMic() {
 // the two never fight over which input box is being filled.
 let msgRecognizer = null;
 let msgListening = false;
-function toggleMsgMic() {
-  if (!AiSpeechRecognition) return;
+let msgVoicePaused = false;
+let msgVoiceFinalTranscript = "";
+let msgVoiceInterimTranscript = "";
+function renderMsgVoiceState() {
+  const status = byId("msgVoiceStatus");
+  const text = byId("msgVoiceStatusText");
   const btn = byId("msgMicBtn");
-  if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
-  if (msgListening) { msgRecognizer?.stop(); return; }
+  if (!status || !text) return;
+  status.classList.toggle("hidden", !msgListening && !msgVoicePaused);
+  text.textContent = msgVoicePaused ? "Paused — tap resume to continue" : (msgVoiceInterimTranscript || msgVoiceFinalTranscript ? (msgVoiceFinalTranscript + (msgVoiceInterimTranscript ? " " + msgVoiceInterimTranscript : "")).trim() : "Listening…");
+  if (btn) { btn.classList.toggle("listening", msgListening); btn.innerHTML = `<i class="fa-solid ${msgVoicePaused ? "fa-microphone" : "fa-microphone"}"></i>`; }
+}
+function applyMsgVoiceTranscript() {
+  const input = byId("chatInput");
+  if (!input) return;
+  const combined = `${msgVoiceFinalTranscript}${msgVoiceInterimTranscript ? (msgVoiceFinalTranscript ? " " : "") + msgVoiceInterimTranscript : ""}`.trim();
+  input.value = combined;
+  autoGrowChatInput(input);
+  handleChatTyping(activeConversationId);
+}
+function startMsgVoiceRecognition() {
+  if (!AiSpeechRecognition) return;
   msgRecognizer = new AiSpeechRecognition();
-  // iOS Safari's speech recognizer is much more reliable with a broadly
-  // supported English locale. en-NG can be exposed by some browsers but
-  // rejected by WebKit at runtime, which leaves the mic looking active while
-  // producing no transcript. Keep Nigerian English as the preferred locale
-  // elsewhere, and use en-US on iPhone/iPad as the WebKit-safe fallback.
-  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   msgRecognizer.lang = isIOSDevice ? "en-US" : "en-NG";
-  msgRecognizer.interimResults = false;
-  msgRecognizer.continuous = false;
+  msgRecognizer.interimResults = true;
+  msgRecognizer.continuous = true;
   msgRecognizer.maxAlternatives = 1;
-  msgRecognizer.onstart = () => { msgListening = true; btn.classList.add("listening"); byId("chatInput")?.focus(); };
+  msgRecognizer.onstart = () => { msgListening = true; msgVoicePaused = false; byId("msgMicBtn")?.classList.add("listening"); renderMsgVoiceState(); };
   msgRecognizer.onresult = (e) => {
-    let transcript = "";
-    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    const input = byId("chatInput");
-    if (transcript && input) { input.value = transcript; autoGrowChatInput(input); }
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const text = e.results[i][0]?.transcript || "";
+      if (e.results[i].isFinal) msgVoiceFinalTranscript = `${msgVoiceFinalTranscript}${msgVoiceFinalTranscript ? " " : ""}${text.trim()}`.trim();
+      else interim += text;
+    }
+    msgVoiceInterimTranscript = interim.trim();
+    applyMsgVoiceTranscript();
+    renderMsgVoiceState();
   };
   msgRecognizer.onerror = (e) => {
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
-    } else if (e.error !== "aborted" && e.error !== "no-speech") {
-      showToast("Couldn't hear that, try again.", "error");
-    }
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
+    else if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
   };
-  msgRecognizer.onend = () => { msgListening = false; btn.classList.remove("listening"); };
-  try { msgRecognizer.start(); } catch (e) { /* already running */ }
+  msgRecognizer.onend = () => {
+    msgListening = false;
+    if (msgVoicePaused) { renderMsgVoiceState(); return; }
+    // Mobile Safari can terminate continuous recognition after a short silence.
+    // Restart while the user is still in recording mode so the transcript keeps flowing.
+    if (msgRecognizer && msgVoiceFinalTranscript !== null && !msgVoicePaused && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) {
+      setTimeout(() => { if (!msgVoicePaused && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) { try { msgRecognizer.start(); } catch (_) {} } }, 120);
+    } else renderMsgVoiceState();
+  };
+  try { msgRecognizer.start(); } catch (_) {}
+}
+function toggleMsgMic() {
+  if (!AiSpeechRecognition) return;
+  if (msgListening) { toggleMsgMicPause(); return; }
+  if (msgVoicePaused && msgRecognizer) {
+    msgVoicePaused = false;
+    try { msgRecognizer.start(); } catch (_) {}
+    renderMsgVoiceState();
+    return;
+  }
+  msgVoiceFinalTranscript = ""; msgVoiceInterimTranscript = ""; msgVoicePaused = false;
+  const input = byId("chatInput");
+  if (input?.value.trim()) msgVoiceFinalTranscript = input.value.trim();
+  startMsgVoiceRecognition();
+}
+function toggleMsgMicPause() {
+  if (!msgRecognizer) return;
+  if (msgListening) { msgVoicePaused = true; msgVoiceInterimTranscript = ""; try { msgRecognizer.stop(); } catch (_) {} renderMsgVoiceState(); }
+  else { msgVoicePaused = false; try { msgRecognizer.start(); } catch (_) {} renderMsgVoiceState(); }
+}
+async function cancelMsgVoiceRecording() {
+  if (!msgListening && !msgVoicePaused) return;
+  const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
+  if (!confirmed) return;
+  try { msgRecognizer?.abort(); } catch (_) {}
+  msgRecognizer = null; msgListening = false; msgVoicePaused = false; msgVoiceFinalTranscript = ""; msgVoiceInterimTranscript = "";
+  const input = byId("chatInput"); if (input) resetChatInput(input);
+  renderMsgVoiceState();
 }
 
 function leviOfflineFallback(text) {
