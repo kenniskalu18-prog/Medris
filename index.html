@@ -4347,11 +4347,11 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
       <input type="text" id="loginCity" placeholder="City" value="Lagos" />
       <label>Phone</label>
       <input type="tel" id="loginPhone" placeholder="Phone" />
-      <p class="muted" style="font-size:.75rem;margin:.15rem 0 .55rem;">Email is optional. Your phone number can be used to sign in if you do not add an email.</p>
+      <p class="muted" style="font-size:.75rem;margin:.15rem 0 .55rem;">Email is optional when registering. Your phone number can be used to sign in if you do not add an email.</p>
     </div>
 
-    <label>Email</label>
-    <input type="email" id="loginEmail" placeholder="Email address" />
+    <label>Email <span class="muted" style="font-size:.78rem;font-weight:400;">(optional when registering)</span></label>
+    <input type="email" id="loginEmail" placeholder="Email address" autocomplete="email" />
     <div id="loginPasswordWrap">
       <label>Password</label>
       <input type="password" id="loginPassword" placeholder="Password (min 8 characters)" />
@@ -5090,6 +5090,22 @@ let notifTarget = null; // { view, params }
 let favoriteIds = new Set();
 
 // ---------- UTILS ----------
+// ---------- AUTH IDENTIFIER HELPERS ----------
+function normalizeAuthPhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 11) digits = "234" + digits.slice(1);
+  return digits;
+}
+function authAliasFromPhone(phone) {
+  const digits = normalizeAuthPhone(phone);
+  return `p${digits}@accounts.levromart.app`;
+}
+function looksLikePhoneIdentifier(value) {
+  const raw = String(value || "").trim();
+  return raw && !raw.includes("@") && /[0-9]/.test(raw);
+}
+
 function naira(n) { return "₦" + Number(n ?? 0).toLocaleString(); }
 function servicePriceSuffix(p) { return p.is_service && p.service_price_unit && p.service_price_unit !== "flat" ? "/" + p.service_price_unit : ""; }
 function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
@@ -6629,6 +6645,28 @@ async function refreshAuthState() {
       sb.from("favorites").select("product_id").eq("buyer_id", userId)
     ]);
     profile = profileRes.data;
+    // A previously deleted/recreated Auth user can briefly have a valid
+    // Supabase session before its public.users row is available. Do not make
+    // the UI look logged out in that situation: recover the profile from Auth
+    // metadata and persist it when possible.
+    if (!profile) {
+      const u = session.user || {};
+      const meta = u.user_metadata || {};
+      const recoveredRole = meta.role === "vendor" ? "vendor" : "buyer";
+      const recovered = {
+        id: userId,
+        name: meta.name || meta.full_name || u.email?.split("@")[0] || "Levromart user",
+        email: u.email || meta.email || "",
+        phone: meta.phone || "",
+        city: meta.city || "Lagos",
+        role: recoveredRole,
+        role_selected: true,
+        has_password: true,
+        avatar_url: meta.avatar_url || meta.picture || ""
+      };
+      const { data: restoredProfile } = await sb.from("users").upsert(recovered, { onConflict: "id" }).select("*").single();
+      profile = restoredProfile || recovered;
+    }
     vendor = profile?.role === "admin" ? null : vendorRes.data;
     favoriteIds = new Set((favsRes.data || []).map((f) => f.product_id));
   }
@@ -7005,7 +7043,10 @@ function applyAuthMode() {
 // message that fires when that happens).
 let manualLogout = false;
 async function enforceSingleSession() {
-  try { await sb.auth.signOut({ scope: "others" }); } catch (e) {}
+  // Intentionally disabled: do not revoke another browser/session after login.
+  // This prevents a fresh login from racing the auth-state listener and
+  // leaving the current tab looking logged in while its session is invalid.
+  return true;
 }
 
 // Redirects away to Google and back -- Supabase picks the returned session
@@ -7016,21 +7057,6 @@ async function enforceSingleSession() {
 // same as leaving "I am a…" on its default during a normal signup --
 // anyone who actually wants to sell can still apply as a vendor
 // afterward, same as always.
-function normalizeAuthPhone(phone) {
-  let digits = String(phone || "").replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("0") && digits.length === 11) digits = "234" + digits.slice(1);
-  return digits;
-}
-function authAliasFromPhone(phone) {
-  const digits = normalizeAuthPhone(phone);
-  return digits ? `p${digits}@accounts.levromart.app` : "";
-}
-function looksLikePhoneIdentifier(value) {
-  const raw = String(value || "").trim();
-  return !!raw && !raw.includes("@") && /^[+()\d\s-]{7,}$/.test(raw);
-}
-
 async function signInWithGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: "google",
@@ -7063,7 +7089,7 @@ async function submitAuth() {
   }
 
   if (!password) { errorEl.textContent = "Password is required."; errorEl.classList.remove("hidden"); return; }
-  if (authMode !== "register" && !email) { errorEl.textContent = "Email or phone number is required."; errorEl.classList.remove("hidden"); return; }
+  if (authMode !== "register" && !email) { errorEl.textContent = "Enter your email address or phone number."; errorEl.classList.remove("hidden"); return; }
 
   const btn = byId("authSubmitBtn");
   btn.disabled = true;
@@ -7076,7 +7102,7 @@ async function submitAuth() {
       const phone = byId("loginPhone").value.trim();
 
       if (!name) throw new Error("Full name is required.");
-      if (!phone) throw new Error("Phone is required when creating an account.");
+      if (!phone) throw new Error("Phone is required.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
       if (password !== byId("loginPasswordConfirm").value) throw new Error("Passwords don't match.");
 
@@ -7103,20 +7129,21 @@ async function submitAuth() {
       }
 
       // The account is already confirmed by the server, so sign in immediately.
-      const loginIdentifier = email || authAliasFromPhone(phone);
+      const loginEmail = email || authAliasFromPhone(phone);
       const { error: loginError } = await sb.auth.signInWithPassword({
-        email: loginIdentifier,
+        email: loginEmail,
         password
       });
       if (loginError) throw loginError;
 
-      await enforceSingleSession();
       await finishLoginSuccess(role === "vendor" ? "vendorApply" : "home");
     } else {
-      const loginIdentifier = looksLikePhoneIdentifier(email) ? authAliasFromPhone(email) : email;
-      const { error } = await sb.auth.signInWithPassword({ email: loginIdentifier, password });
+      let loginEmail = email;
+      if (looksLikePhoneIdentifier(email)) {
+        loginEmail = authAliasFromPhone(email);
+      }
+      const { error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
-      await enforceSingleSession();
       // The OTP check (and role-select / set-password, if either is still
       // pending on this account) all now run from inside finishLoginSuccess
       // -> refreshAuthStateOnce -> runPostAuthChecks, one shared sequence
@@ -7275,7 +7302,9 @@ async function confirmDeleteAccount() {
     // `session` variable, which only catches up once the auth-state-change
     // listener fires. Using the stale one was throwing a false "Invalid
     // session" from the API below even with the right password and phrase.
-    const { data: authData, error: pwError } = await sb.auth.signInWithPassword({ email: profile.email, password });
+    const deleteLoginEmail = profile?.email || session?.user?.email;
+    if (!deleteLoginEmail) throw new Error("This account has no email address. Please use the account password to continue.");
+    const { data: authData, error: pwError } = await sb.auth.signInWithPassword({ email: deleteLoginEmail, password });
     if (pwError) throw new Error("Incorrect password.");
     const freshAccessToken = authData?.session?.access_token || session.access_token;
 
@@ -7285,17 +7314,7 @@ async function confirmDeleteAccount() {
       body: JSON.stringify({ accessToken: freshAccessToken }),
     });
     const json = await res.json();
-    if (!res.ok) {
-      // Never expose raw PostgreSQL, PostgREST, foreign-key, or schema-cache
-      // errors to customers. Those are implementation details, not user-facing
-      // messages. Keep the detailed error in the browser console for debugging.
-      console.error("Account deletion failed:", json.error || json);
-      const technical = String(json.error || "").toLowerCase();
-      if (technical.includes("foreign key") || technical.includes("constraint") || technical.includes("schema cache") || technical.includes("postgrest") || technical.includes("delete_my_account")) {
-        throw new Error("We couldn't complete the account deletion. Please try again in a moment.");
-      }
-      throw new Error(json.error || "We couldn't complete the account deletion. Please try again.");
-    }
+    if (!res.ok) throw new Error(json.error || "Could not delete account.");
 
     byId("deleteAccountModal").classList.add("hidden");
     await sb.auth.signOut();
@@ -7303,7 +7322,11 @@ async function confirmDeleteAccount() {
     navigate("home");
     showToast("Your account has been deleted.", "success");
   } catch (err) {
-    errorEl.textContent = err.message;
+    const raw = String(err?.message || "");
+    const technical = /foreign key|constraint|schema cache|postgres|postgrest|violates|relation .* does not exist|column .* does not exist/i.test(raw);
+    errorEl.textContent = technical
+      ? "We couldn't complete the account deletion. Please try again in a moment."
+      : raw || "We couldn't complete the account deletion. Please try again.";
     errorEl.classList.remove("hidden");
   } finally {
     btn.disabled = false;
@@ -12936,7 +12959,6 @@ sb.auth.onAuthStateChange((_event) => {
   // only fires for an actual new authentication (password, OAuth, magic
   // link), never for a plain page reload restoring an existing session
   // (that's INITIAL_SESSION), so this can't log someone out of their own tab.
-  if (_event === "SIGNED_IN") enforceSingleSession();
   manualLogout = false;
   refreshAuthStateOnce();
 });
