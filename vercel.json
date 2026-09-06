@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/register",
+      "destination": "/api/delete-account"
+    },
+    {
+      "source": "/api/account-exists",
+      "destination": "/api/delete-account"
+    }
+  ],
   "crons": [
     {
       "path": "/api/daily-cron",
