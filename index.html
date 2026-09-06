@@ -8,7 +8,7 @@
 <meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0e8f7f">
+<meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -93,6 +93,16 @@
     width: 100%; max-width: 100%; background-color: var(--bg); background-image: var(--bg-wash); background-attachment: fixed;
     transition: background-color 0.25s ease, color 0.25s ease; touch-action: pan-x pan-y;
   }
+  /* Branded app splash: solid black backdrop with the real Levromart mark
+     centered and sized generously, shown briefly on load/reload. Hiding is
+     driven entirely from JS (prepareLevromartSplash/hideLevromartSplash),
+     which guarantees this can never stay stuck on screen — see the
+     try/finally + hard safety timeout around init(). */
+  #levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .28s ease,visibility .28s ease;}
+  #levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
+  .levromart-splash-logo{display:block;width:min(20rem,72vw);height:auto;object-fit:contain;animation:levroSplashLogoIn .32s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes levroSplashLogoIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+  @media(prefers-reduced-motion:reduce){#levromartSplash{transition:none}.levromart-splash-logo{animation:none;opacity:1;transform:none;}}
   header {
     background: var(--glass-bg); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
     color: var(--text); padding: calc(0.8rem + env(safe-area-inset-top, 0px)) 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
@@ -4125,6 +4135,7 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
 
 </head>
 <body>
+<div id="levromartSplash" aria-hidden="true"><img class="levromart-splash-logo" alt="Levromart" /></div>
 <header>
   <div class="header-left">
     <div class="icon-wrap" id="profileWrap">
@@ -5369,6 +5380,35 @@ function positionInfoPopover(el) {
 }
 
 function byId(id) { return document.getElementById(id); }
+
+// Splash screen shown on load/reload: brief, branded, and — unlike the
+// earlier version — impossible to leave stuck on screen. Three independent
+// triggers can hide it (first successful navigate(), init()'s finally
+// block, and a hard 4s timeout in init()); whichever fires first wins.
+// __levroSplashShownAt enforces a minimum visible time so a fast load
+// doesn't just flash the logo for a few milliseconds.
+window.__levroSplashShownAt = 0;
+window.__levroSplashHidden = false;
+function prepareLevromartSplash() {
+  const splash = byId("levromartSplash");
+  if (!splash) return;
+  const logo = splash.querySelector(".levromart-splash-logo");
+  if (logo && typeof MEDRIS_LOGO !== "undefined") logo.src = MEDRIS_LOGO;
+  window.__levroSplashShownAt = Date.now();
+  window.__levroSplashHidden = false;
+}
+function hideLevromartSplash() {
+  const splash = byId("levromartSplash");
+  if (!splash || window.__levroSplashHidden) return;
+  const minVisibleMs = 650;
+  const elapsed = Date.now() - (window.__levroSplashShownAt || 0);
+  if (elapsed < minVisibleMs) {
+    setTimeout(() => hideLevromartSplash(), minVisibleMs - elapsed);
+    return;
+  }
+  window.__levroSplashHidden = true;
+  splash.classList.add("is-hidden");
+}
 
 // ---------- MAP (Leaflet + OpenStreetMap, loaded on demand) ----------
 // Free, no API key or billing -- pulled in lazily from a CDN only the first
@@ -7554,6 +7594,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   const sameViewScrollY = preserveSameViewScroll ? window.scrollY : 0;
   app.innerHTML = html;
   syncLeviFabVisibility();
+  hideLevromartSplash();
   clearAutoScrollTimers();
   document.querySelectorAll("#app .cat-row, #app .hscroll").forEach((el) => setupAutoScroll(el));
   initDeliveryFieldsOnPage();
@@ -7978,6 +8019,10 @@ async function renderCart() {
       <div class="divider"></div>
       <p class="flex" style="justify-content:space-between;margin:0 0 0.6rem;"><span class="muted">Subtotal</span><strong>${naira(subtotal)}</strong></p>
       ${deliveryFieldsHtml(`cart-${v.id}`, v.delivery_fee, v.lat, v.lng, v.delivery_fee_mode, v.delivery_fee_per_km)}
+      <div style="margin:0.7rem 0;">
+        <label style="margin:0;">Note for the vendor <span class="muted" style="font-weight:400;">(optional)</span></label>
+        <textarea id="cartNote-${v.id}" rows="2" placeholder="e.g. I'd like the blue one, or a size 42" style="margin-top:0.3rem;"></textarea>
+      </div>
       <button class="btn" style="width:100%;" onclick="checkoutCartVendor('${v.id}')"><i class="fa-solid fa-bag-shopping"></i> Checkout · ${esc(v.business_name)}</button>
       <p id="cartError-${v.id}" class="error-text hidden"></p>
     </div>`;
@@ -8056,6 +8101,7 @@ async function checkoutCartVendor(vendorId) {
     p_delivery_method: delivery.method,
     p_delivery_address: delivery.address,
     p_delivery_phone: delivery.phone,
+    p_buyer_note: byId(`cartNote-${vendorId}`)?.value.trim() || null,
     p_buyer_lat: buyerLocation?.lat ?? null,
     p_buyer_lng: buyerLocation?.lng ?? null,
   });
@@ -8937,6 +8983,10 @@ async function renderProductDetail(productId) {
       </div>
       ${product.sale_price != null ? `<p class="muted" id="serviceTotalPreview">Total: ${naira(product.sale_price)}</p>` : ""}
       ${deliveryFieldsHtml("buy", product.vendor.delivery_fee, product.vendor.lat, product.vendor.lng, product.vendor.delivery_fee_mode, product.vendor.delivery_fee_per_km, product.is_service ? "In-person" : "Pickup")}
+      ${!product.is_service ? `<div style="margin-top:0.7rem;">
+        <label style="margin:0;">Note for the vendor <span class="muted" style="font-weight:400;">(optional)</span></label>
+        <textarea id="buyNote" rows="2" placeholder="e.g. I'd like the blue one, or a size 42" style="margin-top:0.3rem;"></textarea>
+      </div>` : ""}
       <div class="flex">
         <button class="btn" onclick="buyNow('${product.vendor.id}','${product.id}')">${buyLabel}</button>
         ${!product.is_service ? `<button id="productAddToCartBtn" class="btn btn-outline" onclick="addToCart('${product.id}', parseInt(byId('buyQty').value)||1)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>` : ""}
@@ -9171,6 +9221,7 @@ async function buyNow(vendorId, productId) {
     p_delivery_method: delivery.method,
     p_delivery_address: delivery.address,
     p_delivery_phone: delivery.phone,
+    p_buyer_note: byId("buyNote")?.value.trim() || null,
     p_buyer_lat: buyerLocation?.lat ?? null,
     p_buyer_lng: buyerLocation?.lng ?? null,
   });
@@ -11419,6 +11470,7 @@ async function renderOrderDetail(orderId) {
       <strong>${esc(item.product?.name || "")}</strong>
       <p class="muted" style="margin:0.15rem 0 0;">Qty ${item.quantity} · ${naira(item.unit_price)}${item.rental_start_date ? ` · ${item.rental_start_date} → ${item.rental_end_date}` : ""}</p>
     </div>`).join("")}
+    ${order.buyer_note ? `<div class="divider"></div><p style="margin:0;"><i class="fa-regular fa-message"></i> <strong>${isVendor ? "Buyer's note" : "Your note"}:</strong> ${esc(order.buyer_note)}</p>` : ""}
     <div class="divider"></div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:0.9rem;">
       ${order.delivery_fee > 0 ? `<div><p class="muted" style="margin:0;">Equipment cost</p><strong>${naira(order.total_amount - order.delivery_fee)}</strong></div>
@@ -11632,42 +11684,7 @@ async function updateOrderStatus(orderId, newStatus) {
   }
   const { error } = await sb.rpc("transition_order_status", { p_order_id: orderId, p_new_status: newStatus });
   if (error) { showToast(error.message, "error"); return; }
-  if (newStatus === "cancelled") {
-    await recordCancellationTimestamp(orderId);
-  }
   await navigate("orderDetail", { orderId });
-}
-
-// transition_order_status only changes `status`; it does not stamp when the
-// change happened. This records that moment as its own step, verified
-// against the row rather than trusted blindly, so a real write failure
-// (e.g. an RLS policy blocking the update) is visible in the console
-// instead of silently leaving the order looking like it was cancelled the
-// instant it was placed.
-async function recordCancellationTimestamp(orderId) {
-  const cancelledAt = new Date().toISOString();
-  try {
-    const { error } = await sb.from("orders")
-      .update({ cancelled_at: cancelledAt, status_changed_at: cancelledAt, updated_at: cancelledAt })
-      .eq("id", orderId)
-      .eq("status", "cancelled");
-    if (error) {
-      console.warn("Could not record cancellation timestamp:", error.message, error.code, error.details, error.hint);
-      return;
-    }
-  } catch (e) {
-    console.warn("Could not record cancellation timestamp:", e?.message, e?.code, e?.details, e?.hint);
-    return;
-  }
-  try {
-    const { data, error: verifyErr } = await sb.from("orders").select("cancelled_at").eq("id", orderId).maybeSingle();
-    if (verifyErr) throw verifyErr;
-    if (!data?.cancelled_at) {
-      console.warn("Cancellation timestamp update reported success but did not persist for order", orderId, "- check RLS policy on orders.cancelled_at/status_changed_at/updated_at.");
-    }
-  } catch (e) {
-    console.warn("Could not verify cancellation timestamp:", e?.message, e?.code, e?.details, e?.hint);
-  }
 }
 
 // Self-serve cancel for a confirmed-but-not-yet-handed-over order. Safe to
@@ -11687,7 +11704,6 @@ async function buyerCancelOrder(orderId, feePaid) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Could not cancel this order.");
-    await recordCancellationTimestamp(orderId);
     if (json.refundError) showToast("Order cancelled. There was a hiccup issuing your refund, our team will sort it out.", "info");
     else if (json.refunded) showToast("Order cancelled and refunded.", "success");
     else showToast("Order cancelled.", "success");
@@ -13958,6 +13974,11 @@ window.addEventListener("popstate", (e) => {
 });
 
 (async function init() {
+  prepareLevromartSplash();
+  // Absolute backstop: whatever else happens, the splash can never stay on
+  // screen longer than this. The two hides below are the real triggers.
+  setTimeout(() => hideLevromartSplash(), 4000);
+  try {
   initTheme();
   initAccent();
   applyLevromartFontScale();
@@ -14065,6 +14086,9 @@ window.addEventListener("popstate", (e) => {
   // prompt normally, but this catches anyone who already cleared both of the
   // earlier popups in a previous session.
   setTimeout(maybeShowTour, 4000);
+  } finally {
+    hideLevromartSplash();
+  }
 })();
 
 if ("serviceWorker" in navigator) {
