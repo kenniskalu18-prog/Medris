@@ -1520,8 +1520,11 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
 
 
 .about-modal-content { max-width:420px !important; text-align:center; padding:1.6rem !important; }
-.about-brand-mark { width:64px; height:64px; margin:0 auto .8rem; border-radius:20px; overflow:hidden; background:var(--primary-grad); display:grid; place-items:center; box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
-.about-brand-mark img { width:54px; height:54px; object-fit:contain; }
+.about-brand-mark { width:64px; height:64px; margin:0 auto .8rem; border-radius:20px; overflow:hidden; background:var(--primary); display:grid; place-items:center; box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
+.about-brand-mark .about-levi-white-mark { width:54px; height:54px; display:block; }
+.about-brand-mark .about-levi-white-mark path,
+.about-brand-mark .about-levi-white-mark circle { fill:none; stroke:#fff; stroke-width:4.2; stroke-linecap:round; }
+.about-brand-mark .about-levi-white-mark circle { fill:#fff; stroke:none; }
 .about-modal-content h3 { font-size:1.35rem; margin-bottom:.4rem; }
 .about-modal-content > .muted { line-height:1.55; }
 .about-meta-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem; margin-top:1rem; text-align:left; }
@@ -4587,7 +4590,13 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 
 <div id="aboutLevromartModal" class="modal hidden" onclick="if(event.target===this) closeLevromartAbout()">
   <div class="modal-content about-modal-content">
-    <div class="about-brand-mark"><img src="" id="aboutLevromartLogo" alt="Levromart" /></div>
+    <div class="about-brand-mark" aria-label="Levi">
+      <svg class="about-levi-white-mark" viewBox="0 0 64 64" role="img" aria-hidden="true">
+        <path d="M18 16 C8 24, 8 40, 18 48"></path>
+        <circle cx="32" cy="32" r="5.2"></circle>
+        <path d="M46 16 C56 24, 56 40, 46 48"></path>
+      </svg>
+    </div>
     <h3>Levromart</h3>
     <p class="muted">A modern marketplace for buying, renting and requesting products — with Levi as your in-app assistant.</p>
     <div class="about-meta-grid">
@@ -6127,7 +6136,7 @@ const ACCENT_PALETTE = [
   { name: "Indigo", group: "Purples", base: "#4338ca", light: "#4338ca" },
   { name: "Deep Purple", group: "Purples", base: "#4c1d95", light: "#4c1d95" },
 ];
-const DEFAULT_ACCENT_INDEX = 5;
+const DEFAULT_ACCENT_INDEX = 0;
 let currentAccentIndex = DEFAULT_ACCENT_INDEX;
 function lightenHex(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
@@ -6191,7 +6200,17 @@ function toggleAccentPalettePage() {
 }
 function initAccent() {
   const saved = localStorage.getItem("medris-accent");
-  currentAccentIndex = saved !== null ? Number(saved) : DEFAULT_ACCENT_INDEX;
+  // Index 5 was the previous accidental blue default. Migrate that value once
+  // so existing installations return to Levromart's original green instead of
+  // continuing to display blue after this update. Other user-selected colors
+  // remain untouched.
+  if (saved === "5") {
+    currentAccentIndex = DEFAULT_ACCENT_INDEX;
+    try { localStorage.setItem("medris-accent", String(DEFAULT_ACCENT_INDEX)); } catch (e) {}
+  } else {
+    const parsed = saved !== null ? Number(saved) : DEFAULT_ACCENT_INDEX;
+    currentAccentIndex = Number.isInteger(parsed) && parsed >= 0 && parsed < ACCENT_PALETTE.length ? parsed : DEFAULT_ACCENT_INDEX;
+  }
   applyAccent(currentAccentIndex);
   renderAccentSwatches();
 }
@@ -10457,7 +10476,9 @@ async function renderVendorEditProfile() {
   const { data: billingPreview } = await sb.rpc("compute_monthly_billing_amount", { p_vendor_id: v.id });
   const bp = (billingPreview && billingPreview[0]) || { listing_count: 0, amount: 0 };
   setTimeout(loadBankOptions, 0);
-  setTimeout(initVendorLocationMap, 0);
+  setTimeout(() => {
+    initVendorLocationMap();
+  }, 0);
   setTimeout(() => { toggleVendorDeliveryFeeMode(); updateVeDeliveryPerKmExample(); }, 0);
 
   return `${commissionOwed > 0 ? `
@@ -10729,6 +10750,11 @@ async function initVendorLocationMap() {
   const applyMapPoint = (lat,lng) => { byId("veLat").value=lat; byId("veLng").value=lng; if(veMarker)veMarker.setLatLng([lat,lng]); };
   veMarker.on("dragend", () => { const pos = veMarker.getLatLng(); applyMapPoint(pos.lat,pos.lng); });
   veMap.on("click", (e) => applyMapPoint(e.latlng.lat,e.latlng.lng));
+  // Mobile browsers can initially lay out the map inside a card before its
+  // dimensions are final. Recalculate immediately and again after the page
+  // has painted so the saved vendor location is visible without tapping the map.
+  setTimeout(() => veMap?.invalidateSize({ pan: false }), 0);
+  setTimeout(() => veMap?.invalidateSize({ pan: false }), 180);
   renderVendorLocationPresets();
 }
 
@@ -10944,6 +10970,7 @@ async function showProductModal() {
   byId("prodExistingPhotos").innerHTML = "";
   byId("prodNewPhotoPreviews").innerHTML = "";
   byId("prodPhotoFiles").value = "";
+  window.__newProductPhotoFiles = [];
   byId("prodCategoryOther").value = "";
   byId("prodCategoryOther").classList.add("hidden");
   window.__existingPhotos = [];
@@ -11022,13 +11049,43 @@ function removeExistingPhoto(url) {
 // Live thumbnails for photos just picked but not yet uploaded — so "Add
 // photos" actually shows what you chose instead of staying blank until
 // after Save.
-function previewNewProductPhotos() {
-  const files = [...(byId("prodPhotoFiles").files || [])];
+function syncNewProductPhotoInput() {
+  const input = byId("prodPhotoFiles");
+  const files = window.__newProductPhotoFiles || [];
+  if (!input) return;
+  try {
+    const dt = new DataTransfer();
+    files.forEach((file) => dt.items.add(file));
+    input.files = dt.files;
+  } catch (e) {
+    // Safari/iOS may not expose a writable FileList. The app's own array remains
+    // the source of truth, so removing a thumbnail still works there.
+  }
+}
+function renderNewProductPhotos() {
   const wrap = byId("prodNewPhotoPreviews");
-  wrap.innerHTML = files.map((f) => {
+  if (!wrap) return;
+  (window.__newProductPhotoFiles || []).forEach((f, index) => {
     const url = URL.createObjectURL(f);
-    return `<div class="photo-thumb"><img src="${url}" alt="" /><span class="photo-pending-badge">new</span></div>`;
-  }).join("");
+    const safeName = esc(f.name || "Image");
+    const node = document.createElement("div");
+    node.className = "photo-thumb";
+    node.innerHTML = `<img src="${url}" alt="${safeName}" /><button type="button" class="photo-remove" onclick="removeNewProductPhoto(${index})" title="Remove photo" aria-label="Remove photo"><i class="fa-solid fa-xmark"></i></button><span class="photo-pending-badge">new</span>`;
+    wrap.appendChild(node);
+  });
+}
+function previewNewProductPhotos() {
+  window.__newProductPhotoFiles = [...(byId("prodPhotoFiles").files || [])];
+  renderNewProductPhotos();
+}
+function removeNewProductPhoto(index) {
+  const files = window.__newProductPhotoFiles || [];
+  if (index < 0 || index >= files.length) return;
+  window.__newProductPhotoFiles = files.filter((_, i) => i !== index);
+  syncNewProductPhotoInput();
+  const wrap = byId("prodNewPhotoPreviews");
+  if (wrap) wrap.innerHTML = "";
+  renderNewProductPhotos();
 }
 (function setupPhotoDropzone() {
   document.addEventListener("dragover", (e) => {
@@ -11046,8 +11103,11 @@ function previewNewProductPhotos() {
     zone.classList.remove("drag-over");
     const input = byId("prodPhotoFiles");
     if (input && e.dataTransfer?.files?.length) {
-      input.files = e.dataTransfer.files;
-      previewNewProductPhotos();
+      window.__newProductPhotoFiles = [...(window.__newProductPhotoFiles || []), ...[...e.dataTransfer.files]];
+      syncNewProductPhotoInput();
+      const wrap = byId("prodNewPhotoPreviews");
+      if (wrap) wrap.innerHTML = "";
+      renderNewProductPhotos();
     }
   });
 })();
@@ -11132,7 +11192,7 @@ async function saveProduct() {
       quantity_total,
     };
 
-    const newFiles = [...byId("prodPhotoFiles").files];
+    const newFiles = [...(window.__newProductPhotoFiles || byId("prodPhotoFiles").files || [])];
     const newPhotoUrls = [];
     for (const file of newFiles) {
       const ext = file.name.split(".").pop() || "jpg";
