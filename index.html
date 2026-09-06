@@ -5488,22 +5488,49 @@ function estimateDeliveryRange(distanceKm) {
   const fmt = (m) => (m >= 60 ? `${(m / 60).toFixed(m % 60 === 0 ? 0 : 1)} hr` : `${m} min`);
   return `${fmt(low)}–${fmt(high)}`;
 }
+// Fast location strategy: render from the last known position immediately,
+// then quietly refresh from the browser. This avoids making the Vendors page
+// wait for a GPS fix before showing distance chips.
+const BUYER_LOCATION_CACHE_KEY = "levromart-buyer-location";
+const BUYER_LOCATION_CACHE_MAX_AGE = 30 * 60 * 1000;
+
+function readCachedBuyerLocation() {
+  try {
+    const raw = localStorage.getItem(BUYER_LOCATION_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!Number.isFinite(Number(cached?.lat)) || !Number.isFinite(Number(cached?.lng))) return null;
+    if (Date.now() - Number(cached.updatedAt || 0) > BUYER_LOCATION_CACHE_MAX_AGE) return null;
+    return { lat: Number(cached.lat), lng: Number(cached.lng) };
+  } catch (e) { return null; }
+}
+
+function writeCachedBuyerLocation(loc) {
+  try {
+    localStorage.setItem(BUYER_LOCATION_CACHE_KEY, JSON.stringify({
+      lat: Number(loc.lat), lng: Number(loc.lng), updatedAt: Date.now()
+    }));
+  } catch (e) {}
+}
+
 function getCurrentPositionOnce() {
   if (!("geolocation" in navigator)) return Promise.reject(new Error("Location isn't available on this device/browser."));
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       (err) => reject(new Error(err.code === 1 ? "Location permission denied." : "Could not get your location.")),
-      { enableHighAccuracy: true, timeout: 10000 }
+      // Accuracy is deliberately relaxed here. Distance is straight-line
+      // city-scale distance, so waiting for a high-accuracy GPS lock only
+      // makes the UI slower without materially improving the displayed value.
+      { enableHighAccuracy: false, maximumAge: 5 * 60 * 1000, timeout: 1500 }
     );
   });
 }
-// Buyer location is deliberately refreshed from the browser instead of being
-// treated as a session-only value. Once the buyer has opted into automatic
-// distances, every fresh Vendors render/page refresh asks the browser for the
-// current position. A granted browser permission makes this silent; a revoked
-// permission simply falls back to the recovery button in the Vendors page.
-let buyerLocation = null; // { lat, lng } | null
+
+// The cached position is available synchronously, so vendor cards can show
+// their distance on the first paint. A fresh browser position replaces it
+// silently afterwards.
+let buyerLocation = readCachedBuyerLocation(); // { lat, lng } | null
 let buyerLocationRequest = null;
 let buyerLocationLastUpdatedAt = 0;
 let buyerLocationLastError = null;
@@ -5517,6 +5544,9 @@ function getBuyerLocation(forceRefresh = false) {
       buyerLocation = loc;
       buyerLocationLastUpdatedAt = Date.now();
       buyerLocationLastError = null;
+      writeCachedBuyerLocation(loc);
+      // Update visible vendor cards as soon as the fresh position arrives.
+      if (byId("vendorsGrid")) filterVendorsDirectory();
       return loc;
     })
     .catch((err) => {
@@ -5695,10 +5725,11 @@ async function refreshBuyerLocationAutomatically() {
     if (byId("vendorsGrid")) filterVendorsDirectory();
     return loc;
   } catch (err) {
-    buyerLocation = null;
+    // Never remove a usable cached distance just because the fresh browser
+    // lookup is slow or unavailable. The next successful refresh will replace it.
     buyerLocationLastError = err;
     updateVendorsLocationUI();
-    return null;
+    return buyerLocation;
   }
 }
 
@@ -11523,26 +11554,30 @@ function orderVariantSummary(order) {
 async function persistOrderItemVariants(orderId, selections) {
   if (!orderId || !Array.isArray(selections) || !selections.length) return true;
   let allOk = true;
+
   for (const item of selections) {
     if (!item?.productId || (!item?.variantName && !item?.variantColor)) continue;
-    let rpcOk = false;
+
+    // The SECURITY DEFINER RPC is the authoritative persistence path. If it
+    // succeeds, the variation is saved; do not require a second client-side
+    // UPDATE that may legitimately be blocked by order_items RLS.
     try {
-      const { data: rpcResult, error } = await sb.rpc("set_order_item_variant", {
+      const { data: rpcResult, error: rpcError } = await sb.rpc("set_order_item_variant", {
         p_order_id: orderId,
         p_product_id: item.productId,
         p_variant_name: item.variantName || null,
         p_variant_color: item.variantColor || null,
       });
-      if (!error && rpcResult !== false) rpcOk = true;
-      else console.warn("Variant metadata RPC failed; continuing with direct sync", error);
+
+      if (!rpcError && rpcResult !== false) continue;
+      console.warn("Variant metadata RPC failed; trying direct sync", rpcError);
     } catch (e) {
-      console.warn("Variant metadata RPC failed; continuing with direct sync", e);
+      console.warn("Variant metadata RPC failed; trying direct sync", e);
     }
 
+    // Fallback only when the RPC itself failed. This is best-effort because
+    // RLS may intentionally prevent direct client updates.
     try {
-      // Prefer the exact product row. For a one-item order, fall back to the
-      // only order_items row so the buyer/vendor view still gets the choice
-      // even when an older RPC used a different product_id mapping.
       const { data: exactRows, error: exactErr } = await sb.from("order_items")
         .select("id,product_id")
         .eq("order_id", orderId)
@@ -11572,6 +11607,7 @@ async function persistOrderItemVariants(orderId, selections) {
         .select("id,variant_name,variant_color")
         .in("id", ids);
       if (verifyErr) throw verifyErr;
+
       const verified = (verifyRows || []).every(r =>
         (r.variant_name || null) === (item.variantName || null) &&
         (r.variant_color || null) === (item.variantColor || null)
@@ -11581,9 +11617,8 @@ async function persistOrderItemVariants(orderId, selections) {
       allOk = false;
       console.warn("Direct order variant sync failed", e);
     }
-
-    if (!rpcOk && !allOk) console.warn("Variant metadata could not be persisted", item);
   }
+
   return allOk;
 }
 
