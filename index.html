@@ -147,8 +147,9 @@
   a:hover { text-decoration: underline; }
   .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: brightness(0) invert(1); }
   .ai-chat-header-logo { width: 1.4rem; height: 1.4rem; object-fit: contain; vertical-align: -0.3rem; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 55%, transparent)); }
-  .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
-  .header-right { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+  .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; flex: 1 1 auto; }
+  .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex: 0 0 auto; margin-left: auto; min-width: max-content; }
+  #notifWrap { flex: 0 0 auto; }
   .btn { padding: 0.6rem 1.4rem; border: none; border-radius: 9999px; background: var(--primary-grad); color: white; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: filter 0.15s, transform 0.1s, box-shadow 0.15s; }
   .btn:hover { filter: brightness(1.1); box-shadow: var(--shadow-float); }
   .btn:active { transform: scale(0.97); }
@@ -1548,6 +1549,20 @@ h1,h2,h3,h4,h5,strong{letter-spacing:-.028em}
 .btn:active{transform:translateY(1px) !important}
 .btn-outline{border:1px solid color-mix(in srgb,var(--primary) 68%,var(--border));background:transparent}
 
+/* Header integrity: profile stays left; notification stays at the far right. */
+header .header-left{flex:1 1 auto !important;min-width:0 !important;}
+header .header-right{margin-left:auto !important;flex:0 0 auto !important;display:flex !important;align-items:center !important;justify-content:flex-end !important;min-width:max-content !important;}
+header #notifWrap{position:static !important;display:flex !important;align-items:center !important;flex:0 0 auto !important;}
+
+/* Branded refresh splash: dark, centered Levromart mark — never a white
+   skeleton screen or green loading bar. */
+#levromartSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .18s ease,visibility .18s ease;}
+#levromartSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.levromart-splash-logo{position:relative;width:min(72vw,340px);height:auto;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 24px rgba(45,212,191,.18));}
+.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{position:absolute;inset:0;width:100%;height:100%;background:var(--primary-grad);-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain;}
+.levromart-splash-logo .splash-logo-circle{position:absolute;width:21%;height:100%;left:39.5%;top:0;object-fit:contain;filter:brightness(0) invert(1);}
+.levromart-splash-logo{height:64px;}
+.levromart-splash-logo .splash-logo-left,.levromart-splash-logo .splash-logo-right{height:64px;}
 /* Header: quiet, crisp, not toy-like */
 header{
   background:color-mix(in srgb,var(--bg) 86%,transparent);
@@ -4133,6 +4148,13 @@ body { padding-top:calc(64px + env(safe-area-inset-top,0px)) !important; }
 
 </head>
 <body>
+<div id="levromartSplash" aria-hidden="true">
+  <div class="levromart-splash-logo" id="levromartSplashLogo">
+    <span class="splash-logo-left" id="splashLogoLeft" aria-hidden="true"></span>
+    <img class="splash-logo-circle" id="splashLogoCircle" alt="" />
+    <span class="splash-logo-right" id="splashLogoRight" aria-hidden="true"></span>
+  </div>
+</div>
 <header>
   <div class="header-left">
     <div class="icon-wrap" id="profileWrap">
@@ -4718,6 +4740,9 @@ function setLogoMask(el, url) {
 }
 setLogoMask(document.getElementById("brandLogoLeft"), LEVROMART_LOGO_LEFT);
 document.getElementById("brandLogoCircle").src = LEVROMART_LOGO_CIRCLE;
+// Same exact Levromart logo assets are used for the refresh splash.
+setLogoMask(document.getElementById("splashLogoLeft"), LEVROMART_LOGO_LEFT);
+document.getElementById("splashLogoCircle").src = LEVROMART_LOGO_CIRCLE;
 // Branded loading indicator -- the logo sits still in the middle while two
 // arcs chase each other around it, used anywhere the app is waiting on
 // something (page navigation, payment confirmation) instead of plain
@@ -4735,6 +4760,7 @@ function brandSpinnerHtml(label) {
   </div></div>`;
 }
 setLogoMask(document.getElementById("brandLogoRight"), LEVROMART_LOGO_RIGHT);
+setLogoMask(document.getElementById("splashLogoRight"), LEVROMART_LOGO_RIGHT);
 document.getElementById("loginModalLogo").src = MEDRIS_LOGO;
 document.getElementById("aiChatFabLogo").src = MEDRIS_LOGO;
 document.getElementById("tourLeviLogo").src = MEDRIS_LOGO;
@@ -13960,6 +13986,14 @@ document.addEventListener("input", (e) => {
   if (count) count.textContent = String(ta.value.length);
 });
 
+function hideLevromartSplash(){
+  const splash = byId("levromartSplash");
+  if (!splash) return;
+  splash.classList.add("is-hidden");
+  setTimeout(() => splash.remove(), 260);
+}
+setTimeout(hideLevromartSplash, 1800);
+
 (async function init() {
   initTheme();
   initAccent();
@@ -13977,6 +14011,7 @@ document.addEventListener("input", (e) => {
     const token = urlParams.get("share");
     history.replaceState({ view: "sharedAiChat", params: { token } }, "", location.pathname);
     await navigate("sharedAiChat", { token }, false);
+    hideLevromartSplash();
     return;
   }
 
@@ -13993,7 +14028,7 @@ document.addEventListener("input", (e) => {
     } catch (e) {
       showToast("Couldn't reach the payment verification service.", "error");
     }
-    if (orderId) { await navigate("orderDetail", { orderId }); return; }
+    if (orderId) { await navigate("orderDetail", { orderId }); hideLevromartSplash(); return; }
   }
 
   if (urlParams.get("commissionPaid") === "1" && urlParams.get("reference")) {
@@ -14009,6 +14044,7 @@ document.addEventListener("input", (e) => {
       showToast("Couldn't reach the payment verification service.", "error");
     }
     await navigate("vendorEditProfile");
+    hideLevromartSplash();
     return;
   }
 
@@ -14025,6 +14061,7 @@ document.addEventListener("input", (e) => {
       showToast("Couldn't reach the payment verification service.", "error");
     }
     await navigate("vendorEditProfile");
+    hideLevromartSplash();
     return;
   }
 
@@ -14032,7 +14069,7 @@ document.addEventListener("input", (e) => {
   if (urlParams.get("order")) {
     const orderId = urlParams.get("order");
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
-    if (session) { await navigate("orderDetail", { orderId }); return; }
+    if (session) { await navigate("orderDetail", { orderId }); hideLevromartSplash(); return; }
     showLogin();
   }
 
@@ -14042,7 +14079,7 @@ document.addEventListener("input", (e) => {
     let params = {};
     try { params = JSON.parse(urlParams.get("nparams") || "{}"); } catch (e) {}
     history.replaceState({ view: "home", params: {} }, "", location.pathname);
-    if (session) { await navigate(view, params); return; }
+    if (session) { await navigate(view, params); hideLevromartSplash(); return; }
     showLogin();
   }
 
@@ -14055,6 +14092,7 @@ document.addEventListener("input", (e) => {
     if (last && last.view && last.view !== "home") { await navigate(last.view, last.params || {}, false); resumed = true; }
   } catch (e) {}
   if (!resumed) navigate("home");
+  hideLevromartSplash();
 
   // Offer the installable app to every visitor, not just after login — give
   // Chrome a moment to fire beforeinstallprompt first.
