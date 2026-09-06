@@ -13842,8 +13842,16 @@ function toggleMsgMic() {
   if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
   if (msgListening) { msgRecognizer?.stop(); return; }
   msgRecognizer = new AiSpeechRecognition();
-  msgRecognizer.lang = "en-NG";
-  msgRecognizer.interimResults = true;
+  // iOS Safari's speech recognizer is much more reliable with a broadly
+  // supported English locale. en-NG can be exposed by some browsers but
+  // rejected by WebKit at runtime, which leaves the mic looking active while
+  // producing no transcript. Keep Nigerian English as the preferred locale
+  // elsewhere, and use en-US on iPhone/iPad as the WebKit-safe fallback.
+  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  msgRecognizer.lang = isIOSDevice ? "en-US" : "en-NG";
+  msgRecognizer.interimResults = false;
+  msgRecognizer.continuous = false;
   msgRecognizer.maxAlternatives = 1;
   msgRecognizer.onstart = () => { msgListening = true; btn.classList.add("listening"); byId("chatInput")?.focus(); };
   msgRecognizer.onresult = (e) => {
@@ -13853,7 +13861,11 @@ function toggleMsgMic() {
     if (transcript && input) { input.value = transcript; autoGrowChatInput(input); }
   };
   msgRecognizer.onerror = (e) => {
-    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
+    } else if (e.error !== "aborted" && e.error !== "no-speech") {
+      showToast("Couldn't hear that, try again.", "error");
+    }
   };
   msgRecognizer.onend = () => { msgListening = false; btn.classList.remove("listening"); };
   try { msgRecognizer.start(); } catch (e) { /* already running */ }
