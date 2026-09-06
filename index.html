@@ -818,6 +818,19 @@
   .msg-speak:hover, .msg-speak.speaking { opacity: 1; }
   .msg-react { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; margin-right: 0.35rem; border: none; background: none; padding: 0; color: inherit; opacity: 0.65; cursor: pointer; font-size: 0.72rem; vertical-align: middle; }
   .msg-react:hover { opacity: 1; }
+  .chat-typing-indicator { display:flex; align-items:center; gap:.45rem; align-self:flex-start; margin:.15rem .55rem .35rem; padding:.38rem .7rem; border:1px solid var(--border); border-radius:999px; background:var(--card); color:var(--text-muted); font-size:.78rem; box-shadow:var(--shadow-float); }
+  .chat-typing-indicator.hidden { display:none; }
+  .chat-typing-dots { display:inline-flex; gap:3px; align-items:center; }
+  .chat-typing-dots i { width:5px; height:5px; border-radius:50%; background:currentColor; opacity:.45; animation:chatTypingDot 1.1s infinite ease-in-out; }
+  .chat-typing-dots i:nth-child(2){animation-delay:.15s;}
+  .chat-typing-dots i:nth-child(3){animation-delay:.3s;}
+  @keyframes chatTypingDot { 0%,60%,100%{transform:translateY(0);opacity:.4;} 30%{transform:translateY(-3px);opacity:1;} }
+  .reaction-picker { flex-wrap:wrap; max-width:290px; border-radius:18px; gap:.18rem; padding:.38rem; }
+  .reaction-picker button { min-width:2rem; min-height:2rem; }
+  .reaction-more-btn { font-size:.72rem !important; color:var(--text-muted); padding:.35rem .5rem !important; border-radius:999px !important; border:1px solid var(--border) !important; background:var(--card) !important; }
+  .reaction-keyboard-row { width:100%; display:flex; gap:.3rem; align-items:center; margin-top:.25rem; }
+  .reaction-keyboard-row input { flex:1; min-width:0; margin:0; height:2rem; padding:.25rem .5rem; font-size:.85rem; }
+  .reaction-keyboard-row button { min-width:auto; min-height:2rem; padding:.25rem .55rem; border-radius:999px; background:var(--primary); color:#fff; }
   .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 75%; position: relative; }
   .chat-bubble-wrap.mine { align-self: flex-end; align-items: flex-end; }
   .chat-bubble-wrap.theirs { align-self: flex-start; align-items: flex-start; }
@@ -8715,7 +8728,9 @@ function chatSkeletonHtml(cached, cachedMessages) {
 }
 async function renderMessages(conversationId) {
   if (!session) return '<div class="empty-state">Log in to view your messages.</div>';
-  if (activeMsgChannel) { await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
+  if (activeMsgChannel) { clearTimeout(typingStopTimer); try { await activeMsgChannel.track({ user_id: session?.user?.id, typing: false, at: Date.now() }); } catch (_) {} await sb.removeChannel(activeMsgChannel); activeMsgChannel = null; }
+  typingChannelConversationId = null;
+  setChatTypingIndicator(false);
   activeConversationId = conversationId || null;
 
   if (!conversationId) {
@@ -8804,19 +8819,19 @@ async function renderMessages(conversationId) {
       </div>
     </div>
     <div class="chat-thread">
-      <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}</div>
+      <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}<div id="chatTypingIndicator" class="chat-typing-indicator hidden" aria-live="polite"><span class="chat-typing-dots"><i></i><i></i><i></i></span><span>Typing…</span></div></div>
       <div class="chat-input-row">
         <input type="file" id="chatFileInput" class="chat-file-input" accept="image/*,.heic,.heif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="handleChatFileSelected(event,'${conversationId}')" />
         <button class="msg-attach-btn" onclick="byId('chatFileInput').click()" title="Attach a file (max 10MB)"><i class="fa-solid fa-paperclip"></i></button>
         ${AiSpeechRecognition ? `<button class="ai-chat-mic-btn" id="msgMicBtn" onclick="toggleMsgMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>` : ""}
-        <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
+        <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000" oninput="handleChatTyping('${conversationId}');autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendChatMessage('${conversationId}');}"></textarea>
         <button class="btn btn-sm" onclick="sendChatMessage('${conversationId}')"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>
     <p class="muted chat-edit-hint"><i class="fa-solid fa-shield-halved"></i> Hold your own message to edit or delete it, within 30 minutes of sending.</p>
   </div>`;
 
-  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageLongPress(byId("chatMessages")); }, 0);
+  setTimeout(() => { scrollChatToBottom(); resolveVisibleAttachments(byId("chatMessages")); setupMessageLongPress(byId("chatMessages")); setupMessageDoubleTap(byId("chatMessages")); }, 0);
   subscribeToConversation(conversationId);
   return html;
 }
@@ -8859,7 +8874,7 @@ function messageTicksHtml(m) {
   if (m.delivered_at) return `<i class="fa-solid fa-check-double chat-tick"></i>`;
   return `<i class="fa-solid fa-check chat-tick"></i>`;
 }
-const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🙏","🔥","👏","😍","😘","🥰","😁","😆","🤣","😊","🙂","😉","🤩","😎","🤔","😅","😭","😡","😱","🤯","🥳","🎉","💯","💔","🙌","🤝","👀"];
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 function sanitizeFilename(name) {
   return (name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
@@ -8931,11 +8946,9 @@ function chatBubbleHtml(m) {
       <div class="chat-bubble ${mine ? "mine" : "theirs"} deleted" data-msg-id="${m.id}"><span class="chat-bubble-text muted" style="font-style:italic;"><i class="fa-solid fa-ban"></i> This message was deleted</span><span class="chat-time"><span class="chat-time-text">${time}</span></span></div>
     </div>`;
   }
-  const speakBtn = "speechSynthesis" in window ? `<button class="msg-speak" title="Read aloud" onclick="speakMessageBubble(this)"><i class="fa-solid fa-volume-high"></i></button>` : "";
-  const reactBtn = `<button class="msg-react" title="React" onclick="toggleReactionPicker(event,'${m.id}')"><i class="fa-regular fa-face-smile"></i></button>`;
   const editedTag = m.edited_at ? `<span class="muted" style="font-size:0.7rem;">(edited)</span>` : "";
   return `<div class="chat-bubble-wrap ${mine ? "mine" : "theirs"}">
-    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${editedTag}${reactBtn}${speakBtn}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
+    <div class="chat-bubble ${mine ? "mine" : "theirs"}" data-msg-id="${m.id}" data-created-at="${esc(m.created_at)}">${attachmentHtml(m)}${m.body ? `<span class="chat-bubble-text">${esc(m.body)}</span>` : ""}<span class="chat-time">${editedTag}<span class="chat-time-text">${time}${mine ? messageTicksHtml(m) : ""}</span></span></div>
     <div class="msg-reactions-row" data-reactions-for="${m.id}">${reactionsRowHtml(m)}</div>
   </div>`;
 }
@@ -8943,18 +8956,44 @@ function speakMessageBubble(btn) {
   const text = btn.closest(".chat-bubble")?.querySelector(".chat-bubble-text")?.textContent || "";
   speakAiChatMessage(text, btn);
 }
-function toggleReactionPicker(evt, msgId) {
-  evt.stopPropagation();
+function openReactionPicker(evt, msgId) {
+  evt?.stopPropagation?.();
   const existing = document.querySelector(`.reaction-picker[data-for="${msgId}"]`);
   document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
-  if (existing) return; // was already open for this message — just close it
-  const wrap = evt.target.closest(".chat-bubble-wrap");
+  if (existing) return;
+  const wrap = evt?.target?.closest?.(".chat-bubble-wrap") || document.querySelector(`.chat-bubble[data-msg-id="${msgId}"]`)?.closest(".chat-bubble-wrap");
   if (!wrap) return;
   const picker = document.createElement("div");
   picker.className = "reaction-picker";
   picker.dataset.for = msgId;
-  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" onclick="reactToMessage(event,'${msgId}','${e}')">${e}</button>`).join("");
+  picker.innerHTML = REACTION_EMOJIS.map((e) => `<button type="button" aria-label="React ${e}" onclick="reactToMessage(event,'${msgId}','${e}')">${e}</button>`).join("") +
+    `<button type="button" class="reaction-more-btn" onclick="openReactionKeyboard(event,'${msgId}')">More…</button>`;
   wrap.appendChild(picker);
+}
+function toggleReactionPicker(evt, msgId) { openReactionPicker(evt, msgId); }
+function openReactionKeyboard(evt, msgId) {
+  evt?.stopPropagation?.();
+  const picker = document.querySelector(`.reaction-picker[data-for="${msgId}"]`);
+  if (!picker) return;
+  if (picker.querySelector(".reaction-keyboard-row")) {
+    picker.querySelector("input")?.focus();
+    return;
+  }
+  const row = document.createElement("div");
+  row.className = "reaction-keyboard-row";
+  row.innerHTML = `<input type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Choose an emoji" aria-label="Choose an emoji" /><button type="button">Use</button>`;
+  picker.appendChild(row);
+  const input = row.querySelector("input");
+  const submit = () => {
+    const value = String(input?.value || "").trim();
+    if (!value) return;
+    let emoji = value;
+    try { if (window.Intl?.Segmenter) emoji = Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value))[0]?.segment || value; } catch (_) { emoji = Array.from(value)[0] || value; }
+    reactToMessage({ stopPropagation(){} }, msgId, emoji);
+  };
+  row.querySelector("button").onclick = submit;
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+  setTimeout(() => input.focus(), 40);
 }
 async function reactToMessage(evt, msgId, emoji) {
   evt.stopPropagation();
@@ -8967,6 +9006,23 @@ async function reactToMessage(evt, msgId, emoji) {
 
 // ---------- EDIT/DELETE OWN MESSAGES (long-press, 30-minute window) ----------
 const MESSAGE_EDIT_WINDOW_MS = 30 * 60 * 1000;
+function setupMessageDoubleTap(root) {
+  const el = root || document;
+  el.querySelectorAll?.(".chat-bubble[data-msg-id]").forEach((bubble) => {
+    if (bubble.dataset.doubleTapBound) return;
+    bubble.dataset.doubleTapBound = "1";
+    if (isCoarsePointer()) {
+      let lastTap = 0;
+      bubble.addEventListener("touchend", (e) => {
+        const now = Date.now();
+        if (now - lastTap < 320) { e.preventDefault(); openReactionPicker(e, bubble.dataset.msgId); lastTap = 0; }
+        else lastTap = now;
+      }, { passive: false });
+    } else {
+      bubble.addEventListener("dblclick", (e) => openReactionPicker(e, bubble.dataset.msgId));
+    }
+  });
+}
 function setupMessageLongPress(root) {
   (root || document).querySelectorAll(".chat-bubble.mine[data-msg-id]").forEach((bubble) => {
     if (bubble.dataset.longPressBound) return;
@@ -9064,16 +9120,55 @@ function scrollChatToBottom() {
   if (el) el.scrollTop = el.scrollHeight;
 }
 
+let typingStopTimer = null;
+let typingChannelConversationId = null;
+function setChatTypingIndicator(isTyping) {
+  const el = byId("chatTypingIndicator");
+  if (!el) return;
+  el.classList.toggle("hidden", !isTyping);
+  const chat = byId("chatMessages");
+  if (isTyping && chat) chat.scrollTop = chat.scrollHeight;
+}
+async function publishChatTyping(isTyping) {
+  if (!activeMsgChannel || !session || !typingChannelConversationId) return;
+  try { await activeMsgChannel.track({ user_id: session.user.id, typing: !!isTyping, at: Date.now() }); } catch (_) {}
+}
+function handleChatTyping(conversationId) {
+  if (conversationId !== activeConversationId) return;
+  clearTimeout(typingStopTimer);
+  publishChatTyping(true);
+  typingStopTimer = setTimeout(() => publishChatTyping(false), 1300);
+}
+function refreshChatTypingIndicator() {
+  if (!activeMsgChannel || !session) return;
+  const state = activeMsgChannel.presenceState?.() || {};
+  let otherTyping = false;
+  Object.values(state).forEach((entries) => {
+    (entries || []).forEach((entry) => {
+      if (entry?.user_id && entry.user_id !== session.user.id && entry.typing) otherTyping = true;
+    });
+  });
+  setChatTypingIndicator(otherTyping);
+}
+
 function subscribeToConversation(conversationId) {
-  activeMsgChannel = sb.channel(`conv-${conversationId}`)
+  clearTimeout(typingStopTimer);
+  typingChannelConversationId = conversationId;
+  setChatTypingIndicator(false);
+  activeMsgChannel = sb.channel(`conv-${conversationId}`, { config: { presence: { key: session?.user?.id || undefined } } })
+    .on("presence", { event: "sync" }, () => refreshChatTypingIndicator())
+    .on("presence", { event: "join" }, () => refreshChatTypingIndicator())
+    .on("presence", { event: "leave" }, () => refreshChatTypingIndicator())
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
       if (activeConversationId !== conversationId) return;
       const el = byId("chatMessages");
       if (!el) return;
       if (payload.new.sender_id !== session.user.id) {
+        setChatTypingIndicator(false);
         el.insertAdjacentHTML("beforeend", chatBubbleHtml(payload.new));
         scrollChatToBottom();
         resolveVisibleAttachments(el);
+        setupMessageDoubleTap(el);
         sb.from("messages").update({ read_at: new Date().toISOString(), delivered_at: new Date().toISOString() }).eq("id", payload.new.id).then(() => refreshNotifications());
       }
     })
@@ -9089,7 +9184,11 @@ function subscribeToConversation(conversationId) {
       const reactRow = document.querySelector(`.msg-reactions-row[data-reactions-for="${payload.new.id}"]`);
       if (reactRow) reactRow.innerHTML = reactionsRowHtml(payload.new);
     })
-    .subscribe();
+    .subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        try { await activeMsgChannel.track({ user_id: session.user.id, typing: false, at: Date.now() }); } catch (_) {}
+      }
+    });
 }
 
 // On a touch device there's no easy Shift+Enter, so Enter has to just be a
@@ -9117,6 +9216,8 @@ async function sendChatMessage(conversationId) {
   const body = input.value.trim();
   if (!body) return;
   if (msgListening) msgRecognizer?.stop(); // still-listening mic can otherwise refill the box right after this clears it
+  clearTimeout(typingStopTimer);
+  publishChatTyping(false);
   resetChatInput(input);
   const { data, error } = await sb.from("messages").insert({ conversation_id: conversationId, sender_id: session.user.id, body }).select("*").single();
   if (error) { showToast(error.message, "error"); return; }
@@ -9134,6 +9235,8 @@ async function handleChatFileSelected(evt, conversationId) {
     const { error: upErr } = await sb.storage.from("chat-attachments").upload(path, file);
     if (upErr) { showToast(upErr.message, "error"); return; }
     const input = byId("chatInput");
+    clearTimeout(typingStopTimer);
+    publishChatTyping(false);
     const body = input.value.trim();
     resetChatInput(input);
     const { data, error } = await sb.from("messages").insert({
