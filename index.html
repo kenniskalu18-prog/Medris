@@ -193,6 +193,7 @@
     box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 45%, transparent);
   }
   .install-modal-badge img { width: 2.7rem; height: 2.7rem; object-fit: contain; }
+  .tour-content .install-modal-badge img { filter: brightness(0) invert(1); }
   .install-modal-content h3 { margin: 0 0 0.4rem; font-size: 1.15rem; }
   .install-modal-content p.muted { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.4; }
   .install-modal-ios { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
@@ -1520,11 +1521,8 @@ input:focus,select:focus,textarea:focus { box-shadow:0 0 0 4px color-mix(in srgb
 
 
 .about-modal-content { max-width:420px !important; text-align:center; padding:1.6rem !important; }
-.about-brand-mark { width:64px; height:64px; margin:0 auto .8rem; border-radius:20px; overflow:hidden; background:var(--primary); display:grid; place-items:center; box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
-.about-brand-mark .about-levi-white-mark { width:54px; height:54px; display:block; }
-.about-brand-mark .about-levi-white-mark path,
-.about-brand-mark .about-levi-white-mark circle { fill:none; stroke:#fff; stroke-width:4.2; stroke-linecap:round; }
-.about-brand-mark .about-levi-white-mark circle { fill:#fff; stroke:none; }
+.about-brand-mark { width:64px; height:64px; margin:0 auto .8rem; border-radius:20px; overflow:hidden; background:var(--primary-grad); display:grid; place-items:center; box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
+.about-brand-mark img { width:54px; height:54px; object-fit:contain; filter:brightness(0) invert(1); }
 .about-modal-content h3 { font-size:1.35rem; margin-bottom:.4rem; }
 .about-modal-content > .muted { line-height:1.55; }
 .about-meta-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem; margin-top:1rem; text-align:left; }
@@ -4590,13 +4588,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 
 <div id="aboutLevromartModal" class="modal hidden" onclick="if(event.target===this) closeLevromartAbout()">
   <div class="modal-content about-modal-content">
-    <div class="about-brand-mark" aria-label="Levi">
-      <svg class="about-levi-white-mark" viewBox="0 0 64 64" role="img" aria-hidden="true">
-        <path d="M18 16 C8 24, 8 40, 18 48"></path>
-        <circle cx="32" cy="32" r="5.2"></circle>
-        <path d="M46 16 C56 24, 56 40, 46 48"></path>
-      </svg>
-    </div>
+    <div class="about-brand-mark"><img src="" id="aboutLevromartLogo" alt="Levromart" /></div>
     <h3>Levromart</h3>
     <p class="muted">A modern marketplace for buying, renting and requesting products — with Levi as your in-app assistant.</p>
     <div class="about-meta-grid">
@@ -6100,11 +6092,11 @@ function initTheme() {
 // The default remains Levromart teal; every other option is a clearly
 // distinguishable shade rather than a near-duplicate.
 const ACCENT_PALETTE = [
-  { name: "Teal (Default)", group: "Greens", base: "#0f766e", light: "#0f766e" },
+  { name: "Teal", group: "Greens", base: "#0f766e", light: "#0f766e" },
   { name: "Mint", group: "Greens", base: "#10b981", light: "#10b981" },
-  { name: "Emerald", group: "Greens", base: "#047857", light: "#047857" },
+  { name: "Emerald (Default)", group: "Greens", base: "#047857", light: "#047857" },
   { name: "Forest", group: "Greens", base: "#166534", light: "#166534" },
-  { name: "Lime", group: "Greens", base: "#65a30d", light: "#65a30d" },
+  { name: "WhatsApp Green", group: "Greens", base: "#25D366", light: "#25D366" },
   { name: "Sky", group: "Blues", base: "#0284c7", light: "#0284c7" },
   { name: "Cyan", group: "Blues", base: "#0e7490", light: "#0e7490" },
   { name: "Ocean Blue", group: "Blues", base: "#2563eb", light: "#2563eb" },
@@ -6136,7 +6128,7 @@ const ACCENT_PALETTE = [
   { name: "Indigo", group: "Purples", base: "#4338ca", light: "#4338ca" },
   { name: "Deep Purple", group: "Purples", base: "#4c1d95", light: "#4c1d95" },
 ];
-const DEFAULT_ACCENT_INDEX = 0;
+const DEFAULT_ACCENT_INDEX = 2;
 let currentAccentIndex = DEFAULT_ACCENT_INDEX;
 function lightenHex(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
@@ -6204,7 +6196,7 @@ function initAccent() {
   // so existing installations return to Levromart's original green instead of
   // continuing to display blue after this update. Other user-selected colors
   // remain untouched.
-  if (saved === "5") {
+  if (saved === "0" || saved === "5") {
     currentAccentIndex = DEFAULT_ACCENT_INDEX;
     try { localStorage.setItem("medris-accent", String(DEFAULT_ACCENT_INDEX)); } catch (e) {}
   } else {
@@ -7644,7 +7636,7 @@ async function resetLevromartPreferences() {
   currentAccentIndex = DEFAULT_ACCENT_INDEX;
   leviVisible = true;
   setTheme("light");
-  setAccent(0);
+  setAccent(DEFAULT_ACCENT_INDEX);
   applyLeviFabSize();
   applyLevromartFontScale();
   applyLeviVisibility();
