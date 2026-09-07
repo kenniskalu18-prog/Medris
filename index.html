@@ -15466,5 +15466,356 @@ body::before { background: var(--system-bar-shade) !important; }
 })();
 </script>
 
+
+<style id="levromart-native-drawer-gesture-style">
+/* Native-feeling horizontal drawer gestures.
+   The drawers already use transform transitions; while the finger is moving
+   we temporarily take over transform, then restore the normal CSS transition
+   when the gesture is released. */
+.side-drawer.lv-gesture-dragging,
+.drawer-backdrop.lv-gesture-dragging {
+  transition: none !important;
+  will-change: transform, opacity;
+}
+.side-drawer.lv-gesture-settling {
+  transition: transform .32s cubic-bezier(.22,1,.36,1) !important;
+}
+.drawer-backdrop.lv-gesture-settling {
+  transition: opacity .28s ease !important;
+}
+</style>
+
+
+<script id="levromart-native-drawer-gestures">
+(function setupLevromartDrawerGestures(){
+  if (window.__levroDrawerGesturesBound) return;
+  window.__levroDrawerGesturesBound = true;
+
+  const OS_EDGE = 20;
+  const AXIS_LOCK = 10;
+  const PROFILE_OPEN_ZONE = 0.50;
+  const NOTIF_OPEN_ZONE = 0.50;
+  const OPEN_THRESHOLD = 0.35;
+  const CLOSE_THRESHOLD = 0.65;
+
+  const profile = document.getElementById("profilePanel");
+  const notif = document.getElementById("notifPanel");
+  const backdrop = document.getElementById("drawerBackdrop");
+  if (!profile || !notif || !backdrop) return;
+
+  /*
+   * Anything in this list owns horizontal interaction already. A swipe that
+   * starts there belongs to that surface and must never open/close a drawer.
+   * This is deliberately broad so future carousels/tables/maps can opt out
+   * simply by using one of these existing classes/attributes.
+   */
+  const GESTURE_EXCLUSIONS = [
+    ".table-wrap",
+    ".table-wrapper",
+    ".hscroll",
+    ".cat-row",
+    ".range-tabs",
+    ".product-gallery",
+    ".product-gallery-thumbs",
+    ".shop-tabs-rail",
+    ".dash-tabs",
+    ".conv-row-wrap",
+    ".notif-item-wrap",
+    ".notif-list-scroll",
+    "[data-horizontal-scroll]",
+    ".leaflet-container",
+    "[class*='leaflet']",
+    ".reaction-picker",
+    ".reaction-keyboard-row",
+    ".emoji-picker",
+    ".emoji-panel",
+    ".emoji-grid",
+    ".emoji-list",
+    ".map",
+    "[id*='Map']",
+    "[id*='map']"
+  ].join(",");
+
+  const CONTROL_EXCLUSIONS = [
+    "input",
+    "textarea",
+    "select",
+    "button",
+    "a",
+    "[contenteditable='true']",
+    "[role='button']",
+    "[role='slider']",
+    "[role='textbox']"
+  ].join(",");
+
+  function insideExcludedSurface(target){
+    if (!target || !target.closest) return false;
+    if (target.closest(GESTURE_EXCLUSIONS)) return true;
+
+    /*
+     * Do not steal a horizontal gesture from any element that is actually
+     * horizontally scrollable, even if it has a new/custom class we don't
+     * know yet.
+     */
+    let el = target;
+    while (el && el !== document.body) {
+      if (el.nodeType === 1) {
+        const style = getComputedStyle(el);
+        const canScrollX = el.scrollWidth > el.clientWidth + 4 &&
+          (style.overflowX === "auto" || style.overflowX === "scroll");
+        if (canScrollX) return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  function anotherLayerOpen(){
+    return !!document.querySelector(
+      ".modal.active:not(#vendorProfileImageLightbox), " +
+      ".modal:not(.hidden):not(#vendorProfileImageLightbox), " +
+      ".ai-chat-panel.open, " +
+      ".ai-chat-panel:not(.hidden), " +
+      "#settingsPanel.open"
+    );
+  }
+
+  function anyDrawerOpen(){
+    return profile.classList.contains("open") || notif.classList.contains("open");
+  }
+
+  function setBackdropProgress(progress){
+    const value = Math.max(0, Math.min(1, progress));
+    backdrop.style.opacity = String(value);
+    if (value > 0) backdrop.classList.add("open");
+  }
+
+  function clearGestureStyles(drawer, settling){
+    if (!drawer) return;
+    drawer.classList.remove("lv-gesture-dragging");
+    if (settling) drawer.classList.add("lv-gesture-settling");
+    drawer.style.transform = "";
+    if (settling) {
+      requestAnimationFrame(() => setTimeout(() => drawer.classList.remove("lv-gesture-settling"), 360));
+    }
+  }
+
+  function finishProfile(open){
+    profile.style.transform = "";
+    backdrop.style.opacity = "";
+    clearGestureStyles(profile, true);
+    if (open) {
+      closeAllPanels();
+      profile.classList.add("open");
+      backdrop.classList.add("open");
+      playSound("open");
+    } else {
+      closeAllPanels();
+    }
+  }
+
+  function finishNotif(open){
+    notif.style.transform = "";
+    backdrop.style.opacity = "";
+    clearGestureStyles(notif, true);
+    if (open) {
+      notifViewMode = "inbox";
+      exitNotifSelectMode(false);
+      closeAllPanels();
+      notif.classList.add("open");
+      backdrop.classList.add("open");
+      renderNotifPanel();
+      playSound("open");
+    } else {
+      closeAllPanels();
+    }
+  }
+
+  let state = null;
+
+  document.addEventListener("touchstart", function(e){
+    if (e.touches.length !== 1) return;
+    if (insideExcludedSurface(e.target)) return;
+
+    const t = e.touches[0];
+    const profileOpen = profile.classList.contains("open");
+    const notifOpen = notif.classList.contains("open");
+
+    /* If a drawer is already open, only that drawer can be closed by swipe. */
+    if (profileOpen || notifOpen) {
+      if (profileOpen) {
+        state = {
+          kind: "profile",
+          closing: true,
+          startX: t.clientX,
+          startY: t.clientY,
+          width: profile.offsetWidth || Math.min(304, window.innerWidth * .78)
+        };
+      } else {
+        state = {
+          kind: "notif",
+          closing: true,
+          startX: t.clientX,
+          startY: t.clientY,
+          width: notif.offsetWidth || Math.min(304, window.innerWidth * .78)
+        };
+      }
+      return;
+    }
+
+    /* Never open a drawer on top of another modal/sheet. */
+    if (anotherLayerOpen()) {
+      state = null;
+      return;
+    }
+
+    const fromLeft = t.clientX;
+    const fromRight = window.innerWidth - t.clientX;
+
+    /*
+     * Closed state:
+     *   left half  -> right swipe opens Profile
+     *   right half -> left swipe opens Notifications
+     *
+     * Keep the outermost 20px free for Android/iOS's own system back gesture.
+     */
+    if (fromLeft >= OS_EDGE && fromLeft <= window.innerWidth * PROFILE_OPEN_ZONE) {
+      state = {
+        kind: "profile",
+        closing: false,
+        startX: t.clientX,
+        startY: t.clientY,
+        width: profile.offsetWidth || Math.min(304, window.innerWidth * .78)
+      };
+      return;
+    }
+
+    if (fromRight >= OS_EDGE && fromRight <= window.innerWidth * NOTIF_OPEN_ZONE) {
+      state = {
+        kind: "notif",
+        closing: false,
+        startX: t.clientX,
+        startY: t.clientY,
+        width: notif.offsetWidth || Math.min(304, window.innerWidth * .78)
+      };
+      return;
+    }
+
+    state = null;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", function(e){
+    if (!state || e.touches.length !== 1) return;
+
+    const t = e.touches[0];
+    const dx = t.clientX - state.startX;
+    const dy = t.clientY - state.startY;
+
+    if (!state.dragging) {
+      if (Math.abs(dx) <= AXIS_LOCK && Math.abs(dy) <= AXIS_LOCK) return;
+
+      /* Vertical movement belongs to normal page/drawer scrolling. */
+      if (Math.abs(dy) > Math.abs(dx) + AXIS_LOCK) {
+        state = null;
+        return;
+      }
+
+      /* Wrong direction: release the gesture immediately. */
+      if (state.kind === "profile" && !state.closing && dx < 0) {
+        state = null;
+        return;
+      }
+      if (state.kind === "profile" && state.closing && dx > 0) {
+        state = null;
+        return;
+      }
+      if (state.kind === "notif" && !state.closing && dx > 0) {
+        state = null;
+        return;
+      }
+      if (state.kind === "notif" && state.closing && dx < 0) {
+        state = null;
+        return;
+      }
+
+      state.dragging = true;
+
+      const drawer = state.kind === "profile" ? profile : notif;
+      drawer.classList.add("lv-gesture-dragging");
+      backdrop.classList.add("lv-gesture-dragging");
+      backdrop.classList.add("open");
+
+      if (!state.closing) {
+        drawer.classList.add("open");
+      }
+    }
+
+    if (e.cancelable) e.preventDefault();
+
+    const drawer = state.kind === "profile" ? profile : notif;
+    const width = Math.max(1, state.width);
+
+    let progress;
+    if (state.kind === "profile") {
+      /* Profile enters from the left: right = open, left = close. */
+      progress = state.closing
+        ? Math.max(0, Math.min(1, 1 + dx / width))
+        : Math.max(0, Math.min(1, dx / width));
+
+      drawer.style.transform = `translateX(${(-105 + 105 * progress).toFixed(3)}%)`;
+    } else {
+      /* Notifications enter from the right: left = open, right = close. */
+      progress = state.closing
+        ? Math.max(0, Math.min(1, 1 - dx / width))
+        : Math.max(0, Math.min(1, -dx / width));
+
+      drawer.style.transform = `translateX(${(105 - 105 * progress).toFixed(3)}%)`;
+    }
+
+    setBackdropProgress(progress);
+  }, { passive: false });
+
+  function endGesture(e){
+    if (!state) return;
+
+    const current = state;
+    state = null;
+
+    if (!current.dragging) return;
+
+    const t = e.changedTouches && e.changedTouches[0];
+    const dx = t ? t.clientX - current.startX : 0;
+    const width = Math.max(1, current.width);
+
+    let progress;
+    if (current.kind === "profile") {
+      progress = current.closing
+        ? Math.max(0, Math.min(1, 1 + dx / width))
+        : Math.max(0, Math.min(1, dx / width));
+    } else {
+      progress = current.closing
+        ? Math.max(0, Math.min(1, 1 - dx / width))
+        : Math.max(0, Math.min(1, -dx / width));
+    }
+
+    /*
+     * Same feel as the proven source file:
+     *   opening needs only ~35%
+     *   closing needs ~65% so an accidental short drag doesn't dismiss it.
+     */
+    const shouldOpen = progress > (current.closing ? CLOSE_THRESHOLD : OPEN_THRESHOLD);
+
+    if (current.kind === "profile") {
+      finishProfile(shouldOpen);
+    } else {
+      finishNotif(shouldOpen);
+    }
+  }
+
+  document.addEventListener("touchend", endGesture, { passive: true });
+  document.addEventListener("touchcancel", endGesture, { passive: true });
+})();
+</script>
+
 </body>
 </html>
