@@ -6,6 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Levromart</title>
 <meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Levromart">
+<meta property="og:description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
+<meta property="og:url" content="">
+<meta property="og:image" content="">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Levromart">
+<meta name="twitter:description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
+<meta name="twitter:image" content="">
+
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b0b0b">
@@ -190,7 +200,7 @@
      app's palette. This is the one place that default gets overridden. */
   a { color: var(--primary); text-decoration: none; font-weight: 500; }
   a:hover { text-decoration: underline; }
-  .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: brightness(0) invert(1); }
+  .ai-chat-fab-logo { width: 2.5rem; height: auto; object-fit: contain; filter: none; }
   .ai-chat-header-logo { width: 1.4rem; height: 1.4rem; object-fit: contain; vertical-align: -0.3rem; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 55%, transparent)); }
   .header-left { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
   .header-right { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
@@ -1483,7 +1493,7 @@ input, textarea, select, [contenteditable="true"], [contenteditable="true"] * { 
    accent-coloured halo so the white centre remains visible without adding a
    new coloured dot/circle inside the mark. */
 .settings-levi-logo-wrap { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 32%, transparent)); }
-.settings-levi-logo { filter: brightness(0) invert(1) !important; }
+.settings-levi-logo { filter: none !important; -webkit-filter:none !important; }
 .settings-levi-logo-wrap::after { display:none !important; content:none !important; }
 html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab::after { display:none !important; content:none !important; }
 html:not([data-theme="dark"]):not([data-theme="black"]) #aiChatFab { box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent), 0 0 18px color-mix(in srgb, var(--primary) 24%, transparent), 0 10px 28px rgba(0,0,0,.18) !important; }
@@ -4425,7 +4435,8 @@ body:has(#settings-page) #app { flex:0 0 auto !important; }
 body:has(#settings-page) .site-footer { margin-top:.55rem !important; }
 
 /* Levi mark in every floating/header context is white for reliable contrast. */
-.ai-chat-fab-logo, .settings-levi-logo { filter:brightness(0) invert(1) !important; }
+.ai-chat-fab-logo { filter:brightness(0) invert(1) !important; }
+.settings-levi-logo { filter:none !important; -webkit-filter:none !important; }
 
 /* Levi reactions: keep the picker fully inside the chat panel. The previous
    right-anchoring made the left side of the emoji rail disappear off-screen
@@ -4964,11 +4975,11 @@ body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-t
   <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
     <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <span id="aiVoiceStatusText">Listening...</span>
-    <button type="button" onclick="toggleAiChatMic()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
+    <button type="button" onclick="toggleAiChatMic(event)" title="Stop recording" aria-label="Stop recording"><i class="fa-solid fa-stop"></i></button>
     <button type="button" onclick="cancelAiChatVoice()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="ai-chat-input-row">
-    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
+    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic(event)" title="Start recording" aria-label="Start recording"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
@@ -6258,6 +6269,27 @@ function initials(name, email) {
   const ini = ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase();
   return ini || s[0]?.toUpperCase() || "?";
 }
+
+function stableAvatarHue(value) {
+  const text = String(value || "user");
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  return Math.abs(hash) % 360;
+}
+function avatarFallbackHtml(name, size = "2.6rem", extraClass = "", label = "") {
+  const safeName = String(name || "User").trim() || "User";
+  const hue = stableAvatarHue(safeName);
+  const title = label || safeName;
+  return `<span class="avatar-circle avatar-fallback ${extraClass}" title="${esc(title)}" aria-label="${esc(title)}" style="width:${size};height:${size};background:hsl(${hue} 58% 43%);color:#fff;"><i class="fa-solid fa-user" aria-hidden="true"></i></span>`;
+}
+function profileAvatarHtml(url, name, size = "2.6rem", opts = {}) {
+  const safeName = String(name || "User").trim() || "User";
+  if (url) {
+    const clickable = opts.lightbox ? ` role="button" tabindex="0" onclick="event.stopPropagation();openProfileImageLightbox('${esc(url)}','${esc(safeName)}',event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openProfileImageLightbox('${esc(url)}','${esc(safeName)}',event)}"` : "";
+    return `<img src="${esc(url)}" class="avatar-circle ${opts.extraClass || ""}" style="width:${size};height:${size};object-fit:cover;" alt="${esc(safeName)}" draggable="false"${clickable} onerror="this.replaceWith(document.createRange().createContextualFragment(avatarFallbackHtml('${esc(safeName)}','${esc(size)}','${esc(opts.extraClass || "")}','${esc(safeName)}')))" />`;
+  }
+  return avatarFallbackHtml(safeName, size, opts.extraClass || "", safeName);
+}
 function toWhatsappDigits(raw) {
   let digits = (raw || "").replace(/\D/g, "");
   if (digits.startsWith("0")) digits = "234" + digits.slice(1);
@@ -7290,7 +7322,9 @@ function updateAuthUI() {
   if (session && profile) {
     loginBtn.classList.add("hidden");
     avatarBtn.classList.remove("hidden");
-    avatarBtn.innerHTML = profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" alt="" />` : esc(initials(profile.name, profile.email));
+    avatarBtn.innerHTML = profile.avatar_url
+      ? `<img src="${esc(profile.avatar_url)}" alt="${esc(profile.name || "Profile")}" draggable="false" />`
+      : avatarFallbackHtml(profile.name || profile.email, "100%", "", profile.name || profile.email);
 
     const links = [];
     if (vendor && profile.role !== "admin") {
@@ -7321,7 +7355,9 @@ function updateAuthUI() {
         <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()" aria-label="Close profile"><i class='fa-solid fa-xmark'></i></button></div>
         <div class="profile-panel-header">
           <div class="avatar-edit-wrap">
-            ${profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" />` : `<div class="avatar-circle avatar-lg">${initials(profile.name, profile.email)}</div>`}
+            ${profile.avatar_url
+              ? `<button type="button" class="profile-avatar-lightbox-btn" onclick="openProfileImageLightbox('${esc(profile.avatar_url)}','${esc(profile.name || "Profile")}',event)" aria-label="View profile picture"><img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" alt="${esc(profile.name || "Profile")}" draggable="false" /></button>`
+              : avatarFallbackHtml(profile.name || profile.email, "3rem", "avatar-lg", profile.name || profile.email)}
             <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
             <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
           </div>
@@ -7955,7 +7991,12 @@ async function navigate(view, params = {}, pushHistory = true) {
   updateAuthUI();
   renderBottomNav();
   updateHeaderNavActive();
-  if (pushHistory) history.pushState({ view, params }, "", location.pathname + location.search);
+  if (pushHistory) {
+    const navUrl = view === "storefront" && params?.vendorId
+      ? `${location.pathname}?storefront=${encodeURIComponent(params.vendorId)}`
+      : location.pathname;
+    history.pushState({ view, params }, "", navUrl);
+  }
   // Mobile browsers (and installed PWAs especially) routinely discard a
   // backgrounded tab's JS state and reload it fresh when you switch back -
   // that's not a bug we can prevent, but without this, every one of those
@@ -7963,6 +8004,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   // reload within the same tab/session, so init() below can resume here
   // instead.
   try { sessionStorage.setItem("medris_last_view", JSON.stringify({ view, params })); } catch (e) {}
+  if (view !== "storefront") resetStorefrontSocialMeta();
   let html;
   try {
     switch (view) {
@@ -8659,7 +8701,7 @@ function convRowHtml(c) {
   return `<div class="conv-row-wrap ${selected ? "selected" : ""}">
     <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
       ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
-      ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
+      ${profileAvatarHtml(c.other_avatar, name, "2.6rem", { lightbox: !!c.other_avatar })}
       <div class="conv-meta">
         <strong>${esc(name)}</strong>
         <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
@@ -8920,7 +8962,7 @@ function chatSkeletonHtml(cached, cachedMessages) {
   return `<div class="chat-page-wrap">
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
-      ${avatar ? `<img src="${esc(avatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(name)}</div>`}
+      ${profileAvatarHtml(avatar, name, "2.35rem", { extraClass: "chat-header-avatar", lightbox: !!avatar })}
       <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(name)}</strong></div>
       <div class="chat-header-actions">
         <button class="chat-header-icon-btn" style="opacity:0.4;" disabled title="Call"><i class="fa-solid fa-phone"></i></button>
@@ -9055,7 +9097,15 @@ async function renderMessages(conversationId) {
     </div>
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
-      ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
+      ${conv.vendor?.id
+        ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar
+          ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="${esc(otherName)}" draggable="false" onclick="event.stopPropagation();openProfileImageLightbox('${esc(otherAvatar)}','${esc(otherName)}',event)" />`
+          : avatarFallbackHtml(otherName, "2.35rem", "chat-header-avatar", otherName)}
+          <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>`
+        : `${otherAvatar
+          ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="${esc(otherName)}" draggable="false" onclick="openProfileImageLightbox('${esc(otherAvatar)}','${esc(otherName)}',event)" />`
+          : avatarFallbackHtml(otherName, "2.35rem", "chat-header-avatar", otherName)}
+          <div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
         ${!isVendorSide && conv.vendor?.whatsapp_visible && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
         <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
@@ -9069,7 +9119,7 @@ async function renderMessages(conversationId) {
       <div id="msgVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
         <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <span id="msgVoiceStatusText">Listening...</span>
-        <button type="button" onclick="toggleMsgMicPause()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
+        <button type="button" onclick="stopMsgVoiceRecording()" title="Stop recording" aria-label="Stop recording"><i class="fa-solid fa-stop"></i></button>
         <button type="button" onclick="cancelMsgVoiceRecording()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="chat-input-row">
@@ -9873,7 +9923,10 @@ async function renderProductDetail(productId) {
   ].filter(Boolean);
 
   let html = `<div class="card product-detail-card" style="position:relative;">
-    <button class="fav-btn ${isFav ? "active" : ""}" style="top:1rem;right:1rem;" onclick="toggleFavorite(event,'${product.id}')" title="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
+    <div class="product-detail-top-actions" aria-label="Product actions">
+      <button class="fav-btn ${isFav ? "active" : ""}" onclick="toggleFavorite(event,'${product.id}')" title="Save to wishlist" aria-label="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
+      <button type="button" class="product-storefront-share-btn" onclick="shareStorefrontFromProduct(event,'${product.vendor.id}')" title="Share vendor storefront" aria-label="Share vendor storefront"><i class="fa-solid fa-share-nodes"></i></button>
+    </div>
     <h2 class="product-detail-title">${esc(product.name)}${product.is_service ? ` <span class="badge">Service</span>` : ""}</h2>
     <div class="product-detail-media">${photosHtml}</div>
     <div class="product-detail-actions">
@@ -9961,8 +10014,8 @@ function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, 
   const isDistance = feeMode === "distance" && Number(perKm) > 0 && vendorLat != null && vendorLng != null;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex delivery-method-row" style="margin:0.6rem 0 0.9rem;flex-direction:row;">
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> ${esc(pickupLabel || "Pickup")}</label>
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> ${esc(pickupLabel || "Pickup")}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="dyn-delivery-fields" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
@@ -10381,7 +10434,7 @@ async function renderVendorsMap() {
     const vendorName = esc(v.business_name || "Vendor");
     const vendorLogo = v.logo_url
       ? `<img class="vendor-map-popup-avatar" src="${esc(v.logo_url)}" alt="" loading="lazy" draggable="false" onerror="this.classList.add('is-broken');this.style.display='none';" />`
-      : `<span class="vendor-map-popup-avatar vendor-map-popup-avatar-fallback">${esc((v.business_name || "V").trim().charAt(0).toUpperCase())}</span>`;
+      : `<span class="vendor-map-popup-avatar vendor-map-popup-avatar-fallback" aria-label="${esc(v.business_name || "Vendor")}">${'<i class="fa-solid fa-user" aria-hidden="true"></i>'}</span>`;
     const popupMeta = `${v.avg_rating ? `★ ${Number(v.avg_rating).toFixed(1)} (${v.review_count || 0})` : ""}${dist ? `${v.avg_rating ? " · " : ""}${dist}` : ""}`;
     marker.bindPopup(`<div class="vendor-map-popup"><div class="vendor-map-popup-head">${vendorLogo}<div class="vendor-map-popup-copy"><strong>${vendorName}</strong>${popupMeta ? `<span>${esc(popupMeta)}</span>` : ""}</div></div><a class="vendor-map-popup-link" href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">View storefront</a></div>`);
     vendorsMapMarkers.push(marker);
@@ -10400,10 +10453,133 @@ function vendorNameWithFormerly(v) {
   if (daysSince > VENDOR_RENAME_GRACE_DAYS) return esc(v.business_name);
   return `${esc(v.business_name)} <span class="muted" style="font-weight:400;font-size:0.8em;">(formerly ${esc(v.previous_business_name)})</span>`;
 }
+
+function storefrontPublicUrl(vendorId) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("storefront", String(vendorId || ""));
+  return url.toString();
+}
+function updateStorefrontSocialMeta(v) {
+  if (!v) return;
+  const name = String(v.business_name || "Levromart storefront");
+  const description = String(v.bio || `Check out ${name} on Levromart.`);
+  const image = String(v.logo_url || "");
+  const url = storefrontPublicUrl(v.id);
+  document.title = `${name} | Levromart`;
+  const setMeta = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute("content", value);
+  };
+  setMeta('meta[name="description"]', description);
+  setMeta('meta[property="og:title"]', name);
+  setMeta('meta[property="og:description"]', description);
+  setMeta('meta[property="og:url"]', url);
+  setMeta('meta[property="og:image"]', image);
+  setMeta('meta[name="twitter:title"]', name);
+  setMeta('meta[name="twitter:description"]', description);
+  setMeta('meta[name="twitter:image"]', image);
+}
+function resetStorefrontSocialMeta() {
+  document.title = "Levromart";
+  const setMeta = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute("content", value);
+  };
+  setMeta('meta[name="description"]', "Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.");
+  setMeta('meta[property="og:title"]', "Levromart");
+  setMeta('meta[property="og:description"]', "Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.");
+  setMeta('meta[property="og:url"]', window.location.origin + window.location.pathname);
+  setMeta('meta[property="og:image"]', "");
+  setMeta('meta[name="twitter:title"]', "Levromart");
+  setMeta('meta[name="twitter:description"]', "Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.");
+  setMeta('meta[name="twitter:image"]', "");
+}
+async function fetchVendorForShare(vendorId) {
+  const { data, error } = await sb.from("vendors")
+    .select("id,business_name,bio,logo_url,whatsapp_number,whatsapp_visible,verification_status,is_active")
+    .eq("id", vendorId)
+    .eq("verification_status", "verified")
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error || !data) throw new Error("This storefront is no longer available.");
+  return data;
+}
+async function openStorefrontShare(vendorId) {
+  try {
+    const v = await fetchVendorForShare(vendorId);
+    const url = storefrontPublicUrl(v.id);
+    const name = v.business_name || "this store";
+    const box = byId("storefrontShareModal");
+    if (!box) return;
+    byId("storefrontShareTitle").textContent = `Share ${name}`;
+    byId("storefrontShareText").textContent = `Share ${name}'s storefront on Levromart.`;
+    box.dataset.vendorId = v.id;
+    box.dataset.url = url;
+    box.dataset.name = name;
+    box.dataset.whatsapp = v.whatsapp_visible && v.whatsapp_number ? v.whatsapp_number : "";
+    box.classList.remove("hidden");
+    trackModalOpened("storefrontShareModal");
+  } catch (err) {
+    showToast(err.message || "Couldn't prepare storefront sharing.", "error");
+  }
+}
+async function shareStorefrontFromProduct(evt, vendorId) {
+  evt?.stopPropagation();
+  await openStorefrontShare(vendorId);
+}
+async function copyStorefrontShareLink() {
+  const box = byId("storefrontShareModal");
+  const url = box?.dataset.url;
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Storefront link copied.", "success");
+    closeStorefrontShareModal(true);
+  } catch (_) {
+    await showConfirmDialog(url, { title: "Storefront link", okLabel: "Close" });
+  }
+}
+async function nativeShareStorefront() {
+  const box = byId("storefrontShareModal");
+  const url = box?.dataset.url;
+  const name = box?.dataset.name || "this store";
+  if (!url) return;
+  const payload = { title: `${name} | Levromart`, text: `Check out ${name}'s storefront on Levromart.`, url };
+  try {
+    if (navigator.share) {
+      await navigator.share(payload);
+      closeStorefrontShareModal(true);
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    showToast("Native sharing isn't available here, so the storefront link was copied.", "success");
+    closeStorefrontShareModal(true);
+  } catch (err) {
+    if (err?.name !== "AbortError") showToast("Couldn't share the storefront.", "error");
+  }
+}
+function whatsappShareStorefront() {
+  const box = byId("storefrontShareModal");
+  const url = box?.dataset.url;
+  const name = box?.dataset.name || "this store";
+  if (!url) return;
+  const text = `Check out ${name}'s storefront on Levromart.\n${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  closeStorefrontShareModal(true);
+}
+function closeStorefrontShareModal(goBack = false) {
+  byId("storefrontShareModal")?.classList.add("hidden");
+  const wasTracked = dismissibleModalId === "storefrontShareModal";
+  dismissibleModalId = wasTracked ? null : dismissibleModalId;
+  if (goBack && wasTracked && history.state?.dismissibleModal === "storefrontShareModal") history.back();
+}
 async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
   if (!v.is_active) return '<div class="empty-state"><i class="fa-solid fa-store-slash" style="font-size:1.6rem;display:block;margin-bottom:0.6rem;"></i>This shop is currently paused. Check back later.</div>';
+  updateStorefrontSocialMeta(v);
 
   const [{ data: products }, { data: stats }, { data: reviews }, { data: packages }] = await Promise.all([
     sb.from("products").select("id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, quantity_available, condition, is_service, service_price_unit, category:categories(name)").eq("vendor_id", v.id).eq("status", "active").order("created_at", { ascending: false }),
@@ -10419,8 +10595,8 @@ async function renderStorefront(vendorId) {
 
   const coverPhotos = [...new Set(allProducts.map((p) => p.photos?.[0]).filter(Boolean))].slice(0, 4);
   const logo = v.logo_url
-    ? `<button type="button" class="storefront-avatar storefront-avatar-button" aria-label="View ${esc(v.business_name || "Vendor")} profile picture" onclick="openVendorProfileImageLightbox('${esc(v.logo_url)}','${esc(v.business_name || "Vendor")}')"><img src="${esc(v.logo_url)}" alt="${esc(v.business_name || "Vendor")}" loading="eager" draggable="false" /></button>`
-    : `<button type="button" class="storefront-avatar storefront-avatar-button" aria-label="View ${esc(v.business_name || "Vendor")} profile picture" onclick="openVendorProfileImageLightbox('','${esc(v.business_name || "Vendor")}')">${esc((v.business_name || "?")[0].toUpperCase())}</button>`;
+    ? `<button type="button" class="storefront-avatar storefront-avatar-button" aria-label="View ${esc(v.business_name || "Vendor")} profile picture" onclick="openProfileImageLightbox('${esc(v.logo_url)}','${esc(v.business_name || "Vendor")}',event)"><img src="${esc(v.logo_url)}" alt="${esc(v.business_name || "Vendor")}" loading="eager" draggable="false" /></button>`
+    : `<button type="button" class="storefront-avatar storefront-avatar-button storefront-avatar-fallback-button" aria-label="View ${esc(v.business_name || "Vendor")} profile picture" onclick="openProfileImageLightbox('','${esc(v.business_name || "Vendor")}',event)">${avatarFallbackHtml(v.business_name || "Vendor", "100%", "", v.business_name || "Vendor")}</button>`;
   const location = [v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online business";
 
   const storefrontMoreItems = [
@@ -10428,7 +10604,8 @@ async function renderStorefront(vendorId) {
     v.cac_number ? `<div class="ms-item"><i class='fa-solid fa-building-columns'></i> CAC verified</div>` : "",
     yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-calendar-check"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
     v.opening_hours ? `<div class="ms-item"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</div>` : "",
-    profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
+    profile?.role !== "admin" ? `<button type="button" class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</button>` : "",
+    `<button type="button" class="ms-item" onclick="openStorefrontShare('${v.id}');closeInlineMenu('storefrontMoreMenu')"><i class='fa-solid fa-share-nodes'></i> Share storefront</button>`,
   ].filter(Boolean).join("");
 
   let html = `<section class="storefront-profile">
@@ -10489,7 +10666,7 @@ async function renderStorefront(vendorId) {
   </section>`;
 
   if (reviews && reviews.length > 0) {
-    html += `<section class="storefront-reviews" id="vendorReviews"><button type="button" class="storefront-reviews-head" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></button><div id="reviewsList">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.3rem;height:2.3rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div></section>`;
+    html += `<section class="storefront-reviews" id="vendorReviews"><button type="button" class="storefront-reviews-head" onclick="toggleReviewsList()"><h3 style="margin:0;">Reviews${st.review_count ? ` (${st.review_count})` : ""}</h3><i class="fa-solid fa-chevron-down" id="reviewsChevron" style="transition:transform 0.2s;color:var(--text-muted);"></i></button><div id="reviewsList">${reviews.map((r) => `<div class="card review-card">${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.3rem;height:2.3rem;object-fit:cover;" />` : avatarFallbackHtml(r.buyer_name || "Buyer", "2.3rem", "", r.buyer_name || "Buyer")}<div><div class="flex" style="justify-content:space-between;gap:1rem;"><strong>${esc(r.buyer_name || "A buyer")}</strong><span class="star-display">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span></div>${r.comment ? `<p style="margin:0.3rem 0 0;">${esc(r.comment)}</p>` : ""}<p class="muted" style="font-size:0.75rem;margin-top:0.2rem;">${new Date(r.created_at).toLocaleDateString()}</p></div></div>`).join("")}</div></section>`;
   } else {
     html += `<section class="storefront-reviews" id="vendorReviews"><h3 style="margin-top:0;">Reviews</h3><p class="muted">No reviews yet.</p></section>`;
   }
@@ -10745,7 +10922,7 @@ async function renderVendorRequests() {
     html += `<div class="card">
       <div class="flex" style="justify-content:space-between;">
         <div class="flex">
-          ${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(r.buyer_name))}</span>`}
+          ${r.buyer_avatar_url ? `<img src="${esc(r.buyer_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : avatarFallbackHtml(r.buyer_name || "Buyer", "2.1rem", "", r.buyer_name || "Buyer")}
           <div><strong>${esc(r.title)}</strong><p class="muted" style="margin:0;font-size:0.78rem;">${esc(r.buyer_name || "A buyer")}</p></div>
         </div>
         <span class="badge">${r.request_type === "buy" ? "Buy" : "Rent"}</span>
@@ -11187,7 +11364,7 @@ async function renderVendorEditProfile() {
     <h2>Edit business profile</h2>
     <div id="vendorEditError" class="error-text hidden"></div>
     <div class="avatar-edit-wrap" style="margin:0 auto 1rem;display:table;">
-      ${v.logo_url ? `<img src="${esc(v.logo_url)}" class="avatar-circle" style="width:5rem;height:5rem;object-fit:cover;" />` : `<div class="avatar-circle" style="width:5rem;height:5rem;font-size:1.6rem;">${esc((v.business_name || "?")[0].toUpperCase())}</div>`}
+      ${v.logo_url ? `<img src="${esc(v.logo_url)}" class="avatar-circle" style="width:5rem;height:5rem;object-fit:cover;" alt="${esc(v.business_name || "Vendor")}" draggable="false" />` : avatarFallbackHtml(v.business_name || "Vendor", "5rem", "", v.business_name || "Vendor")}
       <button class="avatar-edit-badge" style="width:1.7rem;height:1.7rem;font-size:0.8rem;" onclick="byId('vendorLogoInput').click()" title="Change logo"><i class="fa-solid fa-camera"></i></button>
       <input type="file" id="vendorLogoInput" accept="image/*" class="hidden" onchange="uploadVendorLogo(event)" />
     </div>
@@ -13732,7 +13909,26 @@ function exportFinancePdf() {
     <table><thead><tr><th>Date</th><th>Buyer</th><th>Vendor</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Platform cut</th></tr></thead>
     <tbody>${filtered.map((t) => `<tr><td>${new Date(t.created_at).toLocaleString()}</td><td>${esc(t.buyer_name || "")}</td><td>${esc(t.vendor_name || "")}</td><td>${esc((t.payment_type || "").replace("_", " "))}</td><td>${naira(t.amount)}</td><td>${esc(t.method)}</td><td>${esc(t.status)}</td><td>${naira(t.platform_cut)}</td></tr>`).join("")}</tbody></table>
     <script>window.onload = () => window.print();<\/script>
-    </body></html>`);
+    
+
+
+
+/* Never let browser-native button/image chrome leak into the app's custom UI. */
+.product-message-wrap .ms-list button.ms-item,
+.product-message-wrap .ms-list a.ms-item,
+#storefrontMessageMenu .ms-item{
+  -webkit-tap-highlight-color:transparent;
+  text-transform:none !important;
+}
+.profile-avatar-lightbox-btn img{display:block;}
+#vendorProfileImageLightbox .vendor-profile-image-card{max-width:92vw;max-height:84vh;}
+#vendorProfileImageLightbox .vendor-profile-image-fallback i{font-size:35%;}
+
+/* Explicitly keep profile/notification drawers tap-open only. */
+#profilePanel,#notifPanel{touch-action:pan-y !important;}
+#profilePanel::after,#notifPanel::after{pointer-events:none;}
+</style>
+</body></html>`);
   w.document.close();
 }
 
@@ -14653,12 +14849,12 @@ function syncSystemBarColor() {
 }
 syncSystemBarColor();
 let aiChatRecognizer = null;
-
 let aiChatListening = false;
-let aiChatVoicePaused = false;
-// Talked to Levi instead of typing? Its reply reads itself aloud
-// automatically, same as a real conversation - typed messages stay
-// text-only unless the speaker icon is tapped manually.
+let aiChatVoiceStopping = false;
+let aiChatVoiceFinalTranscript = "";
+let aiChatVoiceInterimTranscript = "";
+let aiChatVoiceGeneration = 0;
+// Talked to Levi instead of typing? Its reply reads itself aloud automatically.
 let aiChatLastInputVoice = false;
 function initAiChatMic() {
   const btn = byId("aiChatMicBtn");
@@ -14669,11 +14865,24 @@ function updateAiVoiceStatus() {
   const text = byId("aiVoiceStatusText");
   const btn = byId("aiChatMicBtn");
   if (!status || !text) return;
-  status.classList.toggle("hidden", !aiChatListening && !aiChatVoicePaused);
-  text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Listening...";
-  const pauseBtn = status.querySelector("button:first-of-type i");
-  if (pauseBtn) pauseBtn.className = `fa-solid ${aiChatVoicePaused ? "fa-play" : "fa-pause"}`;
-  if (btn) { btn.classList.toggle("listening", aiChatListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
+  const active = aiChatListening || !!aiChatRecognizer;
+  status.classList.toggle("hidden", !active);
+  text.textContent = active
+    ? (aiChatVoiceInterimTranscript || aiChatVoiceFinalTranscript ? `${aiChatVoiceFinalTranscript}${aiChatVoiceInterimTranscript ? (aiChatVoiceFinalTranscript ? " " : "") + aiChatVoiceInterimTranscript : ""}`.trim() : "Listening...")
+    : "Tap the microphone to start";
+  if (btn) {
+    btn.classList.toggle("listening", aiChatListening);
+    btn.title = aiChatListening ? "Stop recording" : "Start recording";
+    btn.setAttribute("aria-label", aiChatListening ? "Stop recording" : "Start recording");
+    btn.innerHTML = `<i class="fa-solid ${aiChatListening ? "fa-stop" : "fa-microphone"}"></i>`;
+  }
+  const stopBtn = status.querySelector("button:first-of-type");
+  if (stopBtn) {
+    stopBtn.title = "Stop recording";
+    stopBtn.setAttribute("aria-label", "Stop recording");
+    const icon = stopBtn.querySelector("i");
+    if (icon) icon.className = "fa-solid fa-stop";
+  }
 }
 function scrollAiVoiceIntoView() {
   const messages = byId("aiChatMessages");
@@ -14681,41 +14890,151 @@ function scrollAiVoiceIntoView() {
   const input = byId("aiChatInput");
   if (input) input.scrollTop = input.scrollHeight;
 }
-function toggleAiChatMic() {
-  if (!AiSpeechRecognition) return;
-  const btn = byId("aiChatMicBtn");
-  // Tapping the mic always means "let me talk" - if Levi's mid-reply,
-  // barge in and stop it immediately rather than talking over each other.
-  if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
-  if (aiChatListening) { aiChatRecognizer?.stop(); return; }
-  aiChatRecognizer = new AiSpeechRecognition();
-  aiChatRecognizer.lang = "en-NG";
-  aiChatRecognizer.interimResults = true; // show words as they're heard, not just after you stop talking
-  aiChatRecognizer.maxAlternatives = 1;
-  aiChatRecognizer.onstart = () => { aiChatListening = true; aiChatVoicePaused = false; updateAiVoiceStatus(); byId("aiChatInput").focus(); };
-  aiChatRecognizer.onresult = (e) => {
-    let transcript = "";
-    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    if (transcript) { const el = byId("aiChatInput"); el.value = transcript; autoGrowChatInput(el); el.scrollTop = el.scrollHeight; aiChatLastInputVoice = true; scrollAiVoiceIntoView(); }
+function applyAiVoiceTranscript() {
+  const input = byId("aiChatInput");
+  if (!input) return;
+  const combined = `${aiChatVoiceFinalTranscript}${aiChatVoiceInterimTranscript ? (aiChatVoiceFinalTranscript ? " " : "") + aiChatVoiceInterimTranscript : ""}`.trim();
+  input.value = combined;
+  autoGrowChatInput(input);
+  input.scrollTop = input.scrollHeight;
+  aiChatLastInputVoice = combined.length > 0;
+  scrollAiVoiceIntoView();
+}
+function createAiSpeechRecognizer(generation) {
+  if (!AiSpeechRecognition) return null;
+  const recognizer = new AiSpeechRecognition();
+  recognizer.lang = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ? "en-US" : "en-NG";
+  recognizer.interimResults = true;
+  recognizer.continuous = true;
+  recognizer.maxAlternatives = 1;
+
+  recognizer.onstart = () => {
+    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
+    aiChatListening = true;
+    updateAiVoiceStatus();
+    byId("aiChatInput")?.focus();
+  };
+  recognizer.onresult = (e) => {
+    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
+    let interim = "";
+    // IMPORTANT: only process from resultIndex. Re-reading the entire result
+    // collection is what causes repeated transcript chunks.
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const result = e.results[i];
+      const text = String(result?.[0]?.transcript || "").trim();
+      if (!text) continue;
+      if (result.isFinal) {
+        aiChatVoiceFinalTranscript = `${aiChatVoiceFinalTranscript}${aiChatVoiceFinalTranscript ? " " : ""}${text}`.replace(/\s+/g, " ").trim();
+      } else {
+        interim += `${interim ? " " : ""}${text}`;
+      }
+    }
+    aiChatVoiceInterimTranscript = interim.replace(/\s+/g, " ").trim();
+    applyAiVoiceTranscript();
     updateAiVoiceStatus();
   };
-  aiChatRecognizer.onerror = (e) => {
-    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
+  recognizer.onerror = (e) => {
+    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      aiChatVoiceStopping = true;
+      aiChatListening = false;
+      aiChatRecognizer = null;
+      updateAiVoiceStatus();
+      showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
+      return;
+    }
+    // no-speech/aborted are normal lifecycle events for a manually active
+    // recording session. Do not make a sound, close Levi, or submit anything.
+    if (e.error !== "aborted" && e.error !== "no-speech") {
+      showToast("Speech recognition paused. Trying again…", "info");
+    }
   };
-  aiChatRecognizer.onend = () => { aiChatListening = false; updateAiVoiceStatus(); };
-  try { aiChatRecognizer.start(); } catch (e) { /* already running */ }
+  recognizer.onend = () => {
+    if (generation !== aiChatVoiceGeneration) return;
+    aiChatListening = false;
+    if (aiChatVoiceStopping) {
+      if (aiChatRecognizer === recognizer) aiChatRecognizer = null;
+      aiChatVoiceInterimTranscript = "";
+      applyAiVoiceTranscript();
+      updateAiVoiceStatus();
+      return;
+    }
+    // Mobile Safari/Chrome may end recognition after silence. That does NOT
+    // mean the user stopped recording. Recreate the recognizer silently.
+    aiChatVoiceInterimTranscript = "";
+    applyAiVoiceTranscript();
+    updateAiVoiceStatus();
+    if (!aiChatVoiceStopping && byId("aiChatPanel") && !byId("aiChatPanel").classList.contains("hidden")) {
+      setTimeout(() => {
+        if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping || aiChatListening) return;
+        if (!byId("aiChatPanel") || byId("aiChatPanel").classList.contains("hidden")) return;
+        const next = createAiSpeechRecognizer(generation);
+        if (!next) return;
+        aiChatRecognizer = next;
+        try { next.start(); } catch (_) {}
+      }, 180);
+    }
+  };
+  return recognizer;
+}
+function toggleAiChatMic(evt) {
+  evt?.stopPropagation?.();
+  if (!AiSpeechRecognition) return;
+  if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
+
+  if (aiChatListening || aiChatRecognizer) {
+    stopAiChatVoiceRecording();
+    return;
+  }
+
+  aiChatVoiceGeneration++;
+  aiChatVoiceStopping = false;
+  aiChatVoiceFinalTranscript = "";
+  aiChatVoiceInterimTranscript = "";
+  const input = byId("aiChatInput");
+  if (input?.value.trim()) aiChatVoiceFinalTranscript = input.value.trim();
+  const generation = aiChatVoiceGeneration;
+  const recognizer = createAiSpeechRecognizer(generation);
+  if (!recognizer) return;
+  aiChatRecognizer = recognizer;
+  updateAiVoiceStatus();
+  try {
+    recognizer.start();
+  } catch (e) {
+    aiChatRecognizer = null;
+    aiChatListening = false;
+    updateAiVoiceStatus();
+    showToast("Couldn't start the microphone. Try again.", "error");
+  }
+}
+function stopAiChatVoiceRecording() {
+  aiChatVoiceStopping = true;
+  aiChatVoiceGeneration++;
+  aiChatListening = false;
+  aiChatVoiceInterimTranscript = "";
+  const recognizer = aiChatRecognizer;
+  aiChatRecognizer = null;
+  try { recognizer?.abort(); } catch (_) {}
+  applyAiVoiceTranscript();
   updateAiVoiceStatus();
 }
 async function cancelAiChatVoice() {
-  if (!aiChatListening && !aiChatVoicePaused) return;
+  if (!aiChatListening && !aiChatRecognizer && !aiChatVoiceFinalTranscript && !aiChatVoiceInterimTranscript) return;
   const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
   if (!confirmed) return;
-  try { aiChatRecognizer?.abort(); } catch (_) {}
-  aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; aiChatLastInputVoice = false;
-  const input = byId("aiChatInput"); if (input) resetChatInput(input);
+  aiChatVoiceStopping = true;
+  aiChatVoiceGeneration++;
+  const recognizer = aiChatRecognizer;
+  aiChatRecognizer = null;
+  try { recognizer?.abort(); } catch (_) {}
+  aiChatListening = false;
+  aiChatVoiceFinalTranscript = "";
+  aiChatVoiceInterimTranscript = "";
+  aiChatLastInputVoice = false;
+  const input = byId("aiChatInput");
+  if (input) resetChatInput(input);
   updateAiVoiceStatus();
 }
-
 // Same tap-to-talk pattern, for the ordinary buyer↔vendor message
 // compose box rather than the Levi chat - separate recognizer instance so
 // the two never fight over which input box is being filled.
@@ -14882,7 +15201,7 @@ async function sendAiChatMessage() {
   const wasVoice = aiChatLastInputVoice;
   aiChatLastInputVoice = false;
   if (!text) return;
-  if (aiChatListening || aiChatVoicePaused) { try { aiChatRecognizer?.abort(); } catch (_) {} aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; updateAiVoiceStatus(); }
+  if (aiChatListening || aiChatRecognizer) stopAiChatVoiceRecording();
   resetChatInput(input);
   appendAiChatMessage("user", text);
   persistAiMessage("user", text);
@@ -15262,6 +15581,7 @@ const DISMISSIBLE_MODAL_CLOSERS = {
   tourModal: finishTour,
   suggestionModal: closeSuggestionModal,
   locationPromptModal: () => resolveLocationPrompt(false),
+  storefrontShareModal: closeStorefrontShareModal,
 };
 function trackModalOpened(id) {
   dismissibleModalId = id;
@@ -15302,6 +15622,12 @@ window.addEventListener("popstate", (e) => {
   await refreshAuthStateOnce();
 
   const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get("storefront")) {
+    const vendorId = urlParams.get("storefront");
+    history.replaceState({ view: "storefront", params: { vendorId } }, "", location.pathname + "?storefront=" + encodeURIComponent(vendorId));
+    await navigate("storefront", { vendorId }, false);
+    return;
+  }
   if (urlParams.get("share")) {
     const token = urlParams.get("share");
     history.replaceState({ view: "sharedAiChat", params: { token } }, "", location.pathname);
@@ -15450,21 +15776,233 @@ body::before { background: var(--system-bar-shade) !important; }
 #vendorProfileImageLightbox{position:fixed;inset:0;z-index:10020;display:flex;align-items:center;justify-content:center;padding:1.25rem;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:1;visibility:visible;transition:opacity .18s ease,visibility .18s ease;}
 #vendorProfileImageLightbox.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 #vendorProfileImageLightbox .vendor-profile-image-card{position:relative;display:flex;align-items:center;justify-content:center;max-width:min(92vw,520px);max-height:82vh;}
-#vendorProfileImageLightbox img{display:block;width:min(82vw,420px);height:min(82vw,420px);max-width:82vw;max-height:72vh;object-fit:cover;border-radius:50%;border:4px solid rgba(255,255,255,.9);box-shadow:0 22px 70px rgba(0,0,0,.55);background:var(--card);}
+#vendorProfileImageLightbox img{display:block;width:auto;height:auto;max-width:88vw;max-height:76vh;object-fit:contain;border-radius:1rem;border:2px solid rgba(255,255,255,.9);box-shadow:0 22px 70px rgba(0,0,0,.55);background:var(--card);}
 #vendorProfileImageLightbox .vendor-profile-image-close{position:absolute;right:-.45rem;top:-.45rem;width:2.55rem;height:2.55rem;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(20,20,20,.78);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35);}
 #vendorProfileImageLightbox .vendor-profile-image-fallback{width:min(62vw,280px);height:min(62vw,280px);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-grad);color:#fff;font-size:4rem;font-weight:800;border:4px solid rgba(255,255,255,.9);}
 </style>
 <div id="vendorProfileImageLightbox" class="hidden" role="dialog" aria-modal="true" aria-label="Vendor profile picture" onclick="closeVendorProfileImageLightbox(event)"><div class="vendor-profile-image-card"><img id="vendorProfileImageLightboxImg" alt="" draggable="false" /><div id="vendorProfileImageLightboxFallback" class="vendor-profile-image-fallback hidden"></div><button type="button" class="vendor-profile-image-close" aria-label="Close profile picture" onclick="closeVendorProfileImageLightbox(event)"><i class="fa-solid fa-xmark"></i></button></div></div>
 <script id="profile-image-natural-ui-script">
 (function(){
-  function preventNativeImageMenu(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .storefront-avatar-button img');if(img)e.preventDefault();}
+  function preventNativeImageMenu(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .conv-list-item img.avatar-circle, .storefront-avatar-button img');if(img)e.preventDefault();}
   document.addEventListener('contextmenu',preventNativeImageMenu,{capture:true});
-  document.addEventListener('dragstart',function(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .storefront-avatar-button img');if(img)e.preventDefault();},{capture:true});
-  window.openVendorProfileImageLightbox=function(url,name){const box=document.getElementById('vendorProfileImageLightbox'),img=document.getElementById('vendorProfileImageLightboxImg'),fallback=document.getElementById('vendorProfileImageLightboxFallback');if(!box)return;const safeName=String(name||'Vendor');if(url){img.src=url;img.alt=safeName;img.classList.remove('hidden');fallback.classList.add('hidden');}else{img.removeAttribute('src');img.alt='';img.classList.add('hidden');fallback.textContent=(safeName.trim()[0]||'?').toUpperCase();fallback.classList.remove('hidden');}box.classList.remove('hidden');};
+  document.addEventListener('dragstart',function(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .conv-list-item img.avatar-circle, .storefront-avatar-button img');if(img)e.preventDefault();},{capture:true});
+  window.openProfileImageLightbox=function(url,name){const box=document.getElementById('vendorProfileImageLightbox'),img=document.getElementById('vendorProfileImageLightboxImg'),fallback=document.getElementById('vendorProfileImageLightboxFallback');if(!box)return;const safeName=String(name||'Profile');if(url){img.src=url;img.alt=safeName;img.classList.remove('hidden');fallback.classList.add('hidden');}else{img.removeAttribute('src');img.alt='';img.classList.add('hidden');fallback.innerHTML='<i class="fa-solid fa-user" aria-hidden="true"></i>';fallback.classList.remove('hidden');}box.setAttribute('aria-label',safeName);box.classList.remove('hidden');};
+  window.openVendorProfileImageLightbox=window.openProfileImageLightbox;
   window.closeVendorProfileImageLightbox=function(e){if(e&&e.target?.closest?.('.vendor-profile-image-close')===null&&e.target?.id!=='vendorProfileImageLightbox')return;document.getElementById('vendorProfileImageLightbox')?.classList.add('hidden');};
   document.addEventListener('keydown',function(e){if(e.key==='Escape')window.closeVendorProfileImageLightbox();});
 })();
 </script>
 
+
+<style id="levromart-contrast-and-levi-fix">
+/* ================================================================
+   FINAL LIGHT-MODE CONTRAST + LEVI MARK FIX
+   These controls are intentionally unboxed/textual where requested.
+   The rules are scoped so they do not change ordinary marketplace buttons.
+   ================================================================ */
+
+/* Message-choice popup: the two choices are actions, not bordered buttons.
+   Reset native <button> styling explicitly; otherwise mobile browsers can
+   paint their own white/raised button chrome and inherit an unreadable color. */
+.product-message-wrap .ms-list,
+#storefrontMessageMenu {
+  border: 0 !important;
+  outline: 0 !important;
+  background: var(--card) !important;
+  color: var(--text) !important;
+  box-shadow: 0 14px 34px rgba(15,23,42,.14) !important;
+  padding: .3rem !important;
+}
+.product-message-wrap .ms-list .ms-item,
+#storefrontMessageMenu .ms-item {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: .55rem !important;
+  width: 100% !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: .62rem .75rem !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: var(--text) !important;
+  font: inherit !important;
+  font-size: .88rem !important;
+  font-weight: 550 !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-radius: .55rem !important;
+  cursor: pointer !important;
+}
+.product-message-wrap .ms-list .ms-item i,
+#storefrontMessageMenu .ms-item i {
+  color: var(--primary) !important;
+  flex: 0 0 auto;
+}
+.product-message-wrap .ms-list .ms-item:hover,
+.product-message-wrap .ms-list .ms-item:focus-visible,
+#storefrontMessageMenu .ms-item:hover,
+#storefrontMessageMenu .ms-item:focus-visible {
+  background: color-mix(in srgb, var(--primary) 8%, transparent) !important;
+  color: var(--text) !important;
+  outline: none !important;
+}
+.product-message-wrap .ms-list .ms-item:active,
+#storefrontMessageMenu .ms-item:active {
+  background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+}
+
+/* Product-page wishlist heart: always readable in light mode. Keep the
+   circular control subtle, but never allow the heart itself to become white
+   on a white product card. */
+.product-detail-card .fav-btn {
+  color: var(--primary) !important;
+  background: color-mix(in srgb, var(--card) 94%, transparent) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: 0 3px 12px rgba(15,23,42,.14) !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.product-detail-card .fav-btn i {
+  color: inherit !important;
+}
+.product-detail-card .fav-btn.active {
+  color: var(--danger) !important;
+}
+
+/* Also fix catalogue hearts in light mode without touching their geometry. */
+.fav-btn {
+  color: var(--primary) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.fav-btn i { color: inherit !important; }
+.fav-btn.active { color: var(--danger) !important; }
+
+/* Levi settings mark: NEVER invert the real Levromart mark. The source logo
+   already contains the green arc artwork and white centre. The previous
+   brightness(0) invert(1) rule flattened the entire image to white. */
+.settings-levi-logo {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+.settings-levi-logo-wrap {
+  position: relative !important;
+  isolation: isolate !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+/* Soft hollow green glow behind the white centre of the Levi mark. It stays
+   behind the actual artwork, so the original green arc + white centre remain
+   untouched and crisp. */
+.settings-levi-logo-wrap::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: .72rem !important;
+  height: .72rem !important;
+  transform: translate(-50%, -50%) !important;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 62%, transparent) !important;
+  border-radius: 50% !important;
+  box-shadow:
+    0 0 5px color-mix(in srgb, var(--primary) 38%, transparent),
+    0 0 10px color-mix(in srgb, var(--primary) 20%, transparent) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+.settings-levi-logo-wrap::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* The floating Levi icon is a separate use of the same artwork. Keep the
+   white centre but do not flatten the green arcs in light mode. */
+html:not([data-theme="dark"]):not([data-theme="black"]) .ai-chat-fab-logo {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Ensure no generic inherited/UA button color can turn these icon controls
+   white against a light surface. */
+html[data-theme="light"] .product-detail-card .fav-btn,
+html:not([data-theme="dark"]):not([data-theme="black"]) .product-detail-card .fav-btn {
+  color: var(--primary) !important;
+}
+</style>
+<style id="levromart-master-fix-ui">
+/* Professional no-photo avatars: person glyph, deterministic colour, never raw initials. */
+.avatar-fallback{border:0 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;font-weight:600 !important;overflow:hidden !important;vertical-align:middle;}
+.avatar-fallback i{font-size:42% !important;color:#fff !important;line-height:1 !important;}
+.avatar-fallback.avatar-lg i{font-size:40% !important;}
+.profile-avatar-lightbox-btn{appearance:none;-webkit-appearance:none;border:0;background:transparent;padding:0;display:inline-flex;cursor:pointer;border-radius:50%;-webkit-tap-highlight-color:transparent;}
+.profile-avatar-lightbox-btn:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
+.storefront-avatar-fallback-button{padding:0 !important;display:flex !important;align-items:center;justify-content:center;}
+.storefront-avatar-fallback-button .avatar-fallback{border-radius:50%;width:100% !important;height:100% !important;}
+.chat-header-avatar.avatar-fallback{border:0 !important;display:inline-flex !important;}
+.chat-header-avatar[onclick]{cursor:pointer;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;}
+.product-detail-top-actions{position:absolute;top:1rem;right:1rem;display:flex;align-items:center;gap:.35rem;z-index:4;}
+.product-detail-top-actions .fav-btn{position:static !important;}
+.product-storefront-share-btn{width:2rem;height:2rem;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:0;background:color-mix(in srgb,var(--card) 94%,transparent);color:var(--primary);box-shadow:0 3px 12px rgba(15,23,42,.14);cursor:pointer;appearance:none;-webkit-appearance:none;}
+.product-storefront-share-btn:hover{background:color-mix(in srgb,var(--primary) 9%,var(--card));}
+.product-storefront-share-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+.product-detail-title{padding-right:5.2rem !important;}
+#storefrontShareModal{position:fixed;inset:0;z-index:10030;display:flex;align-items:flex-end;justify-content:center;padding:1rem;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+#storefrontShareModal.hidden{display:none !important;}
+#storefrontShareModal .storefront-share-sheet{width:min(520px,100%);background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:1.25rem;padding:1rem;box-shadow:0 22px 70px rgba(0,0,0,.28);}
+#storefrontShareModal .storefront-share-grabber{width:38px;height:4px;border-radius:99px;background:var(--border);margin:.1rem auto .9rem;}
+#storefrontShareModal .storefront-share-title{font-size:1rem;font-weight:750;margin:0;}
+#storefrontShareModal .storefront-share-copy{color:var(--text-muted);font-size:.82rem;margin:.25rem 0 1rem;}
+.storefront-share-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;}
+.storefront-share-action{min-height:62px;border:0;background:transparent;color:var(--text);border-radius:.85rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35rem;font:inherit;cursor:pointer;}
+.storefront-share-action i{font-size:1.05rem;color:var(--primary);}
+.storefront-share-action:hover,.storefront-share-action:focus-visible{background:color-mix(in srgb,var(--primary) 8%,transparent);outline:none;}
+.storefront-share-close{width:100%;margin-top:.55rem;border:0;background:transparent;color:var(--text-muted);padding:.7rem;border-radius:.7rem;font:inherit;cursor:pointer;}
+.storefront-share-close:hover{background:color-mix(in srgb,var(--text) 5%,transparent);color:var(--text);}
+.delivery-method-row{align-items:center !important;gap:1rem !important;justify-content:flex-start !important;flex-wrap:nowrap !important;}
+.delivery-method-row label{white-space:nowrap;}
+.ms-list .ms-item,.ms-list button.ms-item,.ms-list a.ms-item{appearance:none;-webkit-appearance:none;border:0;outline:0;background:transparent;color:var(--text);box-shadow:none;text-decoration:none;}
+.ms-list button.ms-item{font-family:inherit;}
+</style>
+<div id="storefrontShareModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="storefrontShareTitle" onclick="if(event.target===this){closeStorefrontShareModal(true);}">
+  <div class="storefront-share-sheet">
+    <div class="storefront-share-grabber" aria-hidden="true"></div>
+    <h3 class="storefront-share-title" id="storefrontShareTitle">Share storefront</h3>
+    <p class="storefront-share-copy" id="storefrontShareText">Share this vendor's storefront on Levromart.</p>
+    <div class="storefront-share-actions">
+      <button type="button" class="storefront-share-action" onclick="copyStorefrontShareLink()"><i class="fa-regular fa-copy"></i><span>Copy link</span></button>
+      <button type="button" class="storefront-share-action" onclick="nativeShareStorefront()"><i class="fa-solid fa-share-nodes"></i><span>Share</span></button>
+      <button type="button" class="storefront-share-action" onclick="whatsappShareStorefront()"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></button>
+    </div>
+    <button type="button" class="storefront-share-close" onclick="closeStorefrontShareModal(true)">Cancel</button>
+  </div>
+</div>
+<style id="levromart-master-fix-final">
+.product-message-wrap .ms-list button.ms-item,
+.product-message-wrap .ms-list a.ms-item,
+#storefrontMessageMenu .ms-item{
+  -webkit-tap-highlight-color:transparent;
+  text-transform:none !important;
+}
+.profile-avatar-lightbox-btn img{display:block;}
+#vendorProfileImageLightbox .vendor-profile-image-card{max-width:92vw;max-height:84vh;}
+#vendorProfileImageLightbox .vendor-profile-image-fallback i{font-size:35%;}
+#profilePanel,#notifPanel{touch-action:pan-y !important;}
+#profilePanel::after,#notifPanel::after{pointer-events:none;}
+</style>
 </body>
 </html>
