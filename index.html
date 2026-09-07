@@ -4436,7 +4436,7 @@ body:has(#settings-page) .site-footer { margin-top:.55rem !important; }
 
 /* Levi mark in every floating/header context is white for reliable contrast. */
 .ai-chat-fab-logo { filter:brightness(0) invert(1) !important; }
-.settings-levi-logo { filter:none !important; -webkit-filter:none !important; }
+.settings-levi-logo { filter:brightness(0) invert(1) !important; -webkit-filter:brightness(0) invert(1) !important; }
 
 /* Levi reactions: keep the picker fully inside the chat panel. The previous
    right-anchoring made the left side of the emoji rail disappear off-screen
@@ -4975,11 +4975,11 @@ body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-t
   <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
     <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <span id="aiVoiceStatusText">Listening...</span>
-    <button type="button" onclick="toggleAiChatMic(event)" title="Stop recording" aria-label="Stop recording"><i class="fa-solid fa-stop"></i></button>
+    <button type="button" onclick="toggleAiChatMic(event)" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
     <button type="button" onclick="cancelAiChatVoice()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="ai-chat-input-row">
-    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic(event)" title="Start recording" aria-label="Start recording"><i class="fa-solid fa-microphone"></i></button>
+    <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic(event)" title="Tap to talk" aria-label="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
     <button class="icon-btn" onclick="sendAiChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
@@ -14850,11 +14850,10 @@ function syncSystemBarColor() {
 syncSystemBarColor();
 let aiChatRecognizer = null;
 let aiChatListening = false;
-let aiChatVoiceStopping = false;
-let aiChatVoiceFinalTranscript = "";
-let aiChatVoiceInterimTranscript = "";
-let aiChatVoiceGeneration = 0;
+let aiChatVoicePaused = false;
+let aiChatLastVoiceTranscript = "";
 // Talked to Levi instead of typing? Its reply reads itself aloud automatically.
+// Typed messages stay text-only unless the speaker icon is tapped manually.
 let aiChatLastInputVoice = false;
 function initAiChatMic() {
   const btn = byId("aiChatMicBtn");
@@ -14865,23 +14864,15 @@ function updateAiVoiceStatus() {
   const text = byId("aiVoiceStatusText");
   const btn = byId("aiChatMicBtn");
   if (!status || !text) return;
-  const active = aiChatListening || !!aiChatRecognizer;
-  status.classList.toggle("hidden", !active);
-  text.textContent = active
-    ? (aiChatVoiceInterimTranscript || aiChatVoiceFinalTranscript ? `${aiChatVoiceFinalTranscript}${aiChatVoiceInterimTranscript ? (aiChatVoiceFinalTranscript ? " " : "") + aiChatVoiceInterimTranscript : ""}`.trim() : "Listening...")
-    : "Tap the microphone to start";
+  status.classList.toggle("hidden", !aiChatListening && !aiChatVoicePaused);
+  text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Listening...";
+  const pauseBtn = status.querySelector("button:first-of-type i");
+  if (pauseBtn) pauseBtn.className = `fa-solid ${aiChatVoicePaused ? "fa-play" : "fa-pause"}`;
   if (btn) {
     btn.classList.toggle("listening", aiChatListening);
-    btn.title = aiChatListening ? "Stop recording" : "Start recording";
-    btn.setAttribute("aria-label", aiChatListening ? "Stop recording" : "Start recording");
-    btn.innerHTML = `<i class="fa-solid ${aiChatListening ? "fa-stop" : "fa-microphone"}"></i>`;
-  }
-  const stopBtn = status.querySelector("button:first-of-type");
-  if (stopBtn) {
-    stopBtn.title = "Stop recording";
-    stopBtn.setAttribute("aria-label", "Stop recording");
-    const icon = stopBtn.querySelector("i");
-    if (icon) icon.className = "fa-solid fa-stop";
+    btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+    btn.title = "Tap to talk";
+    btn.setAttribute("aria-label", "Tap to talk");
   }
 }
 function scrollAiVoiceIntoView() {
@@ -14890,151 +14881,89 @@ function scrollAiVoiceIntoView() {
   const input = byId("aiChatInput");
   if (input) input.scrollTop = input.scrollHeight;
 }
-function applyAiVoiceTranscript() {
-  const input = byId("aiChatInput");
-  if (!input) return;
-  const combined = `${aiChatVoiceFinalTranscript}${aiChatVoiceInterimTranscript ? (aiChatVoiceFinalTranscript ? " " : "") + aiChatVoiceInterimTranscript : ""}`.trim();
-  input.value = combined;
-  autoGrowChatInput(input);
-  input.scrollTop = input.scrollHeight;
-  aiChatLastInputVoice = combined.length > 0;
-  scrollAiVoiceIntoView();
-}
-function createAiSpeechRecognizer(generation) {
-  if (!AiSpeechRecognition) return null;
-  const recognizer = new AiSpeechRecognition();
-  recognizer.lang = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ? "en-US" : "en-NG";
-  recognizer.interimResults = true;
-  recognizer.continuous = true;
-  recognizer.maxAlternatives = 1;
-
-  recognizer.onstart = () => {
-    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
-    aiChatListening = true;
-    updateAiVoiceStatus();
-    byId("aiChatInput")?.focus();
-  };
-  recognizer.onresult = (e) => {
-    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
-    let interim = "";
-    // IMPORTANT: only process from resultIndex. Re-reading the entire result
-    // collection is what causes repeated transcript chunks.
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const result = e.results[i];
-      const text = String(result?.[0]?.transcript || "").trim();
-      if (!text) continue;
-      if (result.isFinal) {
-        aiChatVoiceFinalTranscript = `${aiChatVoiceFinalTranscript}${aiChatVoiceFinalTranscript ? " " : ""}${text}`.replace(/\s+/g, " ").trim();
-      } else {
-        interim += `${interim ? " " : ""}${text}`;
-      }
-    }
-    aiChatVoiceInterimTranscript = interim.replace(/\s+/g, " ").trim();
-    applyAiVoiceTranscript();
-    updateAiVoiceStatus();
-  };
-  recognizer.onerror = (e) => {
-    if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping) return;
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      aiChatVoiceStopping = true;
-      aiChatListening = false;
-      aiChatRecognizer = null;
-      updateAiVoiceStatus();
-      showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
-      return;
-    }
-    // no-speech/aborted are normal lifecycle events for a manually active
-    // recording session. Do not make a sound, close Levi, or submit anything.
-    if (e.error !== "aborted" && e.error !== "no-speech") {
-      showToast("Speech recognition paused. Trying again…", "info");
-    }
-  };
-  recognizer.onend = () => {
-    if (generation !== aiChatVoiceGeneration) return;
-    aiChatListening = false;
-    if (aiChatVoiceStopping) {
-      if (aiChatRecognizer === recognizer) aiChatRecognizer = null;
-      aiChatVoiceInterimTranscript = "";
-      applyAiVoiceTranscript();
-      updateAiVoiceStatus();
-      return;
-    }
-    // Mobile Safari/Chrome may end recognition after silence. That does NOT
-    // mean the user stopped recording. Recreate the recognizer silently.
-    aiChatVoiceInterimTranscript = "";
-    applyAiVoiceTranscript();
-    updateAiVoiceStatus();
-    if (!aiChatVoiceStopping && byId("aiChatPanel") && !byId("aiChatPanel").classList.contains("hidden")) {
-      setTimeout(() => {
-        if (generation !== aiChatVoiceGeneration || aiChatVoiceStopping || aiChatListening) return;
-        if (!byId("aiChatPanel") || byId("aiChatPanel").classList.contains("hidden")) return;
-        const next = createAiSpeechRecognizer(generation);
-        if (!next) return;
-        aiChatRecognizer = next;
-        try { next.start(); } catch (_) {}
-      }, 180);
-    }
-  };
-  return recognizer;
-}
 function toggleAiChatMic(evt) {
   evt?.stopPropagation?.();
   if (!AiSpeechRecognition) return;
+  // Tapping the mic means "let me talk". Stop Levi's speech immediately so
+  // the browser never has Levi's TTS competing with the microphone.
   if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
-
-  if (aiChatListening || aiChatRecognizer) {
-    stopAiChatVoiceRecording();
+  if (aiChatListening) {
+    try { aiChatRecognizer?.stop(); } catch (_) {}
     return;
   }
-
-  aiChatVoiceGeneration++;
-  aiChatVoiceStopping = false;
-  aiChatVoiceFinalTranscript = "";
-  aiChatVoiceInterimTranscript = "";
-  const input = byId("aiChatInput");
-  if (input?.value.trim()) aiChatVoiceFinalTranscript = input.value.trim();
-  const generation = aiChatVoiceGeneration;
-  const recognizer = createAiSpeechRecognizer(generation);
-  if (!recognizer) return;
-  aiChatRecognizer = recognizer;
-  updateAiVoiceStatus();
+  aiChatRecognizer = new AiSpeechRecognition();
+  aiChatRecognizer.lang = "en-NG";
+  aiChatRecognizer.interimResults = true;
+  aiChatRecognizer.continuous = false;
+  aiChatRecognizer.maxAlternatives = 1;
+  aiChatLastVoiceTranscript = "";
+  aiChatRecognizer.onstart = () => {
+    aiChatListening = true;
+    aiChatVoicePaused = false;
+    updateAiVoiceStatus();
+    byId("aiChatInput")?.focus();
+  };
+  aiChatRecognizer.onresult = (e) => {
+    // This is deliberately the original non-continuous, tap-to-talk model.
+    // Build the transcript from the single recognition session and REPLACE
+    // the input value instead of appending every result event. That prevents
+    // the continuous-recognition accumulation that was doubling sentences.
+    let transcript = "";
+    for (let i = 0; i < e.results.length; i++) {
+      const t = String(e.results[i]?.[0]?.transcript || "").trim();
+      if (t) transcript += `${transcript ? " " : ""}${t}`;
+    }
+    transcript = transcript.replace(/\s+/g, " ").trim();
+    if (!transcript || transcript === aiChatLastVoiceTranscript) return;
+    aiChatLastVoiceTranscript = transcript;
+    const el = byId("aiChatInput");
+    if (el) {
+      el.value = transcript;
+      autoGrowChatInput(el);
+      el.scrollTop = el.scrollHeight;
+      aiChatLastInputVoice = true;
+      scrollAiVoiceIntoView();
+    }
+    updateAiVoiceStatus();
+  };
+  aiChatRecognizer.onerror = (e) => {
+    // No app-generated audio/beeps. Normal no-speech/abort lifecycle events
+    // are silent; only actual recognition failures get a visual toast.
+    if (e.error !== "aborted" && e.error !== "no-speech") {
+      showToast("Couldn't hear that, try again.", "error");
+    }
+  };
+  aiChatRecognizer.onend = () => {
+    aiChatListening = false;
+    aiChatVoicePaused = false;
+    aiChatRecognizer = null;
+    updateAiVoiceStatus();
+  };
   try {
-    recognizer.start();
+    aiChatRecognizer.start();
   } catch (e) {
     aiChatRecognizer = null;
     aiChatListening = false;
     updateAiVoiceStatus();
     showToast("Couldn't start the microphone. Try again.", "error");
   }
-}
-function stopAiChatVoiceRecording() {
-  aiChatVoiceStopping = true;
-  aiChatVoiceGeneration++;
-  aiChatListening = false;
-  aiChatVoiceInterimTranscript = "";
-  const recognizer = aiChatRecognizer;
-  aiChatRecognizer = null;
-  try { recognizer?.abort(); } catch (_) {}
-  applyAiVoiceTranscript();
   updateAiVoiceStatus();
 }
 async function cancelAiChatVoice() {
-  if (!aiChatListening && !aiChatRecognizer && !aiChatVoiceFinalTranscript && !aiChatVoiceInterimTranscript) return;
+  if (!aiChatListening && !aiChatVoicePaused) return;
   const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
   if (!confirmed) return;
-  aiChatVoiceStopping = true;
-  aiChatVoiceGeneration++;
-  const recognizer = aiChatRecognizer;
+  try { aiChatRecognizer?.abort(); } catch (_) {}
   aiChatRecognizer = null;
-  try { recognizer?.abort(); } catch (_) {}
   aiChatListening = false;
-  aiChatVoiceFinalTranscript = "";
-  aiChatVoiceInterimTranscript = "";
+  aiChatVoicePaused = false;
+  aiChatLastVoiceTranscript = "";
   aiChatLastInputVoice = false;
   const input = byId("aiChatInput");
   if (input) resetChatInput(input);
   updateAiVoiceStatus();
 }
+
 // Same tap-to-talk pattern, for the ordinary buyer↔vendor message
 // compose box rather than the Levi chat - separate recognizer instance so
 // the two never fight over which input box is being filled.
@@ -15201,7 +15130,7 @@ async function sendAiChatMessage() {
   const wasVoice = aiChatLastInputVoice;
   aiChatLastInputVoice = false;
   if (!text) return;
-  if (aiChatListening || aiChatRecognizer) stopAiChatVoiceRecording();
+  if (aiChatListening || aiChatRecognizer) { try { aiChatRecognizer?.abort(); } catch (_) {} aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; updateAiVoiceStatus(); }
   resetChatInput(input);
   appendAiChatMessage("user", text);
   persistAiMessage("user", text);
@@ -15914,10 +15843,10 @@ body::before { background: var(--system-bar-shade) !important; }
   position: absolute !important;
   left: 50% !important;
   top: 50% !important;
-  width: .72rem !important;
-  height: .72rem !important;
+  width: .50rem !important;
+  height: .50rem !important;
   transform: translate(-50%, -50%) !important;
-  border: 1.5px solid color-mix(in srgb, var(--primary) 62%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--primary) 62%, transparent) !important;
   border-radius: 50% !important;
   box-shadow:
     0 0 5px color-mix(in srgb, var(--primary) 38%, transparent),
@@ -15930,11 +15859,12 @@ body::before { background: var(--system-bar-shade) !important; }
   content: none !important;
 }
 
-/* The floating Levi icon is a separate use of the same artwork. Keep the
-   white centre but do not flatten the green arcs in light mode. */
+/* Levi mark artwork: the two side marks/arcs are white in both contexts. */
+.settings-levi-logo,
+.ai-chat-fab-logo,
 html:not([data-theme="dark"]):not([data-theme="black"]) .ai-chat-fab-logo {
-  filter: none !important;
-  -webkit-filter: none !important;
+  filter: brightness(0) invert(1) !important;
+  -webkit-filter: brightness(0) invert(1) !important;
 }
 
 /* Ensure no generic inherited/UA button color can turn these icon controls
@@ -15947,8 +15877,8 @@ html:not([data-theme="dark"]):not([data-theme="black"]) .product-detail-card .fa
 <style id="levromart-master-fix-ui">
 /* Professional no-photo avatars: person glyph, deterministic colour, never raw initials. */
 .avatar-fallback{border:0 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;font-weight:600 !important;overflow:hidden !important;vertical-align:middle;}
-.avatar-fallback i{font-size:42% !important;color:#fff !important;line-height:1 !important;}
-.avatar-fallback.avatar-lg i{font-size:40% !important;}
+.avatar-fallback i{font-size:58% !important;color:#fff !important;line-height:1 !important;}
+.avatar-fallback.avatar-lg i{font-size:54% !important;}
 .profile-avatar-lightbox-btn{appearance:none;-webkit-appearance:none;border:0;background:transparent;padding:0;display:inline-flex;cursor:pointer;border-radius:50%;-webkit-tap-highlight-color:transparent;}
 .profile-avatar-lightbox-btn:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
 .storefront-avatar-fallback-button{padding:0 !important;display:flex !important;align-items:center;justify-content:center;}
