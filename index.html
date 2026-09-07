@@ -6326,9 +6326,23 @@ function categoryIcon(name) {
 }
 
 // ---------- THEME ----------
+function syncSystemBarColorForTheme(theme) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  // Keep Android/Chrome's system bar visually attached to the app shell.
+  // The value is intentionally a nearby shade, not the orange/green accent.
+  const colors = {
+    light: "#eef1f0",
+    dark: "#151b1a",
+    black: "#080909"
+  };
+  meta.setAttribute("content", colors[theme] || colors.light);
+}
+
 function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme === "light" ? "" : theme);
   localStorage.setItem("medris-theme", theme);
+  syncSystemBarColorForTheme(theme);
   document.querySelectorAll("#settingsPanel .theme-option").forEach((el) => {
     el.classList.toggle("active", el.dataset.themeChoice === theme);
   });
@@ -10364,7 +10378,12 @@ async function renderVendorsMap() {
   list.forEach((v) => {
     const dist = buyerLocation ? formatDistanceKm(haversineKm(buyerLocation.lat, buyerLocation.lng, v.lat, v.lng)) : "";
     const marker = window.L.marker([v.lat, v.lng], { icon: vendorMapIcon() }).addTo(vendorsMap);
-    marker.bindPopup(`<strong>${esc(v.business_name)}</strong><br>${v.avg_rating ? `★ ${Number(v.avg_rating).toFixed(1)} (${v.review_count || 0})<br>` : ""}${dist ? `${dist}<br>` : ""}<a href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">View storefront</a>`);
+    const vendorName = esc(v.business_name || "Vendor");
+    const vendorLogo = v.logo_url
+      ? `<img class="vendor-map-popup-avatar" src="${esc(v.logo_url)}" alt="" loading="lazy" draggable="false" onerror="this.classList.add('is-broken');this.style.display='none';" />`
+      : `<span class="vendor-map-popup-avatar vendor-map-popup-avatar-fallback">${esc((v.business_name || "V").trim().charAt(0).toUpperCase())}</span>`;
+    const popupMeta = `${v.avg_rating ? `★ ${Number(v.avg_rating).toFixed(1)} (${v.review_count || 0})` : ""}${dist ? `${v.avg_rating ? " · " : ""}${dist}` : ""}`;
+    marker.bindPopup(`<div class="vendor-map-popup"><div class="vendor-map-popup-head">${vendorLogo}<div class="vendor-map-popup-copy"><strong>${vendorName}</strong>${popupMeta ? `<span>${esc(popupMeta)}</span>` : ""}</div></div><a class="vendor-map-popup-link" href="#" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;">View storefront</a></div>`);
     vendorsMapMarkers.push(marker);
   });
 
@@ -14629,8 +14648,8 @@ if ("speechSynthesis" in window) {
 const AiSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 try { localStorage.removeItem("levromart-levi-wake"); } catch (_) {}
 function syncSystemBarColor() {
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", "#0b0b0b");
+  const theme = localStorage.getItem("medris-theme") || (document.documentElement.dataset.theme === "dark" ? "dark" : document.documentElement.dataset.theme === "black" ? "black" : "light");
+  syncSystemBarColorForTheme(theme);
 }
 syncSystemBarColor();
 let aiChatRecognizer = null;
@@ -15399,6 +15418,30 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+
+
+<style id="final-system-bar-and-map-popup-polish">
+/* Android/PWA system-bar companion: use a quiet shade belonging to the
+   current mode instead of the bright green accent. The actual OS bar reads
+   the theme-color metadata; the body safe-area fill mirrors it when exposed. */
+:root { --system-bar-shade: #eef1f0; }
+html[data-theme="dark"] { --system-bar-shade: #151b1a; }
+html[data-theme="black"] { --system-bar-shade: #080909; }
+body::before { background: var(--system-bar-shade) !important; }
+
+/* Map vendor popup: store identity sits naturally beside the name, like a
+   compact storefront preview rather than a plain text Leaflet popup. */
+.vendor-map-popup { min-width: 190px; max-width: 250px; }
+.vendor-map-popup-head { display:flex; align-items:center; gap:.65rem; min-width:0; }
+.vendor-map-popup-avatar { width:38px; height:38px; flex:0 0 38px; border-radius:50%; object-fit:cover; display:block; background:var(--card); border:2px solid var(--border); }
+.vendor-map-popup-avatar-fallback { display:flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--primary) 15%,var(--card)); color:var(--primary); font-weight:800; }
+.vendor-map-popup-copy { min-width:0; display:flex; flex-direction:column; gap:.18rem; }
+.vendor-map-popup-copy strong { font-size:.9rem; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vendor-map-popup-copy span { font-size:.72rem; color:var(--text-muted); line-height:1.25; }
+.vendor-map-popup-link { display:inline-flex; margin-top:.55rem; font-weight:700; color:var(--primary) !important; text-decoration:none; }
+.vendor-map-popup-link:hover { text-decoration:underline; }
+.leaflet-popup-content { margin:.7rem .8rem !important; }
+</style>
 
 <style id="profile-image-natural-ui-fix">
 .storefront-avatar-button{appearance:none;-webkit-appearance:none;padding:0;cursor:pointer;border:4px solid var(--card);background:var(--primary-grad);color:#fff;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
