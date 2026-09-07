@@ -6,6 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Levromart</title>
 <meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Levromart">
+<meta property="og:description" content="Rent or buy from verified vendors on Levromart.">
+<meta property="og:image" content="/apple-touch-icon.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Levromart">
+<meta name="twitter:description" content="Rent or buy from verified vendors on Levromart.">
+<meta name="twitter:image" content="/apple-touch-icon.png">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#080909">
@@ -4400,7 +4408,7 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .leaflet-control-attribution a { text-decoration:none !important; }
 #vendorsMapStatus { margin-bottom:1.35rem !important; }
 
-/* The profile experience is a page reveal, like a native app side menu. */
+/* Legacy profile-reveal styles retained for state compatibility; gesture JS is disabled. */
 body.profile-reveal-open > header,
 body.profile-reveal-open > #app,
 body.profile-reveal-open > footer.site-footer,
@@ -4459,6 +4467,8 @@ body:has(#settings-page) .settings-close-page { margin-top: .05rem !important; m
 body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-top: .8rem !important; padding-bottom: .8rem !important; }
 
 </style>
+
+
 
 </head>
 <body>
@@ -4970,12 +4980,7 @@ body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-t
   <input type="text" id="aiChatHistorySearch" placeholder="Search chats…" oninput="searchAiChatHistory()" />
   <div id="aiChatHistoryList" class="ai-chat-history-panel"></div>
   <div id="aiChatMessages" class="ai-chat-messages"></div>
-  <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
-    <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <span id="aiVoiceStatusText">Listening...</span>
-    <button type="button" onclick="stopAiChatVoiceRecording(event)" title="Stop recording" aria-label="Stop recording"><i class="fa-solid fa-stop"></i></button>
-    <button type="button" onclick="cancelAiChatVoice(event)" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
-  </div>
+  <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="off" style="display:none !important"></div>
   <div class="ai-chat-input-row">
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
     <textarea id="aiChatInput" rows="1" placeholder="Ask about products, renting, buying…" oninput="autoGrowChatInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !isCoarsePointer()){event.preventDefault();sendAiChatMessage();}"></textarea>
@@ -9106,7 +9111,7 @@ async function renderMessages(conversationId) {
     <div class="chat-thread">
       <div class="chat-messages" id="chatMessages">${chatMessagesWithDatesHtml(messages, chatBubbleHtml)}<div id="chatTypingIndicator" class="chat-typing-indicator hidden" aria-live="polite"><span class="chat-typing-dots"><i></i><i></i><i></i></span><span>Typing…</span></div></div>
       <div id="chatReplyPreview" class="chat-reply-preview hidden"></div>
-      <div id="msgVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
+      <div id="msgVoiceStatus" class="voice-recording-status hidden" aria-live="off" style="display:none !important">
         <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <span id="msgVoiceStatusText">Listening...</span>
         <button type="button" onclick="toggleMsgMicPause()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
@@ -9914,20 +9919,14 @@ async function renderProductDetail(productId) {
 
   let html = `<div class="card product-detail-card" style="position:relative;">
     <button class="fav-btn ${isFav ? "active" : ""}" style="top:1rem;right:1rem;" onclick="toggleFavorite(event,'${product.id}')" title="Save to wishlist">${isFav ? "<i class='fa-solid fa-heart'></i>" : "<i class='fa-regular fa-heart'></i>"}</button>
+    <button class="storefront-share-icon" type="button" aria-label="Share vendor storefront" title="Share vendor storefront" onclick="shareStorefront('${product.vendor.id}')"><i class="fa-solid fa-share-nodes"></i></button>
     <h2 class="product-detail-title">${esc(product.name)}${product.is_service ? ` <span class="badge">Service</span>` : ""}</h2>
     <div class="product-detail-media">${photosHtml}</div>
     <div class="product-detail-actions">
       ${profile?.role !== "admin" ? (product.vendor.whatsapp_visible && product.vendor.whatsapp_number ? `<div class="ms-wrap product-message-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm" type="button" onclick="toggleInlineMenu('productMessageMenu-${product.id}',event)"><i class='fa-solid fa-comment-dots'></i> Message vendor</button><div class="ms-list hidden" id="productMessageMenu-${product.id}" style="left:0;right:auto;width:max-content;min-width:190px;"><button class="ms-item" type="button" onclick="startConversationWithVendor('${product.vendor.id}');closeInlineMenu('productMessageMenu-${product.id}')"><i class="fa-solid fa-comment-dots"></i> Message in app</button><a class="ms-item" href="${waLink(product.vendor.whatsapp_number)}" target="_blank" rel="noopener" onclick="closeInlineMenu('productMessageMenu-${product.id}')"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a></div></div>` : `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>`) : ""}
       ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
 
-      <div class="ms-wrap product-share-wrap" style="position:relative;display:inline-block;width:auto;">
-        <button class="btn btn-sm btn-outline product-share-btn" type="button" aria-label="Share product" title="Share product" onclick="toggleInlineMenu('productShareMenu-${product.id}',event)"><i class="fa-solid fa-share-nodes"></i><span class="share-btn-label">Share</span></button>
-        <div class="ms-list hidden" id="productShareMenu-${product.id}" style="left:auto;right:0;width:max-content;min-width:190px;">
-          <button class="ms-item" type="button" onclick="copyProductLink('${product.id}');closeInlineMenu('productShareMenu-${product.id}')"><i class="fa-solid fa-link"></i> Copy link</button>
-          <button class="ms-item" type="button" onclick="shareProduct('${product.id}');closeInlineMenu('productShareMenu-${product.id}')"><i class="fa-solid fa-share-nodes"></i> Share product</button>
-          <a class="ms-item" href="#" onclick="shareProductWhatsApp('${product.id}');return false;"><i class="fa-brands fa-whatsapp"></i> Share via WhatsApp</a>
-        </div>
-      </div>      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
+      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
     </div>
     <div class="product-detail-info">
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
@@ -10452,7 +10451,15 @@ function buildLevromartShareUrl(type, id) {
   const url = new URL(location.href);
   url.hash = "";
   url.search = "";
-  url.searchParams.set(type === "storefront" ? "sharedStorefront" : "sharedProduct", id);
+  if (type === "storefront") {
+    // The Vercel share endpoint supplies vendor-specific Open Graph metadata
+    // so WhatsApp/social previews show the actual storefront logo, not the
+    // generic Levromart app icon.
+    url.pathname = "/api/share-storefront";
+    url.searchParams.set("id", id);
+  } else {
+    url.searchParams.set("sharedProduct", id); // legacy compatibility only
+  }
   return url.toString();
 }
 async function copyShareLink(link, successMessage = "Link copied.") {
@@ -10473,17 +10480,37 @@ async function shareLinkNative(link, title, text, fallbackMessage) {
   return copyShareLink(link, fallbackMessage);
 }
 async function shareStorefront(vendorId) {
+  let vendor = null;
+  try {
+    const { data } = await sb.from("vendors").select("id,business_name,logo_url,city").eq("id", vendorId).maybeSingle();
+    vendor = data || null;
+  } catch (_) {}
+  const name = vendor?.business_name || "Vendor storefront";
   const link = buildLevromartShareUrl("storefront", vendorId);
-  return shareLinkNative(link, "Levromart storefront", "Check out this storefront on Levromart.", "Storefront link copied.");
+  const text = `Check out ${name}'s storefront on Levromart.`;
+  // Keep the document metadata aligned with the selected storefront. This is
+  // useful to browser previews and share targets that read the live document.
+  updateStorefrontShareMetadata(vendor);
+  return shareLinkNative(link, name, text, "Storefront link copied.");
 }
-async function shareProduct(productId) {
-  const link = buildLevromartShareUrl("product", productId);
-  return shareLinkNative(link, "Levromart product", "Check out this product on Levromart.", "Product link copied.");
-}
-async function copyProductLink(productId) { return copyShareLink(buildLevromartShareUrl("product", productId), "Product link copied."); }
-function shareProductWhatsApp(productId) {
-  const link = buildLevromartShareUrl("product", productId);
-  window.open(`https://wa.me/?text=${encodeURIComponent(`Check out this product on Levromart: ${link}`)}`, "_blank", "noopener");
+function updateStorefrontShareMetadata(vendor) {
+  const name = vendor?.business_name || "Levromart storefront";
+  const description = vendor?.city ? `Shop ${name} on Levromart in ${vendor.city}.` : `Check out ${name} on Levromart.`;
+  document.title = `${name} · Levromart`;
+  const setMeta = (selector, attr, value) => {
+    if (!value) return;
+    let el = document.querySelector(selector);
+    if (!el) { el = document.createElement("meta"); el.setAttribute(attr.split("=")[0], attr.split("=")[1]); document.head.appendChild(el); }
+    el.setAttribute("content", value);
+  };
+  setMeta('meta[property="og:title"]', "property=og:title", name);
+  setMeta('meta[property="og:description"]', "property=og:description", description);
+  setMeta('meta[name="twitter:title"]', "name=twitter:title", name);
+  setMeta('meta[name="twitter:description"]', "name=twitter:description", description);
+  if (vendor?.logo_url) {
+    setMeta('meta[property="og:image"]', "property=og:image", vendor.logo_url);
+    setMeta('meta[name="twitter:image"]', "name=twitter:image", vendor.logo_url);
+  }
 }
 
 async function renderStorefront(vendorId) {
@@ -14681,7 +14708,7 @@ function speakAiChatMessage(text, btn) {
 // just take the browser's arbitrary first voice. Still limited by whatever
 // the phone/browser actually ships - there's no code-side way to make the
 // built-in engine itself sound more human than that.
-function getAiVoicePreset() { return { rate: 0.96, pitch: 1.0 }; }
+function getAiVoicePreset() { return { rate: 1.0, pitch: 1.0 }; }
 function scoreAiVoice(v) {
   const name = `${v.name || ""} ${v.voiceURI || ""}`;
   let score = 0;
@@ -14753,6 +14780,8 @@ let aiChatListening = false;
 let aiChatVoicePaused = false;
 let aiChatVoiceExplicitStop = false;
 let aiChatVoiceRestartTimer = null;
+let aiChatVoiceBaseText = "";
+let aiChatVoiceSessionFinal = "";
 // Talked to Levi instead of typing? Its reply reads itself aloud
 // automatically, same as a real conversation - typed messages stay
 // text-only unless the speaker icon is tapped manually.
@@ -14766,6 +14795,9 @@ function updateAiVoiceStatus() {
   const text = byId("aiVoiceStatusText");
   const btn = byId("aiChatMicBtn");
   if (!status || !text) return;
+  // The recording session is user-controlled. Browser recognition may
+  // internally restart after silence, but that must never look or sound like
+  // the user's recording has stopped.
   status.classList.toggle("hidden", !aiChatListening && !aiChatVoicePaused);
   text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Recording... Tap stop when you're finished.";
   const stopBtn = status.querySelector("button:first-of-type i");
@@ -14789,12 +14821,10 @@ function startAiChatRecognition() {
   const recognizer = new AiSpeechRecognition();
   aiChatRecognizer = recognizer;
   recognizer.lang = "en-NG";
-  // Continuous recognition is intentional: silence must NOT mean "stop".
-  // Some mobile browsers still end recognition on their own, so onend below
-  // quietly restarts it while the user is still recording.
   recognizer.continuous = true;
   recognizer.interimResults = true;
   recognizer.maxAlternatives = 1;
+  aiChatVoiceSessionFinal = "";
   recognizer.onstart = () => {
     if (recognizer !== aiChatRecognizer) return;
     aiChatListening = true;
@@ -14804,19 +14834,27 @@ function startAiChatRecognition() {
   };
   recognizer.onresult = (e) => {
     if (recognizer !== aiChatRecognizer) return;
-    let transcript = "";
-    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    if (transcript) {
-      const el = byId("aiChatInput");
-      // SpeechRecognition's result list already contains the accumulated
-      // results for this recognizer. Replace the voice portion rather than
-      // appending duplicate text on every interim result.
-      if (el) {
-        const typedPrefix = el.dataset.aiVoiceTypedPrefix || "";
-        el.value = `${typedPrefix}${transcript}`.trimStart();
-        autoGrowChatInput(el);
-        el.scrollTop = el.scrollHeight;
+    let interim = "";
+    // Only process newly reported results. Re-reading the entire result list
+    // and appending it to the existing input was the source of repeated text
+    // on some mobile browsers.
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const text = (e.results[i][0]?.transcript || "").trim();
+      if (!text) continue;
+      if (e.results[i].isFinal) {
+        aiChatVoiceSessionFinal = `${aiChatVoiceSessionFinal}${aiChatVoiceSessionFinal ? " " : ""}${text}`.trim();
+      } else {
+        interim += `${interim ? " " : ""}${text}`;
       }
+    }
+    const transcript = `${aiChatVoiceSessionFinal}${interim ? (aiChatVoiceSessionFinal ? " " : "") + interim : ""}`.trim();
+    const el = byId("aiChatInput");
+    if (el) {
+      el.value = `${aiChatVoiceBaseText}${transcript ? (aiChatVoiceBaseText ? " " : "") + transcript : ""}`.trimStart();
+      autoGrowChatInput(el);
+      el.scrollTop = el.scrollHeight;
+    }
+    if (transcript) {
       aiChatLastInputVoice = true;
       scrollAiVoiceIntoView();
     }
@@ -14824,10 +14862,10 @@ function startAiChatRecognition() {
   };
   recognizer.onerror = (e) => {
     if (recognizer !== aiChatRecognizer) return;
-    // "no-speech" is not a reason to stop a recording session. The browser
-    // may emit it after silence; onend will restart recognition if needed.
-    if (e.error !== "aborted" && e.error !== "no-speech") {
-      showToast("Couldn't hear that, but recording is still active. Try again.", "error");
+    // Silence/no-speech is completely normal during an active recording.
+    // Do not toast, beep, stop the UI, or otherwise interrupt the user.
+    if (e.error !== "aborted" && e.error !== "no-speech" && e.error !== "network") {
+      // Keep the session alive without an intrusive sound/effect.
     }
   };
   recognizer.onend = () => {
@@ -14837,32 +14875,29 @@ function startAiChatRecognition() {
       updateAiVoiceStatus();
       return;
     }
-    // Mobile Chrome/Safari can terminate SpeechRecognition after a silence
-    // or short service window. Treat that as an internal restart, not as the
-    // user's request to stop recording.
-    aiChatListening = false;
-    // Carry the transcript already captured by this recognition session into
-    // the next one. Mobile browsers can end SpeechRecognition after silence
-    // even with continuous=true; restarting must never erase what was heard.
+    // Some Android/iOS browsers end SpeechRecognition after silence even
+    // with continuous=true. This is an implementation detail, NOT the end
+    // of the user's recording. Restart silently and keep the mic in the
+    // recording state until the user explicitly taps Stop.
     const input = byId("aiChatInput");
-    if (input && input.value.trim()) input.dataset.aiVoiceTypedPrefix = `${input.value.trim()} `;
+    if (input) aiChatVoiceBaseText = input.value.trim();
+    aiChatVoiceSessionFinal = "";
+    aiChatListening = true;
     updateAiVoiceStatus();
     aiChatVoiceRestartTimer = setTimeout(() => {
       if (!aiChatVoiceExplicitStop && !aiChatVoicePaused && aiChatRecognizer === recognizer) {
         startAiChatRecognition();
       }
-    }, 120);
+    }, 160);
   };
   try { recognizer.start(); } catch (_) {
-    // If the browser says it is already starting, leave the current session
-    // alone rather than replacing it.
+    // A transient browser "already started" state is harmless; keep the
+    // session alive rather than creating another recognizer.
   }
 }
 function toggleAiChatMic(event) {
   event?.stopPropagation?.();
   if (!AiSpeechRecognition) return;
-  // Tapping the mic always means "let me talk" - if Levi's mid-reply,
-  // barge in and stop it immediately rather than talking over each other.
   if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
   if (aiChatListening || aiChatVoicePaused) {
     stopAiChatVoiceRecording(event);
@@ -14872,11 +14907,12 @@ function toggleAiChatMic(event) {
   aiChatVoiceExplicitStop = false;
   aiChatVoicePaused = false;
   const input = byId("aiChatInput");
-  if (input) {
-    // Preserve anything the user had already typed before starting voice.
-    input.dataset.aiVoiceTypedPrefix = input.value.trim() ? `${input.value.trim()} ` : "";
-  }
+  aiChatVoiceBaseText = input?.value.trim() || "";
+  aiChatVoiceSessionFinal = "";
   startAiChatRecognition();
+  // Keep this immediately responsive even while the browser is obtaining the
+  // microphone. No start/stop sound is generated by the app.
+  aiChatListening = true;
   updateAiVoiceStatus();
 }
 function stopAiChatVoiceRecording(event) {
@@ -14892,6 +14928,8 @@ function stopAiChatVoiceRecording(event) {
   const input = byId("aiChatInput");
   if (input) {
     delete input.dataset.aiVoiceTypedPrefix;
+    aiChatVoiceBaseText = input.value.trim();
+    aiChatVoiceSessionFinal = "";
     autoGrowChatInput(input);
     input.scrollTop = input.scrollHeight;
   }
@@ -14909,6 +14947,8 @@ async function cancelAiChatVoice(event) {
   aiChatListening = false;
   aiChatVoicePaused = false;
   aiChatLastInputVoice = false;
+  aiChatVoiceBaseText = "";
+  aiChatVoiceSessionFinal = "";
   const input = byId("aiChatInput");
   if (input) {
     delete input.dataset.aiVoiceTypedPrefix;
@@ -14931,7 +14971,7 @@ function renderMsgVoiceState() {
   const btn = byId("msgMicBtn");
   if (!status || !text) return;
   status.classList.toggle("hidden", !msgListening && !msgVoicePaused);
-  text.textContent = msgVoicePaused ? "Paused - tap resume to continue" : (msgVoiceInterimTranscript || msgVoiceFinalTranscript ? (msgVoiceFinalTranscript + (msgVoiceInterimTranscript ? " " + msgVoiceInterimTranscript : "")).trim() : "Listening...");
+  text.textContent = msgVoicePaused ? "Paused - tap resume to continue" : "Recording... Tap stop when you're finished.";
   if (btn) { btn.classList.toggle("listening", msgListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
   const pauseBtn = status.querySelector("button:first-of-type i");
   if (pauseBtn) pauseBtn.className = `fa-solid ${msgVoicePaused ? "fa-play" : "fa-pause"}`;
@@ -14958,30 +14998,30 @@ function startMsgVoiceRecognition() {
   msgRecognizer.onresult = (e) => {
     let interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      const text = e.results[i][0]?.transcript || "";
-      if (e.results[i].isFinal) msgVoiceFinalTranscript = `${msgVoiceFinalTranscript}${msgVoiceFinalTranscript ? " " : ""}${text.trim()}`.trim();
-      else interim += text;
+      const text = (e.results[i][0]?.transcript || "").trim();
+      if (!text) continue;
+      if (e.results[i].isFinal) msgVoiceFinalTranscript = `${msgVoiceFinalTranscript}${msgVoiceFinalTranscript ? " " : ""}${text}`.trim();
+      else interim += `${interim ? " " : ""}${text}`;
     }
     msgVoiceInterimTranscript = interim.trim();
     applyMsgVoiceTranscript();
     renderMsgVoiceState();
   };
-  msgRecognizer.onerror = (e) => {
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
-    else if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
+  msgRecognizer.onerror = () => {
+    // Silence/no-speech is normal. Never play a sound or stop the recording
+    // merely because the user paused between words.
   };
   msgRecognizer.onend = () => {
-    msgListening = false;
-    if (msgVoicePaused) { renderMsgVoiceState(); return; }
-    // Mobile Safari can terminate continuous recognition after a short silence.
-    // Only restart while the recording UI is still explicitly active.
-    if (msgRecognizer && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) {
-      setTimeout(() => {
-        if (msgRecognizer && msgListening === false && !msgVoicePaused && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) {
-          try { msgRecognizer.start(); } catch (_) {}
-        }
-      }, 120);
-    } else renderMsgVoiceState();
+    if (msgVoicePaused || !msgRecognizer) { renderMsgVoiceState(); return; }
+    // Browser-level recognition timeout: restart silently while the user has
+    // not explicitly stopped. Keep the recording UI active throughout.
+    msgListening = true;
+    renderMsgVoiceState();
+    setTimeout(() => {
+      if (msgRecognizer && !msgVoicePaused) {
+        try { msgRecognizer.start(); } catch (_) {}
+      }
+    }, 160);
   };
   try { msgRecognizer.start(); } catch (_) {}
 }
@@ -14990,6 +15030,7 @@ function toggleMsgMic() {
   if (msgListening) { stopMsgVoiceRecording(); return; }
   if (msgVoicePaused && msgRecognizer) {
     msgVoicePaused = false;
+    msgListening = true;
     try { msgRecognizer.start(); } catch (_) {}
     renderMsgVoiceState();
     return;
@@ -14998,15 +15039,15 @@ function toggleMsgMic() {
   const input = byId("chatInput");
   if (input?.value.trim()) msgVoiceFinalTranscript = input.value.trim();
   startMsgVoiceRecognition();
+  msgListening = true;
+  renderMsgVoiceState();
 }
 function toggleMsgMicPause() {
   if (!msgRecognizer) return;
-  if (msgListening) { msgVoicePaused = true; msgVoiceInterimTranscript = ""; try { msgRecognizer.stop(); } catch (_) {} renderMsgVoiceState(); }
-  else { msgVoicePaused = false; try { msgRecognizer.start(); } catch (_) {} renderMsgVoiceState(); }
+  if (msgListening) { msgVoicePaused = true; msgVoiceInterimTranscript = ""; try { msgRecognizer.stop(); } catch (_) {} msgListening = false; renderMsgVoiceState(); }
+  else { msgVoicePaused = false; msgListening = true; try { msgRecognizer.start(); } catch (_) {} renderMsgVoiceState(); }
 }
 function stopMsgVoiceRecording() {
-  // Hide the recording UI first. This makes the wave disappear immediately
-  // when the user taps the mic to stop, instead of waiting for a send action.
   const status = byId("msgVoiceStatus");
   status?.classList.add("hidden");
   byId("msgMicBtn")?.classList.remove("listening");
@@ -15635,9 +15676,27 @@ if ("serviceWorker" in navigator) {
 
 
 <style id="final-share-and-system-bar-polish">
-.product-share-wrap{flex:0 0 auto}.product-share-btn{min-width:42px;justify-content:center;gap:.35rem}.product-share-btn .share-btn-label{display:inline}
-@media(max-width:520px){.product-share-btn .share-btn-label{display:none}.product-share-btn{width:42px;padding-inline:.65rem}}
-body::before{background:var(--system-bar-shade,var(--bg)) !important}
+/* Storefront sharing belongs beside the product wishlist, not in the main
+   product action row. It shares the vendor storefront only. */
+.storefront-share-icon{
+  position:absolute !important;
+  top:1rem !important;
+  right:4.35rem !important;
+  width:2.45rem !important;
+  height:2.45rem !important;
+  border-radius:50% !important;
+  border:1px solid var(--border) !important;
+  background:color-mix(in srgb,var(--card) 94%,transparent) !important;
+  color:var(--text-muted) !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  cursor:pointer !important;
+  -webkit-tap-highlight-color:transparent !important;
+  box-shadow:0 5px 18px rgba(0,0,0,.12) !important;
+  z-index:5 !important;
+}
+.storefront-share-icon:hover,.storefront-share-icon:active{color:var(--primary) !important;border-color:color-mix(in srgb,var(--primary) 42%,var(--border)) !important;background:color-mix(in srgb,var(--primary) 9%,var(--card)) !important;}
 </style>
 <style id="final-system-bar-and-map-popup-polish">
 /* Android/PWA system-bar companion: use a quiet shade belonging to the
@@ -15688,374 +15747,71 @@ body::before { background: var(--system-bar-shade) !important; }
 </script>
 
 
-<style id="levromart-native-drawer-gesture-style">
-/* Native-feeling horizontal drawer gestures.
-   The drawers already use transform transitions; while the finger is moving
-   we temporarily take over transform, then restore the normal CSS transition
-   when the gesture is released. */
-.side-drawer.lv-gesture-dragging,
-.drawer-backdrop.lv-gesture-dragging {
-  transition: none !important;
-  will-change: transform, opacity;
-}
-.side-drawer.lv-gesture-settling {
-  transition: transform .32s cubic-bezier(.22,1,.36,1) !important;
-}
-.drawer-backdrop.lv-gesture-settling {
-  transition: opacity .28s ease !important;
-}
+
+
+
+
+
+
+<style id="disable-legacy-drawer-reveal">
+body.profile-reveal-open > header,
+body.profile-reveal-open > #app,
+body.profile-reveal-open > footer.site-footer,
+body.profile-reveal-open > .bottom-nav,
+body.profile-reveal-open > #cartFab,
+body.profile-reveal-open > #aiChatFab{transform:none !important;}
+#profilePanel.profile-page-reveal{box-shadow:var(--shadow-float) !important;}
 </style>
-
-
-<script id="levromart-native-drawer-gestures">
-(function setupLevromartDrawerGestures(){
-  if (window.__levroDrawerGesturesBound) return;
-  window.__levroDrawerGesturesBound = true;
-
-  const OS_EDGE = 20;
-  const AXIS_LOCK = 10;
-  const PROFILE_OPEN_ZONE = 0.50;
-  const NOTIF_OPEN_ZONE = 0.50;
-  // Moderate sensitivity: require a deliberate, substantial swipe instead of
-  // letting a small horizontal movement open or dismiss a drawer.
-  const OPEN_THRESHOLD = 0.40;
-  const CLOSE_THRESHOLD = 0.50;
-
-  const profile = document.getElementById("profilePanel");
-  const notif = document.getElementById("notifPanel");
-  const backdrop = document.getElementById("drawerBackdrop");
-  if (!profile || !notif || !backdrop) return;
-
-  /*
-   * Anything in this list owns horizontal interaction already. A swipe that
-   * starts there belongs to that surface and must never open/close a drawer.
-   * This is deliberately broad so future carousels/tables/maps can opt out
-   * simply by using one of these existing classes/attributes.
-   */
-  const GESTURE_EXCLUSIONS = [
-    ".table-wrap",
-    ".table-wrapper",
-    ".hscroll",
-    ".cat-row",
-    ".range-tabs",
-    ".product-gallery",
-    ".product-gallery-thumbs",
-    ".shop-tabs-rail",
-    ".dash-tabs",
-    ".conv-row-wrap",
-    ".notif-item-wrap",
-    ".notif-list-scroll",
-    "[data-horizontal-scroll]",
-    ".leaflet-container",
-    "[class*='leaflet']",
-    ".reaction-picker",
-    ".reaction-keyboard-row",
-    ".emoji-picker",
-    ".emoji-panel",
-    ".emoji-grid",
-    ".emoji-list",
-    ".map",
-    "[id*='Map']",
-    "[id*='map']",
-    "#aiChatPanel",
-    "#aiChatFab"
-  ].join(",");
-
-  const CONTROL_EXCLUSIONS = [
-    "input",
-    "textarea",
-    "select",
-    "button",
-    "a",
-    "[contenteditable='true']",
-    "[role='button']",
-    "[role='slider']",
-    "[role='textbox']"
-  ].join(",");
-
-  function insideExcludedSurface(target){
-    if (!target || !target.closest) return false;
-    if (target.closest(GESTURE_EXCLUSIONS)) return true;
-
-    /*
-     * Do not steal a horizontal gesture from any element that is actually
-     * horizontally scrollable, even if it has a new/custom class we don't
-     * know yet.
-     */
-    let el = target;
-    while (el && el !== document.body) {
-      if (el.nodeType === 1) {
-        const style = getComputedStyle(el);
-        const canScrollX = el.scrollWidth > el.clientWidth + 4 &&
-          (style.overflowX === "auto" || style.overflowX === "scroll");
-        if (canScrollX) return true;
-      }
-      el = el.parentElement;
-    }
-    return false;
-  }
-
-  function isBackgroundSurface(target){
-    if (!target || !target.closest) return false;
-    if (target === document.body || target === document.documentElement || target.id === "app") return true;
-    if (target.classList?.contains("container")) return true;
-    const contentOwner = target.closest("#app > *, .card, section, article, header, footer, nav, button, a, input, textarea, select, img, [role='button'], [contenteditable='true']");
-    return !contentOwner;
-  }
-
-  function anotherLayerOpen(){
-    return !!document.querySelector(
-      ".modal.active:not(#vendorProfileImageLightbox), " +
-      ".modal:not(.hidden):not(#vendorProfileImageLightbox), " +
-      ".ai-chat-panel.open, " +
-      ".ai-chat-panel:not(.hidden), " +
-      "#settingsPanel.open"
-    );
-  }
-
-  function anyDrawerOpen(){
-    return profile.classList.contains("open") || notif.classList.contains("open");
-  }
-
-  function setBackdropProgress(progress){
-    const value = Math.max(0, Math.min(1, progress));
-    backdrop.style.opacity = String(value);
-    if (value > 0) backdrop.classList.add("open");
-  }
-
-  function clearGestureStyles(drawer, settling){
-    if (!drawer) return;
-    drawer.classList.remove("lv-gesture-dragging");
-    if (settling) drawer.classList.add("lv-gesture-settling");
-    drawer.style.transform = "";
-    if (settling) {
-      requestAnimationFrame(() => setTimeout(() => drawer.classList.remove("lv-gesture-settling"), 360));
-    }
-  }
-
-  function finishProfile(open){
-    profile.style.transform = "";
-    backdrop.style.opacity = "";
-    clearGestureStyles(profile, true);
-    if (open) {
-      closeAllPanels();
-      profile.classList.add("open");
-      backdrop.classList.add("open");
-      playSound("open");
-    } else {
-      closeAllPanels();
-    }
-  }
-
-  function finishNotif(open){
-    notif.style.transform = "";
-    backdrop.style.opacity = "";
-    clearGestureStyles(notif, true);
-    if (open) {
-      notifViewMode = "inbox";
-      exitNotifSelectMode(false);
-      closeAllPanels();
-      notif.classList.add("open");
-      backdrop.classList.add("open");
-      renderNotifPanel();
-      playSound("open");
-    } else {
-      closeAllPanels();
-    }
-  }
-
-  let state = null;
-
-  document.addEventListener("touchstart", function(e){
-    if (e.touches.length !== 1) return;
-    if (insideExcludedSurface(e.target)) return;
-
-    const t = e.touches[0];
-    const profileOpen = profile.classList.contains("open");
-    const notifOpen = notif.classList.contains("open");
-
-    /* If a drawer is already open, only that drawer can be closed by swipe. */
-    if (profileOpen || notifOpen) {
-      if (profileOpen) {
-        state = {
-          kind: "profile",
-          closing: true,
-          startX: t.clientX,
-          startY: t.clientY,
-          width: profile.offsetWidth || Math.min(304, window.innerWidth * .78)
-        };
-      } else {
-        state = {
-          kind: "notif",
-          closing: true,
-          startX: t.clientX,
-          startY: t.clientY,
-          width: notif.offsetWidth || Math.min(304, window.innerWidth * .78)
-        };
-      }
-      return;
-    }
-
-    /* Never open a drawer on top of another modal/sheet. */
-    if (anotherLayerOpen()) {
-      state = null;
-      return;
-    }
-
-    // Opening gestures are reserved for unclaimed app background. Product
-    // cards, maps, tables, rails, images and controls always own their swipe.
-    if (!isBackgroundSurface(e.target)) { state = null; return; }
-
-    const fromLeft = t.clientX;
-    const fromRight = window.innerWidth - t.clientX;
-
-    /*
-     * Closed state:
-     *   left half  -> right swipe opens Profile
-     *   right half -> left swipe opens Notifications
-     *
-     * Keep the outermost 20px free for Android/iOS's own system back gesture.
-     */
-    if (fromLeft >= OS_EDGE && fromLeft <= window.innerWidth * PROFILE_OPEN_ZONE) {
-      state = {
-        kind: "profile",
-        closing: false,
-        startX: t.clientX,
-        startY: t.clientY,
-        width: profile.offsetWidth || Math.min(304, window.innerWidth * .78)
-      };
-      return;
-    }
-
-    if (fromRight >= OS_EDGE && fromRight <= window.innerWidth * NOTIF_OPEN_ZONE) {
-      state = {
-        kind: "notif",
-        closing: false,
-        startX: t.clientX,
-        startY: t.clientY,
-        width: notif.offsetWidth || Math.min(304, window.innerWidth * .78)
-      };
-      return;
-    }
-
-    state = null;
-  }, { passive: true });
-
-  document.addEventListener("touchmove", function(e){
-    if (!state || e.touches.length !== 1) return;
-
-    const t = e.touches[0];
-    const dx = t.clientX - state.startX;
-    const dy = t.clientY - state.startY;
-
-    if (!state.dragging) {
-      if (Math.abs(dx) <= AXIS_LOCK && Math.abs(dy) <= AXIS_LOCK) return;
-
-      /* Vertical movement belongs to normal page/drawer scrolling. */
-      if (Math.abs(dy) > Math.abs(dx) + AXIS_LOCK) {
-        state = null;
-        return;
-      }
-
-      /* Wrong direction: release the gesture immediately. */
-      if (state.kind === "profile" && !state.closing && dx < 0) {
-        state = null;
-        return;
-      }
-      if (state.kind === "profile" && state.closing && dx > 0) {
-        state = null;
-        return;
-      }
-      if (state.kind === "notif" && !state.closing && dx > 0) {
-        state = null;
-        return;
-      }
-      if (state.kind === "notif" && state.closing && dx < 0) {
-        state = null;
-        return;
-      }
-
-      state.dragging = true;
-
-      const drawer = state.kind === "profile" ? profile : notif;
-      drawer.classList.add("lv-gesture-dragging");
-      backdrop.classList.add("lv-gesture-dragging");
-      backdrop.classList.add("open");
-
-      if (!state.closing) {
-        drawer.classList.add("open");
-      }
-    }
-
-    if (e.cancelable) e.preventDefault();
-
-    const drawer = state.kind === "profile" ? profile : notif;
-    const width = Math.max(1, state.width);
-
-    let progress;
-    if (state.kind === "profile") {
-      /* Profile enters from the left: right = open, left = close. */
-      progress = state.closing
-        ? Math.max(0, Math.min(1, 1 + dx / width))
-        : Math.max(0, Math.min(1, dx / width));
-
-      drawer.style.transform = `translateX(${(-105 + 105 * progress).toFixed(3)}%)`;
-    } else {
-      /* Notifications enter from the right: left = open, right = close. */
-      progress = state.closing
-        ? Math.max(0, Math.min(1, 1 - dx / width))
-        : Math.max(0, Math.min(1, -dx / width));
-
-      drawer.style.transform = `translateX(${(105 - 105 * progress).toFixed(3)}%)`;
-    }
-
-    setBackdropProgress(progress);
-  }, { passive: false });
-
-  function endGesture(e){
-    if (!state) return;
-
-    const current = state;
-    state = null;
-
-    if (!current.dragging) return;
-
-    const t = e.changedTouches && e.changedTouches[0];
-    const dx = t ? t.clientX - current.startX : 0;
-    const width = Math.max(1, current.width);
-
-    let progress;
-    if (current.kind === "profile") {
-      progress = current.closing
-        ? Math.max(0, Math.min(1, 1 + dx / width))
-        : Math.max(0, Math.min(1, dx / width));
-    } else {
-      progress = current.closing
-        ? Math.max(0, Math.min(1, 1 - dx / width))
-        : Math.max(0, Math.min(1, -dx / width));
-    }
-
-    /*
-     * Deliberate swipe only: a short horizontal nudge should settle back to
-     * the starting state. The percentage threshold is paired with a small
-     * absolute-distance floor so narrow phones do not become overly sensitive.
-     */
-    const MIN_SWIPE_PX = Math.max(96, Math.min(130, width * 0.38));
-    const meaningfulTravel = Math.abs(dx) >= MIN_SWIPE_PX;
-    const threshold = current.closing ? CLOSE_THRESHOLD : OPEN_THRESHOLD;
-    const shouldOpen = meaningfulTravel && progress > threshold;
-
-    if (current.kind === "profile") {
-      finishProfile(shouldOpen);
-    } else {
-      finishNotif(shouldOpen);
-    }
-  }
-
-  document.addEventListener("touchend", endGesture, { passive: true });
-  document.addEventListener("touchcancel", endGesture, { passive: true });
-})();
-</script>
-
+<style id="final-notification-normal-layout">
+/* Notifications: restore the normal compact list layout. No gesture transform,
+   no oversized blank cards, and no forced grid columns. */
+#notifPanel .notif-list-scroll{
+  display:block !important; height:auto !important; max-height:none !important;
+  min-height:0 !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:.15rem 0 calc(1rem + env(safe-area-inset-bottom,0px)) !important;
+  margin:0 !important; box-sizing:border-box !important;
+  -webkit-overflow-scrolling:touch !important; overscroll-behavior:contain !important;
+}
+#notifPanel .notif-item-wrap{
+  display:block !important; width:100% !important; height:auto !important;
+  min-height:0 !important; max-height:none !important; margin:0 0 .3rem !important;
+  padding:0 !important; position:relative !important; overflow:visible !important;
+  contain:none !important; box-sizing:border-box !important;
+}
+#notifPanel .notif-item-wrap .notif-item,
+#notifPanel .notif-item-wrap .notif-item.unread{
+  display:flex !important; align-items:flex-start !important; width:100% !important;
+  min-width:0 !important; min-height:0 !important; height:auto !important; max-height:none !important;
+  box-sizing:border-box !important; padding:.68rem .55rem !important; margin:0 !important;
+  gap:.72rem !important; overflow:visible !important; position:relative !important;
+  background:var(--card) !important; border-radius:.72rem !important;
+  transform:none !important; box-shadow:none !important;
+  grid-template-columns:none !important;
+  line-height:1.35 !important;
+}
+#notifPanel .notif-item-wrap .notif-item:hover{background:color-mix(in srgb,var(--primary) 7%,var(--card)) !important;}
+#notifPanel .notif-item-wrap .notif-item > img.avatar-circle,
+#notifPanel .notif-item-wrap .notif-item > .avatar-circle,
+#notifPanel .notif-item-wrap .notif-item > i,
+#notifPanel .notif-item-wrap .notif-item > .notif-select-check{
+  flex:0 0 2.25rem !important; width:2.25rem !important; height:2.25rem !important;
+  min-width:2.25rem !important; min-height:2.25rem !important; margin-top:.05rem !important;
+}
+#notifPanel .notif-item-wrap .notif-item > .notif-copy,
+#notifPanel .notif-item-wrap .notif-item > span[style*="flex:1"]{
+  display:block !important; flex:1 1 auto !important; min-width:0 !important;
+  width:auto !important; grid-column:auto !important; overflow:visible !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong,
+#notifPanel .notif-item-wrap .notif-item .muted{
+  display:block !important; width:auto !important; min-width:0 !important;
+  height:auto !important; max-height:none !important; white-space:normal !important;
+  overflow:visible !important; text-overflow:clip !important; overflow-wrap:anywhere !important;
+}
+#notifPanel .notif-item-wrap .notif-item strong{line-height:1.3 !important; margin:0 !important;}
+#notifPanel .notif-item-wrap .notif-item .muted{line-height:1.38 !important;}
+#notifPanel.selecting .notif-item-wrap .notif-item{background:var(--card) !important;}
+#notifPanel .notif-item.selected{background:color-mix(in srgb,var(--primary) 12%,var(--card)) !important; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 38%,transparent) !important;}
+</style>
 </body>
 </html>
