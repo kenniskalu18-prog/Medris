@@ -4436,7 +4436,7 @@ body:has(#settings-page) .site-footer { margin-top:.55rem !important; }
 
 /* Levi mark in every floating/header context is white for reliable contrast. */
 .ai-chat-fab-logo { filter:brightness(0) invert(1) !important; }
-.settings-levi-logo { filter:brightness(0) invert(1) !important; -webkit-filter:brightness(0) invert(1) !important; }
+.settings-levi-logo { filter:none !important; -webkit-filter:none !important; }
 
 /* Levi reactions: keep the picker fully inside the chat panel. The previous
    right-anchoring made the left side of the emoji rail disappear off-screen
@@ -14972,91 +14972,155 @@ let msgListening = false;
 let msgVoicePaused = false;
 let msgVoiceFinalTranscript = "";
 let msgVoiceInterimTranscript = "";
+
 function renderMsgVoiceState() {
   const status = byId("msgVoiceStatus");
   const text = byId("msgVoiceStatusText");
   const btn = byId("msgMicBtn");
   if (!status || !text) return;
   status.classList.toggle("hidden", !msgListening && !msgVoicePaused);
-  text.textContent = msgVoicePaused ? "Paused - tap resume to continue" : (msgVoiceInterimTranscript || msgVoiceFinalTranscript ? (msgVoiceFinalTranscript + (msgVoiceInterimTranscript ? " " + msgVoiceInterimTranscript : "")).trim() : "Listening...");
-  if (btn) { btn.classList.toggle("listening", msgListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
-  const pauseBtn = status.querySelector("button:first-of-type i");
-  if (pauseBtn) pauseBtn.className = `fa-solid ${msgVoicePaused ? "fa-play" : "fa-pause"}`;
+  text.textContent = msgVoiceInterimTranscript || msgVoiceFinalTranscript || "Listening...";
+  if (btn) {
+    btn.classList.toggle("listening", msgListening);
+    btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+    btn.title = "Tap to talk";
+    btn.setAttribute("aria-label", "Tap to talk");
+  }
 }
+
 function applyMsgVoiceTranscript() {
   const input = byId("chatInput");
   if (!input) return;
-  const combined = `${msgVoiceFinalTranscript}${msgVoiceInterimTranscript ? (msgVoiceFinalTranscript ? " " : "") + msgVoiceInterimTranscript : ""}`.trim();
-  input.value = combined;
+  const transcript = `${msgVoiceFinalTranscript}${msgVoiceVoiceInterimForInput()}`.replace(/\s+/g, " ").trim();
+  if (!transcript) return;
+  input.value = transcript;
   autoGrowChatInput(input);
   input.scrollTop = input.scrollHeight;
   scrollChatToBottom();
   handleChatTyping(activeConversationId);
 }
+
+// Interim speech is displayed while the engine is listening, but final text is
+// committed only once. There is deliberately no continuous mode and no restart
+// loop: this mirrors Levi's stable tap-to-talk behaviour and prevents the same
+// sentence from being appended repeatedly on mobile browsers.
+function msgVoiceVoiceInterimForInput() {
+  return msgVoiceInterimTranscript ? `${msgVoiceFinalTranscript ? " " : ""}${msgVoiceInterimTranscript}` : "";
+}
+
 function startMsgVoiceRecognition() {
   if (!AiSpeechRecognition) return;
+
+  try { msgRecognizer?.abort(); } catch (_) {}
   msgRecognizer = new AiSpeechRecognition();
   const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   msgRecognizer.lang = isIOSDevice ? "en-US" : "en-NG";
   msgRecognizer.interimResults = true;
-  msgRecognizer.continuous = true;
+  msgRecognizer.continuous = false;
   msgRecognizer.maxAlternatives = 1;
-  msgRecognizer.onstart = () => { msgListening = true; msgVoicePaused = false; byId("msgMicBtn")?.classList.add("listening"); renderMsgVoiceState(); scrollChatToBottom(); };
+
+  msgRecognizer.onstart = () => {
+    msgListening = true;
+    msgVoicePaused = false;
+    byId("msgMicBtn")?.classList.add("listening");
+    renderMsgVoiceState();
+    scrollChatToBottom();
+  };
+
   msgRecognizer.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const text = e.results[i][0]?.transcript || "";
-      if (e.results[i].isFinal) msgVoiceFinalTranscript = `${msgVoiceFinalTranscript}${msgVoiceFinalTranscript ? " " : ""}${text.trim()}`.trim();
-      else interim += text;
+    // IMPORTANT: read the current recognition session as a replacement value.
+    // Never append result events to one another. Mobile recognition engines can
+    // resend/revise interim/final phrases; appending them is what caused the
+    // visible "how much how much how much..." duplication.
+    let transcript = "";
+    for (let i = 0; i < e.results.length; i++) {
+      const t = String(e.results[i]?.[0]?.transcript || "").trim();
+      if (t) transcript += `${transcript ? " " : ""}${t}`;
     }
-    msgVoiceInterimTranscript = interim.trim();
+    transcript = transcript.replace(/\s+/g, " ").trim();
+    if (!transcript) return;
+
+    const finalResult = Array.from(e.results).some(r => r.isFinal);
+    if (finalResult) {
+      if (transcript === msgVoiceFinalTranscript) return;
+      msgVoiceFinalTranscript = transcript;
+      msgVoiceInterimTranscript = "";
+    } else {
+      msgVoiceInterimTranscript = transcript;
+    }
+
     applyMsgVoiceTranscript();
     renderMsgVoiceState();
   };
+
   msgRecognizer.onerror = (e) => {
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
-    else if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
+    // Recognition lifecycle errors are silent. Only actionable permission or
+    // engine failures get a visual message; Levromart never generates a beep.
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      showToast("Microphone or speech recognition permission is blocked. Allow microphone access for Levromart and try again.", "error");
+    } else if (e.error !== "aborted" && e.error !== "no-speech") {
+      showToast("Couldn't hear that, try again.", "error");
+    }
   };
+
   msgRecognizer.onend = () => {
+    // No continuous restart. The browser may finish naturally after a pause;
+    // that is the end of this tap-to-talk session, not a reason to create a
+    // second recognizer that can duplicate the previous phrase.
     msgListening = false;
-    if (msgVoicePaused) { renderMsgVoiceState(); return; }
-    // Mobile Safari can terminate continuous recognition after a short silence.
-    // Only restart while the recording UI is still explicitly active.
-    if (msgRecognizer && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) {
-      setTimeout(() => {
-        if (msgRecognizer && msgListening === false && !msgVoicePaused && byId("msgVoiceStatus") && !byId("msgVoiceStatus").classList.contains("hidden")) {
-          try { msgRecognizer.start(); } catch (_) {}
-        }
-      }, 120);
-    } else renderMsgVoiceState();
-  };
-  try { msgRecognizer.start(); } catch (_) {}
-}
-function toggleMsgMic() {
-  if (!AiSpeechRecognition) return;
-  if (msgListening) { stopMsgVoiceRecording(); return; }
-  if (msgVoicePaused && msgRecognizer) {
     msgVoicePaused = false;
-    try { msgRecognizer.start(); } catch (_) {}
+    msgVoiceInterimTranscript = "";
+    msgRecognizer = null;
+    byId("msgMicBtn")?.classList.remove("listening");
     renderMsgVoiceState();
+  };
+
+  try {
+    msgRecognizer.start();
+  } catch (_) {
+    msgRecognizer = null;
+    msgListening = false;
+    msgVoicePaused = false;
+    renderMsgVoiceState();
+    showToast("Couldn't start the microphone. Try again.", "error");
+  }
+}
+
+function toggleMsgMic(evt) {
+  evt?.stopPropagation?.();
+  if (!AiSpeechRecognition) return;
+
+  // If the mic is tapped while speech synthesis is active, stop it first so
+  // the microphone only hears the user and never Levi's voice.
+  if (("speechSynthesis" in window) && speechSynthesis.speaking) {
+    try { speechSynthesis.cancel(); } catch (_) {}
+  }
+
+  if (msgListening) {
+    try { msgRecognizer?.stop(); } catch (_) {}
     return;
   }
-  msgVoiceFinalTranscript = ""; msgVoiceInterimTranscript = ""; msgVoicePaused = false;
-  const input = byId("chatInput");
-  if (input?.value.trim()) msgVoiceFinalTranscript = input.value.trim();
+
+  msgVoiceFinalTranscript = "";
+  msgVoiceInterimTranscript = "";
+  msgVoicePaused = false;
   startMsgVoiceRecognition();
+  renderMsgVoiceState();
 }
+
+// Kept as a compatibility no-op for any older markup/event reference. Message
+// voice is intentionally not a pause/resume or continuous recording system.
 function toggleMsgMicPause() {
-  if (!msgRecognizer) return;
-  if (msgListening) { msgVoicePaused = true; msgVoiceInterimTranscript = ""; try { msgRecognizer.stop(); } catch (_) {} renderMsgVoiceState(); }
-  else { msgVoicePaused = false; try { msgRecognizer.start(); } catch (_) {} renderMsgVoiceState(); }
+  if (msgListening) {
+    try { msgRecognizer?.stop(); } catch (_) {}
+  }
 }
+
 function stopMsgVoiceRecording() {
-  // Hide the recording UI first. This makes the wave disappear immediately
-  // when the user taps the mic to stop, instead of waiting for a send action.
   const status = byId("msgVoiceStatus");
   status?.classList.add("hidden");
   byId("msgMicBtn")?.classList.remove("listening");
+  try { msgRecognizer?.stop(); } catch (_) {}
   try { msgRecognizer?.abort(); } catch (_) {}
   msgRecognizer = null;
   msgListening = false;
@@ -15066,16 +15130,21 @@ function stopMsgVoiceRecording() {
   const input = byId("chatInput");
   if (input) { autoGrowChatInput(input); input.scrollTop = input.scrollHeight; }
 }
+
 async function cancelMsgVoiceRecording() {
   if (!msgListening && !msgVoicePaused) return;
   const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
   if (!confirmed) return;
   try { msgRecognizer?.abort(); } catch (_) {}
-  msgRecognizer = null; msgListening = false; msgVoicePaused = false; msgVoiceFinalTranscript = ""; msgVoiceInterimTranscript = "";
-  const input = byId("chatInput"); if (input) resetChatInput(input);
+  msgRecognizer = null;
+  msgListening = false;
+  msgVoicePaused = false;
+  msgVoiceFinalTranscript = "";
+  msgVoiceInterimTranscript = "";
+  const input = byId("chatInput");
+  if (input) resetChatInput(input);
   renderMsgVoiceState();
 }
-
 function leviOfflineFallback(text) {
   const q = leviNormaliseText(text);
   if (/^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(q)) {
@@ -15843,8 +15912,8 @@ body::before { background: var(--system-bar-shade) !important; }
   position: absolute !important;
   left: 50% !important;
   top: 50% !important;
-  width: .50rem !important;
-  height: .50rem !important;
+  width: .40rem !important;
+  height: .40rem !important;
   transform: translate(-50%, -50%) !important;
   border: 1px solid color-mix(in srgb, var(--primary) 62%, transparent) !important;
   border-radius: 50% !important;
@@ -15860,11 +15929,14 @@ body::before { background: var(--system-bar-shade) !important; }
 }
 
 /* Levi mark artwork: the two side marks/arcs are white in both contexts. */
-.settings-levi-logo,
 .ai-chat-fab-logo,
 html:not([data-theme="dark"]):not([data-theme="black"]) .ai-chat-fab-logo {
   filter: brightness(0) invert(1) !important;
   -webkit-filter: brightness(0) invert(1) !important;
+}
+.settings-levi-logo {
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
 /* Ensure no generic inherited/UA button color can turn these icon controls
