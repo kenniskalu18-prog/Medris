@@ -8,7 +8,9 @@
 <meta name="description" content="Rent or buy from verified vendors across Lagos: healthcare equipment, food, electronics, and more.">
 <link id="faviconLink" rel="icon" type="image/webp" href="">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0b0b0b">
+<meta name="theme-color" content="#080909">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f0">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151b1a">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -4342,6 +4344,13 @@ body.chat-full-page > #app { margin:0 !important; padding:0 !important; max-widt
 .chat-header-back { background:none; border:none; color:var(--text); font-size:1.15rem; padding:0.3rem; cursor:pointer; flex-shrink:0; }
 .chat-header-avatar { width:2.35rem; height:2.35rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
 .chat-header-avatar-fallback { display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--primary) 16%, transparent); color:var(--primary); font-weight:700; font-size:0.9rem; }
+.chat-avatar-button { appearance:none; -webkit-appearance:none; border:0; background:none; padding:0; margin:0; border-radius:50%; display:inline-flex; flex:0 0 auto; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.chat-avatar-button .avatar-circle { display:inline-flex; align-items:center; justify-content:center; color:#fff; }
+.chat-avatar-button .avatar-fallback-icon i { font-size:.95rem; }
+.profile-avatar-view-button { appearance:none; -webkit-appearance:none; padding:0; margin:0; border:0; background:none; border-radius:50%; display:inline-flex; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.profile-avatar-view-button .avatar-circle { display:inline-flex; align-items:center; justify-content:center; color:#fff; }
+.profile-avatar-view-button:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+.avatar-fallback-icon i { line-height:1; }
 .chat-header-profile-link { display:flex; align-items:center; gap:0.7rem; flex:1; min-width:0; min-height:2.8rem; padding:0; border:0; background:none; color:inherit; text-align:left; cursor:pointer; font:inherit; text-decoration:none; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .chat-header-profile-link:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:10px; }
 .chat-header-profile-link:active { opacity:.82; }
@@ -4964,8 +4973,8 @@ body:has(#settings-page) .site-footer { margin-top: .15rem !important; padding-t
   <div id="aiVoiceStatus" class="voice-recording-status hidden" aria-live="polite">
     <div class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <span id="aiVoiceStatusText">Listening...</span>
-    <button type="button" onclick="toggleAiChatMic()" title="Pause or resume recording" aria-label="Pause or resume recording"><i class="fa-solid fa-pause"></i></button>
-    <button type="button" onclick="cancelAiChatVoice()" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
+    <button type="button" onclick="stopAiChatVoiceRecording(event)" title="Stop recording" aria-label="Stop recording"><i class="fa-solid fa-stop"></i></button>
+    <button type="button" onclick="cancelAiChatVoice(event)" title="Cancel recording" aria-label="Cancel recording"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="ai-chat-input-row">
     <button class="ai-chat-mic-btn hidden" id="aiChatMicBtn" onclick="toggleAiChatMic()" title="Tap to talk"><i class="fa-solid fa-microphone"></i></button>
@@ -6258,6 +6267,32 @@ function initials(name, email) {
   const ini = ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase();
   return ini || s[0]?.toUpperCase() || "?";
 }
+
+// WhatsApp-style fallback avatar: use a clean person icon instead of
+// initials, with a deterministic colour so each person still feels distinct.
+const PROFILE_AVATAR_COLORS = [
+  "#5b8def", "#8b5cf6", "#e85d75", "#14a88b", "#f59e0b",
+  "#0ea5a4", "#7c6ee6", "#d95f76", "#4f86c6", "#c56a9f"
+];
+function profileAvatarColor(name) {
+  const text = String(name || "User");
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  return PROFILE_AVATAR_COLORS[Math.abs(hash) % PROFILE_AVATAR_COLORS.length];
+}
+function userAvatarHtml({ url = "", name = "User", size = "2.6rem", clickable = false } = {}) {
+  const rawName = String(name || "User");
+  const safeName = esc(rawName);
+  const safeUrl = url ? esc(url) : "";
+  const color = profileAvatarColor(rawName);
+  const inner = safeUrl
+    ? `<img src="${safeUrl}" class="avatar-circle" style="width:${size};height:${size};object-fit:cover;" alt="${safeName}" draggable="false" />`
+    : `<span class="avatar-circle avatar-fallback-icon" style="width:${size};height:${size};background:${color};" aria-hidden="true"><i class="fa-solid fa-user"></i></span>`;
+  if (!clickable) return inner;
+  const jsUrl = JSON.stringify(String(url || ""));
+  const jsName = JSON.stringify(rawName);
+  return `<button type="button" class="chat-avatar-button" aria-label="View ${safeName} profile picture" onclick="event.stopPropagation();openVendorProfileImageLightbox(${jsUrl},${jsName})">${inner}</button>`;
+}
 function toWhatsappDigits(raw) {
   let digits = (raw || "").replace(/\D/g, "");
   if (digits.startsWith("0")) digits = "234" + digits.slice(1);
@@ -6767,7 +6802,7 @@ async function renderNotifPanel() {
     ? items.map((n) => `<div class="notif-item-wrap" data-id="${n.id}">
         <button type="button" class="notif-item ${n.read ? "" : "unread"} ${notifSelectMode && notifSelectedIds.has(n.id) ? "selected" : ""}" data-id="${n.id}" data-view="${esc(n.target_view || "home")}" data-params='${esc(JSON.stringify(n.target_params || {}))}' aria-selected="${notifSelectMode && notifSelectedIds.has(n.id) ? "true" : "false"}" onclick="handleNotifItemClick(event,'${n.id}')">
           ${notifSelectMode ? `<span class="notif-select-check"><i class="fa-solid fa-check"></i></span>` : ""}
-          ${n.actor_avatar_url ? `<img src="${esc(n.actor_avatar_url)}" class="avatar-circle" style="width:2.1rem;height:2.1rem;object-fit:cover;" />` : n.actor_name ? `<span class="avatar-circle" style="width:2.1rem;height:2.1rem;font-size:0.8rem;">${esc(initials(n.actor_name))}</span>` : `<i class='fa-solid fa-circle-info'></i>`}
+          ${n.actor_name ? userAvatarHtml({ url:n.actor_avatar_url || "", name:n.actor_name, size:"2.1rem", clickable:true }) : `<i class='fa-solid fa-circle-info'></i>`}
           <span class="notif-copy"><strong style="display:block;">${esc(n.title)}</strong>${n.body ? `<span class="muted" style="font-size:0.8rem;">${esc(n.body)}</span><br/>` : ""}<span class="muted" style="font-size:0.72rem;">${timeAgo(n.created_at)}</span></span>
         </button>
       </div>`).join("")
@@ -7290,7 +7325,9 @@ function updateAuthUI() {
   if (session && profile) {
     loginBtn.classList.add("hidden");
     avatarBtn.classList.remove("hidden");
-    avatarBtn.innerHTML = profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" alt="" />` : esc(initials(profile.name, profile.email));
+    avatarBtn.innerHTML = profile.avatar_url
+      ? `<img src="${esc(profile.avatar_url)}" alt="" />`
+      : `<span class="avatar-fallback-icon" style="width:100%;height:100%;background:${profileAvatarColor(profile.name || profile.email)};display:flex;align-items:center;justify-content:center;color:#fff;"><i class="fa-solid fa-user"></i></span>`;
 
     const links = [];
     if (vendor && profile.role !== "admin") {
@@ -7321,8 +7358,10 @@ function updateAuthUI() {
         <div class="drawer-header"><h4>Profile</h4><button class="drawer-close-btn" onclick="closeAllPanels()" aria-label="Close profile"><i class='fa-solid fa-xmark'></i></button></div>
         <div class="profile-panel-header">
           <div class="avatar-edit-wrap">
-            ${profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" />` : `<div class="avatar-circle avatar-lg">${initials(profile.name, profile.email)}</div>`}
-            <button class="avatar-edit-badge" onclick="byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
+            <button type="button" class="profile-avatar-view-button" onclick='openVendorProfileImageLightbox(${JSON.stringify(profile.avatar_url || "")},${JSON.stringify(profile.name || profile.email || "Profile")})' aria-label="View profile picture">
+              ${profile.avatar_url ? `<img src="${esc(profile.avatar_url)}" class="avatar-circle avatar-lg" style="object-fit:cover;" draggable="false" />` : `<span class="avatar-circle avatar-lg avatar-fallback-icon" style="background:${profileAvatarColor(profile.name || profile.email)};"><i class="fa-solid fa-user"></i></span>`}
+            </button>
+            <button class="avatar-edit-badge" onclick="event.stopPropagation();byId('avatarFileInput').click()" title="Change photo"><i class="fa-solid fa-camera"></i></button>
             <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="uploadAvatar(event)" />
           </div>
           <div class="profile-account-copy">
@@ -8659,7 +8698,7 @@ function convRowHtml(c) {
   return `<div class="conv-row-wrap ${selected ? "selected" : ""}">
     <div class="conv-list-item ${selected ? "selected" : ""}" data-conversation-id="${c.conversation_id}" onclick="handleConvRowClick(event,'${c.conversation_id}')">
       ${msgSelectMode ? `<span class="conv-select-check ${selected ? "active" : ""}" aria-hidden="true"><i class="fa-solid fa-check"></i></span>` : ""}
-      ${c.other_avatar ? `<img src="${esc(c.other_avatar)}" class="avatar-circle" style="width:2.6rem;height:2.6rem;object-fit:cover;" />` : `<div class="avatar-circle">${initials(name)}</div>`}
+      ${userAvatarHtml({ url:c.other_avatar || "", name, size:"2.6rem", clickable:true })}
       <div class="conv-meta">
         <strong>${esc(name)}</strong>
         <div class="conv-preview">${c.last_message ? esc(c.last_message) : "No messages yet"}</div>
@@ -9055,7 +9094,8 @@ async function renderMessages(conversationId) {
     </div>
     <div class="chat-page-header">
       <button class="chat-header-back" onclick="navigate('messages')" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
-      ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront">${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `${otherAvatar ? `<img src="${esc(otherAvatar)}" class="chat-header-avatar" alt="" />` : `<div class="chat-header-avatar chat-header-avatar-fallback">${initials(otherName)}</div>`}<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
+      ${userAvatarHtml({ url:otherAvatar || "", name:otherName, size:"2.35rem", clickable:true })}
+      ${conv.vendor?.id ? `<a href="#" class="chat-header-profile-link" onclick="openChatVendorStorefront(event,'${conv.vendor.id}')" title="View storefront"><div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div></a>` : `<div class="chat-header-name-wrap"><strong class="chat-header-name">${esc(otherName)}</strong></div>`}
       <div class="chat-header-actions">
         ${!isVendorSide && conv.vendor?.whatsapp_visible && conv.vendor?.whatsapp_number ? `<a class="chat-header-icon-btn chat-whatsapp-btn" href="${waLink(conv.vendor.whatsapp_number)}" target="_blank" rel="noopener" title="Chat on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>` : ""}
         <button class="chat-header-icon-btn" onclick="${callAction}" title="Call"><i class="fa-solid fa-phone"></i></button>
@@ -9879,7 +9919,15 @@ async function renderProductDetail(productId) {
     <div class="product-detail-actions">
       ${profile?.role !== "admin" ? (product.vendor.whatsapp_visible && product.vendor.whatsapp_number ? `<div class="ms-wrap product-message-wrap" style="position:relative;display:inline-block;width:auto;"><button class="btn btn-sm" type="button" onclick="toggleInlineMenu('productMessageMenu-${product.id}',event)"><i class='fa-solid fa-comment-dots'></i> Message vendor</button><div class="ms-list hidden" id="productMessageMenu-${product.id}" style="left:0;right:auto;width:max-content;min-width:190px;"><button class="ms-item" type="button" onclick="startConversationWithVendor('${product.vendor.id}');closeInlineMenu('productMessageMenu-${product.id}')"><i class="fa-solid fa-comment-dots"></i> Message in app</button><a class="ms-item" href="${waLink(product.vendor.whatsapp_number)}" target="_blank" rel="noopener" onclick="closeInlineMenu('productMessageMenu-${product.id}')"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a></div></div>` : `<button class="btn btn-sm" onclick="startConversationWithVendor('${product.vendor.id}')"><i class='fa-solid fa-comment-dots'></i> Message vendor</button>`) : ""}
       ${product.vendor.phone ? `<a class="btn btn-sm btn-outline" href="${telLink(product.vendor.phone)}" onclick="callVendorGated(event,'${esc(product.vendor.phone)}','${product.vendor.id}')"><i class='fa-solid fa-phone'></i> Call vendor</a>` : ""}
-      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
+
+      <div class="ms-wrap product-share-wrap" style="position:relative;display:inline-block;width:auto;">
+        <button class="btn btn-sm btn-outline product-share-btn" type="button" aria-label="Share product" title="Share product" onclick="toggleInlineMenu('productShareMenu-${product.id}',event)"><i class="fa-solid fa-share-nodes"></i><span class="share-btn-label">Share</span></button>
+        <div class="ms-list hidden" id="productShareMenu-${product.id}" style="left:auto;right:0;width:max-content;min-width:190px;">
+          <button class="ms-item" type="button" onclick="copyProductLink('${product.id}');closeInlineMenu('productShareMenu-${product.id}')"><i class="fa-solid fa-link"></i> Copy link</button>
+          <button class="ms-item" type="button" onclick="shareProduct('${product.id}');closeInlineMenu('productShareMenu-${product.id}')"><i class="fa-solid fa-share-nodes"></i> Share product</button>
+          <a class="ms-item" href="#" onclick="shareProductWhatsApp('${product.id}');return false;"><i class="fa-brands fa-whatsapp"></i> Share via WhatsApp</a>
+        </div>
+      </div>      ${st.avg_rating ? `<span class="badge">★ ${Number(st.avg_rating).toFixed(1)} (${st.review_count || 0})</span>` : ""}
     </div>
     <div class="product-detail-info">
       <p><strong>Vendor:</strong> <a href="#" onclick="navigate('storefront',{vendorId:'${product.vendor.id}'});return false;">${vendorNameWithFormerly(product.vendor)}</a></p>
@@ -9961,8 +10009,8 @@ function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, 
   const isDistance = feeMode === "distance" && Number(perKm) > 0 && vendorLat != null && vendorLng != null;
   const hasVendorLoc = vendorLat != null && vendorLng != null;
   return `<div class="flex delivery-method-row" style="margin:0.6rem 0 0.9rem;flex-direction:row;">
-      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> ${esc(pickupLabel || "Pickup")}</label>
       <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="delivery" checked onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> Delivery${isDistance ? " (by distance)" : fee > 0 ? ` (+${naira(fee)})` : " (free)"}</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0;font-weight:400;"><input type="radio" name="${prefix}DeliveryMethod" value="pickup" onchange="toggleDeliveryFields('${prefix}')" style="width:auto;margin:0;" /> ${esc(pickupLabel || "Pickup")}</label>
     </div>
     <div id="${prefix}DeliveryFields" class="dyn-delivery-fields" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}">
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
@@ -10400,6 +10448,44 @@ function vendorNameWithFormerly(v) {
   if (daysSince > VENDOR_RENAME_GRACE_DAYS) return esc(v.business_name);
   return `${esc(v.business_name)} <span class="muted" style="font-weight:400;font-size:0.8em;">(formerly ${esc(v.previous_business_name)})</span>`;
 }
+function buildLevromartShareUrl(type, id) {
+  const url = new URL(location.href);
+  url.hash = "";
+  url.search = "";
+  url.searchParams.set(type === "storefront" ? "sharedStorefront" : "sharedProduct", id);
+  return url.toString();
+}
+async function copyShareLink(link, successMessage = "Link copied.") {
+  try { await navigator.clipboard.writeText(link); showToast(successMessage, "success"); return true; }
+  catch (_) {
+    try {
+      const ta = document.createElement("textarea"); ta.value = link; ta.setAttribute("readonly", "");
+      ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); ta.remove(); showToast(successMessage, "success"); return true;
+    } catch (_) { await showConfirmDialog(link, { title: "Share link", okLabel: "Close" }); return false; }
+  }
+}
+async function shareLinkNative(link, title, text, fallbackMessage) {
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url: link }); return true; }
+    catch (e) { if (e?.name === "AbortError") return false; }
+  }
+  return copyShareLink(link, fallbackMessage);
+}
+async function shareStorefront(vendorId) {
+  const link = buildLevromartShareUrl("storefront", vendorId);
+  return shareLinkNative(link, "Levromart storefront", "Check out this storefront on Levromart.", "Storefront link copied.");
+}
+async function shareProduct(productId) {
+  const link = buildLevromartShareUrl("product", productId);
+  return shareLinkNative(link, "Levromart product", "Check out this product on Levromart.", "Product link copied.");
+}
+async function copyProductLink(productId) { return copyShareLink(buildLevromartShareUrl("product", productId), "Product link copied."); }
+function shareProductWhatsApp(productId) {
+  const link = buildLevromartShareUrl("product", productId);
+  window.open(`https://wa.me/?text=${encodeURIComponent(`Check out this product on Levromart: ${link}`)}`, "_blank", "noopener");
+}
+
 async function renderStorefront(vendorId) {
   const { data: v, error } = await sb.from("vendors").select("*, sector:sectors(name, icon)").eq("id", vendorId).eq("verification_status", "verified").maybeSingle();
   if (error || !v) return '<div class="empty-state">Storefront not found.</div>';
@@ -10424,11 +10510,11 @@ async function renderStorefront(vendorId) {
   const location = [v.address, v.city].filter(Boolean).map(esc).join(", ") || "Online business";
 
   const storefrontMoreItems = [
-    v.sector?.name ? `<div class="ms-item"><i class="fa-solid ${esc(v.sector.icon || "fa-shapes")}"></i> ${esc(v.sector.name)}</div>` : "",
     v.cac_number ? `<div class="ms-item"><i class='fa-solid fa-building-columns'></i> CAC verified</div>` : "",
     yearsSince(v.created_at) ? `<div class="ms-item"><i class="fa-solid fa-calendar-check"></i> ${esc(yearsSince(v.created_at))}</div>` : "",
     v.opening_hours ? `<div class="ms-item"><i class='fa-solid fa-clock'></i> ${esc(v.opening_hours)}</div>` : "",
     profile?.role !== "admin" ? `<div class="ms-item" onclick="showSuggestionModal('vendor','${v.id}')"><i class='fa-solid fa-comment-medical'></i> Suggest something</div>` : "",
+    `<div class="ms-item" onclick="shareStorefront('${v.id}');closeInlineMenu('storefrontMoreMenu')"><i class='fa-solid fa-share-nodes'></i> Share storefront</div>`,
   ].filter(Boolean).join("");
 
   let html = `<section class="storefront-profile">
@@ -14206,6 +14292,16 @@ async function shareCurrentAiChat() {
 }
 window.addEventListener("scroll", () => { closeAllInfoPopovers(); }, { passive:true });
 
+// Levi's own controls must never be mistaken for an outside tap. In
+// particular, the first microphone tap after a fresh load must not close
+// the panel. Stop propagation at the panel boundary while preserving the
+// controls' own onclick handlers.
+const leviPanelForInteractionGuard = byId("aiChatPanel");
+if (leviPanelForInteractionGuard) {
+  leviPanelForInteractionGuard.addEventListener("pointerdown", (e) => e.stopPropagation());
+  leviPanelForInteractionGuard.addEventListener("click", (e) => e.stopPropagation());
+}
+
 document.addEventListener("click", (e) => {
   const panel = byId("aiChatPanel");
   if (!panel || panel.classList.contains("hidden")) return;
@@ -14653,9 +14749,10 @@ function syncSystemBarColor() {
 }
 syncSystemBarColor();
 let aiChatRecognizer = null;
-
 let aiChatListening = false;
 let aiChatVoicePaused = false;
+let aiChatVoiceExplicitStop = false;
+let aiChatVoiceRestartTimer = null;
 // Talked to Levi instead of typing? Its reply reads itself aloud
 // automatically, same as a real conversation - typed messages stay
 // text-only unless the speaker icon is tapped manually.
@@ -14670,10 +14767,15 @@ function updateAiVoiceStatus() {
   const btn = byId("aiChatMicBtn");
   if (!status || !text) return;
   status.classList.toggle("hidden", !aiChatListening && !aiChatVoicePaused);
-  text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Listening...";
-  const pauseBtn = status.querySelector("button:first-of-type i");
-  if (pauseBtn) pauseBtn.className = `fa-solid ${aiChatVoicePaused ? "fa-play" : "fa-pause"}`;
-  if (btn) { btn.classList.toggle("listening", aiChatListening); btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`; }
+  text.textContent = aiChatVoicePaused ? "Paused - tap the microphone to resume" : "Recording... Tap stop when you're finished.";
+  const stopBtn = status.querySelector("button:first-of-type i");
+  if (stopBtn) stopBtn.className = "fa-solid fa-stop";
+  if (btn) {
+    btn.classList.toggle("listening", aiChatListening);
+    btn.innerHTML = `<i class="fa-solid ${aiChatListening ? "fa-stop" : "fa-microphone"}"></i>`;
+    btn.title = aiChatListening ? "Stop recording" : "Tap to talk";
+    btn.setAttribute("aria-label", aiChatListening ? "Stop recording" : "Start recording");
+  }
 }
 function scrollAiVoiceIntoView() {
   const messages = byId("aiChatMessages");
@@ -14681,38 +14783,137 @@ function scrollAiVoiceIntoView() {
   const input = byId("aiChatInput");
   if (input) input.scrollTop = input.scrollHeight;
 }
-function toggleAiChatMic() {
+function startAiChatRecognition() {
+  if (!AiSpeechRecognition || aiChatVoiceExplicitStop || aiChatVoicePaused) return;
+  clearTimeout(aiChatVoiceRestartTimer);
+  const recognizer = new AiSpeechRecognition();
+  aiChatRecognizer = recognizer;
+  recognizer.lang = "en-NG";
+  // Continuous recognition is intentional: silence must NOT mean "stop".
+  // Some mobile browsers still end recognition on their own, so onend below
+  // quietly restarts it while the user is still recording.
+  recognizer.continuous = true;
+  recognizer.interimResults = true;
+  recognizer.maxAlternatives = 1;
+  recognizer.onstart = () => {
+    if (recognizer !== aiChatRecognizer) return;
+    aiChatListening = true;
+    aiChatVoicePaused = false;
+    updateAiVoiceStatus();
+    byId("aiChatInput")?.focus();
+  };
+  recognizer.onresult = (e) => {
+    if (recognizer !== aiChatRecognizer) return;
+    let transcript = "";
+    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    if (transcript) {
+      const el = byId("aiChatInput");
+      // SpeechRecognition's result list already contains the accumulated
+      // results for this recognizer. Replace the voice portion rather than
+      // appending duplicate text on every interim result.
+      if (el) {
+        const typedPrefix = el.dataset.aiVoiceTypedPrefix || "";
+        el.value = `${typedPrefix}${transcript}`.trimStart();
+        autoGrowChatInput(el);
+        el.scrollTop = el.scrollHeight;
+      }
+      aiChatLastInputVoice = true;
+      scrollAiVoiceIntoView();
+    }
+    updateAiVoiceStatus();
+  };
+  recognizer.onerror = (e) => {
+    if (recognizer !== aiChatRecognizer) return;
+    // "no-speech" is not a reason to stop a recording session. The browser
+    // may emit it after silence; onend will restart recognition if needed.
+    if (e.error !== "aborted" && e.error !== "no-speech") {
+      showToast("Couldn't hear that, but recording is still active. Try again.", "error");
+    }
+  };
+  recognizer.onend = () => {
+    if (recognizer !== aiChatRecognizer) return;
+    if (aiChatVoiceExplicitStop || aiChatVoicePaused) {
+      aiChatListening = false;
+      updateAiVoiceStatus();
+      return;
+    }
+    // Mobile Chrome/Safari can terminate SpeechRecognition after a silence
+    // or short service window. Treat that as an internal restart, not as the
+    // user's request to stop recording.
+    aiChatListening = false;
+    // Carry the transcript already captured by this recognition session into
+    // the next one. Mobile browsers can end SpeechRecognition after silence
+    // even with continuous=true; restarting must never erase what was heard.
+    const input = byId("aiChatInput");
+    if (input && input.value.trim()) input.dataset.aiVoiceTypedPrefix = `${input.value.trim()} `;
+    updateAiVoiceStatus();
+    aiChatVoiceRestartTimer = setTimeout(() => {
+      if (!aiChatVoiceExplicitStop && !aiChatVoicePaused && aiChatRecognizer === recognizer) {
+        startAiChatRecognition();
+      }
+    }, 120);
+  };
+  try { recognizer.start(); } catch (_) {
+    // If the browser says it is already starting, leave the current session
+    // alone rather than replacing it.
+  }
+}
+function toggleAiChatMic(event) {
+  event?.stopPropagation?.();
   if (!AiSpeechRecognition) return;
-  const btn = byId("aiChatMicBtn");
   // Tapping the mic always means "let me talk" - if Levi's mid-reply,
   // barge in and stop it immediately rather than talking over each other.
   if (("speechSynthesis" in window) && speechSynthesis.speaking) stopAiSpeaking();
-  if (aiChatListening) { aiChatRecognizer?.stop(); return; }
-  aiChatRecognizer = new AiSpeechRecognition();
-  aiChatRecognizer.lang = "en-NG";
-  aiChatRecognizer.interimResults = true; // show words as they're heard, not just after you stop talking
-  aiChatRecognizer.maxAlternatives = 1;
-  aiChatRecognizer.onstart = () => { aiChatListening = true; aiChatVoicePaused = false; updateAiVoiceStatus(); byId("aiChatInput").focus(); };
-  aiChatRecognizer.onresult = (e) => {
-    let transcript = "";
-    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    if (transcript) { const el = byId("aiChatInput"); el.value = transcript; autoGrowChatInput(el); el.scrollTop = el.scrollHeight; aiChatLastInputVoice = true; scrollAiVoiceIntoView(); }
-    updateAiVoiceStatus();
-  };
-  aiChatRecognizer.onerror = (e) => {
-    if (e.error !== "aborted" && e.error !== "no-speech") showToast("Couldn't hear that, try again.", "error");
-  };
-  aiChatRecognizer.onend = () => { aiChatListening = false; updateAiVoiceStatus(); };
-  try { aiChatRecognizer.start(); } catch (e) { /* already running */ }
+  if (aiChatListening || aiChatVoicePaused) {
+    stopAiChatVoiceRecording(event);
+    return;
+  }
+  clearTimeout(aiChatVoiceRestartTimer);
+  aiChatVoiceExplicitStop = false;
+  aiChatVoicePaused = false;
+  const input = byId("aiChatInput");
+  if (input) {
+    // Preserve anything the user had already typed before starting voice.
+    input.dataset.aiVoiceTypedPrefix = input.value.trim() ? `${input.value.trim()} ` : "";
+  }
+  startAiChatRecognition();
   updateAiVoiceStatus();
 }
-async function cancelAiChatVoice() {
+function stopAiChatVoiceRecording(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  aiChatVoiceExplicitStop = true;
+  aiChatVoicePaused = false;
+  clearTimeout(aiChatVoiceRestartTimer);
+  try { aiChatRecognizer?.stop(); } catch (_) { try { aiChatRecognizer?.abort(); } catch (_) {} }
+  aiChatRecognizer = null;
+  aiChatListening = false;
+  updateAiVoiceStatus();
+  const input = byId("aiChatInput");
+  if (input) {
+    delete input.dataset.aiVoiceTypedPrefix;
+    autoGrowChatInput(input);
+    input.scrollTop = input.scrollHeight;
+  }
+}
+async function cancelAiChatVoice(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
   if (!aiChatListening && !aiChatVoicePaused) return;
   const confirmed = await showConfirmDialog("Cancel your current voice recording? The text captured so far will be cleared.", { title: "Cancel recording", okLabel: "Cancel recording", danger: true });
   if (!confirmed) return;
+  aiChatVoiceExplicitStop = true;
+  clearTimeout(aiChatVoiceRestartTimer);
   try { aiChatRecognizer?.abort(); } catch (_) {}
-  aiChatRecognizer = null; aiChatListening = false; aiChatVoicePaused = false; aiChatLastInputVoice = false;
-  const input = byId("aiChatInput"); if (input) resetChatInput(input);
+  aiChatRecognizer = null;
+  aiChatListening = false;
+  aiChatVoicePaused = false;
+  aiChatLastInputVoice = false;
+  const input = byId("aiChatInput");
+  if (input) {
+    delete input.dataset.aiVoiceTypedPrefix;
+    resetChatInput(input);
+  }
   updateAiVoiceStatus();
 }
 
@@ -15309,6 +15510,19 @@ window.addEventListener("popstate", (e) => {
     return;
   }
 
+  if (urlParams.get("sharedStorefront")) {
+    const vendorId = urlParams.get("sharedStorefront");
+    history.replaceState({ view: "storefront", params: { vendorId } }, "", location.pathname);
+    await navigate("storefront", { vendorId }, false);
+    return;
+  }
+  if (urlParams.get("sharedProduct")) {
+    const productId = urlParams.get("sharedProduct");
+    history.replaceState({ view: "productDetail", params: { productId } }, "", location.pathname);
+    await navigate("productDetail", { productId }, false);
+    return;
+  }
+
   if (urlParams.get("paid") === "1" && urlParams.get("reference")) {
     const reference = urlParams.get("reference");
     const orderId = urlParams.get("orderId");
@@ -15420,6 +15634,11 @@ if ("serviceWorker" in navigator) {
 
 
 
+<style id="final-share-and-system-bar-polish">
+.product-share-wrap{flex:0 0 auto}.product-share-btn{min-width:42px;justify-content:center;gap:.35rem}.product-share-btn .share-btn-label{display:inline}
+@media(max-width:520px){.product-share-btn .share-btn-label{display:none}.product-share-btn{width:42px;padding-inline:.65rem}}
+body::before{background:var(--system-bar-shade,var(--bg)) !important}
+</style>
 <style id="final-system-bar-and-map-popup-polish">
 /* Android/PWA system-bar companion: use a quiet shade belonging to the
    current mode instead of the bright green accent. The actual OS bar reads
@@ -15446,21 +15665,23 @@ body::before { background: var(--system-bar-shade) !important; }
 <style id="profile-image-natural-ui-fix">
 .storefront-avatar-button{appearance:none;-webkit-appearance:none;padding:0;cursor:pointer;border:4px solid var(--card);background:var(--primary-grad);color:#fff;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 .storefront-avatar-button img{width:100%;height:100%;display:block;object-fit:cover;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;pointer-events:none;}
-#profilePanel img,header .brand-logo-circle,.chat-header-avatar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
+#profilePanel img,header .brand-logo-circle,.chat-header-avatar,.chat-avatar-button img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
 #vendorProfileImageLightbox{position:fixed;inset:0;z-index:10020;display:flex;align-items:center;justify-content:center;padding:1.25rem;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:1;visibility:visible;transition:opacity .18s ease,visibility .18s ease;}
 #vendorProfileImageLightbox.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 #vendorProfileImageLightbox .vendor-profile-image-card{position:relative;display:flex;align-items:center;justify-content:center;max-width:min(92vw,520px);max-height:82vh;}
 #vendorProfileImageLightbox img{display:block;width:min(82vw,420px);height:min(82vw,420px);max-width:82vw;max-height:72vh;object-fit:cover;border-radius:50%;border:4px solid rgba(255,255,255,.9);box-shadow:0 22px 70px rgba(0,0,0,.55);background:var(--card);}
 #vendorProfileImageLightbox .vendor-profile-image-close{position:absolute;right:-.45rem;top:-.45rem;width:2.55rem;height:2.55rem;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(20,20,20,.78);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35);}
 #vendorProfileImageLightbox .vendor-profile-image-fallback{width:min(62vw,280px);height:min(62vw,280px);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-grad);color:#fff;font-size:4rem;font-weight:800;border:4px solid rgba(255,255,255,.9);}
+#vendorProfileImageLightbox .vendor-profile-image-fallback i{font-size:clamp(3.2rem,16vw,5rem);line-height:1;}
 </style>
 <div id="vendorProfileImageLightbox" class="hidden" role="dialog" aria-modal="true" aria-label="Vendor profile picture" onclick="closeVendorProfileImageLightbox(event)"><div class="vendor-profile-image-card"><img id="vendorProfileImageLightboxImg" alt="" draggable="false" /><div id="vendorProfileImageLightboxFallback" class="vendor-profile-image-fallback hidden"></div><button type="button" class="vendor-profile-image-close" aria-label="Close profile picture" onclick="closeVendorProfileImageLightbox(event)"><i class="fa-solid fa-xmark"></i></button></div></div>
 <script id="profile-image-natural-ui-script">
 (function(){
-  function preventNativeImageMenu(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .storefront-avatar-button img');if(img)e.preventDefault();}
+  function preventNativeImageMenu(e){const img=e.target?.closest?.('#app img, #profilePanel img, header img, footer img, .chat-avatar-button img, .storefront-avatar-button img, .product-gallery img');if(img)e.preventDefault();}
   document.addEventListener('contextmenu',preventNativeImageMenu,{capture:true});
-  document.addEventListener('dragstart',function(e){const img=e.target?.closest?.('#profilePanel img, header .brand-logo-circle, .chat-header-avatar, .storefront-avatar-button img');if(img)e.preventDefault();},{capture:true});
-  window.openVendorProfileImageLightbox=function(url,name){const box=document.getElementById('vendorProfileImageLightbox'),img=document.getElementById('vendorProfileImageLightboxImg'),fallback=document.getElementById('vendorProfileImageLightboxFallback');if(!box)return;const safeName=String(name||'Vendor');if(url){img.src=url;img.alt=safeName;img.classList.remove('hidden');fallback.classList.add('hidden');}else{img.removeAttribute('src');img.alt='';img.classList.add('hidden');fallback.textContent=(safeName.trim()[0]||'?').toUpperCase();fallback.classList.remove('hidden');}box.classList.remove('hidden');};
+  document.addEventListener('dragstart',function(e){const img=e.target?.closest?.('#app img, #profilePanel img, header img, footer img, .chat-avatar-button img, .storefront-avatar-button img, .product-gallery img');if(img)e.preventDefault();},{capture:true});
+  window.openVendorProfileImageLightbox=function(url,name){const box=document.getElementById('vendorProfileImageLightbox'),img=document.getElementById('vendorProfileImageLightboxImg'),fallback=document.getElementById('vendorProfileImageLightboxFallback');if(!box)return;const safeName=String(name||'Vendor');if(url){img.src=url;img.alt=safeName;img.classList.remove('hidden');fallback.classList.add('hidden');}else{img.removeAttribute('src');img.alt='';img.classList.add('hidden');fallback.innerHTML='<i class="fa-solid fa-user" aria-hidden="true"></i>';fallback.style.background=typeof profileAvatarColor==='function'?profileAvatarColor(safeName):'var(--primary)';fallback.classList.remove('hidden');}box.classList.remove('hidden');};
+  window.openProfileImageLightbox=window.openVendorProfileImageLightbox;
   window.closeVendorProfileImageLightbox=function(e){if(e&&e.target?.closest?.('.vendor-profile-image-close')===null&&e.target?.id!=='vendorProfileImageLightbox')return;document.getElementById('vendorProfileImageLightbox')?.classList.add('hidden');};
   document.addEventListener('keydown',function(e){if(e.key==='Escape')window.closeVendorProfileImageLightbox();});
 })();
@@ -15495,8 +15716,10 @@ body::before { background: var(--system-bar-shade) !important; }
   const AXIS_LOCK = 10;
   const PROFILE_OPEN_ZONE = 0.50;
   const NOTIF_OPEN_ZONE = 0.50;
-  const OPEN_THRESHOLD = 0.35;
-  const CLOSE_THRESHOLD = 0.65;
+  // Moderate sensitivity: require a deliberate, substantial swipe instead of
+  // letting a small horizontal movement open or dismiss a drawer.
+  const OPEN_THRESHOLD = 0.40;
+  const CLOSE_THRESHOLD = 0.50;
 
   const profile = document.getElementById("profilePanel");
   const notif = document.getElementById("notifPanel");
@@ -15533,7 +15756,9 @@ body::before { background: var(--system-bar-shade) !important; }
     ".emoji-list",
     ".map",
     "[id*='Map']",
-    "[id*='map']"
+    "[id*='map']",
+    "#aiChatPanel",
+    "#aiChatFab"
   ].join(",");
 
   const CONTROL_EXCLUSIONS = [
@@ -15568,6 +15793,14 @@ body::before { background: var(--system-bar-shade) !important; }
       el = el.parentElement;
     }
     return false;
+  }
+
+  function isBackgroundSurface(target){
+    if (!target || !target.closest) return false;
+    if (target === document.body || target === document.documentElement || target.id === "app") return true;
+    if (target.classList?.contains("container")) return true;
+    const contentOwner = target.closest("#app > *, .card, section, article, header, footer, nav, button, a, input, textarea, select, img, [role='button'], [contenteditable='true']");
+    return !contentOwner;
   }
 
   function anotherLayerOpen(){
@@ -15668,6 +15901,10 @@ body::before { background: var(--system-bar-shade) !important; }
       state = null;
       return;
     }
+
+    // Opening gestures are reserved for unclaimed app background. Product
+    // cards, maps, tables, rails, images and controls always own their swipe.
+    if (!isBackgroundSurface(e.target)) { state = null; return; }
 
     const fromLeft = t.clientX;
     const fromRight = window.innerWidth - t.clientX;
@@ -15799,11 +16036,14 @@ body::before { background: var(--system-bar-shade) !important; }
     }
 
     /*
-     * Same feel as the proven source file:
-     *   opening needs only ~35%
-     *   closing needs ~65% so an accidental short drag doesn't dismiss it.
+     * Deliberate swipe only: a short horizontal nudge should settle back to
+     * the starting state. The percentage threshold is paired with a small
+     * absolute-distance floor so narrow phones do not become overly sensitive.
      */
-    const shouldOpen = progress > (current.closing ? CLOSE_THRESHOLD : OPEN_THRESHOLD);
+    const MIN_SWIPE_PX = Math.max(96, Math.min(130, width * 0.38));
+    const meaningfulTravel = Math.abs(dx) >= MIN_SWIPE_PX;
+    const threshold = current.closing ? CLOSE_THRESHOLD : OPEN_THRESHOLD;
+    const shouldOpen = meaningfulTravel && progress > threshold;
 
     if (current.kind === "profile") {
       finishProfile(shouldOpen);
