@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../openapi/zod.js";
 
 /**
  * Request validation with Zod. Controllers declare their schemas on the route

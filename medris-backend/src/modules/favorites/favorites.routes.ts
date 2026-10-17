@@ -4,6 +4,7 @@ import { rateLimit } from "../../middleware/rate-limit.js";
 import { IdParams, commonErrors, dataResponse, errorResponses } from "../../shared/openapi/schemas.js";
 import { signedIn } from "../../shared/openapi/security.js";
 import { FavoritesSchema, SavedResult, UnsavedResult } from "./favorites.schemas.js";
+import { z } from "../../shared/openapi/zod.js";
 
 /** Saved products and packages of the signed-in user. RLS keeps the rows private to their owner. */
 
@@ -54,3 +55,31 @@ export const saveProduct = saveRoute("products");
 export const unsaveProduct = unsaveRoute("products");
 export const savePackage = saveRoute("packages");
 export const unsavePackage = unsaveRoute("packages");
+
+export const savedProducts = defineRoute({
+  method: "get",
+  path: "/favorites/products",
+  tags,
+  summary: "The wishlist's saved products, with their shop",
+  description:
+    'Replaces `from("favorites").select("product:products(id, name, listing_type, sale_price, rental_rate, rental_rate_unit, photos, ' +
+    'quantity_available, condition, is_service, service_price_unit, status, vendor:vendors(...))").eq("buyer_id", me).order("created_at", desc)`. ' +
+    "`product` is null when it can no longer be seen.",
+  security: signedIn,
+  middleware: [requireUser] as const,
+  responses: { 200: dataResponse(z.array(z.object({ product: z.record(z.string(), z.unknown()).nullable() })), "Newest first."), ...errorResponses(401), ...commonErrors },
+});
+
+export const savedPackages = defineRoute({
+  method: "get",
+  path: "/favorites/packages",
+  tags,
+  summary: "The wishlist's saved packages, with their shop and items",
+  description:
+    'Replaces `from("package_favorites").select("package:vendor_packages(id, vendor_id, name, description, price, photos, created_at, status, ' +
+    'vendor:vendors!inner(...), items:package_items(quantity, product:products(id,name,photos)))").eq("buyer_id", me).order("created_at", desc)`. ' +
+    "`package` is null when it or its shop can no longer be seen.",
+  security: signedIn,
+  middleware: [requireUser] as const,
+  responses: { 200: dataResponse(z.array(z.object({ package: z.record(z.string(), z.unknown()).nullable() })), "Newest first."), ...errorResponses(401), ...commonErrors },
+});

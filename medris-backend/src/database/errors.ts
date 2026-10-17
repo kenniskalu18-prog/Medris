@@ -4,10 +4,13 @@ import { AppError } from "../shared/errors/app-error.js";
  * Maps PostgreSQL errors (SQLSTATE codes) to API errors.
  *
  * The database's SECURITY DEFINER functions report business-rule failures with
- * `raise exception '<message>'` (SQLSTATE P0001). Supabase passed that message
- * straight to the browser, which shows it in a toast ("You can't add your own
- * product to your cart."), so those messages are kept and returned as 400s.
- * Everything else is translated into a generic, safe message.
+ * `raise exception '<message>'`, usually with SQLSTATE P0001, 22023 (invalid
+ * input, "You cannot follow your own shop."), 42501 (not allowed, "Only admins
+ * can ...") or P0002 (not found). Supabase passed those messages straight to the
+ * browser, which shows them in a toast, so they are kept: any error raised by a
+ * RAISE statement (PostgreSQL reports "... at RAISE" in the error's context) keeps
+ * its message, with the status its code implies. Errors from PostgreSQL itself
+ * (a policy refusing a row, a malformed uuid...) get a generic, safe message.
  */
 
 export interface PgErrorLike {
@@ -17,6 +20,8 @@ export interface PgErrorLike {
   hint?: string;
   constraint?: string;
   table?: string;
+  /** Context, e.g. "PL/pgSQL function f() line 3 at RAISE". */
+  where?: string;
 }
 
 /** Drizzle wraps driver errors (DrizzleQueryError.cause); walk the cause chain to the PostgreSQL error. */
@@ -44,6 +49,12 @@ export function mapDatabaseError(err: unknown): AppError | null {
 
   // raise_exception and other PL/pgSQL errors raised on purpose by the database functions.
   if (code.startsWith("P0")) return new AppError(400, "bad_request", pg.message, undefined, cause);
+  // The first context line is where the error started (later lines are the callers).
+  if ((pg.where ?? "").split("\n")[0]!.endsWith(" at RAISE")) {
+    if (code === "42501") return new AppError(403, "forbidden", pg.message, undefined, cause);
+    if (code === "40001" || code === "40P01") return new AppError(409, "conflict", pg.message, undefined, cause);
+    if (code.startsWith("22") || code.startsWith("23")) return new AppError(400, "bad_request", pg.message, undefined, cause);
+  }
   if (code === "42501") return new AppError(403, "forbidden", "You are not allowed to do that.", undefined, cause);
   if (code === "23505") return new AppError(409, "conflict", "That already exists.", undefined, cause);
   if (code === "23503") return new AppError(409, "conflict", "A related record is missing or still in use.", undefined, cause);

@@ -1,0 +1,2307 @@
+[
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/48-suggestion-box.js",
+  "contains": "from(\"blocked_users\").select(\"blocked_id\").eq(\"blocker_id\", session.user.id).eq(\"blocked_id\"",
+  "endpoint": "GET /api/v1/blocks/{userId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/48-suggestion-box.js",
+  "contains": "from(\"blocked_users\").delete()",
+  "endpoint": "DELETE /api/v1/blocks/{userId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/48-suggestion-box.js",
+  "contains": "from(\"blocked_users\").insert(",
+  "endpoint": "PUT /api/v1/blocks/{userId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "from(\"blocked_users\").select(\"blocked_id\").eq(\"blocker_id\", uid)",
+  "endpoint": "GET /api/v1/blocks"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "from(\"message_pins\").select(",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/message-pins"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from('message_pins').select(",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/message-pins"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from('message_pins').insert(",
+  "endpoint": "PUT /api/v1/conversations/{conversationId}/message-pins/{messageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from('message_pins').delete()",
+  "endpoint": "DELETE /api/v1/conversations/{conversationId}/message-pins/{messageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/05-push-notifications-on-top-of-email-not-i.js",
+  "contains": "from(\"push_subscriptions\").upsert(",
+  "endpoint": "PUT /api/v1/push-subscriptions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"comment_reports\").insert(",
+  "endpoint": "POST /api/v1/engagement/comment-reports"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/74-order-notes.js",
+  "contains": "from(\"order_notes\").select(",
+  "endpoint": "GET /api/v1/orders/{orderId}/notes"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "from(\"points_rules\").select(\"*\")",
+  "endpoint": "GET /api/v1/points/rules"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from(\"messages\").update({ delivered_at",
+  "endpoint": "POST /api/v1/messages/delivered"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from('messages').select('*')",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/50-custom-chat-lists-whatsapp-style-user-ma.js",
+  "contains": "from(\"messages\").select(\"id,sender_id,body,attachment_name,deleted_at\").in(",
+  "endpoint": "GET /api/v1/messages?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "from(\"messages\").select(\"*\").eq(\"conversation_id\", conversationId).order(\"created_at\", { ascending: false })",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "from(\"messages\").select(\"*\").eq(\"conversation_id\", conversationId).order(\"created_at\", { ascending: true })",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/messages?order=asc"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"messages\").select(\"id,sender_id,body,attachment_name,deleted_at\").eq(\"id\"",
+  "endpoint": "GET /api/v1/messages?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"messages\").update({ read_at",
+  "endpoint": "POST /api/v1/messages/read"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"messages\").insert({ conversation_id: conversationId, sender_id: session.user.id, body, reply_to_id",
+  "endpoint": "POST /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"messages\").insert({conversation_id:conversationId",
+  "endpoint": "POST /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"messages\").insert(",
+  "endpoint": "POST /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/05-part.js",
+  "contains": "from('messages').select('id,sender_id,body,attachment_name,deleted_at')",
+  "endpoint": "GET /api/v1/messages?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/05-part.js",
+  "contains": "from('messages').update({read_at",
+  "endpoint": "POST /api/v1/messages/read"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('messages').insert(",
+  "endpoint": "POST /api/v1/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from('messages').select('*')",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/messages?after="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from('messages').update({read_at",
+  "endpoint": "POST /api/v1/messages/read"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/47-in-app-messaging.js",
+  "contains": "from(\"conversations\").select(\"id\")",
+  "endpoint": "POST /api/v1/conversations/direct"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/47-in-app-messaging.js",
+  "contains": "from(\"conversations\").insert(",
+  "endpoint": "POST /api/v1/conversations/direct"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "from(\"conversations\").select(\"id, buyer_id, vendor:vendors(",
+  "endpoint": "GET /api/v1/conversations/{conversationId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"conversations\").select(\"buyer_id, vendor_id\")",
+  "endpoint": "GET /api/v1/conversations/{conversationId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/75-order-detail.js",
+  "contains": "from(\"conversations\").select(\"id\")",
+  "endpoint": "POST /api/v1/conversations/direct"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/75-order-detail.js",
+  "contains": "from(\"conversations\").insert(",
+  "endpoint": "POST /api/v1/conversations/direct"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/53-call-log-rows-in-the-chat-missed-outgoin.js",
+  "contains": "from(\"voice_calls\").select(",
+  "endpoint": "GET /api/v1/conversations/{conversationId}/calls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "from(\"voice_calls\").select(\"status\")",
+  "endpoint": "GET /api/v1/calls/{callId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "from(\"voice_calls\").select(\"id,conversation_id,created_at,caller_id\")",
+  "endpoint": "GET /api/v1/calls/ringing?since="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_messages\").select(\"id, role, content, reaction, created_at\")",
+  "endpoint": "GET /api/v1/assistant/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_messages\").insert(",
+  "endpoint": "POST /api/v1/assistant/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_messages\").select(\"conversation_id,created_at\")",
+  "endpoint": "GET /api/v1/assistant/messages/{messageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_messages\").select(\"role,content,created_at\")",
+  "endpoint": "GET /api/v1/assistant/conversations/{conversationId}/messages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_conversations\").insert(",
+  "endpoint": "POST /api/v1/assistant/conversations"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_conversations\").select(",
+  "endpoint": "GET /api/v1/assistant/conversations"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from('ai_conversations').delete()",
+  "endpoint": "POST /api/v1/assistant/conversations/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"ai_conversations\").delete()",
+  "endpoint": "POST /api/v1/assistant/conversations/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"cart_items\").delete().eq(\"buyer_id\", session.user.id).eq(\"product_id\"",
+  "endpoint": "DELETE /api/v1/cart/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"cart_items\").select(\"id\").eq(\"buyer_id\"",
+  "endpoint": "GET /api/v1/cart/count (then DELETE /api/v1/cart)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\") .select(\"id,quantity\")",
+  "endpoint": "POST /api/v1/cart/items (add_to_cart's rules, see note)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").update({ quantity: nextQty })",
+  "endpoint": "POST /api/v1/cart/items (add_to_cart's rules, see note)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").insert({ buyer_id: session.user.id, product_id: productId",
+  "endpoint": "POST /api/v1/cart/items (add_to_cart's rules, see note)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").select(\"id\").eq(\"buyer_id\",session.user.id)",
+  "endpoint": "GET /api/v1/cart/count (then DELETE /api/v1/cart)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\") .select(\"id,product_id,product:products(",
+  "endpoint": "GET /api/v1/cart"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").update({quantity: currentQty-requestedQty})",
+  "endpoint": "PATCH /api/v1/cart/items/{id}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").delete().eq(\"id\", row.id)",
+  "endpoint": "DELETE /api/v1/cart/items/{id}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"cart_items\").delete() .eq(\"buyer_id\"",
+  "endpoint": "DELETE /api/v1/cart/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/44-wishlist.js",
+  "contains": "from(\"favorites\").select(\"product:products(",
+  "endpoint": "GET /api/v1/favorites/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/44-wishlist.js",
+  "contains": "from(\"package_favorites\").select(\"package:vendor_packages(",
+  "endpoint": "GET /api/v1/favorites/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/44-wishlist.js",
+  "contains": "from('vendor_follows').select('vendor:vendors!inner(",
+  "endpoint": "GET /api/v1/follows/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"vendor_follows\").select(\"vendor_id\").eq(\"follower_id\"",
+  "endpoint": "GET /api/v1/follows (ids; intersect on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"vendor_follows\").select(\"id\").eq(\"vendor_id\",st.vendor_id)",
+  "endpoint": "GET /api/v1/follows/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_comments\").select(",
+  "endpoint": "GET /api/v1/products/{productId}/comments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_comment_likes\").select(\"id,comment_id,user_id\")",
+  "endpoint": "GET /api/v1/products/{productId}/comments (likes)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_comments\").delete()",
+  "endpoint": "DELETE /api/v1/product-comments/{commentId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_comment_likes\").select(\"id\").eq(\"comment_id\"",
+  "endpoint": "POST /api/v1/product-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_comments\").select(",
+  "endpoint": "GET /api/v1/packages/{packageId}/comments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_comment_likes\").select(\"id,comment_id,user_id\")",
+  "endpoint": "GET /api/v1/packages/{packageId}/comments (likes)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_comments\").delete()",
+  "endpoint": "DELETE /api/v1/package-comments/{commentId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_comment_likes\").select(\"id\").eq(\"comment_id\"",
+  "endpoint": "POST /api/v1/package-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_engagement_settings\").select(\"product_id,vendor_id,like_visibility\")",
+  "endpoint": "GET /api/v1/engagement/product-settings?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_engagement_settings\").select(\"allow_comments,comment_audience,vendor_id\")",
+  "endpoint": "GET /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_engagement_settings\").select(\"package_id,vendor_id,like_visibility\")",
+  "endpoint": "GET /api/v1/engagement/package-settings?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"package_engagement_settings\").select(\"allow_comments,comment_audience,vendor_id\")",
+  "endpoint": "GET /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_comments\").insert(",
+  "endpoint": "POST /api/v1/products/{productId}/comments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_comments\").delete()",
+  "endpoint": "DELETE /api/v1/product-comments/{commentId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_comments\").insert(",
+  "endpoint": "POST /api/v1/packages/{packageId}/comments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_comments\").delete()",
+  "endpoint": "DELETE /api/v1/package-comments/{commentId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_comment_likes\").select(\"id\")",
+  "endpoint": "POST /api/v1/product-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_comment_likes\").delete()",
+  "endpoint": "POST /api/v1/product-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_comment_likes\").select(\"id\")",
+  "endpoint": "POST /api/v1/package-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_comment_likes\").delete()",
+  "endpoint": "POST /api/v1/package-comments/{commentId}/like"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_engagement_settings\").select(\"allow_comments,comment_audience,vendor_id\")",
+  "endpoint": "GET /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_engagement_settings\").select(\"allow_comments,comment_audience,vendor_id\")",
+  "endpoint": "GET /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"product_engagement_settings\").upsert(",
+  "endpoint": "PUT /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_engagement_settings\").upsert(",
+  "endpoint": "PUT /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from(\"product_engagement_settings\").select(",
+  "endpoint": "GET /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/55-package-detail.js",
+  "contains": "from(\"package_engagement_settings\").select(",
+  "endpoint": "GET /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_engagement_settings\").select(\"like_visibility,allow_comments,comment_audience\")",
+  "endpoint": "GET /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_engagement_settings\").upsert(",
+  "endpoint": "PUT /api/v1/products/{productId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"package_engagement_settings\").select(",
+  "endpoint": "GET /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"package_engagement_settings\").upsert(",
+  "endpoint": "PUT /api/v1/packages/{packageId}/engagement-settings"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"reviews\").select(\"id, rating, comment, buyer_name",
+  "endpoint": "GET /api/v1/vendors/{vendorId}/reviews"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"reviews\").insert(",
+  "endpoint": "POST /api/v1/orders/{orderId}/review"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"reviews\").select(\"id\").eq(\"order_id\"",
+  "endpoint": "GET /api/v1/reviews/mine?orderIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/79-product-ratings.js",
+  "contains": "from(\"reviews\").insert(",
+  "endpoint": "POST /api/v1/orders/{orderId}/review"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('reviews').select('order_id')",
+  "endpoint": "GET /api/v1/reviews/mine?orderIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('reviews').insert(",
+  "endpoint": "POST /api/v1/orders/{orderId}/review"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "from(\"product_rating_stats\").select(",
+  "endpoint": "GET /api/v1/engagement/product-ratings?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from(\"vendor_profile_view_events\").select(",
+  "endpoint": "GET /api/v1/vendors/{vendorId}/views/count?since="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"suggestions\").select(\"id\", { count: \"exact\", head: true })",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('suggestions').select('id',{count:'exact',head:true})",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"auth_activity_logs\").select(\"id\", { count: \"exact\", head: true }).eq(\"event_type\", \"login\").gte(",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"auth_activity_logs\").select(\"id\", { count: \"exact\", head: true }).eq(\"event_type\", \"login\"),",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"auth_activity_logs\").select(",
+  "endpoint": "GET /api/v1/admin/login-log"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"admin_actions\").insert(",
+  "endpoint": "POST /api/v1/admin/action-log"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"admin_actions\").select(\"*\")",
+  "endpoint": "GET /api/v1/admin/action-log"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"support_requests\").select(\"id\", { count: \"exact\", head: true })",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('support_requests').select('id',{count:'exact',head:true})",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"support_requests\") .select(\"id,subject",
+  "endpoint": "GET /api/v1/support-requests"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from('support_requests').insert(",
+  "endpoint": "POST /api/v1/support-requests"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from('support_requests').update({ attachments: uploaded })",
+  "endpoint": "PUT /api/v1/support-requests/{requestId}/attachments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from('support_requests').delete()",
+  "endpoint": "DELETE /api/v1/support-requests/{requestId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"support_requests\") .select(\"id,user_id",
+  "endpoint": "GET /api/v1/admin/support-requests"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from('support_requests').update({ status, admin_reply })",
+  "endpoint": "PATCH /api/v1/admin/support-requests/{requestId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/37-homepage-promotional-carousel.js",
+  "contains": "from(\"homepage_carousel_slides\").select(",
+  "endpoint": "GET /api/v1/carousel/slides"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\") .select(\"id,storage_path",
+  "endpoint": "GET /api/v1/carousel/slides?includeInactive=true"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\") .update({ sort_order: row.sort_order",
+  "endpoint": "PUT /api/v1/admin/carousel/order"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").insert(payload)",
+  "endpoint": "POST /api/v1/admin/carousel/slides"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").update({ alt_text, link_url, sort_order",
+  "endpoint": "PATCH /api/v1/admin/carousel/slides/{slideId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").update({ is_active:",
+  "endpoint": "PATCH /api/v1/admin/carousel/slides/{slideId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\") .update({ storage_path: uploaded.storagePath",
+  "endpoint": "PATCH /api/v1/admin/carousel/slides/{slideId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").select(\"storage_path\")",
+  "endpoint": "DELETE /api/v1/admin/carousel/slides/{slideId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").delete()",
+  "endpoint": "DELETE /api/v1/admin/carousel/slides/{slideId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").select(\"image_url\")",
+  "endpoint": "GET /api/v1/carousel/slides?includeInactive=true"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "from(\"homepage_carousel_slides\").insert(rows)",
+  "endpoint": "POST /api/v1/admin/carousel/slides"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/60-request-form-handlers.js",
+  "contains": "from(\"equipment_requests\").insert(",
+  "endpoint": "POST /api/v1/requests"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/60-request-form-handlers.js",
+  "contains": "from(\"equipment_requests\") .update({ status: \"cancelled\" })",
+  "endpoint": "POST /api/v1/requests/{requestId}/cancel"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/61-request-equipment-buyers-post-needs-vend.js",
+  "contains": "from(\"equipment_requests\").select(\"*, offers:request_offers(id, vendor_id, message",
+  "endpoint": "GET /api/v1/requests/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/61-request-equipment-buyers-post-needs-vend.js",
+  "contains": "from(\"equipment_requests\").select(\"*, offers:request_offers(id, vendor_id, status)\")",
+  "endpoint": "GET /api/v1/requests/open"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/61-request-equipment-buyers-post-needs-vend.js",
+  "contains": "from(\"request_offers\").insert(",
+  "endpoint": "POST /api/v1/requests/{requestId}/offers"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"disputes\").select(\"id\", { count: \"exact\", head: true })",
+  "endpoint": "GET /api/v1/admin/dashboard/counts (fix B12)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"disputes\").select(\"*, order:orders(",
+  "endpoint": "GET /api/v1/admin/disputes/queue"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('disputes').select('id,order_id',{count:'exact'})",
+  "endpoint": "GET /api/v1/admin/disputes/queue (fix B12)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "from(\"payments\").select(\"id,status,amount\")",
+  "endpoint": "GET /api/v1/orders/{orderId}/payments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"payments\").select(\"payment_type,status\")",
+  "endpoint": "GET /api/v1/orders/{orderId}/payments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from(\"service_offers\").select(",
+  "endpoint": "GET /api/v1/service-offers?listingId="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/77-vendor-order-details-redesigned-page.js",
+  "contains": "from(\"service_offers\").select(",
+  "endpoint": "GET /api/v1/service-offers/{offerId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('commission_charges').select('amount,due_at')",
+  "endpoint": "GET /api/v1/vendors/{vendorId}/commission/charges"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('commission_charges').select('due_at')",
+  "endpoint": "GET /api/v1/vendors/{vendorId}/commission/charges"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('notifications').select('id',{count:'exact',head:true})",
+  "endpoint": "GET /api/v1/notifications/unread-count?type=new_request"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"orders\").select(\"id,order_type,buyer_id,vendor_id,status,payment_unresolved_at",
+  "endpoint": "GET /api/v1/admin/disputes/queue"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"orders\").select(\"id,order_type,buyer_id,vendor_id,status,total_amount,status_changed_at,payment_escalated_at",
+  "endpoint": "GET /api/v1/admin/disputes/queue"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('orders').select('id',{count:'exact',head:true}).eq('status','payment_unresolved')",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('orders').select('id',{count:'exact',head:true}).eq('status','confirmed')",
+  "endpoint": "GET /api/v1/admin/dashboard/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/03-account-integrity.js",
+  "contains": "from(\"users\").select(\"id\").eq(\"id\", userId).maybeSingle(); if (readError)",
+  "endpoint": "GET /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/03-account-integrity.js",
+  "contains": "from(\"users\").select(\"id\").eq(\"id\", userId).maybeSingle(); if (repaired",
+  "endpoint": "GET /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/03-account-integrity.js",
+  "contains": "from(\"users\").upsert(recovered",
+  "endpoint": "POST /api/delete-account (ensure-profile; the browser fallback never worked: no insert policy)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/18-slide-in-drawers.js",
+  "contains": "from(\"users\").update({ ai_data_consent",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").select(\"*\").eq(\"id\", userId).single()",
+  "endpoint": "GET /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").update({ phone })",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").update({ role: authoritativeRole",
+  "endpoint": "POST /api/v1/me/role-selected"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").select(\"id\", { count: \"exact\", head: true }),",
+  "endpoint": "GET /api/v1/admin/people/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").select(\"id\", { count: \"exact\", head: true }).eq(\"role\", \"buyer\")",
+  "endpoint": "GET /api/v1/admin/people/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").select(\"id\", { count: \"exact\", head: true }).eq(\"role\", \"vendor\")",
+  "endpoint": "GET /api/v1/admin/people/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"users\").update({ avatar_url: null })",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from('users').update({avatar_url:url})",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/25-profile-setup-first-screen-after-sign-up.js",
+  "contains": "from(\"users\").update({ name })",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/25-profile-setup-first-screen-after-sign-up.js",
+  "contains": "from(\"users\").update({ name, phone",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"users\").update({ name: personalName })",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"users\").select(\"id,name,email,phone\").in(\"id\",userIds)",
+  "endpoint": "GET /api/v1/admin/users?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"users\").select(\"id,name,email,phone\").in(\"id\", userIds)",
+  "endpoint": "GET /api/v1/admin/users?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"users\").select(\"name,email,phone\").eq(\"id\", v.user_id)",
+  "endpoint": "GET /api/v1/admin/users?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"users\").select(\"id, name, email, phone, role, city, created_at",
+  "endpoint": "GET /api/v1/admin/people"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"users\").select(\"id, name, email\").eq(\"role\", \"admin\")",
+  "endpoint": "GET /api/v1/admin/admins"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/83-admin-manage-admins.js",
+  "contains": "from(\"users\").select(\"id,name,email,role\").in(\"id\",userIds)",
+  "endpoint": "GET /api/v1/admin/users?ids="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"users\").update({name})",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"users\").update({campus_id:id})",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"users\").update({campus_id:row.merged_into})",
+  "endpoint": "PATCH /api/v1/me/profile"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"products\").select(\"id\", { count: \"exact\", head: true }).eq(\"status\", \"active\")",
+  "endpoint": "GET /api/v1/admin/people/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true }).eq(\"buyer_",
+  "endpoint": "GET /api/v1/orders/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true }).eq(\"vendor",
+  "endpoint": "GET /api/v1/orders/counts?vendorId=&since="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "from(\"orders\").select(\"status,status_changed_at,payment_unresolved_at,",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "from(\"orders\").select(\"id,status,status_changed_at,total_amount\").orde",
+  "endpoint": "GET /api/v1/orders?side=either&limit=150"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/24-my-details-any-logged-in-buyer-vendor-s.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true }).eq(\"buyer_",
+  "endpoint": "GET /api/v1/orders/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/47-in-app-messaging.js",
+  "contains": "from(\"orders\").select(\"id,buyer_id,vendor_id\").eq(\"id\", orderId).maybe",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true })",
+  "endpoint": "GET /api/v1/orders/completed-between"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/64-vendor-dashboard.js",
+  "contains": "from(\"orders\").select(\"status, total_amount, created_at\").eq(\"vendor_i",
+  "endpoint": "GET /api/v1/orders?side=vendor"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/65-vendor-earnings-payout-history-so-a-vend.js",
+  "contains": "from(\"orders\") .select(\"id, total_amount, order_type, payout_released_at, buyer:users(name), items:order_items",
+  "endpoint": "GET /api/v1/orders?side=vendor&payoutStatus=released&orderBy=payout_released_at"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"id,status,order_type,delivery_method,awaiting_c",
+  "endpoint": "GET /api/v1/orders?side=vendor&status=pending,confirmed,payment_unresolved&limit=500"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true }).eq(\"vendor",
+  "endpoint": "GET /api/v1/orders/counts?vendorId="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"status\").eq(\"buyer_id\", session.user.id).in(\"st",
+  "endpoint": "GET /api/v1/orders/counts (buyer_by_status)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"id\", { count: \"exact\", head: true }).eq(\"buyer_",
+  "endpoint": "GET /api/v1/orders/counts"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"*, buyer:users(name), items:order_items(*,produ",
+  "endpoint": "GET /api/v1/orders?side=vendor&createdFrom=&createdTo="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"status, created_at, status_changed_at, complete",
+  "endpoint": "GET /api/v1/orders?side=vendor"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"*\").eq(\"vendor_id\", vendor.id);",
+  "endpoint": "GET /api/v1/orders?side=vendor&status=&createdFrom=&createdTo="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"status, created_at, order_type, delivery_method",
+  "endpoint": "GET /api/v1/orders?side=vendor"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"status, created_at\").eq(\"vendor_id\", vendor.id)",
+  "endpoint": "GET /api/v1/orders?side=vendor"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"*, vendor:vendors(business_name,city,logo_url),",
+  "endpoint": "GET /api/v1/orders?side=buyer&createdFrom=&createdTo="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"orders\").select(\"*\").eq(\"buyer_id\", session.user.id);",
+  "endpoint": "GET /api/v1/orders?side=buyer&status=&createdFrom=&createdTo="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/75-order-detail.js",
+  "contains": "from(\"orders\").select(\"id,buyer_id,vendor_id\").eq(\"id\", orderId).maybe",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/77-vendor-order-details-redesigned-page.js",
+  "contains": "from(\"orders\") .select(\"*, vendor:vendors(id, business_name, phone, whatsapp_number, whatsapp_visible, address",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/77-vendor-order-details-redesigned-page.js",
+  "contains": "from('orders').select('id,buyer_id,status,vendor_id,vendor:vendors(use",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"orders\").select(\"id,status,items:order_items(id,quantity,product",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"orders\").select(\"delivery_method\").eq(\"id\",orderId).maybeSingle(",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"orders\").select(\"id,delivery_method,order_type\").eq(\"id\",orderId",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/78-quantity-suggestions.js",
+  "contains": "from(\"orders\")",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"orders\").select(\"id,status,order_type,total_amount,created_at,ve",
+  "endpoint": "GET /api/v1/orders?side=buyer&limit=50"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from(\"orders\").select(\"id,total_amount,delivery_fee,deposit_amount,buy",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('orders').select('id,vendor_id,completed_at,status_changed_at,cre",
+  "endpoint": "GET /api/v1/orders?side=buyer&status=completed&limit=15"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"orders\").select(\"service_offer_id\").eq(\"id\",orderId).maybeSingle",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/10-levromart-admin-reject-inventory-fix-js-.js",
+  "contains": "from('orders').select('id,total_amount,order_type,delivery_method,payment_timing,payment_deposit_percent,status,status_changed_at,payment_escalated_at,vendor:vendors(id,business_name),payments(payment",
+  "endpoint": "GET /api/v1/orders?side=buyer&status=confirmed&escalated=true&orderBy=payment_escalated_at&limit=10"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/65-vendor-earnings-payout-history-so-a-vend.js",
+  "contains": "from(\"orders\") .select(\"id, total_amount, order_type, completed_at, status_changed_at, created_at, items:order",
+  "endpoint": "GET /api/v1/orders?side=vendor&status=completed"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/77-vendor-order-details-redesigned-page.js",
+  "contains": "from(\"orders\") .select(\"id,buyer_id,vendor_id,status,order_type,package_id,total_amount,delivery_method,delive",
+  "endpoint": "GET /api/v1/orders/{orderId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/10-levromart-admin-reject-inventory-fix-js-.js",
+  "contains": "from('orders').select('id,total_amount,order_type,delivery_method,payment_timing,payment_deposit_percent,status,status_changed_at,payment_escalated_at,buyer:users(name),payments(payment_type,status,am",
+  "endpoint": "GET /api/v1/orders?side=vendor&status=confirmed&escalated=true&orderBy=payment_escalated_at&limit=10"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"order_items\").select(\"order_id,product_id,quantity,unit_price,product:products(",
+  "endpoint": "GET /api/v1/orders (each order's items are included)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"order_items\").select(\"product_id, quantity, unit_price, order:orders!inner(",
+  "endpoint": "GET /api/v1/orders?side=vendor (items included)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"order_items\").select(\"product_id,quantity,unit_price,order:orders!inner(",
+  "endpoint": "GET /api/v1/orders?side=vendor (items included)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", userId).is(\"deleted_at\", null).ma",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from(\"vendors\").update({cover_url:url}).eq(\"id\",vendor.id);if(error)throw e",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "from('vendors').update({ logo_url:url }).eq('id', vendor.id); if (!vendorLo",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"vendors\").select(\"id, business_name, city, avg_rating, review_count,",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"vendors\").select(VENDOR_COLS).in(\"id\", ids).eq(\"verification_status\",",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendors\").select(\"id,business_name\").eq(\"verification_status\",\"verifi",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,logo_url,city,lat,lng,avg_rating,r",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendors\").select(vendorCols).eq(\"verification_status\", \"verified\").eq",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendors\").select(vendorCols).in(\"id\", ids).eq(\"verification_status\",",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendors\").select(\"id,lat,lng\").eq(\"verification_status\",\"verified\").e",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/44-wishlist.js",
+  "contains": "from(\"vendors\").select(\"id,business_name\").eq(\"user_id\", session.user.id).i",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/45-follower-network-vendors-only.js",
+  "contains": "from(\"vendors\").select(\"id,business_name\").eq(\"id\", vendorId).maybeSingle()",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/47-in-app-messaging.js",
+  "contains": "from(\"vendors\").select(\"business_name, business_hours, allow_after_hours_me",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/48-suggestion-box.js",
+  "contains": "from(\"vendors\").select(\"business_name\").eq(\"id\", vendorId).maybeSingle(); b",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/58-vendors-page-card-empty-state.js",
+  "contains": "from(\"vendors\") .select(\"id, business_name, city, avg_rating, review_count,",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"vendors\") .select(\"id,business_name,bio,logo_url,whatsapp_number,what",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"vendors\").select(\"*, sector:sectors(name, icon)\").eq(\"id\", vendorId).",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/61-request-equipment-buyers-post-needs-vend.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/63-vendor-application.js",
+  "contains": "from(\"vendors\").select(\"id\").eq(\"user_id\", session.user.id).is(\"deleted_at\"",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/63-vendor-application.js",
+  "contains": "from(\"vendors\").insert({ user_id: session.user.id, sector_id: sectorId, bus",
+  "endpoint": "POST /api/v1/shops/application (submit_vendor_application; documents via PATCH /api/v1/shops/mine)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/63-vendor-application.js",
+  "contains": "from(\"vendors\").update({ bank_code: payoutBankCode, bank_name: payoutBankNa",
+  "endpoint": "PUT /api/v1/shops/mine/payout"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/64-vendor-dashboard.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/65-vendor-earnings-payout-history-so-a-vend.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ bank_code: bankCode, bank_name: bankName, account_",
+  "endpoint": "PUT /api/v1/shops/mine/payout"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\") .select(\"*\").eq(\"id\", owner).eq(\"user_id\", session.user.id)",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ allow_after_hours_messages: checked }).eq(\"id\", ve",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ whatsapp_visible: checkbox.checked }).eq(\"id\", ven",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ business_name, sector_id: sector_id || null, addre",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ cover_url: null }).eq(\"id\", vendor.id); if (error)",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ logo_url: url }).eq(\"id\", vendor.id); if (error) {",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ logo_url: null }).eq(\"id\", vendor.id); if (error)",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ lat: loc.lat, lng: loc.lng }).eq(\"id\", vendor.id);",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "from(\"vendors\").update({ lat, lng }).eq(\"id\", vendor.id); if (error) { show",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"vendors\").select(\"id, sector_id, delivery_fee, delivery_fee_mode, del",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendors\").select(\"*\").eq(\"user_id\", session.user.id).is(\"deleted_at\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"vendors\").select(\"id\").eq(\"user_id\", session.user.id).is(\"deleted_at\"",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/72-order-stats-today-week-month-all-time-co.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,city,logo_url\").in(\"id\", vendorIds",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/77-vendor-order-details-redesigned-page.js",
+  "contains": "from(\"vendors\") .select(\"id,user_id,verification_status,deleted_at\") .eq(\"i",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,phone,city,user_id\").in(\"id\",vendo",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\") .select(\"id,business_name,address,city,phone,whatsapp_numbe",
+  "endpoint": "GET /api/v1/admin/shops?deleted=true"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\") .select(\"id, business_name, address, city, phone, whatsapp_",
+  "endpoint": "GET /api/v1/admin/shops?status="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\") .select(\"id,user_id,business_name,verification_status,is_ac",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\").select(\"business_name\").eq(\"id\", vendorId).maybeSingle(); b",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendors\").select(\"user_id,phone,whatsapp_number,address,city,bank_nam",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"vendors\").select(\"business_name, business_hours, allow_after_hours_me",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"vendors\").select(\"business_name\").eq(\"id\", draft.vendorId).maybeSingl",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\") .select(\"id,business_name,verification_status,is_active\") .",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,city,lat,lng,avg_rating,review_cou",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,city,avg_rating,review_count\").eq(",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\").select(\"sector_id\").eq(\"verification_status\",\"verified\").eq",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\").select(\"business_name,city,avg_rating,review_count\").eq(\"se",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"vendors\").select(\"id,business_name\").eq(\"user_id\",session.user.id).is",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/03-levromart-2026-09-09-vendor-logic-fixes.js",
+  "contains": "from(\"vendors\").select(\"id\").eq(\"user_id\", session.user.id).is(\"deleted_at\"",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/03-levromart-2026-09-09-vendor-logic-fixes.js",
+  "contains": "from(\"vendors\").insert({ user_id: session.user.id, sector_id: byId(\"vaSecto",
+  "endpoint": "POST /api/v1/shops/application (submit_vendor_application; documents via PATCH /api/v1/shops/mine)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/03-levromart-2026-09-09-vendor-logic-fixes.js",
+  "contains": "from(\"vendors\").update({ bank_code:bankCode, bank_name:bankName, account_na",
+  "endpoint": "PUT /api/v1/shops/mine/payout"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/04-levromart-vendor-location-auto-script.js",
+  "contains": "from(\"vendors\").insert({ user_id:session.user.id, sector_id:byId(\"vaSector\"",
+  "endpoint": "POST /api/v1/shops/application (submit_vendor_application; documents via PATCH /api/v1/shops/mine)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/04-levromart-vendor-location-auto-script.js",
+  "contains": "from(\"vendors\") .select(\"id,verification_status,is_active,lat,lng\") .eq(\"us",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/04-levromart-vendor-location-auto-script.js",
+  "contains": "from(\"vendors\").update({lat:loc.lat,lng:loc.lng}).eq(\"id\",ownVendor.id); if",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('vendors').select('id,business_name,city,avg_rating,review_count,secto",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,bank_code,bank_name,account_number",
+  "endpoint": "GET /api/v1/orders/{orderId} (the shop's bank details)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from(\"vendors\").insert({ user_id:session.user.id, sector_id:byId(\"vaSector\"",
+  "endpoint": "POST /api/v1/shops/application (submit_vendor_application; documents via PATCH /api/v1/shops/mine)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from(\"vendors\") .delete() .eq(\"id\",createdVendorId) .eq(\"user_id\",session.u",
+  "endpoint": "DELETE /api/v1/shops/{vendorId}/application"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from(\"vendors\").update({ bank_code:bankCode, bank_name:bankName, account_na",
+  "endpoint": "PUT /api/v1/shops/mine/payout"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('vendors').select('id,business_name,city,avg_rating,review_count').eq(",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('vendors').select('business_name,city').eq('verification_status','veri",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,city,avg_rating,review_count\").eq(",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,city\").eq(\"verification_status\",\"v",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from('vendors').select('id',{count:'exact',head:true}).eq('verification_sta",
+  "endpoint": "GET /api/v1/admin/dashboard/counts (pending_shop_applications)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\") .select(\"id\") .eq(\"user_id\",session.user.id) .is(\"deleted_at\",null) .maybeSingle();",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").insert({ user_id:session.user.id, sector_id:byId(\"vaSector\"",
+  "endpoint": "POST /api/v1/shops/application (submit_vendor_application; documents via PATCH /api/v1/shops/mine)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").update({ bank_code:bankCode, bank_name:bankName, account_na",
+  "endpoint": "PUT /api/v1/shops/mine/payout"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\") .delete() .eq(\"id\",createdVendorId) .eq(\"user_id\",session.u",
+  "endpoint": "DELETE /api/v1/shops/{vendorId}/application"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\") .select(\"id,verification_status\") .eq(\"user_id\",session.use",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").update({business_hours,opening_hours:summarizeBusinessHours",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").select(\"verification_docs\").eq(\"id\",vendorId).eq(\"user_id\",",
+  "endpoint": "GET /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").update({verification_docs:docs}).eq(\"id\",vendorId).eq(\"user",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").select(\"business_name\").eq(\"id\",vendorId).maybeSingle(); bu",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "from(\"vendors\").select(\"business_name\").eq(\"id\",vendorId).maybeSingle(); co",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/10-levromart-admin-reject-inventory-fix-js-.js",
+  "contains": "from(\"vendors\") .select(\"id,user_id,business_name,verification_status\") .eq",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,logo_url\").eq(\"verification_status",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,logo_url\").in(\"id\",ids).eq(\"verifi",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id\").eq(\"verification_status\",\"verified\").eq(\"is_ac",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id,business_name\").eq(\"verification_status\",\"verifi",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({request_pref:v}).eq(\"id\",vendor.id); if(r.error){ s",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({operating_scope:st.scope,operating_campuses:st.list",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id,campus_id,student_verified,operating_scope,opera",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({request_campus_scope:scope}).eq(\"id\",v.id); if(r.er",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({campus_id:profile.campus_id}).eq(\"id\",v.id); v.camp",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({campus_setup_done:true}).eq(\"id\",v.id); v.campus_se",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").update({operating_scope:ops.scope,operating_campuses:ops.li",
+  "endpoint": "PATCH /api/v1/shops/mine"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id,business_name,logo_url,campus_id,operating_scope",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendors\").select(\"id\").eq(\"verification_status\",\"verified\").eq(\"stude",
+  "endpoint": "GET /api/v1/shops"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/13-face-verify.js",
+  "contains": "from(\"vendors\").select(\"business_name,logo_url,verification_status,student_",
+  "endpoint": "GET /api/v1/shops/{vendorId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "from(\"products\").select(\"id\", { count: \"exact\", head: true }).eq(\"vendor_id",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\").select(\"id, name, category_id, listing_type, sale_price, d",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\") .select(\"id, name, photos, created_at, vendor:vendors!inne",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\") .select(PRODUCT_LIST_SELECT) .eq(\"status\", \"active\") .eq(\"",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\") .select(\"vendor_id, vendor:vendors!inner(id)\") .eq(\"status",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\") .select(\"category_id, category:categories!inner(sector_id)",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\").select(PRODUCT_LIST_SELECT).eq(\"status\", \"active\").eq(\"is_",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"products\") .select(PRODUCT_LIST_SELECT + \",view_count,created_at\") .e",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/41-instant-search-names-are-matched-on-the.js",
+  "contains": "from(\"products\").select(\"id,name,photos,sale_price,discount_price,rental_ra",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/41-instant-search-names-are-matched-on-the.js",
+  "contains": "from(\"products\") .select(\"id,name,photos,sale_price,discount_price,rental_r",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"products\").select(\"id,name,vendor:vendors!inner(id)\").eq(\"status\",\"ac",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"products\").select(\"id,name,photos,sale_price,discount_price,rental_ra",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"products\") .select(PRODUCT_LIST_SELECT) .eq(\"status\", \"active\") .eq(\"",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/43-browse-everything-data-light-index-24-at.js",
+  "contains": "from(\"products\").select(PRODUCT_LIST_SELECT).in(\"id\", missing) .eq(\"status\"",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/43-browse-everything-data-light-index-24-at.js",
+  "contains": "from(\"products\") .select(`id, vendor_id, category_id, is_service, category:",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/43-browse-everything-data-light-index-24-at.js",
+  "contains": "from(\"products\").select(PRODUCT_LIST_SELECT) .eq(\"status\", \"active\").eq(\"ve",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from('products').select('id,name,description,photos,is_service,billing_mode",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from(\"products\").select(\"*, vendor:vendors!inner(id, business_name, previou",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from(\"products\") .select(\"id, name, listing_type, sale_price, discount_pric",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/58-vendors-page-card-empty-state.js",
+  "contains": "from(\"products\").select(\"vendor_id, name, description, listing_type, is_ser",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"products\").select(\"id,name,photos,status,vendor:vendors!inner(id,busi",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"products\").select(\"id, name, listing_type, sale_price, discount_price",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/61-request-equipment-buyers-post-needs-vend.js",
+  "contains": "from(\"products\").select(\"id, name, category_id, sale_price, rental_rate, re",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/64-vendor-dashboard.js",
+  "contains": "from(\"products\").select(\"id, view_count, is_service, status\").eq(\"vendor_id",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"*, category:categories(name)\").eq(\"vendor_id\", v.i",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"*\").eq(\"id\", productId).eq(\"vendor_id\", vendor.id)",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"*\").eq(\"id\", editingProductId).single(); const { d",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"*, vendor:vendors!inner(id, business_name, previou",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"id,photos,vendor_id\").eq(\"id\", productId).eq(\"vend",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"quantity_total,quantity_available,photos\").eq(\"id\"",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\") .update({ ...fields, quantity_available, photos: finalPhot",
+  "endpoint": "PATCH /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\") .insert({ ...fields, vendor_id: vendor.id, quantity_availa",
+  "endpoint": "POST /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").delete().eq(\"id\", createdProductId).eq(\"vendor_id\", vendor",
+  "endpoint": "DELETE /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\") .select(\"id,name,status,billing_model,billing_status,billi",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\") .update({ status: \"active\", billing_status: p.billing_mode",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").update({ status }).eq(\"id\", id).eq(\"vendor_id\", vendor.id)",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").update({ status: \"removed\" }).eq(\"id\", id).eq(\"vendor_id\",",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").select(\"id,name,status,billing_model,billing_status,billin",
+  "endpoint": "GET /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").update({ status:\"active\", billing_status: p.billing_model",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").delete().eq(\"id\", id).eq(\"vendor_id\", vendor.id); if (erro",
+  "endpoint": "DELETE /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"products\").update({ status:\"removed\", billing_status: \"cancelled\" }).",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"products\").select(\"id, name, sale_price\") .eq(\"vendor_id\", vendor.id)",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/86-floating-ai-chat-draggable.js",
+  "contains": "from(\"products\").select(\"id,name,sale_price,discount_price,quantity_availab",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\") .select(\"id,name,listing_type,sale_price,rental_rate,quant",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\") .select(productSelect) .eq(\"status\", \"active\") .ilike(\"nam",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\") .select(productSelect) .eq(\"status\", \"active\").in(\"id\", id",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\") .select(\"id,listing_type,sale_price,quantity_available,sta",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\") .select(\"id,name,description,sale_price,discount_price,ren",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from('products').select(`*,vendor:vendors!inner(${vf}),category:categories(",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\").select(\"id,listing_type,vendor:vendors!inner(id,business_n",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\").select(\"id,name,created_at,vendor:vendors!inner(id,busines",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\").select(\"id,name,status,view_count,quantity_available,quant",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"products\").select(\"id,name,status,quantity_available,vendor_id\").eq(\"",
+  "endpoint": "GET /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('products').select('vendor_id,listing_type').eq('status','active').lim",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('products').select('vendor_id,name,description,listing_type,category:c",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('products').select('id,name,description,sale_price,discount_price,rent",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "from('products').select('id,name,description,vendor:vendors!inner(id,busine",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\") .select(\"id,name,description,photos,sale_price,discount_pr",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").select(\"id,name,is_service,vendor:vendors!inner(id,busines",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").insert({...draft.fields,vendor_id:vendor.id,quantity_avail",
+  "endpoint": "POST /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").delete().eq(\"id\",listingId).eq(\"vendor_id\",vendor.id);thro",
+  "endpoint": "DELETE /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").delete().eq(\"id\",listingId).eq(\"vendor_id\",vendor.id);else",
+  "endpoint": "DELETE /api/v1/shops/mine/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").select(\"id\").eq(\"vendor_id\",vendorId).eq(\"billing_referenc",
+  "endpoint": "GET /api/v1/shops/mine/products/by-reference/{reference}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").insert({...fields,vendor_id:vendorId,quantity_available:fi",
+  "endpoint": "POST /api/v1/shops/mine/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"products\").update({billing_reference:null}).eq(\"id\",savedProductId).e",
+  "endpoint": "POST /api/v1/shops/mine/products/{productId}/clear-reference"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"products\").select(SEARCH_SEL).eq(\"status\", \"active\") .eq(\"vendor.veri",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"products\").select(\"id,category_id,category:categories(sector_id)\").eq",
+  "endpoint": "GET /api/v1/products/{productId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"products\").select(CARD_SEL).eq(\"status\", \"active\") .eq(\"vendor.verifi",
+  "endpoint": "GET /api/v1/products"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/39-home-marketplace-browse.js",
+  "contains": "from(\"vendor_packages\") .select(\"id, vendor_id, name, description, price, p",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendor_packages\").select(\"id,name,price,photos,items:package_items(qu",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendor_packages\").select(\"id, vendor_id, name, description, price, ph",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"vendor_packages\") .select(\"id, vendor_id, name, description, price, p",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/55-package-detail.js",
+  "contains": "from(\"vendor_packages\").select(\"id,name,price,photos,status,vendor:vendors!",
+  "endpoint": "GET /api/v1/packages/{packageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/55-package-detail.js",
+  "contains": "from(\"vendor_packages\") .select(\"id, vendor_id, name, description, price, p",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/58-vendors-page-card-empty-state.js",
+  "contains": "from(\"vendor_packages\").select(\"vendor_id, name, description\").eq(\"status\",",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "from(\"vendor_packages\").select(\"*, items:package_items(quantity, product:pr",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/64-vendor-dashboard.js",
+  "contains": "from(\"vendor_packages\").select(\"id\", { count: \"exact\", head: true }).eq(\"ve",
+  "endpoint": "GET /api/v1/shops/mine/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"vendor_packages\").select(\"*, items:package_items(quantity, product:pr",
+  "endpoint": "GET /api/v1/shops/mine/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").select(\"*, items:package_items(quantity, product:pr",
+  "endpoint": "GET /api/v1/shops/mine/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").select(\"*, items:package_items(product_id, quantity",
+  "endpoint": "GET /api/v1/packages/{packageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").update(payload).eq(\"id\", packageId).select(\"*\").sin",
+  "endpoint": "PATCH /api/v1/shops/mine/packages/{packageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").insert(payload).select(\"*\").single(); if (error) th",
+  "endpoint": "POST /api/v1/shops/mine/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").update({ status }).eq(\"id\", id).eq(\"vendor_id\", ven",
+  "endpoint": "POST /api/v1/shops/mine/packages/{packageId}/status"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"vendor_packages\").delete().eq(\"id\", id).eq(\"vendor_id\", vendor.id); i",
+  "endpoint": "DELETE /api/v1/shops/mine/packages/{packageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from('vendor_packages').select(`*,vendor:vendors!inner(${vf}),items:package",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "from('vendor_packages').select('vendor_id,name,description').eq('status','a",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"vendor_packages\").select(\"id,name,price,vendor:vendors!inner(id,busin",
+  "endpoint": "GET /api/v1/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"vendor_packages\").insert({...draft.fields,vendor_id:vendor.id,status:",
+  "endpoint": "POST /api/v1/shops/mine/packages"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"vendor_packages\").delete().eq(\"id\",listingId).eq(\"vendor_id\",vendor.i",
+  "endpoint": "DELETE /api/v1/shops/mine/packages/{packageId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/42-typo-tolerant-search-helpers.js",
+  "contains": "from(\"package_items\").select(\"package_id, product:products!inner(name,descr",
+  "endpoint": "GET /api/v1/packages?qItems="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"package_items\").delete().eq(\"package_id\", packageId);if(removeError)t",
+  "endpoint": "PATCH /api/v1/shops/mine/packages/{packageId} (items replaced with the package)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from('package_items').insert(items.map(it=>({...it,package_id:packageId})))",
+  "endpoint": "PATCH /api/v1/shops/mine/packages/{packageId} (items replaced with the package)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"package_items\").insert((draft.items||[]).map(it=>({...it,package_id:l",
+  "endpoint": "POST /api/v1/shops/mine/packages (items included)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"vendor_student_verification\").select(\"*\").eq(\"vendor_id\", vid).maybeS",
+  "endpoint": "GET /api/v1/shops/{vendorId}/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").select(\"*\").eq(\"vendor_id\",v.id).maybeS",
+  "endpoint": "GET /api/v1/shops/{vendorId}/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").upsert(rec,{onConflict:\"vendor_id\"}); i",
+  "endpoint": "PUT /api/v1/shops/mine/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").update({ocr_matric_found:o.matric,ocr_n",
+  "endpoint": "POST /api/v1/shops/mine/student-verification/ocr"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").upsert({vendor_id:v.id,matric_number:p.",
+  "endpoint": "PUT /api/v1/shops/mine/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").select(\"status\").eq(\"vendor_id\",v.id).m",
+  "endpoint": "GET /api/v1/shops/{vendorId}/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"vendor_student_verification\").select(\"vendor_id,status,matric_pending",
+  "endpoint": "GET /api/v1/student-verifications"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/13-face-verify.js",
+  "contains": "from(\"vendor_student_verification\").select(\"*\").eq(\"vendor_id\",vendorId).ma",
+  "endpoint": "GET /api/v1/shops/{vendorId}/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/13-face-verify.js",
+  "contains": "from(\"vendor_student_verification\").select(\"status,selfie_url,id_card_url,b",
+  "endpoint": "GET /api/v1/shops/{vendorId}/student-verification"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/56-product-detail.js",
+  "contains": "from(\"product_variants\").select(\"*\").eq(\"product_id\", productId).order(\"sor",
+  "endpoint": "GET /api/v1/product-variants?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_variants\").select(\"*\").in(\"product_id\", productIds).order(\"so",
+  "endpoint": "GET /api/v1/product-variants?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_variants\").select(\"*\").eq(\"product_id\", productId).order(\"sor",
+  "endpoint": "GET /api/v1/product-variants?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_variants\") .select(\"*\").eq(\"product_id\", editingProductId) .o",
+  "endpoint": "GET /api/v1/product-variants?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_variants\").select(\"id,product_id,name,photo_url,sale_price,di",
+  "endpoint": "GET /api/v1/product-variants?productIds="
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"product_variants\").delete().eq(\"product_id\", createdProductId).eq(\"pr",
+  "endpoint": "DELETE /api/v1/shops/mine/products/{productId} (its varieties go with it)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"monthly_listing_submissions\").select(\"listing_id,status\").eq(\"vendor_",
+  "endpoint": "GET /api/v1/shops/mine/monthly-submissions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"monthly_listing_submissions\").select(\"listing_id,status,submitted_at,",
+  "endpoint": "GET /api/v1/shops/mine/monthly-submissions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/70-vendor-packages-bundle-deals-e-g-an-outr.js",
+  "contains": "from(\"monthly_listing_submissions\").select(\"listing_id,status,submitted_at,",
+  "endpoint": "GET /api/v1/shops/mine/monthly-submissions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from('monthly_listing_submissions').select('id,kind,listing_id,vendor_id').",
+  "endpoint": "GET /api/v1/monthly-submissions/pending"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "from(\"monthly_listing_submissions\").select(\"id,kind,listing_id,vendor_id,us",
+  "endpoint": "GET /api/v1/admin/monthly-submissions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"monthly_listing_submissions\").select(\"id,kind,listing_id,payer_name,r",
+  "endpoint": "GET /api/v1/monthly-submissions/pending/{kind}/{listingId}"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "from(\"categories\").select(\"id\").eq(\"sector_id\", chosenSectorId).is(\"parent_",
+  "endpoint": "GET /api/v1/catalogue/categories (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"categories\").select(\"id,name\").ilike(\"name\",`%${t}%`).limit(4), sb.fr",
+  "endpoint": "GET /api/v1/catalogue/categories (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "from(\"categories\").select(\"id\").eq(\"sector_id\", sectorId); sectorCats = (cs",
+  "endpoint": "GET /api/v1/catalogue/categories (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"sectors\").select(\"id,name\"), sb.from(\"vendors\").select(\"sector_id\").e",
+  "endpoint": "GET /api/v1/catalogue/sectors (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/87-levi-voice.js",
+  "contains": "from(\"sectors\").select(\"id,name\"); const sec=(sectorsData||[]).find(x=>norm",
+  "endpoint": "GET /api/v1/catalogue/sectors (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "from(\"sectors\").select(\"id,name\").ilike(\"name\",`%${t}%`).limit(4) ]); const",
+  "endpoint": "GET /api/v1/catalogue/sectors (filtered on the page)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/15-toasts-confirm-dialog-replace-native-ale.js",
+  "contains": "storage.from(\"homepage-carousel\").upload(",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/15-toasts-confirm-dialog-replace-native-ale.js",
+  "contains": "storage.from(\"homepage-carousel\").getPublicUrl(storagePath)",
+  "endpoint": "none: public URL (the upload link response carries publicUrl)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/38-admin-link-library.js",
+  "contains": "storage.from(\"homepage-carousel\").remove([row.storage_path])",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/22-auth.js",
+  "contains": "storage.from(\"avatars\").remove([",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "storage.from(\"chat-attachments\").createSignedUrl(path, 3600)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/51-chat-snapshots-instant-open-works-withou.js",
+  "contains": "storage.from(\"chat-attachments\").createSignedUrls(uniquePaths,3600)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "storage.from(\"chat-attachments\").upload(path,uploadBlob",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/07-levromart-final-qa-20260909-js.js",
+  "contains": "storage.from('chat-attachments').upload(path,uploadBlob",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "storage.from('support-attachments').createSignedUrl(a.path, 3600)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "storage.from('support-attachments').upload(path, uploadBlob",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/59-storefront-public-vendor-page.js",
+  "contains": "storage.from('support-attachments').remove([a.path])",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/63-vendor-application.js",
+  "contains": "storage.from(\"vendor-docs\").upload(path, file, { contentType: file.type })",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "storage.from(\"vendor-docs\").createSignedUrl(path, 300)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/03-levromart-2026-09-09-vendor-logic-fixes.js",
+  "contains": "storage.from(\"vendor-docs\").upload(path, file",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/04-levromart-vendor-location-auto-script.js",
+  "contains": "storage.from(\"vendor-docs\").upload(path,file",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/06-part.js",
+  "contains": "storage.from(\"vendor-docs\").upload(",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/09-part.js",
+  "contains": "storage.from(\"vendor-docs\").upload(",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "storage.from(\"vendor-docs\").createSignedUrls(",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "storage.from(\"vendor-docs\").upload(path,blob,{contentType:type,upsert:true})",
+  "endpoint": "POST /api/v1/files/upload-links (upsert: true)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/67-vendor-edit-profile.js",
+  "contains": "storage.from(\"vendor-logos\").remove([",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/69-my-listings-vendor-catalogue-page.js",
+  "contains": "storage.from(\"product-photos\").remove(uploadedStoragePaths)",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/82-admin-one-time-r2-image-size-pass.js",
+  "contains": "storage.from('listing-payment-receipts').createSignedUrl(path,3600)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "storage.from(\"listing-payment-receipts\").upload(path,file",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "storage.from(\"listing-payment-receipts\").remove([path])",
+  "endpoint": "POST /api/v1/files/delete"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "storage.from(\"dispute-evidence\").upload(path, blob",
+  "endpoint": "POST /api/v1/files/upload-links"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "storage.from(\"dispute-evidence\").createSignedUrl(p, 3600)",
+  "endpoint": "POST /api/v1/files/signed-urls"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/15-toasts-confirm-dialog-replace-native-ale.js",
+  "contains": "storage.from(folder).upload(rest, blob",
+  "endpoint": "POST /api/v1/files/upload-links (upsert: true; bucket = first part of the key)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/15-toasts-confirm-dialog-replace-native-ale.js",
+  "contains": "storage.from(folder).getPublicUrl(rest)",
+  "endpoint": "none: public URL (the upload link response carries publicUrl)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/81-admin-one-time-r2-migration.js",
+  "contains": "storage.from(bucket).list(prefix",
+  "endpoint": "POST /api/v1/files/list"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "sb.channel(`notifications-${session.user.id}`)",
+  "endpoint": "WS /api/v1/live: changes notifications INSERT+UPDATE user_id=eq.<me>"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/20-notifications-real-persisted-realtime.js",
+  "contains": "sb.channel(`marketplace-${user}`)",
+  "endpoint": "WS /api/v1/live: changes * on favorites, products, product_variants, vendor_packages, vendors, monthly_listing_submissions"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "sb.channel(`orders-live-${uid}-${stamp}`)",
+  "endpoint": "WS /api/v1/live: changes * orders (buyer_id / vendor_id filter; admin none) + payments"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "sb.channel(`order-extras-${uid}-${stamp}`)",
+  "endpoint": "WS /api/v1/live: changes * order_items, order_notes, service_offers"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/21-live-orders.js",
+  "contains": "sb.channel(`requests-live-${uid}-${stamp}`)",
+  "endpoint": "WS /api/v1/live: changes * equipment_requests, request_offers, disputes"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/54-whatsapp-style-message-actions-selection.js",
+  "contains": "sb.channel(`conv-${conversationId}`",
+  "endpoint": "WS /api/v1/live: room conversation:<id> (presence, broadcast typing) + changes messages conversation_id=eq.<id>"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "sb.channel(`product-comments-${",
+  "endpoint": "WS /api/v1/live: changes * product_comments product_id=eq.<id>"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/01-app/62-product-package-social-interactions.js",
+  "contains": "sb.channel(`package-comments-${",
+  "endpoint": "WS /api/v1/live: changes * package_comments package_id=eq.<id> (FIX B15)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/08-levromart-chat-viewport-stabilizer-20260.js",
+  "contains": "sb.channel(`levro-inline-${kind}-comments-${id}`)",
+  "endpoint": "WS /api/v1/live: changes * product_comments / package_comments by id (FIX B15)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "sb.channel(`voicecall-${callId}`",
+  "endpoint": "WS /api/v1/live: room call:<id> (broadcast sig; caller and callee only, FIX S14)"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/11-levromart-global-broken-image-fallback.js",
+  "contains": "sb.channel(\"lb-live-\" + Date.now())",
+  "endpoint": "WS /api/v1/live: changes * points_weekly"
+ },
+ {
+  "file": "medris-frontend/src/legacy/assets/js/12-lv-onboarding-auth-js.js",
+  "contains": "sb.channel(\"cc-\"+kind+\"-\"+id)",
+  "endpoint": "WS /api/v1/live: changes * product_comments / package_comments by id (FIX B15)"
+ }
+]

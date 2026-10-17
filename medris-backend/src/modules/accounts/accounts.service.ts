@@ -8,6 +8,8 @@ import { SupabaseStorage } from "../../integrations/storage/index.js";
 import { normalizePhone, phoneAlias } from "../../lib/format.js";
 import { identityFromAccessToken } from "../auth/caller.js";
 import type { ServiceResult } from "../../shared/types/service.js";
+import { AppError } from "../../shared/errors/app-error.js";
+import { AccountService } from "../account/account.service.js";
 
 /**
  * Account lifecycle: existence checks, registration, profile repair and
@@ -233,10 +235,12 @@ export async function deleteAccount(body: Record<string, unknown>): Promise<Serv
   // Capture conversations before the SQL wipe so their storage attachments can be removed too.
   const conversationIds = await data.asService((tx) => new VendorsRepository(tx).conversationIds(uid, vendorIds)).catch(() => [] as string[]);
 
-  // The SQL function performs the FK-safe deletion of public tables.
+  // The port of delete_my_account() performs the FK-safe deletion of public tables. It only
+  // deletes the caller's own account (or any, for an admin), as the SQL function did.
   try {
-    await data.asService((tx) => new UsersRepository(tx).deleteAccountData(uid));
+    await new AccountService(() => data).deleteAccountData(me, uid);
   } catch (err) {
+    if (err instanceof AppError && err.status < 500) return { status: 500, body: { error: err.message } };
     const pg = findPgError(err);
     return {
       status: 500,

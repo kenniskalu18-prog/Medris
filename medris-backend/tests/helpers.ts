@@ -18,6 +18,8 @@ export interface StubRoute {
   match: string | RegExp;
   status?: number;
   json?: unknown;
+  /** Runs before answering, e.g. to do in the test database what Supabase itself would do. */
+  effect?: (body: string | undefined) => Promise<void>;
 }
 
 export function stubFetch(routes: StubRoute[]) {
@@ -28,6 +30,7 @@ export function stubFetch(routes: StubRoute[]) {
     calls.push({ method, url, body: typeof init.body === "string" ? init.body : undefined, headers: (init.headers as Record<string, string>) || {} });
     const route = routes.find((r) => (!r.method || r.method === method) && (typeof r.match === "string" ? url.includes(r.match) : r.match.test(url)));
     if (!route) return new Response(JSON.stringify({ message: `unstubbed ${method} ${url}` }), { status: 599 });
+    if (route.effect) await route.effect(typeof init.body === "string" ? init.body : undefined);
     const status = route.status ?? 200;
     const empty = route.json === undefined || status === 204;
     return new Response(empty ? null : JSON.stringify(route.json), {

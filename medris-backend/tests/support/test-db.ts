@@ -1,7 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
+import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
+import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
+import { uuid_ossp } from "@electric-sql/pglite/contrib/uuid_ossp";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
@@ -9,7 +10,9 @@ import pg from "pg";
 import type { Db } from "../../src/database/client.js";
 import { DataContext } from "../../src/database/context.js";
 import * as schema from "../../src/database/schema/index.js";
+import { baselineSql } from "../../scripts/baseline.js";
 import { readMigrations, type SqlClient } from "../../scripts/migrations.js";
+import type { ChangeSource } from "../../src/integrations/live/change-source.js";
 
 /**
  * A disposable PostgreSQL database with the Levromart schema, for tests.
@@ -22,53 +25,23 @@ import { readMigrations, type SqlClient } from "../../scripts/migrations.js";
  * The schema is dropped and rebuilt on every run, so the name check refuses
  * anything that is not clearly a test database.
  *
- * Schema = Supabase shim (roles, auth.*) + supabase/01_tables.sql + the column
- * additions from the later supabase/*.sql files + test fixtures (missing
- * tables, RLS policies copied from the Backend Build Manual, simplified
- * stand-ins for the RPCs the backend calls) + the backend's own migrations.
+ * Schema = the live database's real structure (src/database/baseline: every
+ * table, function, trigger, grant and policy, on a local stand-in for the
+ * Supabase platform) + the backend's own migrations, exactly the order
+ * production goes through.
  */
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const backendRoot = path.resolve(here, "../..");
-const repoRoot = path.resolve(backendRoot, "..");
-
-function read(file: string): string {
-  return fs.readFileSync(file, "utf8");
-}
-
-/** `alter table ... add column` statements from the incremental supabase/*.sql files. */
-function columnAdditions(): string {
-  const dir = path.join(repoRoot, "supabase");
-  const statements: string[] = [];
-  for (const file of fs.readdirSync(dir).filter((f) => /^\d{2}_.*\.sql$/.test(f) && !f.startsWith("01_") && !f.startsWith("02_")).sort()) {
-    const text = read(path.join(dir, file));
-    for (const match of text.matchAll(/alter table[^;]*?add column[^;]*;/gis)) {
-      // Some of these tables are newer than the 01_tables.sql snapshot; skip those quietly.
-      const body = match[0].replace(/;$/, "").replace(/'/g, "''");
-      statements.push(`do $$ begin execute '${body}'; exception when undefined_table then null; end $$;`);
-    }
-  }
-  return statements.join("\n");
-}
-
-/** The schema as it was before the first migration: shim, snapshot, later columns and test fixtures. */
-export function baselineSql(): string[] {
-  const fixtures = path.join(backendRoot, "tests", "fixtures");
-  return [
-    read(path.join(fixtures, "00-supabase-shim.sql")),
-    read(path.join(repoRoot, "supabase", "01_tables.sql")),
-    columnAdditions(),
-    ...fs
-      .readdirSync(fixtures)
-      .filter((f) => f.endsWith(".sql") && !f.startsWith("00-"))
-      .sort()
-      .map((f) => read(path.join(fixtures, f))),
-  ];
-}
+/** The schema as it was before the first migration: the baseline export of production. */
+export { baselineSql };
 
 /** Baseline plus every migration in src/database/migrations, in order. */
 export function schemaSql(): string[] {
   return [...baselineSql(), ...readMigrations().files.map((f) => f.sql)];
+}
+
+/** An in-process PostgreSQL with the extensions the schema uses (Supabase installs them in "extensions"). */
+export function createPglite(): PGlite {
+  return new PGlite({ extensions: { pgcrypto, pg_trgm, btree_gist, uuid_ossp } });
 }
 
 export interface TestDatabase {
@@ -80,6 +53,8 @@ export interface TestDatabase {
   sqlClient(): Promise<{ client: SqlClient; release(): void }>;
   close(): Promise<void>;
   kind: "pglite" | "postgres";
+  /** A ChangeSource on this database (LISTEN), for the live-update tests. */
+  changes: ChangeSource;
 }
 
 export interface TestDatabaseOptions {
@@ -91,13 +66,19 @@ export async function createTestDatabase(options: TestDatabaseOptions = {}): Pro
   const chunks = options.migrations === false ? baselineSql() : schemaSql();
   const url = process.env.TEST_DATABASE_URL;
   if (url) return createPostgresTestDatabase(url, chunks);
-  const client = new PGlite();
+  const client = createPglite();
   for (const chunk of chunks) await client.exec(chunk);
   const db = drizzlePglite(client, { schema }) as unknown as Db;
   return {
     db,
     data: new DataContext(db),
     kind: "pglite",
+    changes: {
+      listen: async (channel, onMessage) => {
+        const stop = await client.listen(channel, onMessage);
+        return () => stop();
+      },
+    },
     query: async <T>(text: string, params: unknown[] = []) => (await client.query<T>(text, params)).rows,
     sqlClient: async () => ({
       client: {
@@ -147,6 +128,15 @@ async function createPostgresTestDatabase(url: string, chunks: string[]): Promis
     db,
     data: new DataContext(db),
     kind: "postgres",
+    changes: {
+      listen: async (channel, onMessage) => {
+        const listener = new pg.Client({ connectionString: scratchUrl.toString() });
+        await listener.connect();
+        listener.on("notification", (n) => n.channel === channel && onMessage(n.payload ?? ""));
+        await listener.query(`listen ${channel}`);
+        return () => listener.end();
+      },
+    },
     query: async <T>(text: string, params: unknown[] = []) => (await pool.query(text, params)).rows as T[],
     sqlClient: async () => {
       const connection = await pool.connect();

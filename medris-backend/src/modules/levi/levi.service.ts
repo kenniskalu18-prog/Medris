@@ -61,10 +61,10 @@ export async function chat(body: LeviRequest): Promise<ServiceResult> {
   const data = getDataContext();
 
   if (mode !== "message_suggestions") {
-    // Counted as the user (their own token before), so the function's own checks apply.
+    // Counted for the verified caller only (their own id), with elevated rights as the function had.
     let withinLimit: unknown;
     try {
-      withinLimit = await data.asUser(me, (tx) => new LeviRepository(tx).incrementChatUsage(me.userId, DAILY_MESSAGE_LIMIT));
+      withinLimit = await data.onBehalfOf(me, (tx) => new LeviRepository(tx).incrementChatUsage(me.userId, DAILY_MESSAGE_LIMIT));
     } catch {
       return { status: 500, body: { error: "Levi could not check chat usage." } };
     }

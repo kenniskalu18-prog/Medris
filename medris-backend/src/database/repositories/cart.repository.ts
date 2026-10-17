@@ -2,7 +2,9 @@ import { and, count, eq, inArray, sql } from "drizzle-orm";
 import type { CartItem } from "../../contracts/v1.js";
 import type { Executor } from "../client.js";
 import { rowsOf } from "../client.js";
-import { callFunction } from "../rpc.js";
+import { jsonRow } from "../json.js";
+import { badRequest } from "../../shared/errors/app-error.js";
+import { AccessRepository } from "./access.repository.js";
 import { cartItems } from "../schema/index.js";
 
 /**
@@ -32,7 +34,8 @@ export class CartRepository {
             'variant', (select to_json(pv) from public.product_variants pv where pv.id = ci.variant_id),
             'product', (
               select json_build_object(
-                'id', p.id, 'name', p.name, 'sale_price', p.sale_price, 'discount_price', p.discount_price,
+                'id', p.id, 'name', p.name, 'listing_type', p.listing_type, 'is_service', p.is_service,
+                'sale_price', p.sale_price, 'discount_price', p.discount_price, 'rental_rate', p.rental_rate,
                 'photos', p.photos, 'quantity_available', p.quantity_available, 'status', p.status,
                 'delivery_fee', p.delivery_fee, 'delivery_fee_mode', p.delivery_fee_mode, 'delivery_fee_per_km', p.delivery_fee_per_km,
                 'vendor', (
@@ -57,13 +60,33 @@ export class CartRepository {
   }
 
   /**
-   * The database's add_to_cart(): checks the product, blocks buying from your own shop, merges quantities.
-   * `variantId` undefined leaves the argument out (the function's default), as Levi's original call did.
+   * Replaces: public.add_to_cart(uuid, integer, uuid)
+   * Adds a product (or one of its varieties) to the buyer's cart, merging with the same line. Only
+   * products on sale (not services or rentals) of verified, active shops; never one's own shop; not
+   * for admins. Run it on the buyer's behalf (DataContext.onBehalfOf). Returns null, as the function did.
    */
-  add(productId: string, quantity: number, variantId?: string | null): Promise<unknown> {
-    const args: Record<string, unknown> = { p_product_id: productId, p_quantity: quantity };
-    if (variantId !== undefined) args.p_variant_id = variantId;
-    return callFunction(this.db, "add_to_cart", args);
+  async add(buyerId: string, productId: string, quantity: number | null, variantId: string | null = null): Promise<null> {
+    if (await new AccessRepository(this.db).isAdmin(buyerId)) throw badRequest("Admin accounts cannot make purchases on Levromart.");
+    const qty = quantity == null || quantity < 1 ? 1 : quantity;
+    const product = await jsonRow<{ listing_type: string; vendor_user_id: string | null }>(
+      this.db,
+      sql`select p.listing_type::text as listing_type, v.user_id as vendor_user_id
+          from public.products p join public.vendors v on v.id = p.vendor_id
+          where p.id = ${productId} and p.status = 'active' and p.is_service = false and v.verification_status = 'verified' and v.is_active = true`,
+    );
+    if (!product) throw badRequest("This product is not available to add to cart right now.");
+    if (product.vendor_user_id === buyerId) throw badRequest("You can't buy from your own shop.");
+    if (product.listing_type === "rent") throw badRequest("Rentals need dates picked on the product page, they can't be added to a cart.");
+    if (variantId) {
+      const variant = await jsonRow<{ product_id: string }>(this.db, sql`select product_id from public.product_variants where id = ${variantId}`);
+      if (variant?.product_id !== productId) throw badRequest("invalid product variety");
+    }
+    const same = sql`buyer_id = ${buyerId} and product_id = ${productId} and variant_id is not distinct from ${variantId}::uuid`;
+    const merged = rowsOf(await this.db.execute(sql`update public.cart_items set quantity = cart_items.quantity + ${qty}::int where ${same} returning id`));
+    if (merged.length === 0) {
+      await this.db.execute(sql`insert into public.cart_items (buyer_id, product_id, variant_id, quantity) values (${buyerId}, ${productId}, ${variantId}::uuid, ${qty}::int)`);
+    }
+    return null;
   }
 
   async setQuantity(buyerId: string, itemId: string, quantity: number): Promise<boolean> {
@@ -86,6 +109,15 @@ export class CartRepository {
 
   async clear(buyerId: string): Promise<number> {
     const rows = await this.db.delete(cartItems).where(eq(cartItems.buyerId, buyerId)).returning({ id: cartItems.id });
+    return rows.length;
+  }
+
+  /** `delete().eq("buyer_id", me).eq("product_id", id)` - every line of that product (any variety). */
+  async removeProduct(buyerId: string, productId: string): Promise<number> {
+    const rows = await this.db
+      .delete(cartItems)
+      .where(and(eq(cartItems.buyerId, buyerId), eq(cartItems.productId, productId)))
+      .returning({ id: cartItems.id });
     return rows.length;
   }
 }

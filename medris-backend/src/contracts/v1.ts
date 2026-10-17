@@ -37,8 +37,11 @@ export interface CartVendor {
 export interface CartProduct {
   id: string;
   name: string;
+  listing_type: string | null;
+  is_service: boolean | null;
   sale_price: number | null;
   discount_price: number | null;
+  rental_rate: number | null;
   photos: string[] | null;
   quantity_available: number | null;
   status: string;

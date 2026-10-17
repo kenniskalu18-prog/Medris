@@ -32,6 +32,20 @@ interface ObjectStorage {
 
 Keys are validated (no `..`, no absolute paths, no control characters); service credentials never leave the backend.
 
+### `/api/v1/files` - the browser's Storage calls, brokered (built, not switched on)
+
+| Endpoint | Replaces | Who may |
+|---|---|---|
+| `POST /files/upload-links {bucket, path, contentType, upsert}` | `.upload(path, file, { upsert })` | the bucket's insert rule; with `upsert`, also its update rule when the file exists |
+| `POST /files/signed-urls {bucket, paths, expiresIn}` | `.createSignedUrl(s)` | the bucket's select rule, for every path |
+| `POST /files/delete {bucket, paths}` | `.remove(paths)` | the bucket's delete rule, for every path |
+| `POST /files/list {bucket, prefix}` | `.list(prefix)` (admin copy-to-R2 tool) | public buckets only |
+| - | `.getPublicUrl(path)` | nothing to call: the URL is fixed, and an upload link to a public bucket returns it |
+
+The rules are the storage.objects policies, ported in `StorageAccessRepository` and compared with the real policies
+for every bucket, caller, path and operation in `tests/parity/storage-access.parity.test.ts`. The files stay where
+they are; Supabase keeps hosting them.
+
 ## Switching public images to Cloudinary (needs approval)
 
 1. Create a Cloudinary account; set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`

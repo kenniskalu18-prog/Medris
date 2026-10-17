@@ -58,7 +58,7 @@ describe("/api/v1/cart", () => {
     const ownToken = await accessToken(vendorOwner.id);
     const res = await call(app, "POST", "/api/v1/cart/items", { token: ownToken, body: { productId: product, quantity: 1 } });
     expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ error: { code: "bad_request", message: "You cannot add your own product to your cart." } });
+    expect(await res.json()).toMatchObject({ error: { code: "bad_request", message: "You can't buy from your own shop." } });
   });
 
   it("validates input", async () => {

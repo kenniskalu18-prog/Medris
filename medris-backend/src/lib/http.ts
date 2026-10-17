@@ -27,3 +27,19 @@ export function requestOrigin(req: Request): string {
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err ?? "");
 }
+
+/**
+ * The message an error response may show. A failed query is reported by its
+ * PostgreSQL message only (as Supabase's REST API did): the query layer wraps it
+ * as "Failed query: <sql> params: <values>", and those values can be personal data.
+ */
+export function publicErrorMessage(err: unknown): string {
+  let current: unknown = err;
+  for (let i = 0; i < 5 && current && typeof current === "object"; i++) {
+    const candidate = current as { code?: unknown; message?: unknown; cause?: unknown };
+    if (typeof candidate.code === "string" && /^[0-9A-Z]{5}$/.test(candidate.code) && typeof candidate.message === "string") return candidate.message;
+    current = candidate.cause;
+  }
+  const message = errorMessage(err);
+  return message.startsWith("Failed query:") ? "" : message;
+}

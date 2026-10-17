@@ -552,9 +552,12 @@ async function deleteAccount(body, res) {
 
   // The SQL function performs the FK-safe public-table deletion. It MUST
   // delete chat_usage before users; otherwise PostgreSQL rejects the wipe.
+  // Called with the user's own token: delete_my_account() only deletes the caller's own
+  // account (auth.uid() must equal p_user_id, or the caller is an admin), so with the
+  // service key - which has no user - it always refused with "Not authorized".
   const deleteResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/delete_my_account`, {
     method: "POST",
-    headers: svcHeaders,
+    headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({ p_user_id: uid })
   });
   const deleteBody = await readJson(deleteResponse);

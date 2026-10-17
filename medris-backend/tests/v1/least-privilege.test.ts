@@ -1,4 +1,3 @@
-import { PGlite } from "@electric-sql/pglite";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
@@ -10,7 +9,7 @@ import { DataContext } from "../../src/database/context.js";
 import { CartRepository } from "../../src/database/repositories/cart.repository.js";
 import { AuthAccountsRepository } from "../../src/database/repositories/users.repository.js";
 import * as schema from "../../src/database/schema/index.js";
-import { schemaSql } from "../support/test-db.js";
+import { createPglite, schemaSql } from "../support/test-db.js";
 
 /**
  * Migration 0001: the backend connects as `medris_api`, a login role with no
@@ -56,7 +55,7 @@ describe("least-privilege connection role (migration 0001)", () => {
         await cleanup.end();
       };
     } else {
-      const client = new PGlite();
+      const client = createPglite();
       for (const chunk of schemaSql()) await client.exec(chunk);
       exec = async (text) => void (await client.exec(text));
       await exec(`

@@ -9,4 +9,5 @@ export const cartController = controller()
   .route(routes.deleteCartItems, async ({ services, user, input }) => ok(await services.cart.remove(user(), input.body.ids)))
   .route(routes.setCartQuantity, async ({ services, user, input }) => ok(await services.cart.setQuantity(user(), input.params.id, input.body.quantity)))
   .route(routes.removeCartItem, async ({ services, user, input }) => ok(await services.cart.remove(user(), [input.params.id])))
-  .route(routes.clearCart, async ({ services, user }) => ok(await services.cart.clear(user())));
+  .route(routes.clearCart, async ({ services, user }) => ok(await services.cart.clear(user())))
+  .route(routes.removeCartProduct, async ({ services, user, input }) => ok(await services.cart.removeProduct(user(), input.params.productId)));

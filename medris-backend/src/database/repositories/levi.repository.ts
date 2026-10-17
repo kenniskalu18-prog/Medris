@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Executor } from "../client.js";
-import { jsonRows } from "../json.js";
-import { callFunction } from "../rpc.js";
+import { jsonReturning, jsonRows } from "../json.js";
 
 /**
  * The read queries behind Levi's tools, one method per query the original
@@ -17,9 +16,32 @@ const VENDOR_CARD = sql`json_build_object('id', v.id, 'business_name', v.busines
 export class LeviRepository {
   constructor(private readonly db: Executor) {}
 
-  /** increment_chat_usage(): counts today's message; true while within the daily limit. */
-  incrementChatUsage(userId: string, limit: number): Promise<unknown> {
-    return callFunction(this.db, "increment_chat_usage", { p_user_id: userId, p_limit: limit });
+  /**
+   * Counts today's Levi message; true while within the daily limit.
+   * Replaces: public.increment_chat_usage(uuid, integer)
+   */
+  async incrementChatUsage(userId: string, limit: number): Promise<boolean> {
+    const [row] = await jsonReturning<{ count: number }>(
+      this.db,
+      sql`insert into public.chat_usage (user_id, day, count) values (${userId}, current_date, 1)
+          on conflict (user_id, day) do update set count = public.chat_usage.count + 1
+          returning count`,
+    );
+    return row!.count <= limit;
+  }
+
+  /**
+   * Adds today's text-to-speech characters; true while within the daily limit.
+   * Replaces: public.increment_tts_usage(uuid, integer, integer)
+   */
+  async incrementTtsUsage(userId: string, chars: number, dailyLimit: number): Promise<boolean> {
+    const [row] = await jsonReturning<{ chars: number }>(
+      this.db,
+      sql`insert into public.tts_usage (user_id, day, chars) values (${userId}, current_date, ${chars})
+          on conflict (user_id, day) do update set chars = public.tts_usage.chars + ${chars}
+          returning chars`,
+    );
+    return row!.chars <= dailyLimit;
   }
 
   sectors(): Promise<Row[]> {

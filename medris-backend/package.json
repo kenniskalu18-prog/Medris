@@ -21,7 +21,8 @@
     "db:status": "tsx scripts/migrate.ts status",
     "db:migrate": "tsx scripts/migrate.ts up",
     "db:migration:new": "tsx scripts/migrate.ts new",
-    "db:migrations:check": "tsx scripts/migrate.ts check"
+    "db:migrations:check": "tsx scripts/migrate.ts check",
+    "db:baseline:update": "tsx scripts/update-baseline.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
@@ -40,6 +41,7 @@
     "sharp": "^0.33.5",
     "swagger-ui-express": "^5.0.1",
     "web-push": "^3.6.7",
+    "ws": "^8.22.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -50,6 +52,7 @@
     "@types/pg": "^8.23.1",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/web-push": "^3.6.4",
+    "@types/ws": "^8.18.2",
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.20.0",
     "typescript": "~5.9.3",

@@ -20,7 +20,8 @@ export class CartService {
   }
 
   async add(me: Identity, input: { productId: string; quantity: number; variantId?: string | null }): Promise<{ result: unknown }> {
-    const result = await this.db().asUser(me, (tx) => new CartRepository(tx).add(input.productId, input.quantity, input.variantId ?? null));
+    // add_to_cart() ran with the function owner's rights after its own checks: on the buyer's behalf.
+    const result = await this.db().onBehalfOf(me, (tx) => new CartRepository(tx).add(me.userId, input.productId, input.quantity, input.variantId ?? null));
     return { result };
   }
 
@@ -37,6 +38,12 @@ export class CartService {
 
   async clear(me: Identity): Promise<{ removed: number }> {
     const removed = await this.db().asUser(me, (tx) => new CartRepository(tx).clear(me.userId));
+    return { removed };
+  }
+
+  /** Removes every line of one product (Levi's "remove X from my cart"). */
+  async removeProduct(me: Identity, productId: string): Promise<{ removed: number }> {
+    const removed = await this.db().asUser(me, (tx) => new CartRepository(tx).removeProduct(me.userId, productId));
     return { removed };
   }
 }

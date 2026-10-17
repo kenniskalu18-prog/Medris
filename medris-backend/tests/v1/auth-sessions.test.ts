@@ -222,8 +222,8 @@ describe("Google sign-in through the backend", () => {
       const url = String(input);
       expect(url).toBe("https://example.supabase.co/auth/v1/admin/users");
       expect(JSON.parse(String(init?.body))).toMatchObject({ email: "brand-new@example.com", email_confirm: true });
-      await db.query(`insert into auth.users (id, email, email_confirmed_at) values ($1, 'brand-new@example.com', now())`, [newId]);
-      await db.query(`insert into public.users (id, name, email, role) values ($1, 'New', 'brand-new@example.com', 'buyer')`, [newId]);
+      // Supabase creates the auth user; its sign-up triggers create the profile row.
+      await db.query(`insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values ($1, 'brand-new@example.com', now(), '{"name":"New"}')`, [newId]);
       return new Response(JSON.stringify({ id: newId, email: "brand-new@example.com" }), { status: 200 });
     });
     vi.stubGlobal("fetch", fetchMock);

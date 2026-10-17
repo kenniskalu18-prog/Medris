@@ -70,7 +70,15 @@ describe("/api/daily-cron", () => {
     const oldUnread = await seedNotification(db, user.id, { read: false, createdAt: old });
     const res = await app.fetch(new Request("https://app.test/api/daily-cron", { headers: { Authorization: `Bearer ${TEST_ENV.CRON_SECRET}` } }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, notificationsTrimmed: true, reminded: 2, expired: 0, commissionReminders: { sent: 1 } });
+    // The billing jobs' own summaries (process_listing_billing_reminders, process_commission_deadline_reminders).
+    expect(await res.json()).toEqual({
+      ok: true,
+      notificationsTrimmed: true,
+      listings_paused: 0,
+      notifications_created: 0,
+      processed_at: expect.any(String),
+      commissionReminders: { notifications_created: 0, processed_at: expect.any(String) },
+    });
     const left = (await db.query<{ id: string }>(`select id from public.notifications where user_id = $1`, [user.id])).map((r) => r.id);
     expect(left).toEqual([oldUnread]);
     expect(left).not.toContain(oldRead);
@@ -89,14 +97,15 @@ describe("/api/order-reminders", () => {
     const first = (await (await run()).json()) as { checked: number; reminded: number };
     expect(first.reminded).toBeGreaterThanOrEqual(1);
     const notes = await db.query<{ user_id: string; type: string; target_params: { orderId: string } }>(
-      `select user_id, type, target_params from public.notifications where target_params->>'orderId' = $1`,
+      // (Placing the order already notified both sides through the database's order triggers.)
+      `select user_id, type, target_params from public.notifications where target_params->>'orderId' = $1 and type = 'order_reminder'`,
       [id],
     );
     expect(notes.map((n) => n.user_id).sort()).toEqual([buyer.id, owner.id].sort());
     expect(notes.every((n) => n.type === "order_reminder")).toBe(true);
     // Stamped, so the next run within 30 minutes skips it.
     await run();
-    expect(await db.query(`select 1 from public.notifications where target_params->>'orderId' = $1`, [id])).toHaveLength(2);
+    expect(await db.query(`select 1 from public.notifications where target_params->>'orderId' = $1 and type = 'order_reminder'`, [id])).toHaveLength(2);
   });
 });
 
@@ -113,8 +122,10 @@ describe("/api/notify", () => {
 
   it("decline-call only works with the token minted for that call and callee", async () => {
     const caller = await seedUser(db);
-    const callee = await seedUser(db);
+    const callee = await seedUser(db, { role: "vendor" });
+    const shop = await seedVendor(db, callee.id);
     const conversation = uuid();
+    await db.query(`insert into public.conversations (id, buyer_id, vendor_id) values ($1, $2, $3)`, [conversation, caller.id, shop.id]);
     const callId = uuid();
     await db.query(`insert into public.voice_calls (id, conversation_id, caller_id, callee_id, status) values ($1, $2, $3, $4, 'ringing')`, [callId, conversation, caller.id, callee.id]);
     const token = crypto.createHmac("sha256", TEST_ENV.SUPABASE_SERVICE_ROLE_KEY).update(`call:${callId}:${callee.id}`).digest("hex");
@@ -162,7 +173,7 @@ describe("/api/vendor-payments", () => {
   it("starts a ₦999 listing payment only for the owner's own monthly listing", async () => {
     const { owner, vendor, buyer } = await marketplace();
     const product = await seedProduct(db, vendor.id);
-    await db.query(`update public.products set billing_model = 'monthly', billing_status = 'inactive' where id = $1`, [product]);
+    await db.query(`update public.products set billing_model = 'monthly', billing_status = 'pending_payment' where id = $1`, [product]);
     const { calls } = stubFetch([{ method: "POST", match: "api.paystack.co/transaction/initialize", json: { status: true, data: { authorization_url: "https://checkout.paystack.com/x" } } }]);
 
     const notMine = await app.fetch(jsonRequest("/api/vendor-payments", { action: "pay-listing", kind: "product", id: product, accessToken: await accessToken(buyer.id) }));
@@ -192,8 +203,10 @@ describe("/api/vendor-payments", () => {
   });
 
   it("starts a commission payment through create_commission_payment_intent as the vendor", async () => {
-    const { owner, vendor } = await marketplace();
-    await db.query(`insert into public.commission_charges (vendor_id, amount, status) values ($1, 750, 'owed')`, [vendor.id]);
+    const { owner, vendor, buyer } = await marketplace();
+    // Only commission on completed orders counts (create_commission_payment_intent()).
+    const completed = await order(buyer.id, vendor.id, { status: "completed" });
+    await db.query(`insert into public.commission_charges (vendor_id, order_id, amount, status) values ($1, $2, 750, 'owed')`, [vendor.id, completed]);
     const { calls } = stubFetch([{ method: "POST", match: "transaction/initialize", json: { status: true, data: { authorization_url: "https://checkout.paystack.com/c" } } }]);
     const res = await app.fetch(jsonRequest("/api/vendor-payments", { action: "pay-commission", accessToken: await accessToken(owner.id) }));
     expect(res.status).toBe(200);
@@ -221,17 +234,31 @@ describe("Paystack", () => {
     const stranger = await seedUser(db);
     const refused = await app.fetch(jsonRequest("/api/initiate-payment", { orderId: id, accessToken: await accessToken(stranger.id) }));
     expect(refused.status).toBe(400);
-    expect(await refused.json()).toEqual({ error: "Order not found." });
+    expect(await refused.json()).toEqual({ error: "not authorized" }); // create_payment_intent()'s own message, kept by the port
 
     const res = await app.fetch(jsonRequest("/api/initiate-payment", { orderId: id, accessToken: await accessToken(buyer.id) }));
     const body = (await res.json()) as { reference: string };
     expect(res.status).toBe(200);
-    expect(JSON.parse(calls[0]!.body!)).toMatchObject({ amount: 420000, reference: body.reference });
+    // The amount comes from the order, in kobo - never the client's: a sale's total (B2, see below).
+    const [due] = await db.query<{ amount: string }>(`select total_amount::text as amount from public.orders where id = $1`, [id]);
+    const kobo = Math.round(Number(due!.amount) * 100);
+    expect(JSON.parse(calls[0]!.body!)).toMatchObject({ amount: kobo, reference: body.reference });
 
-    expect(await (await webhook({ event: "charge.success", data: { reference: body.reference, status: "success", amount: 420000 } })).json()).toEqual({ received: true });
+    expect(await (await webhook({ event: "charge.success", data: { reference: body.reference, status: "success", amount: kobo } })).json()).toEqual({ received: true });
     const [payment] = await db.query<{ status: string; paid_at: string | null }>(`select status, paid_at from public.payments where provider_reference = $1`, [body.reference]);
     expect(payment?.status).toBe("paid");
     expect(payment?.paid_at).not.toBeNull();
+  });
+
+  // BASELINE_FINDINGS B2: for a pay-before order the order trigger sets deposit_amount = total_amount,
+  // and the database's create_payment_intent() charges total + deposit - twice the price. The
+  // backend's port (PaymentClaimsService.paymentIntent) charges a sale's total once.
+  it("charges a pay-before order's total exactly once", async () => {
+    const { vendor, buyer } = await marketplace();
+    const id = await order(buyer.id, vendor.id, { total: 4200 });
+    const { calls } = stubFetch([{ method: "POST", match: "transaction/initialize", json: { status: true, data: { authorization_url: "https://checkout.paystack.com/o" } } }]);
+    await app.fetch(jsonRequest("/api/initiate-payment", { orderId: id, accessToken: await accessToken(buyer.id) }));
+    expect(JSON.parse(calls[0]!.body!)).toMatchObject({ amount: 420000 });
   });
 
   it("settles a commission payment and every owed charge", async () => {
@@ -277,7 +304,10 @@ describe("Paystack", () => {
 });
 
 describe("/api/order-payout-action", () => {
-  it("lets the buyer confirm receipt (transition_order_status as the buyer); others are refused", async () => {
+  // KNOWN ISSUE (docs/BASELINE_FINDINGS.md): the live transition_order_status() lets only the vendor
+  // complete an order, so "release" cannot complete it for a buyer (or an admin). These tests describe
+  // what the endpoint does against the real database today.
+  it("release: a stranger is refused, and the database refuses a buyer completing the order", async () => {
     const { vendor, buyer } = await marketplace();
     const id = await order(buyer.id, vendor.id, { status: "handed_over" });
     const stranger = await seedUser(db);
@@ -285,8 +315,9 @@ describe("/api/order-payout-action", () => {
     expect(refused.status).toBe(403);
 
     const res = await app.fetch(jsonRequest("/api/order-payout-action", { action: "release", orderId: id, accessToken: await accessToken(buyer.id) }));
-    expect(await res.json()).toEqual({ status: "completed", transferred: false, reason: "payout_status is not_applicable, nothing to release" });
-    expect(await db.query(`select status from public.orders where id = $1`, [id])).toEqual([{ status: "completed" }]);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "buyers may only cancel eligible orders or return handed-over rentals" });
+    expect(await db.query(`select status from public.orders where id = $1`, [id])).toEqual([{ status: "handed_over" }]);
   });
 
   it("vendor-decline cancels through vendor_decline_order as the vendor and refunds a paid card order", async () => {
@@ -307,10 +338,20 @@ describe("/api/order-payout-action", () => {
     const id = await order(buyer.id, vendor.id, { status: "completed", payoutStatus: "held" });
     const buyerToken = await accessToken(buyer.id);
     expect((await app.fetch(jsonRequest("/api/order-payout-action", { action: "refund", orderId: id, accessToken: buyerToken }))).status).toBe(403);
+    expect((await app.fetch(jsonRequest("/api/order-payout-action", { action: "mark-manual", orderId: id, accessToken: buyerToken }))).status).toBe(403);
+  });
+
+  // KNOWN ISSUE (docs/BASELINE_FINDINGS.md): the live orders table only allows payout_status
+  // not_applicable / held / released / refunded, so "paid_manual" is refused. The app never calls this
+  // action. The error must not leak the SQL or its values.
+  it("mark-manual fails on the real schema without leaking the query, and changes nothing", async () => {
+    const { vendor, buyer } = await marketplace();
+    const id = await order(buyer.id, vendor.id, { status: "completed", payoutStatus: "held" });
     const admin = await seedUser(db, { role: "admin" });
     const res = await app.fetch(jsonRequest("/api/order-payout-action", { action: "mark-manual", orderId: id, accessToken: await accessToken(admin.id) }));
-    expect(await res.json()).toEqual({ marked: true });
-    expect(await db.query(`select payout_status from public.orders where id = $1`, [id])).toEqual([{ payout_status: "paid_manual" }]);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'new row for relation "orders" violates check constraint "orders_payout_status_check"' });
+    expect(await db.query(`select payout_status from public.orders where id = $1`, [id])).toEqual([{ payout_status: "held" }]);
   });
 
   it("answers 404 for an unknown or malformed order id", async () => {

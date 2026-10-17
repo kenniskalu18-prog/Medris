@@ -50,7 +50,8 @@ describe("/api/v1 favorites, follows, notifications, catalogue, me", () => {
       const vendor = await seedVendor(db, owner.id);
 
       const put = await call(app, "PUT", `/api/v1/follows/${vendor.id}`, { token, body: { following: true } });
-      expect(await put.json()).toEqual({ data: { following: true, result: { following: true, follower_count: 1 } } });
+      // toggle_vendor_follow() returns the new state (a boolean), passed through as "result".
+      expect(await put.json()).toEqual({ data: { following: true, result: true } });
       expect(await (await call(app, "GET", `/api/v1/follows/${vendor.id}`, { token })).json()).toEqual({ data: { following: true } });
       expect(await (await call(app, "GET", "/api/v1/follows", { token })).json()).toEqual({ data: { vendorIds: [vendor.id], count: 1 } });
 
@@ -63,7 +64,7 @@ describe("/api/v1 favorites, follows, notifications, catalogue, me", () => {
       const vendor = await seedVendor(db, owner.id);
       const res = await call(app, "PUT", `/api/v1/follows/${vendor.id}`, { token: await accessToken(owner.id), body: { following: true } });
       expect(res.status).toBe(400);
-      expect(await res.json()).toMatchObject({ error: { message: "You can't follow your own shop." } });
+      expect(await res.json()).toMatchObject({ error: { message: "You cannot follow your own shop." } });
     });
   });
 

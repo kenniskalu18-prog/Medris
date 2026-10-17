@@ -472,7 +472,7 @@ async function addToCart(args: Args, ctx: LeviContext) {
   if (Number(p.quantity_available || 0) < 1) return { ok: false, message: `${p.name} is out of stock.` };
   // The cart write itself runs with the user's own token, so the database applies its own rules.
   try {
-    await ctx.data.asUser(ctx.identity, (tx) => new CartRepository(tx).add(productId, quantity));
+    await ctx.data.onBehalfOf(ctx.identity, (tx) => new CartRepository(tx).add(ctx.identity.userId, productId, quantity));
   } catch {
     return { ok: false, message: "I couldn't add that item to the cart." };
   }

@@ -30,4 +30,14 @@ export class FavoritesService {
     });
     return { saved: false, removed };
   }
+
+  /** The wishlist page's saved products, newest first, with their shop. Replaces the app's select on favorites; runs as the user. */
+  savedProducts(me: Identity): Promise<{ product: Record<string, unknown> | null }[]> {
+    return this.db().asUser(me, (tx) => new FavoritesRepository(tx).savedProducts(me.userId));
+  }
+
+  /** The wishlist page's saved packages, newest first, with their shop and items. Replaces the app's select on package_favorites. */
+  savedPackages(me: Identity): Promise<{ package: Record<string, unknown> | null }[]> {
+    return this.db().asUser(me, (tx) => new FavoritesRepository(tx).savedPackages(me.userId));
+  }
 }

@@ -1,5 +1,7 @@
 # Supabase dependency audit
 
+> The plan for removing these dependencies, phase by phase: [BACKEND_MIGRATION.md](BACKEND_MIGRATION.md).
+
 Snapshot of every place Levromart depends on Supabase, taken on branch
 `refactor/medris-independent-backend` (base `6283939`), before and after this
 migration pass. Re-run the scan at any time:
@@ -150,7 +152,7 @@ No Supabase Edge Function is used by Levromart (`champions-notify` belongs to an
 | Token verification for every endpoint | **Done**: local JWT verification (JWKS / HS256), Supabase only as fallback |
 | Cart, favourites, follows, notifications, catalogue reference data (browser call sites) | **Done** behind `VITE_BACKEND_FEATURES` (off by default) |
 | Remaining browser table queries and RPCs (orders, checkout, vendor dashboard, listings, messaging, admin, points, reviews, comments, disputes, requests…) | Backlog - same recipe, feature by feature (docs/BACKEND.md) |
-| Business rules inside `SECURITY DEFINER` functions | Kept in PostgreSQL deliberately: they are portable plpgsql and the backend calls them; rewriting them in TypeScript would risk the money and order flows for no gain. Move individual rules only when they need something the database cannot do. |
+| Business rules inside `SECURITY DEFINER` functions | Kept in PostgreSQL during this pass. **Superseded on 14 Oct 2026:** they move into backend services area by area, each behind tests run against the original function first ([BACKEND_MIGRATION.md](BACKEND_MIGRATION.md) §4); money flows last. |
 
 ### Group 2 - may reasonably stay on Supabase (infrastructure)
 

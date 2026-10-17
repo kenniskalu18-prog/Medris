@@ -200,7 +200,20 @@ describe("platform", () => {
 
     it("maps database errors to safe API errors", () => {
       expect(mapDatabaseError({ code: "P0001", message: "This item is no longer available." })).toMatchObject({ status: 400, message: "This item is no longer available." });
-      expect(mapDatabaseError({ code: "42501", message: 'new row violates row-level security policy for table "x"' })).toMatchObject({ status: 403, code: "forbidden" });
+      expect(mapDatabaseError({ code: "42501", message: 'new row violates row-level security policy for table "x"' })).toMatchObject({
+        status: 403,
+        code: "forbidden",
+        message: "You are not allowed to do that.",
+      });
+      // Messages the database functions raise on purpose reach the app unchanged, whatever their code.
+      const raised = (code: string, message: string) => ({ code, message, where: "PL/pgSQL function public.f(uuid) line 4 at RAISE" });
+      expect(mapDatabaseError(raised("22023", "You cannot follow your own shop."))).toMatchObject({ status: 400, message: "You cannot follow your own shop." });
+      expect(mapDatabaseError(raised("42501", "Only admins can delete inventory products."))).toMatchObject({
+        status: 403,
+        message: "Only admins can delete inventory products.",
+      });
+      // ...but PostgreSQL's own errors with those codes stay generic.
+      expect(mapDatabaseError({ code: "22P02", message: 'invalid input syntax for type uuid: "x"' })).toMatchObject({ message: "Some of the values sent are not valid." });
       expect(mapDatabaseError({ code: "23505", message: "duplicate key" })).toMatchObject({ status: 409 });
       expect(mapDatabaseError({ code: "57014", message: "canceling statement due to statement timeout" })).toMatchObject({ status: 504 });
       expect(mapDatabaseError({ cause: { code: "08006", message: "connection failure" } })).toMatchObject({ status: 503 });

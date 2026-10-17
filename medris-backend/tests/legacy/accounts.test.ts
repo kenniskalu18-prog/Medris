@@ -36,7 +36,9 @@ describe("account actions (/api/delete-account)", () => {
 
   it("ensure-profile re-creates a missing profile row as a buyer, without deleting anything", async () => {
     const id = uuid();
+    // An auth account whose profile row went missing (the sign-up triggers normally create it).
     await db.query(`insert into auth.users (id, email) values ($1, 'ada@example.com')`, [id]);
+    await db.query(`delete from public.users where id = $1`, [id]);
     stubFetch([{ match: "/auth/v1/user", json: { id, email: "ada@example.com", user_metadata: { name: "Ada", phone: "08012345678", role: "vendor" } } }]);
     const res = await app.fetch(jsonRequest("/api/delete-account", { action: "ensure-profile", accessToken: await accessToken(id) }));
     expect(await res.json()).toEqual({ ok: true, created: true });
@@ -77,14 +79,16 @@ describe("account actions (/api/delete-account)", () => {
   it("blocks vendor account deletion while orders are active or commission is owed", async () => {
     const owner = await seedUser(db, { role: "vendor" });
     const vendor = await seedVendor(db, owner.id);
-    const buyer = await seedUser(db);
+    const buyer = await seedUser(db, { phone: "08031110000" }); // orders require the buyer's phone
     await db.query(`insert into public.orders (id, buyer_id, vendor_id, order_type, status, delivery_method) values ($1, $2, $3, 'sale', 'pending', 'pickup')`, [uuid(), buyer.id, vendor.id]);
     stubFetch([]);
     const res = await app.fetch(jsonRequest("/api/delete-account", { accessToken: await accessToken(owner.id) }));
     expect(res.status).toBe(400);
     expect((await res.json()) as { error: string }).toMatchObject({ error: expect.stringContaining("1 order(s) are still active") });
 
-    await db.query(`update public.orders set status = 'completed' where vendor_id = $1`, [vendor.id]);
+    // No longer active. (Completing it would need a paid payment: the order triggers turn an
+    // unpaid "completed" into "payment_unresolved".)
+    await db.query(`update public.orders set status = 'cancelled' where vendor_id = $1`, [vendor.id]);
     await db.query(`insert into public.commission_charges (vendor_id, amount, status) values ($1, 1500, 'owed')`, [vendor.id]);
     const owed = await app.fetch(jsonRequest("/api/delete-account", { accessToken: await accessToken(owner.id) }));
     expect(await owed.json()).toEqual({ error: "You have ₦1,500 in unsettled commission. Clear it before deleting your vendor account." });
@@ -92,16 +96,36 @@ describe("account actions (/api/delete-account)", () => {
 
   it("registers through Supabase Auth and fills a missing profile; refuses a used phone", async () => {
     const newId = uuid();
-    const { calls } = stubFetch([{ method: "POST", match: "/auth/v1/admin/users", json: { id: newId } }]);
+    // Supabase Auth creates the user; its sign-up triggers then create the profile row.
+    const createAuthUser = async (body: string | undefined) => {
+      const { email, user_metadata } = JSON.parse(body ?? "{}") as { email: string; user_metadata: unknown };
+      await db.query(`insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data) values ($1, $2, '$2a$10$hash', now(), $3)`, [
+        newId,
+        email,
+        JSON.stringify(user_metadata),
+      ]);
+    };
+    // The referral code belongs to an active vendor (the real apply_referral_internal() checks it).
+    const referrer = await seedUser(db);
+    await seedVendor(db, referrer.id, { referralCode: "AB12" });
+    const { calls } = stubFetch([{ method: "POST", match: "/auth/v1/admin/users", json: { id: newId }, effect: createAuthUser }]);
     const res = await app.fetch(
       jsonRequest("/api/register", { action: "register", name: "Bola", phone: "0803 555 0000", password: "longenough", role: "vendor", referral_code: "ab-12" }),
     );
     expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ created: true, userId: newId, loginEmail: "p2348035550000@accounts.levromart.app", referral: { applied: true, code: "AB12", skip_customer: true } });
+    // The sign-up trigger (trg_zz_apply_signup_referral) already applied the code when Supabase created
+    // the user, so the endpoint's own "safety net" call answers already_used - as on the live site.
+    expect(await res.json()).toEqual({
+      created: true,
+      userId: newId,
+      loginEmail: "p2348035550000@accounts.levromart.app",
+      referral: { ok: false, error: "already_used", message: "You have already used a referral code." },
+    });
     const createBody = JSON.parse(calls[0]!.body!);
     expect(createBody).toMatchObject({ email: "p2348035550000@accounts.levromart.app", email_confirm: true, user_metadata: { role: "buyer", requested_role: "vendor" } });
     const [row] = await db.query<{ role: string; has_password: boolean }>(`select role, has_password from public.users where id = $1`, [newId]);
     expect(row).toEqual({ role: "buyer", has_password: true });
+    expect(await db.query(`select code from public.referrals where referred_user_id = $1`, [newId])).toEqual([{ code: "AB12" }]);
 
     const again = await app.fetch(jsonRequest("/api/register", { action: "register", name: "Bola", phone: "0803 555 0000", password: "longenough", role: "buyer" }));
     expect(again.status).toBe(409);

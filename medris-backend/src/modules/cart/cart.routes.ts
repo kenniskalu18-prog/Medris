@@ -2,7 +2,7 @@ import { defineRoute } from "../../shared/http/route.js";
 import { z } from "../../shared/openapi/zod.js";
 import { requireUser } from "../../middleware/auth.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
-import { CountSchema, IdParams, commonErrors, dataResponse, errorResponses, jsonBody } from "../../shared/openapi/schemas.js";
+import { commonErrors, CountSchema, dataResponse, errorResponses, IdParams, jsonBody, ProductParams } from "../../shared/openapi/schemas.js";
 import { signedIn } from "../../shared/openapi/security.js";
 import { AddToCartBody, AddToCartResult, BulkDeleteBody, CartItemSchema, RemovedResult, SetQuantityBody, SetQuantityResult } from "./cart.schemas.js";
 
@@ -92,5 +92,17 @@ export const clearCart = defineRoute({
   summary: "Empty the cart",
   security: signedIn,
   middleware: [requireUser, writeLimit] as const,
+  responses: { 200: dataResponse(RemovedResult, "Number of rows removed."), ...writeErrors },
+});
+
+export const removeCartProduct = defineRoute({
+  method: "delete",
+  path: "/cart/products/{productId}",
+  tags,
+  summary: "Remove a product from the cart",
+  description: 'Replaces `from("cart_items").delete().eq("buyer_id", me).eq("product_id", id)`: every line of that product.',
+  security: signedIn,
+  middleware: [requireUser, writeLimit] as const,
+  request: { params: ProductParams },
   responses: { 200: dataResponse(RemovedResult, "Number of rows removed."), ...writeErrors },
 });

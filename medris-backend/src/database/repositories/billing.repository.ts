@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { Executor } from "../client.js";
 import { jsonRow } from "../json.js";
-import { callFunction } from "../rpc.js";
+import { CommissionRepository } from "./commission.repository.js";
 import { commissionCharges, commissionSettlements, listingPaymentIntents, products, vendorMonthlyCharges, vendorPackages } from "../schema/index.js";
 
 export type ListingTable = "products" | "vendor_packages";
@@ -21,27 +21,20 @@ export interface ListingRow {
 export class BillingRepository {
   constructor(private readonly db: Executor) {}
 
-  /** create_commission_payment_intent(): owed commission as one payable amount (run as the vendor). */
-  async createCommissionPaymentIntent(vendorId: string): Promise<{ reference?: string; amount?: number } | undefined> {
-    const result = await callFunction(this.db, "create_commission_payment_intent", { p_vendor_id: vendorId });
-    return (Array.isArray(result) ? result[0] : result) as { reference?: string; amount?: number } | undefined;
-  }
-
-  /** compute_monthly_billing_amount(): the vendor's monthly charge and listing count. */
+  /** compute_monthly_billing_amount() (CommissionRepository): the vendor's monthly charge and listing count. */
   async computeMonthlyBillingAmount(vendorId: string): Promise<{ listing_count?: number; amount?: number } | null> {
-    const result = await callFunction(this.db, "compute_monthly_billing_amount", { p_vendor_id: vendorId });
-    return ((Array.isArray(result) ? result[0] : result) ?? null) as { listing_count?: number; amount?: number } | null;
+    const [row] = await new CommissionRepository(this.db).monthlyBillingAmount(vendorId);
+    return row ?? null;
   }
 
-  /** process_listing_billing_reminders(): the daily listing billing lifecycle (reminders, expiry). */
-  async processListingBillingReminders(): Promise<Record<string, unknown>> {
-    const result = await callFunction<unknown>(this.db, "process_listing_billing_reminders");
-    return result && typeof result === "object" && !Array.isArray(result) ? (result as Record<string, unknown>) : {};
+  /** process_listing_billing_reminders() (CommissionRepository): the daily listing billing lifecycle (reminders, expiry). */
+  processListingBillingReminders(): Promise<Record<string, unknown>> {
+    return new CommissionRepository(this.db).listingBillingReminders();
   }
 
-  /** process_commission_deadline_reminders(): commission heads-up 3/2/1 days before the deadline. */
+  /** process_commission_deadline_reminders() (CommissionRepository): commission heads-up 5/3/2/1 days before the deadline. */
   processCommissionDeadlineReminders(): Promise<unknown> {
-    return callFunction(this.db, "process_commission_deadline_reminders");
+    return new CommissionRepository(this.db).deadlineReminders();
   }
 
   async settlementByReference(reference: string): Promise<{ id: string; vendor_id: string; status: string } | null> {

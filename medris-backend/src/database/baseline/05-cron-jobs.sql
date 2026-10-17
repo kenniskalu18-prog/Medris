@@ -1,0 +1,9 @@
+select cron.schedule('auto-cancel-unconfirmed-orders', '* * * * *', 'select public.auto_cancel_unconfirmed_orders();');
+select cron.schedule('auto-complete-orders', '*/10 * * * *', 'select public.auto_complete_eligible_orders()');
+select cron.schedule('bg-reminders', '* * * * *', 'select public.send_background_reminders()');
+select cron.schedule('commission-deadline-reminders', '0 7 * * *', 'select public.process_commission_deadline_reminders();');
+select cron.schedule('levromart-finalize-points-week', '5 23 * * 0', 'select public.finalize_points_weeks()');
+select cron.schedule('levromart-payment-unresolved-escalation', '*/5 * * * *', 'select public.escalate_unresolved_payment_orders();');
+select cron.schedule('levromart-points-reconcile', '*/10 * * * *', 'select public.points_reconcile_listings()');
+select cron.schedule('levromart-service-offer-deadlines', '*/5 * * * *', 'select public.process_service_offer_deadlines();');
+select cron.schedule('remind-unattended-orders', '*/3 * * * *', 'select public.remind_unattended_orders();');

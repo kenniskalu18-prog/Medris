@@ -1,0 +1,4 @@
+# The database baseline is an exact copy of production's structure (see
+# medris-backend/src/database/baseline/README.md). Never convert its line
+# endings: one live function's source genuinely contains CR LF.
+medris-backend/src/database/baseline/*.sql -text

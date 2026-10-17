@@ -32,9 +32,13 @@ export class SupabaseStorage implements ObjectStorage {
     });
   }
 
-  async createDirectUpload(key: string): Promise<DirectUpload> {
+  async createDirectUpload(key: string, _contentType?: string, options: { upsert?: boolean } = {}): Promise<DirectUpload> {
     assertSafeKey(key);
-    const res = await this.request(`object/upload/sign/${encodeURIComponent(this.bucket)}/${key}`, { method: "POST", body: "{}" });
+    const res = await this.request(`object/upload/sign/${encodeURIComponent(this.bucket)}/${key}`, {
+      method: "POST",
+      body: "{}",
+      ...(options.upsert ? { headers: { "x-upsert": "true" } } : {}),
+    });
     const body = (await res.json().catch(() => ({}))) as { url?: string; token?: string };
     if (!res.ok || !body.url) throw new Error("Could not create an upload link.");
     return { uploadUrl: `${this.url}/storage/v1${body.url}`, method: "PUT", expiresInSeconds: 7200 };
@@ -48,6 +52,17 @@ export class SupabaseStorage implements ObjectStorage {
       body,
     });
     if (!res.ok) throw new Error(`Could not upload to ${this.bucket}.`);
+  }
+
+  /** Signed download links (POST object/sign/{bucket}), one per key; null where the file does not exist. */
+  async signedUrls(keys: string[], expiresInSeconds: number): Promise<{ path: string; signedUrl: string | null }[]> {
+    if (!keys.length) return [];
+    for (const key of keys) assertSafeKey(key);
+    const res = await this.request(`object/sign/${encodeURIComponent(this.bucket)}`, { method: "POST", body: JSON.stringify({ expiresIn: expiresInSeconds, paths: keys }) });
+    if (!res.ok) throw new Error(`Could not sign files in ${this.bucket}.`);
+    const rows = (await res.json().catch(() => [])) as { path?: string; signedURL?: string | null; error?: string | null }[];
+    const byPath = new Map((Array.isArray(rows) ? rows : []).map((r) => [String(r.path ?? ""), r.signedURL && !r.error ? `${this.url}/storage/v1${r.signedURL}` : null]));
+    return keys.map((path) => ({ path, signedUrl: byPath.get(path) ?? null }));
   }
 
   publicUrl(key: string): string {
@@ -64,6 +79,17 @@ export class SupabaseStorage implements ObjectStorage {
     if (!response.ok) return [];
     const rows = (await response.json().catch(() => [])) as { name?: string }[];
     return (Array.isArray(rows) ? rows : []).map((row) => String(row?.name ?? "")).filter((name) => name && !name.endsWith("/"));
+  }
+
+  /** One level under a prefix ("" = the bucket's top), folders included - what `sb.storage.from(b).list(prefix)` gives. */
+  async listEntries(prefix: string): Promise<{ name: string; folder: boolean }[]> {
+    const response = await this.request(`object/list/${encodeURIComponent(this.bucket)}`, {
+      method: "POST",
+      body: JSON.stringify({ prefix, limit: 1000, offset: 0, sortBy: { column: "name", order: "asc" } }),
+    });
+    if (!response.ok) throw new Error(`Could not list files in ${this.bucket}.`);
+    const rows = (await response.json().catch(() => [])) as { name?: string; id?: string | null }[];
+    return (Array.isArray(rows) ? rows : []).filter((r) => r?.name).map((r) => ({ name: String(r.name), folder: r.id == null }));
   }
 
   async remove(names: string[]): Promise<void> {

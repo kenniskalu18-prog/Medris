@@ -1,5 +1,9 @@
 import { createServer } from "node:http";
 import { createApp } from "./app.js";
+import { poolConfig } from "./config/database.js";
+import { createServices } from "./container.js";
+import { PgChangeSource } from "./integrations/live/change-source.js";
+import { attachLiveSocket, LIVE_PATH } from "./modules/live/live.socket.js";
 import { loadConfig } from "./config/app-config.js";
 import { closeDatabase, getDataContext } from "./database/index.js";
 import { createLogger } from "./lib/logger.js";
@@ -31,7 +35,22 @@ const logger = createLogger({ level: config.logLevel, base: { service: "medris-b
 const port = Number(process.env.PORT || 8787);
 const graceMs = Number(process.env.SHUTDOWN_GRACE_MS || 10_000);
 
-const server = createServer(createApp({ services: { config, logger } }));
+const services = createServices({ config, logger });
+const server = createServer(createApp({ services }));
+
+// Live updates (/api/v1/live): the socket, and the LISTEN connection that feeds it (needs migration 0004 on the
+// database; without it the socket works but no row changes arrive).
+const live = attachLiveSocket(server, services);
+let stopLive: (() => Promise<void>) | null = null;
+if (config.database.liveUrl) {
+  const { max: _max, idleTimeoutMillis: _idle, ...connection } = poolConfig({ ...config, database: { ...config.database, url: config.database.liveUrl } });
+  services.live
+    .start(new PgChangeSource(connection, (state, err) => logger[state === "connected" ? "info" : "warn"](`live updates: database ${state}`, err ? { err } : {})))
+    .then((stop) => (stopLive = stop))
+    .catch((err: unknown) => logger.warn("live updates: could not LISTEN; row changes will not be pushed", { err }));
+} else {
+  logger.warn("live updates: LIVE_DATABASE_URL is not set; row changes will not be pushed");
+}
 server.listen(port, () => {
   const url = `http://localhost:${port}`;
   const docs = config.docs.enabled ? { docs: `${url}${DOCS_PATH}`, openapi: `${url}${OPENAPI_PATH}` } : { docs: "disabled (set API_DOCS_ENABLED=true)" };
@@ -79,6 +98,7 @@ async function printBanner(url: string): Promise<void> {
   ];
   if (config.docs.enabled) rows.push(["OpenAPI JSON", `${url}${OPENAPI_PATH}`]);
   rows.push(["Health", `${url}/api/v1/health/ready`]);
+  rows.push(["Live updates", `${url.replace(/^http/, "ws")}${LIVE_PATH}`]);
   rows.push(["Database", await databaseStatus()]);
   process.stdout.write(`\n${rows.map(([k, v]) => `  ${k.padEnd(16)} ${v}`).join("\n")}\n\n`);
 }
@@ -93,6 +113,8 @@ async function shutdown(signal: string): Promise<void> {
     process.exit(1);
   }, graceMs);
   force.unref();
+  live.close();
+  await stopLive?.().catch(() => {});
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await closeDatabase().catch((err: unknown) => logger.error("closing the database pool failed", { err }));
   logger.info("stopped");

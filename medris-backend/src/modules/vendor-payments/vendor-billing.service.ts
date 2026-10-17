@@ -7,6 +7,8 @@ import { VendorsRepository } from "../../database/repositories/vendors.repositor
 import { identityFromAccessToken } from "../auth/caller.js";
 import { createSubaccount as paystackCreateSubaccount, initializeTransaction, resolveBankAccount } from "../../integrations/paystack.js";
 import type { ServiceResult } from "../../shared/types/service.js";
+import { AppError } from "../../shared/errors/app-error.js";
+import { CommissionService } from "../commission/commission.service.js";
 
 /**
  * Vendor payout set-up and the two vendor billing payments:
@@ -65,8 +67,10 @@ export async function payCommission(body: Record<string, unknown>, origin: strin
 
   let intent: { reference?: string; amount?: number } | undefined;
   try {
-    intent = await getDataContext().asUser(me, (tx) => new BillingRepository(tx).createCommissionPaymentIntent(vendorRow.id));
+    // The port of create_commission_payment_intent() checks the shop is the caller's.
+    [intent] = await new CommissionService(getDataContext).paymentIntent(me, vendorRow.id);
   } catch (err) {
+    if (err instanceof AppError && err.status < 500) return { status: 400, body: { error: err.message || "Could not start commission payment." } };
     const pg = findPgError(err);
     if (!pg) throw err;
     return { status: 400, body: { error: pg.message || "Could not start commission payment." } };

@@ -8,10 +8,10 @@ waits for approval; the rest are dashboard steps for whoever owns the account.
 
 | # | Item (manual §11) | Prepared | Left to do |
 |---|---|---|---|
-| 1 | Duplicate trigram indexes on `vendor_packages` | migration `0003` | approve + apply |
-| 2 | Duplicate sectors "Food & Groceries" and "Photography" | migration `0004` | approve + apply |
-| 3 | Legacy `inventory` table (first-version blood/equipment stock) | migration `0005` (moves it to schema `retired`, keeps the rows) | approve + apply; drop later |
-| 4 | `search_products_full` v1 next to v2 | frontend fallback removed (asset version 127) + migration `0006` | deploy the frontend, **then** approve + apply; drop later |
+| 1 | Duplicate trigram indexes on `vendor_packages` | migration removed 17 Oct 2026 (not needed for the backend move; in git history) | after the switch, if wanted |
+| 2 | Duplicate sectors "Food & Groceries" and "Photography" | migration removed 17 Oct 2026 (it deleted rows) | after the switch, if wanted |
+| 3 | Legacy `inventory` table (first-version blood/equipment stock) | migration removed 17 Oct 2026; the backend's account deletion clears the table wherever it is | after the switch, if wanted |
+| 4 | `search_products_full` v1 next to v2 | frontend fallback removed (asset version 127); migration removed 17 Oct 2026 | after the switch, if wanted |
 | 5 | Mobihealth leftovers: edge function `champions-notify`, buckets `champion-photos`, `champion-cvs` | - | dashboard steps below |
 | 6 | Stale standby project `rtmnrdzmcnlhqfptgkkn` | - | decide: delete, or rebuild as a rehearsal copy |
 | 7 | Bucket `product-photos` (144 MB, from before R2) | read-only check below | run the check; delete only when it shows nothing still uses it |
@@ -24,30 +24,12 @@ waits for approval; the rest are dashboard steps for whoever owns the account.
 lists every marketplace product (active / removed) through `admin_get_inventory` and lets admins delete one through
 `admin_delete_inventory_product`. It does not use the legacy `inventory` table and stays as it is.
 
-## Applying the migrations
+## The clean-up migrations (removed)
 
-Process and rules: [DATABASE.md, section 3](DATABASE.md#3-changing-the-database-migrations). `0001` and `0002` (the
-backend's own) may still be waiting for approval, so apply the clean-up files by number with `--only`:
-
-```bash
-export MIGRATE_DATABASE_URL='postgresql://postgres.ovklnoroyxobijgvsyfp:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres'
-npm run db:migrate -w medris-backend -- --only 0003,0004,0005            # dry run
-npm run db:migrate -w medris-backend -- --only 0003,0004,0005 --apply --confirm aws-0-<region>.pooler.supabase.com
-# 0006 only after the frontend with asset version 127 is live:
-npm run db:migrate -w medris-backend -- --only 0006 --apply --confirm aws-0-<region>.pooler.supabase.com
-```
-
-Each file checks the database first and **stops without changing anything** if it does not look as the manual
-describes (a twin index missing or different, a sector still in use or not actually duplicated, a function still
-using `inventory` or calling `search_products_full`). Objects that are already gone are skipped. What each file
-removed or moved is printed in the output (NOTICE lines) - keep that output with the approval; it is what the
-roll-back SQL in each file's header needs. All four are tested against those cases in
-`medris-backend/tests/cleanup-migrations.test.ts`.
-
-**Retired, not dropped.** `0005` and `0006` move objects into schema `retired`, which the API cannot reach. Nothing is
-lost and moving them back is one statement. After a few weeks without anyone missing them, and with a fresh backup,
-drop them in a new migration (`drop table retired.inventory; drop function retired.search_products_full(...)`) - that
-step needs its own approval.
+Items 1-4 had migrations (`0003`-`0006`, plus a grant for the moved `inventory` table). They were removed on 17 Oct
+2026 to keep the backend move focused: none is needed for it, and item 2 deleted rows. Each one checked the database
+first and stopped if it did not look as expected; they are in git history (with their tests,
+`tests/cleanup-migrations.test.ts`) if the clean-up is done after the switch, as new migrations with new numbers.
 
 ## Steps outside the database
 

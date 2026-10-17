@@ -1,6 +1,8 @@
+import { AppError } from "../../shared/errors/app-error.js";
+import { PaymentClaimsService } from "../payment-claims/payment-claims.service.js";
 import { findPgError } from "../../database/errors.js";
 import { getDataContext } from "../../database/index.js";
-import { OrdersRepository, PaymentsRepository } from "../../database/repositories/orders.repository.js";
+import { OrdersRepository } from "../../database/repositories/orders.repository.js";
 import { initializeTransaction, isValidWebhookSignature, verifyTransaction, type PaystackTransaction } from "../../integrations/paystack.js";
 import type { ServiceResult } from "../../shared/types/service.js";
 import { identityFromAccessToken } from "../auth/caller.js";
@@ -18,14 +20,15 @@ export async function initiatePayment(body: { orderId?: string; accessToken?: st
   const { orderId, accessToken } = body;
   if (!orderId || !accessToken) return { status: 400, body: { error: "orderId and accessToken are required" } };
 
-  // Runs as the buyer, so Postgres enforces "this order belongs to you".
+  // The port of create_payment_intent() checks "this order belongs to you" (and charges the total once: B2).
   const me = await identityFromAccessToken(accessToken);
   if (!me) return { status: 400, body: { error: "Could not start payment." } };
   const data = getDataContext();
   let intent: { reference: string; amount: number };
   try {
-    intent = await data.asUser(me, (tx) => new PaymentsRepository(tx).createPaymentIntent(orderId));
+    [intent] = (await new PaymentClaimsService(() => data).paymentIntent(me, orderId)) as [{ reference: string; amount: number }];
   } catch (err) {
+    if (err instanceof AppError && err.status < 500) return { status: 400, body: { error: err.message || "Could not start payment." } };
     const pg = findPgError(err);
     if (!pg) throw err;
     return { status: 400, body: { error: pg.message || "Could not start payment." } };

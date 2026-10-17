@@ -3,8 +3,11 @@
 > **Start with the handover manual: [`docs/LEVROMART_BACKEND_BUILD_MANUAL.pdf`](../docs/LEVROMART_BACKEND_BUILD_MANUAL.pdf)** (7 Oct 2026).
 > The matching frontend guide is [`docs/LEVROMART_FRONTEND_BUILD_MANUAL.pdf`](../docs/LEVROMART_FRONTEND_BUILD_MANUAL.pdf).
 > It is the current reference for all 71 tables, business logic, cron jobs, security, Vercel API layer and the
-> migration playbook. `01_tables.sql` and `02_cron_jobs.sql` below are older snapshots (64 tables, 4 cron jobs);
-> for an up-to-date schema dump run `export.sh`.
+> migration playbook. `01_tables.sql` and `02_cron_jobs.sql` below are older snapshots (64 tables, 4 cron jobs).
+>
+> **The exact current structure** (every table, function, trigger, grant and policy, exported 14 Oct 2026) is in
+> [`medris-backend/src/database/baseline/`](../medris-backend/src/database/baseline/README.md); local, test and CI
+> databases are built from it. Refresh it with `export.sh` + `npm run db:baseline:update -w medris-backend`.
 
 > **Changing the database:** new changes are migrations in `medris-backend/src/database/migrations/`, applied with
 > `npm run db:migrate -w medris-backend` (process and rules: [`docs/DATABASE.md`](../docs/DATABASE.md#3-changing-the-database-migrations)).
@@ -17,7 +20,7 @@ Live project: `ovklnoroyxobijgvsyfp`. Standby copy: `rtmnrdzmcnlhqfptgkkn` (kept
 |---|---|
 | `01_tables.sql` | All 64 tables, grouped A–I, with columns, types, defaults, primary keys |
 | `02_cron_jobs.sql` | The 4 pg_cron jobs |
-| `export.sh` | Re-exports everything (schema, functions, policies, triggers, cron) into `supabase/export/` |
+| `export.sh` | Read-only export of the live structure (schema, functions, grants, policies, triggers, cron, Storage buckets and policies, Auth triggers, Realtime tables, extensions) into `supabase/export/` (git-ignored; the webhook secret and common key formats are removed automatically) |
 | this file | Index of functions, triggers, policies and conventions |
 
 Security model: **Row Level Security is on for every table** (144 policies). Anything that must

@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { authIdentities, authUsers, users } from "../schema/index.js";
 import type { Executor } from "../client.js";
-import { callFunction } from "../rpc.js";
+import { ReferralsRepository } from "./referrals.repository.js";
 
 export interface UserProfile {
   id: string;
@@ -87,14 +87,9 @@ export class UsersRepository {
     await this.db.update(users).set({ hasPassword: true }).where(eq(users.id, id));
   }
 
-  /** apply_referral_internal(): credits a referral code typed at sign-up (safe to repeat). */
+  /** apply_referral_internal() (ReferralsRepository.apply): credits a referral code typed at sign-up (safe to repeat). */
   applyReferral(userId: string, code: string, skipCustomer: boolean): Promise<unknown> {
-    return callFunction(this.db, "apply_referral_internal", { p_uid: userId, p_code: code, p_skip_customer: skipCustomer });
-  }
-
-  /** delete_my_account(): the FK-safe deletion of every public row that belongs to the account. */
-  async deleteAccountData(userId: string): Promise<void> {
-    await callFunction(this.db, "delete_my_account", { p_user_id: userId });
+    return new ReferralsRepository(this.db).apply(userId, code, skipCustomer);
   }
 }
 

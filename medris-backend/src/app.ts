@@ -2,7 +2,7 @@ import express, { type ErrorRequestHandler, type Express, type Request } from "e
 import { corsMiddleware } from "./config/cors.js";
 import { createServices, type AppServices } from "./container.js";
 import { setDataContextProvider } from "./database/index.js";
-import { errorMessage } from "./lib/http.js";
+import { publicErrorMessage } from "./lib/http.js";
 import { requestContext } from "./middleware/request-context.js";
 import { sharePreviewHandler } from "./modules/accounts/accounts.controller.js";
 import { setAccessTokenVerifier } from "./modules/auth/caller.js";
@@ -74,7 +74,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const onError: ErrorRequestHandler = (err, req, res, _next) => {
     if (isV1(req)) return v1ErrorResponse(req, res, err, res.locals.logger);
     (res.locals.logger ?? services.logger).error("unhandled error", { err, path: req.originalUrl.split("?")[0] });
-    if (!res.headersSent) res.status(500).json({ error: errorMessage(err) || "Server error" });
+    if (!res.headersSent) res.status(500).json({ error: publicErrorMessage(err) || "Server error" });
   };
   app.use(onError);
 

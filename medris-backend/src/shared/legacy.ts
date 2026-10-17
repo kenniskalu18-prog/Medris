@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { errorMessage, json } from "../lib/http.js";
+import { json, publicErrorMessage } from "../lib/http.js";
 import type { LegacyResult } from "./types/service.js";
 
 export type { LegacyResult };
@@ -28,6 +28,6 @@ export async function respond(res: Response, work: () => Promise<LegacyResult>, 
   } catch (err) {
     if (options.log) console.error(options.log, err);
     const fallback = options.fallback ?? "Server error";
-    json(res, 500, { error: options.hideMessage ? fallback : errorMessage(err) || fallback });
+    json(res, 500, { error: options.hideMessage ? fallback : publicErrorMessage(err) || fallback });
   }
 }

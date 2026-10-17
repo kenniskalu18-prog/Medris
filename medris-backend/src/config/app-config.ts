@@ -52,6 +52,14 @@ const envSchema = z.object({
       .regex(/^postgres(ql)?:\/\//, "must be a postgres:// or postgresql:// connection string")
       .optional(),
   ),
+  // Live updates LISTEN on one dedicated connection. A transaction pooler (Supabase port 6543, what DATABASE_URL
+  // usually is) silently drops notifications, so this must be the direct or session-mode URL (port 5432).
+  LIVE_DATABASE_URL: optionalString.pipe(
+    z
+      .string()
+      .regex(/^postgres(ql)?:\/\//, "must be a postgres:// or postgresql:// connection string")
+      .optional(),
+  ),
   DATABASE_POOL_MAX: intInRange(5, 1, 100),
   DATABASE_SSL_MODE: z.enum(["disable", "require", "verify-full"]).default("require"),
   DATABASE_SSL_CA: optionalString,
@@ -110,6 +118,8 @@ export interface AppConfig {
   appOrigin: string;
   database: {
     url?: string;
+    /** For live updates' LISTEN connection (session mode; unset = no row changes pushed). */
+    liveUrl?: string;
     poolMax: number;
     sslMode: "disable" | "require" | "verify-full";
     sslCa?: string;
@@ -181,6 +191,7 @@ export function loadConfig(env: RawEnv = process.env): AppConfig {
     appOrigin: e.APP_ORIGIN ?? DEFAULT_APP_ORIGIN,
     database: {
       url: e.DATABASE_URL,
+      liveUrl: e.LIVE_DATABASE_URL,
       poolMax: e.DATABASE_POOL_MAX,
       sslMode: e.DATABASE_SSL_MODE,
       sslCa: e.DATABASE_SSL_CA?.replace(/\\n/g, "\n"),

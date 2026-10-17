@@ -11,3 +11,6 @@ medris-backend/drizzle/
 
 # Claude app output folder (local only)
 Claude outputs/
+
+# Output of supabase/export.sh: the live schema, may contain the webhook secret (never commit)
+supabase/export/

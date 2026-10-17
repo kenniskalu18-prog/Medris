@@ -309,9 +309,12 @@ status changes that used the user's own token (`transition_order_status`, `vendo
 
 ## 9. Tests
 
-`npm test -w medris-backend` (136 tests) runs everything against **PGlite** (PostgreSQL 18 in-process; no installation).
+`npm test -w medris-backend` (164 tests) runs everything against **PGlite** (PostgreSQL in-process; no installation).
 `TEST_DATABASE_URL=postgres://…/medris_test npm run test:postgres -w medris-backend` runs the same suite against a real
-PostgreSQL (the database name must end in `_test`; each test file uses its own scratch database). The test schema
-is the Supabase shim + `supabase/01_tables.sql` + the later column additions + policies copied from the manual +
-simplified stand-ins for the database functions + the backend's own migrations - see `tests/support/test-db.ts`.
-External services are stubbed; nothing reaches the network.
+PostgreSQL (the database name must end in `_test`; each test file uses its own scratch database). The test schema is
+**production's real structure** - every table, function, trigger, grant and policy, exported into
+`src/database/baseline/` (its README) - followed by the backend's own migrations; see `tests/support/test-db.ts`. So
+tests exercise the real database functions and rules: seed data the way the app creates it (`tests/support/fixtures.ts`:
+users through `auth.users` and the sign-up triggers, complete vendors, buyers with a phone). External services are
+stubbed; nothing reaches the network. What the real schema revealed when the tests moved onto it:
+[BASELINE_FINDINGS.md](BASELINE_FINDINGS.md).

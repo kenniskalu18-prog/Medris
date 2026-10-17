@@ -1,7 +1,6 @@
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { Executor } from "../client.js";
 import { jsonRow, jsonRows } from "../json.js";
-import { callFunction } from "../rpc.js";
 import { orders, payments } from "../schema/index.js";
 import { isUuid } from "../../lib/format.js";
 
@@ -91,29 +90,10 @@ export class OrdersRepository {
       .from(orders)
       .where(and(inArray(orders.vendorId, vendorIds), notInArray(orders.status, ["completed", "cancelled"])));
   }
-
-  /** transition_order_status(): the order state machine, including who may make each change. */
-  async transitionStatus(orderId: string, status: string): Promise<void> {
-    await callFunction(this.db, "transition_order_status", { p_order_id: orderId, p_new_status: status });
-  }
-
-  /** vendor_decline_order(): the vendor cancels a pending/confirmed order with a reason. */
-  async vendorDecline(orderId: string, reason: string | null): Promise<void> {
-    await callFunction(this.db, "vendor_decline_order", { p_order_id: orderId, p_reason: reason });
-  }
 }
 
 export class PaymentsRepository {
   constructor(private readonly db: Executor) {}
-
-  /**
-   * create_payment_intent(): the amount comes from the order in the database,
-   * never from the client. Run as the buyer, so Postgres checks the order is theirs.
-   */
-  async createPaymentIntent(orderId: string): Promise<{ reference: string; amount: number }> {
-    const result = await callFunction(this.db, "create_payment_intent", { p_order_id: orderId });
-    return (Array.isArray(result) ? result[0] : result) as { reference: string; amount: number };
-  }
 
   /** First paid payment of the given types (all columns, as `select=*`). */
   async firstPaid(orderId: string, types: string[]): Promise<Record<string, unknown> | null> {

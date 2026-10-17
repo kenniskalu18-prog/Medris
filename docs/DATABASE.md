@@ -108,7 +108,13 @@ npm run db:migrate -w medris-backend -- --apply --confirm aws-0-<region>.pooler.
 | `supabase/01_tables.sql` ... `supabase/14_*.sql` | History: applied to production by hand before this process (09-14 through Supabase's MCP tool, which keeps its own `supabase_migrations` table - left untouched). Reference only, never re-run. |
 | `0001_backend_api_role.sql` | adds role `medris_api` (least-privilege connections) - pending, needs approval |
 | `0002_backend_auth_sessions.sql` | adds empty table `backend_sessions` (for `AUTH_BACKEND_SESSIONS=true`) - pending, needs approval |
-| `0003`-`0006` | clean-up from manual section 11: duplicate indexes, duplicate sectors, retire `inventory` and search v1 - pending, needs approval; see [CLEANUP.md](CLEANUP.md) (0006 only after the frontend with asset version 127 is live) |
+| `0003_backend_read_last_sign_in.sql` | lets `medris_api` read `auth.users.last_sign_in_at` (chat "last seen" in the backend) - pending, needs approval |
+| `0004_backend_live_notify.sql` | a NOTIFY trigger on the 22 live tables, so the backend's `/api/v1/live` can push row changes (changes no data) - pending, needs approval |
+
+The four clean-up migrations from manual section 11 (duplicate indexes, duplicate sectors, retiring `inventory` and
+search v1) and the grant that went with the `inventory` move were **removed** on 17 Oct 2026: none of them is needed
+to move the backend, and one deleted rows. They are in git history if the clean-up is wanted after the switch
+([CLEANUP.md](CLEANUP.md)).
 
 The authoritative state of any database is `npm run db:status` against it.
 
@@ -127,11 +133,13 @@ npm run db:dev -w medris-backend -- --seed       # baseline schema + every migra
 npm run dev:backend
 ```
 
-`db:dev` refuses any host that is not local. Its schema is the test approximation (snapshot tables, policies copied
-from the manual, simplified function stand-ins). **A faithful local copy:** with read access to production, run
-`supabase/export.sh` (schema only; replace the webhook secret in the function dump, as its header says) and restore
-`00_full_schema.sql` plus `database/portability/supabase-compat.sql` into a local database. Never copy production
-data to a laptop.
+`db:dev` refuses any host that is not local. Its schema is the one the tests use: production's real structure from
+`medris-backend/src/database/baseline/` (on a local stand-in for the Supabase platform), then every migration. Never
+copy production data to a laptop.
+
+**Keeping the baseline current.** When production changed outside the migration process, run `./supabase/export.sh`
+(structure only, read-only; it removes the webhook secret by itself) and `npm run db:baseline:update -w
+medris-backend`, then review the diff ([baseline README](../medris-backend/src/database/baseline/README.md)).
 
 Tests: `npm test` (PGlite, nothing to install) or `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medris_test
 npm run test:postgres -w medris-backend`.

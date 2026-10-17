@@ -19,7 +19,10 @@
     "typecheck": "npm run typecheck --workspaces",
     "lint": "eslint .",
     "test": "npm run test --workspaces",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "porting:status": "node scripts/porting-status.mjs",
+    "tables:status": "node scripts/table-queries-status.mjs",
+    "schema:relationships": "node scripts/schema-relationships.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1139.0",

@@ -27,8 +27,11 @@ export const CartProductSchema = z
   .object({
     id: z.string(),
     name: z.string(),
+    listing_type: z.string().nullable(),
+    is_service: z.boolean().nullable(),
     sale_price: money,
     discount_price: money,
+    rental_rate: money,
     photos: z.array(z.string()).nullable(),
     quantity_available: z.number().nullable(),
     status: z.string(),

@@ -2,6 +2,8 @@ import type { Identity } from "../../database/context.js";
 import { getDataContext } from "../../database/index.js";
 import { findPgError } from "../../database/errors.js";
 import { OrdersRepository, PaymentsRepository } from "../../database/repositories/orders.repository.js";
+import { AppError } from "../../shared/errors/app-error.js";
+import { OrderActionsService } from "../order-actions/order-actions.service.js";
 import { UsersRepository } from "../../database/repositories/users.repository.js";
 import { errorMessage } from "../../lib/http.js";
 import { identityFromAccessToken } from "../auth/caller.js";
@@ -11,8 +13,8 @@ import type { ServiceResult } from "../../shared/types/service.js";
 /**
  * Money-moving order actions for card-paid orders (ported from
  * api/order-payout-action.js). Status changes go through the database
- * functions as the caller (DataContext.asUser), so Postgres re-checks
- * ownership exactly as when the caller's token went to Supabase.
+ * functions' ports (OrderActionsService) as the caller, which re-check
+ * ownership exactly as the database did when the caller's token went to Supabase.
  *
  *  release        buyer (or admin) confirms receipt -> complete + pay out held money
  *  refund         admin only: refund the buyer's original charge
@@ -33,12 +35,17 @@ async function callerRole(userId: string): Promise<string | null> {
   return getDataContext().asService((tx) => new UsersRepository(tx).roleOf(userId));
 }
 
-/** An order state change run as the user; the database's refusal message is passed back like PostgREST's `message`. */
-async function asUserOrderChange(me: Identity, change: (orders: OrdersRepository) => Promise<void>): Promise<{ ok: boolean; message?: string }> {
+/**
+ * An order state change made as the user through the ported order functions (OrderActionsService,
+ * which checks who may make it exactly as transition_order_status() / vendor_decline_order() did);
+ * a refusal's message is passed back like PostgREST's `message`.
+ */
+async function asUserOrderChange(me: Identity, change: (orders: OrderActionsService) => Promise<unknown>): Promise<{ ok: boolean; message?: string }> {
   try {
-    await getDataContext().asUser(me, (tx) => change(new OrdersRepository(tx)));
+    await change(new OrderActionsService(getDataContext));
     return { ok: true };
   } catch (err) {
+    if (err instanceof AppError && err.status < 500) return { ok: false, message: err.message };
     const pg = findPgError(err);
     if (!pg) throw err;
     return { ok: false, message: pg.message };
@@ -72,7 +79,7 @@ export async function release({ orderId, accessToken }: Body): Promise<ServiceRe
   if (order.buyer_id !== me.userId && role !== "admin") return { status: 403, body: { error: "Only the buyer (or an admin) can confirm this order." } };
 
   if (order.status !== "completed") {
-    const t = await asUserOrderChange(me, (orders) => orders.transitionStatus(orderId, "completed"));
+    const t = await asUserOrderChange(me, (orders) => orders.transition(me, orderId, "completed"));
     if (!t.ok) return { status: 400, body: { error: t.message || "Could not complete this order." } };
   }
 
@@ -130,7 +137,7 @@ export async function buyerCancel({ orderId, accessToken }: Body): Promise<Servi
     }
   }
 
-  const t = await asUserOrderChange(me, (orders) => orders.transitionStatus(orderId, "cancelled"));
+  const t = await asUserOrderChange(me, (orders) => orders.transition(me, orderId, "cancelled"));
   if (!t.ok) return { status: 400, body: { error: t.message || "Could not cancel this order." } };
   if (!paidPayment) return { status: 200, body: { cancelled: true, refunded: false } };
 
@@ -154,7 +161,7 @@ export async function vendorDecline({ orderId, accessToken, reason }: Body): Pro
 
   const paidPayment = await data.asService((tx) => new PaymentsRepository(tx).firstPaid(orderId, ["sale_price", "rental_fee", "delivery_deposit_20"]));
 
-  const declined = await asUserOrderChange(me, (orders) => orders.vendorDecline(orderId, reason || null));
+  const declined = await asUserOrderChange(me, (orders) => orders.decline(me, orderId, reason || null));
   if (!declined.ok) return { status: 400, body: { error: declined.message || "Could not decline this order." } };
   if (!paidPayment) return { status: 200, body: { cancelled: true, refunded: false } };
 

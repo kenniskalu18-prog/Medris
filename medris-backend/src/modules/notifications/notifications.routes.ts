@@ -62,3 +62,48 @@ export const markRead = defineRoute({
   request: { body: jsonBody(MarkReadBody) },
   responses: { 200: dataResponse(UpdatedResult, "Number of rows changed."), ...errorResponses(400, 401, 415, 429), ...commonErrors },
 });
+
+export const notifySelf = defineRoute({
+  method: "post",
+  path: "/notifications/self",
+  tags,
+  summary: "A notification to oneself",
+  description: "Replaces the app's create_notification() call. Only to the caller (the original accepted any recipient: S2).",
+  security: signedIn,
+  middleware: [requireUser, rateLimit({ name: "notify-self", limit: 20, windowMs: 60_000 })] as const,
+  request: {
+    body: jsonBody(
+      z
+        .object({
+          type: z.string().min(1).max(80),
+          title: z.string().min(1).max(200),
+          body: z.string().max(2000).nullish(),
+          targetView: z.string().max(80).nullish(),
+          targetParams: z.record(z.string(), z.unknown()).nullish(),
+        })
+        .openapi("NotifySelfRequest"),
+    ),
+  },
+  responses: { 200: dataResponse(z.object({ done: z.literal(true) }), "Created."), ...errorResponses(400, 401, 415, 429), ...commonErrors },
+});
+
+export const savePushSubscription = defineRoute({
+  method: "put",
+  path: "/push-subscriptions",
+  tags,
+  summary: "Save this phone's push subscription",
+  description:
+    'Replaces `from("push_subscriptions").upsert({ user_id, endpoint, p256dh, auth_key }, { onConflict: "endpoint" })`. ' +
+    "An endpoint already saved for another account is refused (403).",
+  security: signedIn,
+  request: {
+    body: jsonBody(
+      z.object({
+        endpoint: z.string().url().max(2000),
+        p256dh: z.string().min(1).max(500),
+        auth: z.string().min(1).max(500),
+      }),
+    ),
+  },
+  responses: { 200: dataResponse(z.object({ saved: z.literal(true) }), "Saved."), ...errorResponses(400, 401, 403, 415), ...commonErrors },
+});

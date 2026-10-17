@@ -44,7 +44,8 @@ describe("Levi tools", () => {
       expect((await r.vendorOrderItems(vendorId))[0]).toMatchObject({ product_id: product, order: { status: "completed" } });
       expect(await r.favoritesOf([product])).toEqual([{ product_id: product }]);
       expect(await r.sectors()).not.toHaveLength(0);
-      expect(await r.categories()).toEqual([]);
+      // Adding a product without a category files it under a default one (trigger trg_products_default_category).
+      expect(await r.categories()).not.toHaveLength(0);
     });
   });
 

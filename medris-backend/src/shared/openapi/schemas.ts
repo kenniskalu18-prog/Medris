@@ -98,3 +98,26 @@ export const IdParams = z.object({ id: idParam });
 export const CountSchema = z.object({ count: z.number().int().min(0) }).openapi("Count");
 
 export const isoDateTime = z.iso.datetime({ offset: true, message: "Must be an ISO-8601 date-time." }).openapi({ example: "2026-10-01T12:00:00Z" });
+
+/**
+ * A comma-separated list of ids in the query string (`?productIds=a,b,c`), for the
+ * ported functions that took a uuid[] argument. Empty items are ignored.
+ */
+export function idList(description: string, max = 500) {
+  return z
+    .string()
+    .transform((s) => s.split(",").map((x) => x.trim()).filter(Boolean))
+    .pipe(z.array(id).max(max))
+    .openapi({ description: `${description} Comma-separated, up to ${max}.`, example: "6f1c2a0e-8a4b-4c1e-9d2f-3b5a7c9e1f20" });
+}
+
+/** Path parameter objects used across the ported endpoints. */
+export const ProductParams = z.object({ productId: idParam });
+export const PackageParams = z.object({ packageId: idParam });
+export const VendorIdParams = z.object({ vendorId: idParam });
+export const OrderParams = z.object({ orderId: idParam });
+export const UserParams = z.object({ userId: idParam });
+export const ConversationParams = z.object({ conversationId: idParam });
+
+/** Result of an endpoint that replaces a function returning nothing (void). */
+export const DoneSchema = z.object({ done: z.literal(true) }).openapi("Done");

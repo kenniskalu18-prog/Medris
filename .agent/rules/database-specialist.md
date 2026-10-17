@@ -15,6 +15,7 @@ reviews and applies after approval (`docs/DATABASE.md`, section 3).
    `medris-backend/src/database/migrations/NNNN_short_description.sql` from the template. Fill in Why / Effect /
    Roll back; leave "Approved" for the reviewer.
 2. Write idempotent, guarded SQL: `create ... if not exists`, `create or replace function`, and for removals check the
+   expected state first and `raise exception` if it differs. The runner wraps each
    expected state first and `raise exception` if it differs (see `0003`-`0006` for the pattern). The runner wraps each
    file in a transaction - no `BEGIN`/`COMMIT`. `CREATE INDEX CONCURRENTLY` goes alone in a file that starts with
    `-- migrate:no-transaction`.

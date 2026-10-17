@@ -8,15 +8,14 @@
  * database host is local (localhost, 127.0.0.1, ::1 or the docker-compose
  * service "db"), so it can never touch Supabase or any other remote database.
  *
- * The schema is the same approximation the tests use (supabase/01_tables.sql,
- * the later column additions, test policies and simplified stand-ins for the
- * database functions), followed by every migration through the migration
- * runner (recorded in medris_migrations.applied; `npm run db:status` shows
- * them). For a faithful copy of production, restore a schema-only dump instead
- * (docs/DATABASE.md, "A faithful local copy").
+ * The schema is the one the tests use: the exported production structure
+ * (src/database/baseline - every table, function, trigger, grant and policy, on a
+ * local stand-in for the Supabase platform), followed by every migration through
+ * the migration runner (recorded in medris_migrations.applied; `npm run db:status`
+ * shows them). No production data is ever copied.
  */
 import pg from "pg";
-import { baselineSql } from "../tests/support/test-db.js";
+import { baselineSql } from "./baseline.js";
 import { applyMigrations, readMigrations } from "./migrations.js";
 
 try {
@@ -44,14 +43,8 @@ if (existing.rows[0].n > 0) {
   await client.end();
   process.exit(1);
 }
-for (const chunk of baselineSql()) {
-  try {
-    await client.query(chunk);
-  } catch (err) {
-    // Roles are server-wide and may already exist from another local database.
-    if ((err as { code?: string }).code !== "42710" && (err as { code?: string }).code !== "23505") throw err;
-  }
-}
+// The platform stand-in creates the (server-wide) roles only if they do not exist yet.
+for (const chunk of baselineSql()) await client.query(chunk);
 // Migrations go through the runner, so this database records them like production does.
 const { applied } = await applyMigrations(
   { query: async (text, params) => ({ rows: (await client.query(text, params)).rows }), exec: (text) => client.query(text) },
@@ -64,17 +57,24 @@ if (process.argv.includes("--seed")) {
   const owner = "00000000-0000-4000-8000-00000000a001";
   const sector = "00000000-0000-4000-8000-00000000e001";
   const vendor = "00000000-0000-4000-8000-00000000c001";
+  // As in production: the sign-up triggers create each profile from the auth user.
   const people: [string, string, string][] = [
-    [buyer, "buyer@dev.local", "buyer"],
-    [owner, "vendor@dev.local", "vendor"],
+    [buyer, "buyer@dev.local", "08030000001"],
+    [owner, "vendor@dev.local", "08030000002"],
   ];
-  for (const [id, email, role] of people) {
-    await client.query("insert into auth.users (id, email, email_confirmed_at) values ($1, $2, now())", [id, email]);
-    await client.query("insert into public.users (id, name, email, role) values ($1, $2, $3, $4)", [id, email.split("@")[0], email, role]);
+  for (const [id, email, phone] of people) {
+    await client.query("insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values ($1, $2, now(), $3)", [
+      id,
+      email,
+      JSON.stringify({ name: email.split("@")[0], phone }),
+    ]);
   }
   await client.query("insert into public.sectors (id, slug, name, sort_order) values ($1, 'electronics', 'Electronics', 1)", [sector]);
+  // A verified vendor needs WhatsApp and payout details (trg_enforce_vendor_onboarding_requirements);
+  // verifying it makes its owner a vendor (trg_sync_user_role_from_vendor).
   await client.query(
-    "insert into public.vendors (id, user_id, business_name, sector_id, verification_status, is_active) values ($1, $2, 'Dev Shop', $3, 'verified', true)",
+    `insert into public.vendors (id, user_id, business_name, sector_id, verification_status, is_active, whatsapp_number, bank_name, bank_code, account_number)
+     values ($1, $2, 'Dev Shop', $3, 'verified', true, '08030000002', 'Test Bank', '058', '0123456789')`,
     [vendor, owner, sector],
   );
   await client.query("insert into public.products (vendor_id, name, listing_type, sale_price, status) values ($1, 'Rechargeable lamp', 'sale', 8000, 'active')", [vendor]);
