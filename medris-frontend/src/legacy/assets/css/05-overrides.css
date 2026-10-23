@@ -2761,3 +2761,25 @@ html:root body #app .storefront-packages .btn{opacity:1!important;-webkit-tap-hi
   html:root body #app .storefront-products-shell .card-cart-btn:hover,
   html:root body #app .storefront-packages .btn:hover{opacity:1!important;filter:none!important}
 }
+
+/* ---- Vendors page: text tabs, evenly spaced; calmer layout ---- */
+/* Orders: the extra search icon between Filters and History is gone */
+html:root body #app .orders-filter-search-row .order-search-wrap{display:none!important}
+
+/* Type tabs: one full-width pill, four equal columns */
+html:root:root body #app .vd-page .vd-seg{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:.25rem!important;width:100%!important;margin:.2rem 0 .9rem!important;padding:.25rem!important;border:1px solid var(--border)!important;border-radius:14px!important;background:color-mix(in srgb,var(--text) 5%,var(--card))!important;overflow:hidden}
+html:root:root body #app .vd-page .vd-seg .vd-tab{flex:none!important;width:100%!important;min-width:0!important;padding:.6rem .25rem!important;border:0!important;border-radius:10px!important;background:transparent!important;color:var(--text-muted,#64748b)!important;font-size:.86rem!important;font-weight:600!important;text-align:center!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html:root:root body #app .vd-page .vd-seg .vd-tab.active{background:var(--card,#fff)!important;color:var(--text)!important;font-weight:800!important;box-shadow:0 1px 6px -1px rgba(15,23,42,.18)!important}
+html:root:root body #app .vd-page .vd-seg .vd-tab.active::after{display:none!important}
+
+/* View switch (Grid / List / Map): same pill style, full width, evenly spread */
+html:root:root:root body #app .vd-page .vd-head{justify-content:stretch!important;margin:0 0 .6rem!important}
+html:root:root:root body #app .vd-page .vd-views{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:.25rem!important;width:100%!important;padding:.25rem!important;border:1px solid var(--border)!important;border-radius:14px!important;background:color-mix(in srgb,var(--text) 5%,var(--card))!important}
+html:root:root:root body #app .vd-page .vd-views button.vd-view{width:100%!important;min-width:0!important;height:auto!important;padding:.55rem .25rem!important;font-size:.86rem!important;font-weight:600!important;color:var(--text-muted,#64748b)!important;border-radius:10px!important;text-align:center!important}
+html:root:root:root body #app .vd-page .vd-views button.vd-view.active{background:var(--card,#fff)!important;color:var(--text)!important;font-weight:800!important;box-shadow:0 1px 6px -1px rgba(15,23,42,.18)!important}
+
+/* Search takes the space, Filters button has a word */
+html:root:root:root body #app .vd-page .vd-tools{display:flex!important;align-items:center!important;gap:.6rem!important;margin:0 0 .9rem!important}
+html:root:root:root body #app .vd-page .vd-tools .vd-search{flex:1 1 auto!important;min-width:0!important}
+html:root:root:root body #app .vd-page .vd-tools button#vendorsFiltersToggle.vd-filter-btn{width:auto!important;min-width:0!important;height:42px!important;padding:0 .9rem!important;gap:.45rem!important;display:inline-flex!important;align-items:center!important;flex:0 0 auto!important;font-size:.86rem!important;font-weight:700!important}
+html:root:root:root body #app .vd-page .vd-filter-label{display:inline}

@@ -174,20 +174,20 @@
     vendorsListingFilter = "all";
     let html = `<div class="vd-page">${typeof lvPageHero === "function" ? lvPageHero("vendors") : ""}<div class="vd-head">
       <div class="vd-views" role="group" aria-label="View mode">
-        <button type="button" class="vd-view" id="vendorsViewGridBtn" onclick="switchVendorsView('grid')" title="Grid view" aria-label="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></button>
-        <button type="button" class="vd-view" id="vendorsViewListBtn" onclick="switchVendorsView('list')" title="List view" aria-label="List view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.7" cy="6.5" r=".8"/><circle cx="4.7" cy="12" r=".8"/><circle cx="4.7" cy="17.5" r=".8"/></svg></button>
-        <button type="button" class="vd-view" id="vendorsViewMapBtn" onclick="switchVendorsView('map')" title="Map view" aria-label="Map view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.3"/></svg></button>
+        <button type="button" class="vd-view" id="vendorsViewGridBtn" onclick="switchVendorsView('grid')" title="Grid view" aria-label="Grid view">Grid</button>
+        <button type="button" class="vd-view" id="vendorsViewListBtn" onclick="switchVendorsView('list')" title="List view" aria-label="List view">List</button>
+        <button type="button" class="vd-view" id="vendorsViewMapBtn" onclick="switchVendorsView('map')" title="Map view" aria-label="Map view">Map</button>
       </div>
     </div>
     <div class="vd-seg" id="vendorsListingTabs" role="tablist" aria-label="Vendor type">
-      <button type="button" class="vd-tab active" role="tab" data-filter="all" title="All vendors" aria-label="All vendors" onclick="setVendorsListingFilter('all')"><i class="fa-solid fa-store" aria-hidden="true"></i></button>
-      <button type="button" class="vd-tab" role="tab" data-filter="buy" title="Buy" aria-label="Buy" onclick="setVendorsListingFilter('buy')"><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i></button>
-      <button type="button" class="vd-tab" role="tab" data-filter="rent" title="Rent" aria-label="Rent" onclick="setVendorsListingFilter('rent')"><i class="fa-solid fa-key" aria-hidden="true"></i></button>
-      <button type="button" class="vd-tab" role="tab" data-filter="both" title="Buy and rent" aria-label="Buy and rent" onclick="setVendorsListingFilter('both')"><i class="fa-solid fa-right-left" aria-hidden="true"></i></button>
+      <button type="button" class="vd-tab active" role="tab" data-filter="all" title="All vendors" aria-label="All vendors" onclick="setVendorsListingFilter('all')">All vendors</button>
+      <button type="button" class="vd-tab" role="tab" data-filter="buy" title="Buy" aria-label="Buy" onclick="setVendorsListingFilter('buy')">Buy</button>
+      <button type="button" class="vd-tab" role="tab" data-filter="rent" title="Rent" aria-label="Rent" onclick="setVendorsListingFilter('rent')">Rent</button>
+      <button type="button" class="vd-tab" role="tab" data-filter="both" title="Buy and rent" aria-label="Buy and rent" onclick="setVendorsListingFilter('both')">Both</button>
     </div>
     <div class="vd-tools">
       <label class="vd-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="vendorSearchInput" placeholder="Search vendors…" oninput="filterVendorsDirectory()" autocomplete="off" enterkeyhint="search" aria-label="Search vendors or products" /></label>
-      <button type="button" class="vd-filter-btn" id="vendorsFiltersToggle" aria-label="Filter" title="Filter" aria-expanded="false" onclick="toggleVendorsFilters()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+      <button type="button" class="vd-filter-btn" id="vendorsFiltersToggle" aria-label="Filter" title="Filter" aria-expanded="false" onclick="toggleVendorsFilters()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="vd-filter-label">Filters</span></button>
     </div>
     <div class="vendors-filters-panel vd-panel hidden" id="vendorsFiltersPanel">
       <div class="lm-sheet-head"><strong>Filter vendors</strong><button type="button" class="lm-x" onclick="toggleVendorsFilters(false)" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
