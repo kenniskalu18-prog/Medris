@@ -207,6 +207,19 @@ export class PaymentClaimsRepository {
     await this.db.execute(sql`delete from public.payments where order_id = ${orderId} and status = 'pending'`);
   }
 
+  /** The pending card row of one Paystack attempt (an abandoned or failed attempt). */
+  async deletePendingByReference(reference: string): Promise<void> {
+    await this.db.execute(sql`delete from public.payments where provider_reference = ${reference} and status = 'pending' and method = 'card'`);
+  }
+
+  /** The payment type a Paystack reference pays for (the fee row first when a rental also carries a deposit row). */
+  async paymentTypeByReference(reference: string): Promise<string | null> {
+    const [row] = rowsOf<{ payment_type: string }>(
+      await this.db.execute(sql`select payment_type::text as payment_type from public.payments where provider_reference = ${reference} order by (payment_type = 'deposit') limit 1`),
+    );
+    return row?.payment_type ?? null;
+  }
+
   async insertCardPayment(orderId: string, type: string, amount: Numeric, reference: string): Promise<void> {
     await this.db.execute(sql`
       insert into public.payments (order_id, payment_type, amount, method, status, provider_reference)

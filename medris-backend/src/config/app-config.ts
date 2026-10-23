@@ -95,6 +95,8 @@ const envSchema = z.object({
 
   // Backend-managed sessions: built and tested, off until approved (docs/AUTH.md)
   AUTH_BACKEND_SESSIONS: bool(false),
+  // Paystack checkout for orders (issue #89): off until it has been proven in test mode
+  PAYSTACK_CHECKOUT_ENABLED: bool(false),
   AUTH_SESSION_TTL_DAYS: intInRange(30, 1, 365),
   AUTH_SESSION_IDLE_DAYS: intInRange(14, 1, 365),
   AUTH_COOKIE_NAME: z
@@ -138,6 +140,7 @@ export interface AppConfig {
   env: "development" | "test" | "production";
   logLevel: "debug" | "info" | "warn" | "error";
   appOrigin: string;
+  paystack: { checkoutEnabled: boolean };
   database: {
     url?: string;
     /** For live updates' LISTEN connection (session mode; unset = no row changes pushed). */
@@ -219,6 +222,7 @@ export function loadConfig(env: RawEnv = process.env): AppConfig {
     env: e.NODE_ENV,
     logLevel: e.LOG_LEVEL,
     appOrigin: e.APP_ORIGIN ?? DEFAULT_APP_ORIGIN,
+    paystack: { checkoutEnabled: e.PAYSTACK_CHECKOUT_ENABLED },
     database: {
       url: e.DATABASE_URL,
       liveUrl: e.LIVE_DATABASE_URL,

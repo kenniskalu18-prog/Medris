@@ -205,3 +205,36 @@ webhook that arrives later is a duplicate. A call that cannot be answered is lef
 - It is a backend job (`POST /api/v1/jobs/paystack-reconcile`, header `x-cron-secret: <CRON_SECRET>`). It is **not** in pg_cron.
   Schedule it with Heroku Scheduler (`*/10 * * * *`) calling that URL, or run it by hand the same way.
 - Answer: `{ "job": "paystack-reconcile", "result": { "payments": n, "payouts": n, "settled": n, "problems": n } }`.
+
+---
+
+## Paying for an order with Paystack (issue #95)
+
+Behind the switch **`PAYSTACK_CHECKOUT_ENABLED`** (a Heroku config var, default `false`). While it is off, the initialize endpoint
+answers `404 feature_disabled`, `GET /api/v1/payments/config` says `paystackCheckout: false`, and nothing else changes.
+
+- `POST /api/v1/orders/{orderId}/paystack/initialize` (the order's buyer only). The amount comes **only from the database**: what is
+  outstanding on the order (the whole total for pay-before, the delivery deposit for pay-after-delivery, then the exact balance
+  after delivery), plus **Paystack's fee, which the buyer pays** (founder's decision on #89). Answer:
+  `{ authorizationUrl, accessCode, reference, amountNaira (what the buyer pays), feeNaira, orderAmountNaira }`.
+  A double tap gets the same link back; if the order's amount changed, the old attempt is abandoned and a new one started; two
+  taps at the same moment leave one open attempt. Reference: `lvm_ord_<8 characters of the order id>_<16 random hex>`.
+- `GET /api/v1/payments/paystack/{reference}` (the payer or an admin): while the payment is open, asks Paystack and settles it
+  through **the same steps and event key as the webhook**, so whichever arrives first wins and the other is a duplicate. Answer
+  `{ status, orderStatus }`.
+- When Paystack confirms: the payment row is marked paid, the order moves on with the same rules as a vendor-confirmed bank transfer
+  (a delivery deposit confirms the order; a final payment completes it or starts the buyer's 24-hour confirmation; an order never
+  moves back a step), the vendor is told "Order paid: deliver now" and the buyer "Payment received".
+- An order with an open or paid Paystack attempt cannot also be reported as a bank transfer (`payment-report` answers 400).
+
+### The fee (assumption to confirm)
+
+`integrations/paystack/fees.ts` gives the total so that Levromart receives the order amount in full after Paystack's fee: **1.5% +
+₦100, the ₦100 waived below ₦2,500, capped at ₦2,000**. These are Paystack's published local rates as I know them; I could not open
+paystack.com/pricing from the build environment. **Check them against the pricing page and the dashboard before go-live (#103);**
+change them in that one file. The fee rounds up to the next kobo, so Levromart is never short.
+
+### Not covered here
+
+The checkout screen (#96), payouts to vendors (#98), refunds (#99). Orders already paid through the old Vercel functions are
+unchanged.

@@ -1,6 +1,7 @@
 import type { DataContext, Identity } from "../../database/context.js";
 import { AccessRepository } from "../../database/repositories/access.repository.js";
 import { NotificationWriter } from "../../database/repositories/notification-writer.repository.js";
+import { PaystackLedgerRepository } from "../../database/repositories/paystack-ledger.repository.js";
 import { PaymentClaimsRepository, type ClaimOrder } from "../../database/repositories/payment-claims.repository.js";
 import { sqlTrim } from "../../lib/sql-text.js";
 import { badRequest, forbidden, notFound } from "../../shared/errors/app-error.js";
@@ -34,6 +35,8 @@ export class PaymentClaimsService {
       if (!o) throw notFound("Order not found.");
       if (o.buyer_id !== me.userId) throw forbidden("You are not authorized to report payment for this order.");
       if (!["pending", "confirmed", "handed_over", "returned", "payment_unresolved"].includes(o.status)) throw badRequest("This order is not currently eligible for a payment report.");
+      // An order being paid with Paystack must not also be reported as a bank transfer (it would be counted twice).
+      if (await new PaystackLedgerRepository(tx).hasActiveAttempt(orderId)) throw badRequest("This order is being paid with Paystack, so a bank transfer cannot be reported on it.");
       if (amount == null || amount <= 0) throw badRequest("Payment amount must be positive.");
       const due = await claims.outstanding(o);
       if (due === "none") return { success: true, message: "There is no outstanding payment obligation on this order." };
@@ -82,6 +85,39 @@ export class PaymentClaimsService {
       else if (!waiting) await claims.setOrderState(o.id, "confirmed");
     }
     return { complete, await: waiting };
+  }
+
+  /**
+   * A card payment Paystack has confirmed (issue #95): moves the order on with the same rules as a vendor-confirmed
+   * transfer (a delivery deposit confirms the order; a final payment completes it or starts the buyer's 24-hour
+   * confirmation) and tells both sides. Runs inside the caller's transaction; the payment row must already be paid.
+   */
+  async applyConfirmedCardPayment(tx: Tx, orderId: string, reference: string): Promise<void> {
+    const claims = new PaymentClaimsRepository(tx);
+    const o = await claims.order(orderId);
+    const type = await claims.paymentTypeByReference(reference);
+    if (!o || !type) return;
+    const after = await this.afterConfirmedClaim(claims, o, type);
+    const notify = new NotificationWriter(tx);
+    const label = { delivery_deposit_20: "delivery deposit", rental_fee: "rental fee", deposit: "refundable deposit" }[type] ?? "payment";
+    await notify.create({
+      userId: o.buyer_id,
+      type: "payment_confirmed",
+      title: "Payment received",
+      body: `Your ${label} was paid with Paystack.${after.complete ? " The order is now complete and ready for review." : after.await ? AWAIT_TEXT : ""}`,
+      targetView: "orderDetail",
+      targetParams: { orderId, reviewEligible: after.complete },
+      actorId: null,
+    });
+    await notify.create({
+      userId: o.vendor_user_id,
+      type: "payment_confirmed",
+      title: "Order paid: deliver now",
+      body: `${o.vendor_name ?? "Your shop"} has been paid for an order (${label}) through Levromart.`,
+      targetView: "orderDetail",
+      targetParams: { orderId },
+      actorId: null,
+    });
   }
 
   /** Replaces: public.vendor_confirm_reported_payment(uuid) - the vendor received the reported money. */
