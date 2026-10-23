@@ -12,6 +12,11 @@ export interface LedgerTransaction {
   currency: string;
   status: string;
 }
+export interface OpenAttempt extends LedgerTransaction {
+  created_at: string;
+  age_seconds: number;
+  authorization: { authorization_url?: string; access_code?: string } | null;
+}
 export interface LedgerPayout {
   id: string;
   order_id: string;
@@ -130,5 +135,49 @@ export class PaystackLedgerRepository {
           where status = 'processing' and updated_at < now() - make_interval(mins => ${olderThanMinutes})
           order by updated_at limit ${limit}`,
     );
+  }
+
+  /* ------------------------------------------------------------ order checkout (issue #95) */
+
+  /** The open attempts of an order (the partial unique index allows at most one per purpose). */
+  openAttempts(orderId: string): Promise<OpenAttempt[]> {
+    return jsonRows<OpenAttempt>(
+      this.db,
+      sql`select id, reference, purpose, order_id, vendor_id, amount_kobo::text as amount_kobo, currency, status, created_at,
+                 extract(epoch from (now() - created_at))::int as age_seconds, raw_last_event -> 'initialize' as authorization
+          from public.paystack_transactions where order_id = ${orderId} and status = 'initialized' for update`,
+    );
+  }
+
+  async insertAttempt(a: { reference: string; purpose: string; orderId: string; vendorId: string; payerUserId: string; amountKobo: number }): Promise<void> {
+    await this.db.execute(sql`
+      insert into public.paystack_transactions (reference, purpose, order_id, vendor_id, payer_user_id, amount_kobo)
+      values (${a.reference}, ${a.purpose}, ${a.orderId}, ${a.vendorId}, ${a.payerUserId}, ${a.amountKobo})`);
+  }
+
+  async storeAuthorization(reference: string, authorization: { authorization_url: string; access_code: string }): Promise<void> {
+    await this.db.execute(sql`
+      update public.paystack_transactions set raw_last_event = jsonb_build_object('initialize', ${JSON.stringify(authorization)}::jsonb)
+      where reference = ${reference}`);
+  }
+
+  /** A Paystack payment is open (started in the last hour) or done: a bank-transfer report must not be added on top. */
+  async hasActiveAttempt(orderId: string): Promise<boolean> {
+    const row = await jsonRow<{ n: number }>(
+      this.db,
+      sql`select count(*)::int as n from public.paystack_transactions
+          where order_id = ${orderId} and (status = 'success' or (status = 'initialized' and created_at > now() - interval '1 hour'))`,
+    );
+    return (row?.n ?? 0) > 0;
+  }
+
+  async payerOf(reference: string): Promise<string | null> {
+    const row = await jsonRow<{ payer_user_id: string | null }>(this.db, sql`select payer_user_id from public.paystack_transactions where reference = ${reference}`);
+    return row?.payer_user_id ?? null;
+  }
+
+  async orderStatus(orderId: string): Promise<string | null> {
+    const row = await jsonRow<{ status: string }>(this.db, sql`select status::text as status from public.orders where id = ${orderId}`);
+    return row?.status ?? null;
   }
 }

@@ -4,6 +4,7 @@ import { PaystackClient } from "./paystack.client.js";
 export * from "./paystack.client.js";
 export * from "./errors.js";
 export * from "./money.js";
+export * from "./fees.js";
 export * from "./signature.js";
 
 /** The shared client. The key is read when a call is made (like the original functions), so a missing key only fails Paystack features. */

@@ -11,6 +11,7 @@ import {
   type PaystackTransactionData,
 } from "../../integrations/paystack/index.js";
 import type { ServiceResult } from "../../shared/types/service.js";
+import { PaymentClaimsService } from "../payment-claims/payment-claims.service.js";
 import { settleReference } from "../payments/settlement.service.js";
 import { MONTHLY_LISTING_KOBO, settleListingPaymentFromWebhook } from "../vendor-payments/listing-payment.service.js";
 import { canMovePayout, canMoveRefund } from "./paystack-state.js";
@@ -145,6 +146,10 @@ export class PaystackWebhookService {
       if (!first) return "duplicate: already settled";
     }
     await this.settle(tx, reference, verified);
+    // an order payment started in the app: move the order on and tell both sides, like a confirmed transfer
+    if (recorded?.order_id && (recorded.purpose === "order_payment" || recorded.purpose === "order_balance")) {
+      await new PaymentClaimsService(this.db).applyConfirmedCardPayment(tx, recorded.order_id, reference);
+    }
     return recorded ? "settled" : "settled (legacy reference)";
   }
 
@@ -261,6 +266,23 @@ export class PaystackWebhookService {
       }
     }
     return { payments: stalePayments.length, payouts: stalePayouts.length, settled, problems };
+  }
+
+  /**
+   * Used when the buyer returns from Paystack (issue #95): asks Paystack and, when the payment succeeded, settles it through
+   * the same steps and the same event key as the webhook, so whichever comes first wins and the other is a duplicate.
+   * Throws a Paystack error when Paystack cannot be asked right now.
+   */
+  async confirmByReference(reference: string): Promise<{ paystackStatus: string; result: string | null }> {
+    const v = await getPaystackClient().verifyTransaction(reference);
+    if (v.status === "success") {
+      const result = await this.processVerifiedCharge(eventKey("charge.success", v as Obj, JSON.stringify({ event: "charge.success", data: v })), reference, v);
+      return { paystackStatus: "success", result };
+    }
+    if (v.status === "failed" || v.status === "abandoned") {
+      await this.db().asService((tx) => new PaystackLedgerRepository(tx).setTransactionStatus(reference, v.status as string, ["initialized"]));
+    }
+    return { paystackStatus: String(v.status ?? "unknown"), result: null };
   }
 
   private processVerifiedCharge(key: string, reference: string, verified: PaystackTransactionData): Promise<string> {
