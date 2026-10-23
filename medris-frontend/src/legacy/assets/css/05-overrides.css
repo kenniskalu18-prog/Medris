@@ -2820,3 +2820,6 @@ html:root:root:root:root body #app .vd-page .vd-filter-label{display:none!import
 /* Storefront: the details start right under the cover (other rules pulled them up into it); only the picture overlaps the cover */
 html:root:root body #app#app .storefront-profile .storefront-cover{margin-bottom:0!important}
 html:root:root body #app#app .storefront-profile .storefront-profile-body{display:flow-root!important;margin-top:0!important;top:auto!important;transform:none!important}
+
+/* Storefront: Follow and the bell keep the same breathing space from the right edge as the text has on the left */
+html:root:root body #app#app .storefront-profile .storefront-profile-actions.storefront-public-actions{right:14px!important;inset-inline-end:14px!important;max-width:calc(100% - 114px)!important}
