@@ -2729,3 +2729,35 @@ html body #app .messages-more-menu .ms-item:nth-of-type(2) i{background:color-mi
 html body #app .messages-more-menu .ms-item:nth-of-type(3) i{background:color-mix(in srgb,#0ea5e9 14%,var(--card));color:#0284c7}
 html body #app .messages-more-menu .ms-item:nth-of-type(4) i{background:color-mix(in srgb,#10b981 14%,var(--card));color:#059669}
 html body #app .messages-more-menu .ms-item:nth-of-type(5) i{background:color-mix(in srgb,#f59e0b 16%,var(--card));color:#d97706}
+
+/* ---- storefront header stays put; action buttons only flash briefly ---- */
+/* Header: avatar and name on the left, Follow + bell pinned top-right, whatever the name length or number of buttons. */
+html:root body #app .storefront-profile .storefront-profile-body{position:relative!important}
+html:root body #app .storefront-profile .storefront-profile-actions.storefront-public-actions{position:absolute!important;top:8px!important;right:0!important;left:auto!important;width:auto!important;max-width:calc(100% - 96px)!important;height:40px!important;display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end!important;gap:.45rem!important;margin:0!important;padding:0!important}
+html:root body #app .storefront-profile .storefront-public-actions .storefront-follow-wrap{position:static!important;display:flex!important;align-items:center!important;flex:0 0 auto!important}
+html:root body #app .storefront-profile .storefront-public-actions .storefront-follow-controls{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:.45rem!important;position:static!important}
+html:root body #app .storefront-profile .storefront-public-actions .follow-btn{flex:0 0 auto!important;white-space:nowrap!important}
+html:root body #app .storefront-profile .storefront-public-actions .follow-settings-btn,
+html:root body #app .storefront-profile .storefront-public-actions .storefront-more-icon{flex:0 0 40px!important}
+html:root body #app .storefront-profile .storefront-name-row{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;padding-right:0!important;box-sizing:border-box!important}
+html:root body #app .storefront-profile .storefront-profile-name{display:block!important;max-width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.25!important}
+
+/* Buttons: no fading or sticky tint after a tap; a quick darker flash while pressed, then back to full colour. */
+html:root body #app .storefront-profile button:active,
+html:root body #app .storefront-profile .btn:active,
+html:root body #app .storefront-profile-body button:active,
+html:root body #app .storefront-products-shell .btn:active,
+html:root body #app .storefront-products-shell .card-cart-btn:active,
+html:root body #app .storefront-packages .btn:active,
+html:root body #app .storefront-featured button:active{opacity:1!important;filter:brightness(.93)!important;transition:filter .08s ease!important}
+html:root body #app .storefront-profile button,
+html:root body #app .storefront-products-shell .btn,
+html:root body #app .storefront-products-shell .card-cart-btn,
+html:root body #app .storefront-packages .btn{opacity:1!important;-webkit-tap-highlight-color:transparent;transition:filter .18s ease,transform .12s ease!important}
+@media (hover:none){
+  html:root body #app .storefront-profile button:hover,
+  html:root body #app .storefront-profile .btn:hover,
+  html:root body #app .storefront-products-shell .btn:hover,
+  html:root body #app .storefront-products-shell .card-cart-btn:hover,
+  html:root body #app .storefront-packages .btn:hover{opacity:1!important;filter:none!important}
+}
