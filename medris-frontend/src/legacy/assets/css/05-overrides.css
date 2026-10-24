@@ -3159,5 +3159,8 @@ html:root:root:root:root body #profilePanel .profile-panel-header{margin-top:-.2
 /* "Who's winning?" slide: the winner's logo is a small circle again, not stretched over the whole strip */
 html:root:root:root:root body #app#app .lv-b3-slide .lv-b3-logo.on{position:absolute!important;display:block!important;left:auto!important;right:1rem!important;top:50%!important;transform:translateY(-50%)!important;width:4.2rem!important;height:4.2rem!important;max-width:4.2rem!important;border-radius:50%!important;overflow:hidden!important;border:3px solid #fff!important;background:#fff!important;box-shadow:0 6px 12px rgba(0,0,0,.3)!important;filter:none!important;font-size:inherit!important}
 html:root:root:root:root body #app#app .lv-b3-slide .lv-b3-logo.on img,html:root:root:root:root body #app#app .lv-b3-slide .lv-b3-logo.on .avatar-circle{width:100%!important;height:100%!important;max-width:none!important;border-radius:50%!important;object-fit:cover!important;display:block!important}
+/* ---- hours-dropdown-opens-up ---- */
+/* the working-hours list opens upward so it is not hidden under the Submit button */
+html:root:root:root body #app#app .va-page .ms-wrap .ms-list{top:auto!important;bottom:calc(100% + 6px)!important;max-height:min(46vh,320px)!important;overflow-y:auto!important;z-index:30!important}
 /* ---- orders-no-title ---- */
 html:root:root:root body #app#app .orders-title-row>h2{display:none!important}

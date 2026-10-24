@@ -1,6 +1,6 @@
 {
  "$comment": "Ordered pieces of the legacy document and the legacy asset files. Assembled by medris-frontend/build/legacy-document.ts. Order matters: later CSS and later function definitions win.",
- "assetVersion": 238,
+ "assetVersion": 239,
  "pieces": [
   {
    "kind": "markup",

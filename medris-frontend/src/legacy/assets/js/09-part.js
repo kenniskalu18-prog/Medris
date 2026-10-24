@@ -1054,9 +1054,8 @@
       <label>About your business <span class="muted">(optional)</span></label>
       <textarea id="vaBio" rows="3" placeholder="Tell buyers briefly what your business offers."></textarea>
 
-      <label>Working hours <span class="muted">(optional)</span></label>
+      <label>Working hours</label>
       <select id="vaHoursPreset" onchange="toggleVendorApplyCustomHours()">
-        <option value="">I'll set this later</option>
         <option value="daily_9_6">Every day, 9:00 AM – 6:00 PM</option>
         <option value="daily_8_8">Every day, 8:00 AM – 8:00 PM</option>
         <option value="weekdays_9_6">Mon–Fri, 9:00 AM – 6:00 PM (closed weekends)</option>

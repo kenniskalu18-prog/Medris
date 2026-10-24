@@ -898,7 +898,7 @@
       var holder = btn.querySelector(".vendor-bank-option-icon");
       if (!code || !holder) return;
       var img = new Image();
-      img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+      img.alt = ""; img.decoding = "async";
       img.onload = function () { holder.innerHTML = ""; holder.appendChild(img); };
       img.src = "/bank-logos/" + code + ".webp";
     });
