@@ -52,16 +52,16 @@ window.lvLineIcon = function (n) {
 function renderBottomNav() {
   const nav = byId("bottomNav");
   if (!nav) return;
-  const isVendorUser = !!(session && profile?.role !== "admin" && vendor);
+  const isVendorUser = !!(session && profile?.role === "vendor");
   const isAdmin = !!(session && profile?.role === "admin");
   const accountView = isAdmin ? "adminPanel" : isVendorUser ? "vendorDashboard" : "buyerProfile";
-  const orderView = isVendorUser ? "vendorOrders" : "buyerOrders";
-  const orderAction = isVendorUser ? "navigate('vendorOrders',{status:'all',perspective:'sales'})" : session ? "navigate('buyerOrders')" : "requireLoginThen('buyerOrders')";
+  const orderView = isAdmin ? "adminFinance" : isVendorUser ? "vendorOrders" : "buyerOrders";
+  const orderAction = isAdmin ? "navigate('adminFinance')" : isVendorUser ? "navigate('vendorOrders',{status:'all',perspective:'sales'})" : session ? "navigate('buyerOrders')" : "requireLoginThen('buyerOrders')";
   const accountAction = session ? "navigate('" + accountView + "')" : "showLogin()";
   const items = [
     { icon: lvLineIcon("location"), label: "Map", action: "navigate('vendorsMap')", view: "vendorsMap" },
     { icon: lvLineIcon("messages"), label: "Messages", action: session ? "navigate('messages')" : "requireLoginThen('messages')", view: "messages" },
-    { icon: lvLineIcon("plus"), label: isVendorUser ? "Add" : "Request", action: isVendorUser ? "openAddChooser()" : session ? "navigate('requestEquipment')" : "requireLoginThen('requestEquipment')", view: null, primary: true },
+    { icon: lvLineIcon("plus"), label: isAdmin ? "Admin" : isVendorUser ? "Add" : "Request", action: isAdmin ? "navigate('adminPanel')" : isVendorUser ? "openAddChooser()" : session ? "navigate('requestEquipment')" : "requireLoginThen('requestEquipment')", view: isAdmin ? "adminPanel" : null, primary: true },
     { icon: lvLineIcon("orders"), label: "Orders", action: orderAction, view: orderView, badge: isVendorUser ? Number(vendorPendingOrderCount||0) + Number(buyerPendingOrderCount||0) : buyerPendingOrderCount },
     { icon: lvLineIcon("user"), label: "Account", action: accountAction, view: accountView }
   ];
