@@ -139,7 +139,7 @@ async function renderRequestEquipment() {
     (async () => { if (!window.__categories?.length) { const { data } = await levroData.catalogue.categories(); window.__categories = data || []; } })(),
   ]);
 
-  let html = `${lvPageHero("request")}<div class="rq-head"><div class="rq-title"><span class="rq-ic"><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M12 22V12'/><path d='M20.27 18.27 22 20'/><path d='M21 10.498V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l.98-.559'/><path d='M3.29 7 12 12l8.71-5'/><path d='m7.5 4.27 8.997 5.148'/><circle cx='18.5' cy='16.5' r='2.5'/></svg></span><div><h2>Request an item</h2><p>Tell vendors what you need. They come to you with offers.</p></div></div><button type="button" class="rq-mine" onclick="rqShowMine()" aria-label="Your requests" title="Your requests"><i class="fa-solid fa-list-check"></i>${(myRequests || []).filter((r) => r.status !== 'cancelled').length ? `<b class="rq-count">${(myRequests || []).filter((r) => r.status !== 'cancelled').length}</b>` : ""}</button></div>
+  let html = `${lvPageHero("request")}<div class="rq-head"><div class="rq-title"><span class="rq-ic"><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M12 22V12'/><path d='M20.27 18.27 22 20'/><path d='M21 10.498V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l.98-.559'/><path d='M3.29 7 12 12l8.71-5'/><path d='m7.5 4.27 8.997 5.148'/><circle cx='18.5' cy='16.5' r='2.5'/></svg></span><div><h2>Request an item</h2><p>Tell vendors what you need. They come to you with offers.</p></div></div><button type="button" class="rq-mine" onclick="navigate('myEquipmentRequests')" aria-label="Your requests" title="Your requests"><i class="fa-solid fa-list-check"></i></button></div>
     <div class="card request-equipment-page rq-form" style="max-width:520px;">
       <div id="reqError" class="error-text hidden"></div>
       <label>What do you need? *</label><input id="reqTitle" placeholder="e.g. Oxygen concentrator, jollof rice for 20…" />
@@ -169,8 +169,31 @@ async function renderRequestEquipment() {
       <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-list-check"></i> Your requests${myRequests?.length ? ` (${myRequests.length})` : ""}</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
       <div class="accordion-body">`;
 
-  if (myRequestsError) html += `<p class="muted" style="margin:.7rem 0;">Your request history could not be loaded right now. You can still post a new request.</p>`;
-  else if (!myRequests || myRequests.length === 0) html += `<p class="muted">You haven't posted any requests yet.</p>`;
+  setTimeout(updateRequestFormFields, 0);
+  window.__reqPhotos = [];
+  window.__reqDraftPhotos = [];
+  setTimeout(() => { reqPhotosPaint(); reqDraftRestore(); }, 0);
+  return html;
+}
+
+  setTimeout(updateRequestFormFields, 0);
+  window.__reqPhotos = [];
+  window.__reqDraftPhotos = [];
+  setTimeout(() => { reqPhotosPaint(); reqDraftRestore(); }, 0);
+  return html;
+}
+
+
+async function renderMyEquipmentRequests() {
+  if (!session) return '<div class="empty-state">Please log in to view your requests.</div>';
+  const { data: myRequests, error: myRequestsError } = await withRouteTimeout(
+    sb.from("equipment_requests").select("*, offers:request_offers(id, vendor_id, message, price, status, created_at, vendor:vendors(business_name, avg_rating, phone, whatsapp_number, delivery_fee))")
+      .eq("buyer_id", session.user.id).order("created_at", { ascending: false }),
+    7000, { data: null, error: new Error("Your requests are taking too long to load.") }
+  );
+  let html = `<div class="rq-head"><div class="rq-title"><div><h2>Your requests</h2><p>Track your requests and compare vendor offers.</p></div></div><button class="btn btn-sm btn-outline" onclick="navigate('requestEquipment')"><i class="fa-solid fa-plus"></i> Post request</button></div>`;
+  if (myRequestsError) html += `<p class="muted">Your request history could not be loaded right now.</p>`;
+  else if (!myRequests || myRequests.length === 0) html += `<div class="empty-state">You haven't posted any requests yet.</div>`;
   (myRequests || []).filter((r) => r.status !== "cancelled").forEach((r) => {
     // an offer a shop declined or withdrew disappears from this page
     const offers = (r.offers || []).filter((o) => !["declined", "rejected", "withdrawn"].includes(String(o.status)));
@@ -198,13 +221,10 @@ async function renderRequestEquipment() {
       </div>` : `<p class="muted" style="margin-top:0.5rem;">No offers yet.</p>`}
     </div>`;
   });
-  html += `</div></div>`;
-  setTimeout(updateRequestFormFields, 0);
-  window.__reqPhotos = [];
-  window.__reqDraftPhotos = [];
-  setTimeout(() => { reqPhotosPaint(); reqDraftRestore(); }, 0);
+
   return html;
 }
+
 
 async function renderVendorRequests() {
   // On a hard refresh Safari can restore the Supabase session slightly after
@@ -681,10 +701,3 @@ async function buyPackage(packageId) {
   }, { passive: true });
 })();
 
-// opens "Your requests" and brings it into view (the icon at the top right of the Request page)
-window.rqShowMine = function () {
-  const acc = document.getElementById("myRequestsAccordion"); if (!acc) return;
-  const trig = acc.querySelector(".accordion-trigger");
-  if (!acc.classList.contains("open") && trig) { try { trig.click(); } catch (_) {} }
-  acc.scrollIntoView({ behavior: "smooth", block: "start" });
-};
