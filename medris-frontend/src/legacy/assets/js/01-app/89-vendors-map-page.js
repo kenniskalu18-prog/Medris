@@ -25,15 +25,35 @@ function vmpVisible() {
 }
 function vmpTheme() { const t = document.documentElement.dataset.theme; return t === "dark" || t === "black" ? "night" : "streets"; }
 
+function vmpOpenAccountProfile() {
+  if (!session) { showLogin(); return; }
+  navigate(profile?.role === "admin" ? "adminPanel" : vendor ? "vendorDashboard" : "buyerProfile");
+}
+function vmpOpenLocationSettings() {
+  if (!session) { showLogin(); return; }
+  navigate(vendor ? "vendorEditProfile" : "editProfile");
+}
+function vmpProfileAvatarHtml() {
+  if (profile?.avatar_url) return '<img src="' + esc(profile.avatar_url) + '" alt="" draggable="false">';
+  return avatarFallbackHtml(profile?.name || profile?.email || "Account", "100%", "", profile?.name || profile?.email || "Account");
+}
 function renderVendorsMapPage() {
   setTimeout(() => initVendorsMapPage(), 0);
-  return `<div class="vmpage" id="vmPage">
+  const locationLabel = vendor?.city || profile?.city || "Choose location";
+  return `<div class="vmpage vmp-snap-map" id="vmPage">
     <div id="vmpMap" aria-label="Map of vendors"></div>
     <div class="vmp-top">
+      <div class="vmp-social-head">
+        <button type="button" class="vmp-profile-trigger" onclick="vmpOpenAccountProfile()" aria-label="Open account profile">${vmpProfileAvatarHtml()}</button>
+        <button type="button" class="vmp-location-trigger" onclick="vmpOpenLocationSettings()" aria-label="Choose your location">
+          <span class="vmp-location-label">Your location</span>
+          <strong>${esc(locationLabel)}</strong>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+      </div>
       <div class="vmp-bar">
-        <button type="button" class="vmp-back" aria-label="Back to vendors" onclick="navigate('vendors')"><i class="fa-solid fa-chevron-left"></i></button>
         <i class="fa-solid fa-magnifying-glass vmp-bar-ic" aria-hidden="true"></i>
-        <input id="vmpQ" type="search" autocomplete="off" placeholder="Search vendors on the map" oninput="vmpSearch(this.value)" onfocus="vmpSearch(this.value)" onkeydown="if(event.key==='Enter')vmpPickFirst()" aria-label="Search vendors on the map">
+        <input id="vmpQ" type="search" autocomplete="off" placeholder="Search places and vendors" oninput="vmpSearch(this.value)" onfocus="vmpSearch(this.value)" onkeydown="if(event.key==='Enter')vmpPickFirst()" aria-label="Search places and vendors">
         <button type="button" class="vmp-clear hidden" id="vmpClear" aria-label="Clear search" onclick="vmpSearch('',true)"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="vmp-sugg hidden" id="vmpSugg"></div>
@@ -71,7 +91,7 @@ async function initVendorsMapPage(tries = 0) {
   vmpDestroy(true);
   vmpLayout();
   window.addEventListener("resize", vmpLayout);
-  document.querySelectorAll("#bottomNav .bottom-nav-item").forEach((b) => b.classList.toggle("active", /vendors/i.test(b.textContent)));
+  document.querySelectorAll("#bottomNav .bottom-nav-item").forEach((b) => b.classList.toggle("active", b.dataset.navView === "vendorsMap"));
   try { await loadLeaflet(); } catch (err) { el.innerHTML = `<p class="muted" style="padding:1rem;">${esc(err.message)}</p>`; return; }
   let vendors = [];
   // vendors already loaded this visit open the map at once; the full list is refreshed in the background
