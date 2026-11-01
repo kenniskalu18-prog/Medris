@@ -44,65 +44,34 @@ window.lvLineIcon = function (n) {
     wallet: "<path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/> <path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/>",
     plus: "<path d='M5 12h14'/><path d='M12 5v14'/>",
     user: "<circle cx='12' cy='8' r='5'/> <path d='M20 21a8 8 0 0 0-16 0'/>",
+    location: "<path d='M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z'/><circle cx='12' cy='10' r='2.5'/>",
+    messages: "<path d='M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z'/>",
   };
   return `<svg class="lv-line-ic" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || P.home}</svg>`;
 };
 function renderBottomNav() {
   const nav = byId("bottomNav");
   if (!nav) return;
-
-  const isVendorUser = session && profile?.role !== "admin" && !!vendor;
-  const vendorsTab = { icon: lvLineIcon("store"), label: "Vendors", action: "navigate('vendors').then(()=>setTimeout(()=>switchVendorsView('grid'),80))", view: "vendors" };
-  const notificationsTab = { icon: lvLineIcon("bell"), label: "Notifications", action: "navigate('notifications')", view: "notifications", badge: notifCount };
-  const requestsTab = isVendorUser
-    ? { icon: lvLineIcon("request"), label: "Requests", action: "navigate('vendorRequests')", view: "vendorRequests", badge: 0 }
-    : { icon: lvLineIcon("request"), label: "Request", action: session ? "navigate('requestEquipment')" : "requireLoginThen('requestEquipment')", view: "requestEquipment" };
-  const ordersTab = isVendorUser
-    ? { icon: lvLineIcon("orders"), label: "Orders", action: "navigate('vendorOrders',{status:'all',perspective:'sales'})", view: "vendorOrders", badge: Number(vendorPendingOrderCount||0) + Number(buyerPendingOrderCount||0) }
-    : { icon: lvLineIcon("orders"), label: "Orders", action: "navigate('buyerOrders')", view: "buyerOrders", badge: buyerPendingOrderCount };
-  const homeTab = { icon: lvLineIcon("home"), label: "Home", action: "lvHomeTap()", view: "home" };
-
-  let items;
-  if (session && profile?.role === "admin") {
-    // Admin navigation remains unchanged; the centered + button is not used here.
-    items = [homeTab, vendorsTab,
-      { icon: lvLineIcon("shield"), label: "Admin", action: "navigate('adminPanel')", view: "adminPanel", badge: Number(window.__lvPayPending||0) },
-      { icon: lvLineIcon("wallet"), label: "Finance", action: "navigate('adminFinance')", view: "adminFinance" }];
-  } else if (isVendorUser) {
-    // Vendor navigation: Home, Vendors | + | Notifications, Orders.
-    // Messages moved to the header; My Shop moved into the vendor's
-    // profile page (tapping the header avatar opens it directly).
-    items = [homeTab, vendorsTab, notificationsTab, ordersTab];
-  } else if (session) {
-    // Buyer navigation: Home → Vendors → Request → Notifications → Orders (Home is always the first tab, same as every other account).
-    // Messages moved to the header, same as vendors.
-    items = [homeTab, vendorsTab, requestsTab, notificationsTab, ordersTab];
-  } else {
-    items = [homeTab, vendorsTab, requestsTab,
-      { icon: lvLineIcon("user"), label: "Login", action: "showLogin()", view: null }];
-  }
-
-  const itemHtml = (it) => `<button class="bottom-nav-item ${it.view && it.view === currentView ? "active" : ""}${it.view === "notifications" && it.badge ? " ringing" : ""}" onclick="if(lvTabSame('${it.view || ""}'))return;${it.action}"${it.view && it.view === currentView ? ' aria-current="page"' : ""}><span class="bn-icon">${it.icon}${it.badge ? `<span class="bn-badge">${it.badge > 9 ? "9+" : it.badge}</span>` : ""}</span><span>${it.label}</span></button>`;
-
-  if (isVendorUser) {
-    nav.classList.remove("buyer-no-add");
-    nav.classList.add("has-add");
-    nav.innerHTML = `<div class="bn-group bn-group-left">${items.slice(0, 2).map(itemHtml).join("")}</div>
-      <button class="bottom-nav-add" onclick="openAddChooser()" title="Add listing"><span class="bn-icon">${lvLineIcon("plus")}</span><span>Add listing</span></button>
-      <div class="bn-group bn-group-right">${items.slice(2, 4).map(itemHtml).join("")}</div>`;
-  } else if (session && profile?.role === "admin") {
-    nav.classList.remove("has-add", "buyer-no-add");
-    nav.innerHTML = items.map(itemHtml).join("");
-  } else if (session) {
-    // Buyers use a clean five-item rail. Home is the first slot and there is
-    // deliberately no + creation control on the buyer interface.
-    nav.classList.remove("has-add");
-    nav.classList.add("buyer-no-add");
-    nav.innerHTML = items.map(itemHtml).join("");
-  } else {
-    nav.classList.remove("has-add", "buyer-no-add");
-    nav.innerHTML = items.map(itemHtml).join("");
-  }
+  const isVendorUser = !!(session && profile?.role !== "admin" && vendor);
+  const isAdmin = !!(session && profile?.role === "admin");
+  const accountView = isAdmin ? "adminPanel" : isVendorUser ? "vendorDashboard" : "buyerProfile";
+  const orderView = isVendorUser ? "vendorOrders" : "buyerOrders";
+  const orderAction = isVendorUser ? "navigate('vendorOrders',{status:'all',perspective:'sales'})" : session ? "navigate('buyerOrders')" : "requireLoginThen('buyerOrders')";
+  const accountAction = session ? "navigate('" + accountView + "')" : "showLogin()";
+  const items = [
+    { icon: lvLineIcon("location"), label: "Map", action: "navigate('vendorsMap')", view: "vendorsMap" },
+    { icon: lvLineIcon("messages"), label: "Messages", action: session ? "navigate('messages')" : "requireLoginThen('messages')", view: "messages" },
+    { icon: lvLineIcon("plus"), label: isVendorUser ? "Add" : "Request", action: isVendorUser ? "openAddChooser()" : session ? "navigate('requestEquipment')" : "requireLoginThen('requestEquipment')", view: null, primary: true },
+    { icon: lvLineIcon("orders"), label: "Orders", action: orderAction, view: orderView, badge: isVendorUser ? Number(vendorPendingOrderCount||0) + Number(buyerPendingOrderCount||0) : buyerPendingOrderCount },
+    { icon: lvLineIcon("user"), label: "Account", action: accountAction, view: accountView }
+  ];
+  const itemHtml = (it) => {
+    const active = it.view && (it.view === currentView || (it.view === "vendorsMap" && currentView === "vendors"));
+    return '<button type="button" class="bottom-nav-item lv-snap-nav-item ' + (active ? "active" : "") + (it.primary ? " lv-snap-nav-primary" : "") + '" data-nav-view="' + (it.view || "") + '" onclick="' + it.action + '" ' + (active ? 'aria-current="page"' : "") + ' aria-label="' + it.label + '" title="' + it.label + '"><span class="bn-icon">' + it.icon + (it.badge ? '<span class="bn-badge">' + (it.badge > 9 ? "9+" : it.badge) + '</span>' : "") + '</span><span class="lv-snap-nav-label">' + it.label + '</span></button>';
+  };
+  nav.classList.remove("has-add", "buyer-no-add");
+  nav.classList.add("lv-snap-nav");
+  nav.innerHTML = items.map(itemHtml).join("");
 }
 
 const LEVRO_MOTION_KEY="levromart-motion-preference-v1";
