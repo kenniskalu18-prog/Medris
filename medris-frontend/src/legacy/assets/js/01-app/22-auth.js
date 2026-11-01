@@ -645,6 +645,24 @@ function uploadAvatar(event) {
   if (!String(file.type || '').startsWith('image/')) { showToast('Please choose an image.', 'error'); return; }
   lvPrepareImageFile(file, 1600).then((small) => { pendingAvatarFile = small; openAvatarCropModal(small); }).catch(() => showToast("Couldn't open that photo. Try another one.", "error"));
 }
+// Keep the account photo and public vendor avatar on one source of truth.
+// Notifications snapshot users.avatar_url; storefronts and vendor cards read
+// vendors.logo_url. Resolve the vendor by the authenticated owner instead of
+// relying on the global vendor object being loaded on this screen.
+async function syncOwnVendorAvatarToProfilePhoto(url) {
+  if (!session?.user?.id) return false;
+  const userId = session.user.id;
+  const { data: ownVendor, error: lookupError } = await sb.from("vendors")
+    .select("id").eq("user_id", userId).is("deleted_at", null).maybeSingle();
+  if (lookupError) throw lookupError;
+  if (!ownVendor?.id) return false;
+  const { error } = await sb.from("vendors").update({ logo_url: url || null })
+    .eq("id", ownVendor.id).eq("user_id", userId);
+  if (error) throw error;
+  if (vendor?.id === ownVendor.id) vendor.logo_url = url || null;
+  return true;
+}
+
 async function removeProfileAvatar(event) {
   event?.stopPropagation?.();
   if (!session) return;
@@ -652,11 +670,19 @@ async function removeProfileAvatar(event) {
   if (!confirmed) return;
   const { error } = await sb.from("users").update({ avatar_url: null }).eq("id", session.user.id);
   if (error) { showToast(error.message || "Could not remove your profile picture.", "error"); return; }
-  await sb.storage.from("avatars").remove([`${session.user.id}/avatar.jpg`,`${session.user.id}/avatar.jpeg`,`${session.user.id}/avatar.png`,`${session.user.id}/avatar.webp`]).catch(()=>{});
   profile.avatar_url = null;
+  let vendorSyncError = null;
+  try { await syncOwnVendorAvatarToProfilePhoto(null); }
+  catch (syncError) {
+    vendorSyncError = syncError;
+    console.warn("Vendor profile-photo removal sync failed:", syncError);
+  }
+  await sb.storage.from("avatars").remove([`${session.user.id}/avatar.jpg`,`${session.user.id}/avatar.jpeg`,`${session.user.id}/avatar.png`,`${session.user.id}/avatar.webp`]).catch(()=>{});
   updateAuthUI();
   try { window.lvAvatarChanged?.(); } catch (_) {}
-  showToast("Profile picture removed.", "success");
+  showToast(vendorSyncError
+    ? "Profile picture removed from your account, but the storefront photo could not be synced. Please retry."
+    : "Profile picture removed.", vendorSyncError ? "warning" : "success");
 }
 
 function openAvatarCropModal(file) {
@@ -720,14 +746,18 @@ async function saveAvatarCrop(){
     const {error}=await sb.from('users').update({avatar_url:url}).eq('id',session.user.id);
     if(error){aBusy(false);showToast(error.message,'error');return;}
     profile.avatar_url=url;
-    // Keep a vendor's marketplace identity tied to the same profile photo.
-    // The vendor logo is the public storefront avatar, so changing the main
-    // profile photo updates it too instead of leaving stale vendor imagery.
-    if (vendor?.id) {
-      const { error: vendorLogoError } = await sb.from('vendors').update({ logo_url:url }).eq('id', vendor.id);
-      if (!vendorLogoError) vendor.logo_url = url;
+    let vendorSyncError = null;
+    try { await syncOwnVendorAvatarToProfilePhoto(url); }
+    catch (syncError) {
+      vendorSyncError = syncError;
+      console.warn("Vendor profile-photo sync failed:", syncError);
     }
-    updateAuthUI(); closeAvatarCropModal(); showToast('Profile photo updated.','success'); try{window.lvAvatarChanged?.();}catch(_){}
+    updateAuthUI(); closeAvatarCropModal();
+    showToast(vendorSyncError
+      ? 'Profile photo updated, but the storefront photo could not be synced. Please retry.'
+      : 'Profile photo updated.',
+      vendorSyncError ? 'warning' : 'success');
+    try{window.lvAvatarChanged?.();}catch(_){}
   },'image/jpeg',0.9);
 }
 
