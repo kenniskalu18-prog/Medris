@@ -246,9 +246,13 @@ function vmpRailInitialsHtml(v) {
   const initials = vmpVendorInitials(v), tint = vmpVendorTint(v);
   return '<span class="vmp-rail-ini" style="--vmp-bg:' + tint.background + ';--vmp-fg:' + tint.foreground + '">' + esc(initials) + '</span>';
 }
+function vmpCardInitialsHtml(v) {
+  const initials = vmpVendorInitials(v), tint = vmpVendorTint(v);
+  return '<span class="vmp-card-ini" style="--vmp-bg:' + tint.background + ';--vmp-fg:' + tint.foreground + '">' + esc(initials) + '</span>';
+}
 function vmpCardHtml(v) {
   const id = String(v.id), km = vmpDistKm(v), sector = vmpSectorOf(v);
-  const media = v.logo_url ? `<img src="${esc(v.logo_url)}" alt="" loading="lazy" draggable="false" data-n="${esc(v.business_name || "")}" data-k="${esc(id)}" onerror="vdImgFail(this)">` : vmpRailInitialsHtml(v);
+  const media = v.logo_url ? `<img src="${esc(v.logo_url)}" alt="" loading="lazy" draggable="false" data-n="${esc(v.business_name || "")}" data-k="${esc(id)}" onerror="vdImgFail(this)">` : vmpCardInitialsHtml(v);
   const est = km != null ? `${vmpDistText(km)} · ${vmpMins(VMP_MODES[0].f(km * 1.3, Math.max(1, km * 1.3 / 22 * 60)))} by car` : "";
   const meta = [sector, v.city, est].filter(Boolean).map(esc).join(" · ");
   const dir = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.lat + "," + v.lng)}`;
@@ -287,9 +291,9 @@ function vmpDrawSelectedCard(v) {
   box.classList.remove("hidden");
 }
 function vmpCollapseSelectedCard() {
+  // Hiding details must not remove the selected vendor's route.
   byId("vmpExpandedCard")?.classList.add("hidden");
   byId("vmpRouteCard")?.classList.add("hidden");
-  vmpClearRoute();
 }
 function vmpRailList() {
   let list = vmpVisible().slice();
@@ -392,17 +396,22 @@ function vmpSelect(id, fly, fromRail, expandCard = true) {
     vmpCollapseSelectedCard();
     return;
   }
+  const changedVendor = !wasSelected;
   vmpSelected = v.id;
   vmpHideSugg();
   const target = vmpMap.getZoom() < 14 ? 14 : vmpMap.getZoom();
+  if (changedVendor) vmpClearRoute();
   if (expandCard) {
     vmpDrawSelectedCard(v);
-    if (buyerLocation) vmpTrace(v);
-    else vmpRouteCardDraw(v);
-  } else {
+    if (buyerLocation) {
+      if (changedVendor || !vmpRoute) vmpTrace(v);
+      else vmpRouteCardDraw(v);
+    } else vmpRouteCardDraw(v);
+  } else if (changedVendor) {
     vmpCollapseSelectedCard();
     vmpMap.panTo([v.lat, v.lng], { animate: true });
-  }
+    if (buyerLocation) vmpTrace(v);
+  } else vmpCollapseSelectedCard();
   if (fly) vmpMap.flyTo([v.lat, v.lng], target, { duration: 0.7 });
   else if (expandCard && !fromRail && !buyerLocation) vmpMap.panTo([v.lat, v.lng], { animate: true });
   vmpDrawPins();
