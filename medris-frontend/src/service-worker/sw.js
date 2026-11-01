@@ -1,19 +1,20 @@
 const CACHE = 'levromart-shell-v{{asset-version}}';
-const RUNTIME = 'levromart-runtime-v10';
+const RUNTIME = 'levromart-runtime-v12';
 const OFFLINE_FALLBACK = '/';
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
 
-    try {
-      await cache.addAll([
-        OFFLINE_FALLBACK,
-        '/manifest.json',
-        '/levromart-notification-icon.png',
-        '/levromart-badge.png'
-      ]);
-    } catch (e) {}
+    // Refresh the app shell independently from optional icons/metadata. Cache.addAll()
+    // is all-or-nothing: one unavailable optional file must not preserve an old index.html.
+    const shellAssets = [
+      OFFLINE_FALLBACK,
+      '/manifest.json',
+      '/levromart-notification-icon.png',
+      '/levromart-badge.png'
+    ];
+    await Promise.all(shellAssets.map(asset => cache.add(asset).catch(() => {})));
 
     self.skipWaiting();
   })());
@@ -30,6 +31,12 @@ self.addEventListener('activate', event => {
     );
 
     await self.clients.claim();
+
+    // An updated worker also means its runtime cache has been rotated.
+    // Notify open pages so their existing early-update handler can reload
+    // untouched tabs and stop mixing an old document with new cached assets.
+    const openClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    openClients.forEach(client => client.postMessage({ type: 'LV_APP_UPDATED' }));
   })());
 });
 
@@ -147,22 +154,28 @@ self.addEventListener('fetch', event => {
 
         const network = fetch(request)
           .then(response => {
-            if (
-              response &&
-              looksRight(response) &&
-              (
-                response.ok ||
-                response.type === 'opaque'
-              )
-            ) {
-              cache
-                .put(request, response.clone())
-                .catch(() => {});
+            if (!response || !looksRight(response)) return null;
+
+            if (response.ok || response.type === 'opaque') {
+              cache.put(request, response.clone()).catch(() => {});
             }
 
-            return response;
+            // A failed/non-cacheable response should fall through to a valid
+            // cached copy instead of replacing it with an HTML error page.
+            return response.ok || response.type === 'opaque' ? response : null;
           })
           .catch(() => null);
+
+        // Executable code and styles are network-first so a deployment cannot
+        // keep serving an old app bundle forever under an unchanged URL. Offline
+        // users still get the last verified cached copy.
+        if (wantsKind) {
+          return (
+            await network ||
+            cached ||
+            new Response('', { status: 504 })
+          );
+        }
 
         return (
           cached ||
