@@ -12,6 +12,19 @@ import { attachReactViews } from "@/app/react-views";
 // Tell the view registry that React can now draw migrated screens (see src/bridge/view-registry.ts).
 attachReactViews();
 
+// Register/update the root service worker explicitly on every app launch.
+// updateViaCache:"none" prevents an HTTP-cached /sw.js from keeping devices
+// on an older worker after a deployment. This is intentionally non-blocking:
+// registration must never delay the legacy app or the React mount.
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker.register("/sw.js", {
+    scope: "/",
+    updateViaCache: "none",
+  }).catch((error: unknown) => {
+    console.warn("[Medris] Service worker registration failed:", error);
+  });
+}
+
 const container = document.getElementById("medris-root");
 if (container) {
   createRoot(container).render(
