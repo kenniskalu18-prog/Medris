@@ -165,10 +165,6 @@ async function renderRequestEquipment() {
       </div>
       <button type="button" class="btn" id="postEquipmentRequestBtn" style="margin-top:0.6rem;" aria-label="Post request">Post request</button>
     </div>
-    <div class="accordion-section" id="myRequestsAccordion" style="margin-top:1.5rem;">
-      <button class="accordion-trigger" onclick="toggleAccordion(this)"><span><i class="fa-solid fa-list-check"></i> Your requests${myRequests?.length ? ` (${myRequests.length})` : ""}</span><i class="fa-solid fa-chevron-down accordion-chevron"></i></button>
-      <div class="accordion-body">`;
-
   setTimeout(updateRequestFormFields, 0);
   window.__reqPhotos = [];
   window.__reqDraftPhotos = [];
