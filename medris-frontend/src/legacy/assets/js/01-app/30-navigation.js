@@ -255,7 +255,7 @@ async function navigate(view, params = {}, pushHistory = true) {
   const protectedRouteViews = new Set([
     "cart","messages","vendorDashboard","vendorProducts","vendorPackages",
     "vendorEarnings","vendorWallet","vendorFollowers","vendorOrders","vendorEditProfile","vendorRequests",
-    "settings","supportRequest","suggestionReplies","wishlist","buyerOrders","orderHistory","orderDetail","leaveReview",
+    "settings","supportRequest","suggestionReplies","wishlist","buyerOrders","myEquipmentRequests","orderHistory","orderDetail","leaveReview",
     "adminPanel","adminCarousel","adminLinkLibrary","adminDisputes","adminPayments",
     "adminSupportRequests","adminPasswordResets","adminInventory","adminPeople","adminFeedback","adminUsers",
     "adminFinance","adminCampuses","adminLog","adminMonthlyListings","adminConversations","vendorSuggestionsInbox","requestEquipment","notifications","customerFollowing","buyerProfile","adminR2Migration","adminR2Optimize"
@@ -457,6 +457,7 @@ async function navigate(view, params = {}, pushHistory = true) {
       case "messages": html = await renderMessages(params.conversationId); break;
       case "notifications": html = renderNotificationsPage(); break;
       case "requestEquipment": html = await renderRequestEquipment(); break;
+      case "myEquipmentRequests": html = await renderMyEquipmentRequests(); break;
       case "supportRequest": html = await renderSupportRequest(); break;
       case "contactUs": html = renderContactUs(); break;
       case "suggestionReplies": html = await renderSuggestionReplies(); break;
