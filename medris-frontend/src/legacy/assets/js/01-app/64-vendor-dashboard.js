@@ -26,6 +26,21 @@ async function renderVendorDashboard() {
   if (!v) { navigate("vendorApply"); return '<p class="muted">Redirecting…</p>'; }
   vendor = v;
 
+  // Backfill a previously uploaded account photo to the public vendor avatar.
+  // This also repairs vendor rows whose earlier update was skipped because
+  // the global vendor object had not been hydrated when the photo was saved.
+  if (profile?.avatar_url && v.logo_url !== profile.avatar_url) {
+    const { error: avatarSyncError } = await sb.from("vendors")
+      .update({ logo_url: profile.avatar_url })
+      .eq("id", v.id).eq("user_id", session.user.id);
+    if (!avatarSyncError) {
+      v.logo_url = profile.avatar_url;
+      vendor.logo_url = profile.avatar_url;
+    } else {
+      console.warn("Vendor dashboard avatar backfill failed:", avatarSyncError);
+    }
+  }
+
   let statusBanner = "";
   if (v.verification_status === "pending") statusBanner = `<div class="banner banner-warning"><strong><i class='fa-solid fa-hourglass-half'></i> Verification pending.</strong> Your shop is under review. Once approved you can list products.</div>`;
   else if (v.verification_status === "rejected") statusBanner = `<div class="banner banner-danger"><strong>Application not approved.</strong> Contact support if this seems wrong.</div>`;
