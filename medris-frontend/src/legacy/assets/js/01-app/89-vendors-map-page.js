@@ -25,6 +25,9 @@ function vmpVisible() {
 }
 function vmpTheme() { const t = document.documentElement.dataset.theme; return t === "dark" || t === "black" ? "night" : "streets"; }
 
+function vmpOpenGridView() {
+  navigate("vendors").then(() => setTimeout(() => switchVendorsView("list"), 80));
+}
 function vmpOpenAccountProfile() {
   if (!session) { showLogin(); return; }
   navigate(profile?.role === "admin" ? "adminPanel" : vendor ? "vendorDashboard" : "buyerProfile");
@@ -61,6 +64,7 @@ function renderVendorsMapPage() {
     </div>
     <div class="vmp-fabs">
       <button type="button" class="vmp-fab" aria-label="Map type" onclick="vmpToggleStyles()"><i class="fa-solid fa-layer-group"></i></button>
+      <button type="button" class="vmp-fab vmp-grid-toggle" aria-label="Switch to vendor list" title="Vendor list" onclick="vmpOpenGridView()"><i class="fa-solid fa-list"></i></button>
     </div>
     <div class="vmp-sheet-wrap hidden" id="vmpStyles"></div>
     <div class="vmp-bottom">
