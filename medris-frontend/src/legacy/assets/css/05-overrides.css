@@ -4542,7 +4542,7 @@ html body #app .vmp-snap-map #vmpMap {
   height:100%!important;
 }
 html body #app .vmp-snap-map .vmp-top {
-  top:calc(.65rem + env(safe-area-inset-top,0px))!important;
+  top:.65rem!important;
   left:.85rem!important;
   right:4.2rem!important;
   max-width:560px!important;
@@ -4594,11 +4594,11 @@ html body #app .vmp-snap-map .vmp-chips {
   flex-wrap:nowrap!important;overflow-x:auto!important;
 }
 html body #app .vmp-snap-map .vmp-bottom {
-  bottom:calc(66px + env(safe-area-inset-bottom,0px))!important;
+  bottom:0!important;
   padding-bottom:.35rem!important;background:none!important;
 }
 html body #app .vmp-snap-map .vmp-fabs {
-  top:calc(1rem + env(safe-area-inset-top,0px))!important;
+  top:1rem!important;
   right:.8rem!important;
 }
 html body #app .vmp-snap-map .vmp-locate {
@@ -4691,3 +4691,5 @@ body:has(.vmp-snap-map) #bottomNav.lv-snap-nav {background:rgba(13,20,33,.96)!im
 #bottomNav.lv-snap-nav .lv-snap-nav-item {height:48px!important;min-height:48px!important}
 #bottomNav.lv-snap-nav .lv-snap-nav-item .bn-icon {width:34px!important;height:34px!important}
 #bottomNav.lv-snap-nav .lv-snap-nav-primary .bn-icon {width:44px!important;height:44px!important}
+
+html body #app .vmp-snap-map .vmp-grid-toggle {margin-top:.55rem!important}
