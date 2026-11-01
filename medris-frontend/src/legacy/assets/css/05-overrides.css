@@ -4513,3 +4513,137 @@ html body .lv-stk-grid.hidden{display:none}
 .lvw-sheet .lvrw-later { display: block; width: 100%; margin: .6rem 0 0; padding: .7rem 1rem; border: 1px solid var(--border, #d9dde3); border-radius: 12px; background: transparent; color: var(--text, #1f2937); font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; }
 .lvw-sheet .lvrw-later:hover { background: rgba(127, 127, 127, .08); }
 :root[data-theme="dark"] .lvw-sheet .lvrw-later { border-color: rgba(255, 255, 255, .18); color: #e5e7eb; }
+
+
+/* ---- LevroMap social map shell and Snapchat-style bottom dock ---- */
+body:has(.vmp-snap-map) > header,
+body:has(.vmp-snap-map) > .app-header,
+body:has(.vmp-snap-map) > #appHeader {
+  display:none!important;
+}
+body:has(.vmp-snap-map) #app {
+  margin-top:0!important;
+  padding-top:0!important;
+  max-width:none!important;
+}
+html body #app .vmp-snap-map {
+  position:fixed!important;
+  inset:env(safe-area-inset-top,0px) 0 0!important;
+  width:100vw!important;
+  height:calc(100dvh - env(safe-area-inset-top,0px))!important;
+  min-height:0!important;
+  z-index:2!important;
+  background:#101a2a!important;
+}
+html body #app .vmp-snap-map #vmpMap {
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+html body #app .vmp-snap-map .vmp-top {
+  top:calc(.65rem + env(safe-area-inset-top,0px))!important;
+  left:.85rem!important;
+  right:4.2rem!important;
+  max-width:560px!important;
+  gap:.65rem!important;
+}
+.vmp-social-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.8rem;
+  pointer-events:auto;
+}
+.vmp-profile-trigger {
+  width:46px;height:46px;flex:0 0 46px;padding:2px;
+  border:2px solid rgba(255,255,255,.9);border-radius:50%;
+  background:#fff;box-shadow:0 3px 14px rgba(0,0,0,.25);
+  overflow:hidden;display:grid;place-items:center;
+}
+.vmp-profile-trigger img,.vmp-profile-trigger .avatar-fallback {
+  width:100%!important;height:100%!important;border-radius:50%!important;object-fit:cover!important;
+}
+.vmp-location-trigger {
+  min-width:0;max-width:calc(100% - 58px);
+  display:flex;align-items:center;gap:.45rem;
+  padding:.55rem .85rem;border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;background:rgba(20,28,42,.76);color:#fff;
+  box-shadow:0 4px 18px rgba(0,0,0,.22);backdrop-filter:blur(16px);
+}
+.vmp-location-trigger .vmp-location-label {
+  font-size:.66rem;opacity:.72;white-space:nowrap;
+}
+.vmp-location-trigger strong {
+  min-width:0;max-width:180px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:.82rem;
+}
+.vmp-location-trigger i {font-size:.68rem;opacity:.8}
+html body #app .vmp-snap-map .vmp-bar {
+  min-height:48px;padding:.2rem .85rem!important;
+  border:1px solid rgba(255,255,255,.7)!important;
+  border-radius:999px!important;background:rgba(255,255,255,.96)!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.2)!important;
+}
+html body #app .vmp-snap-map .vmp-bar input {
+  color:#1f2937!important;font-size:.9rem!important;
+}
+html body #app .vmp-snap-map .vmp-bar-ic {color:#64748b!important}
+html body #app .vmp-snap-map .vmp-chips {
+  margin-right:-4rem!important;padding-right:4rem!important;
+  flex-wrap:nowrap!important;overflow-x:auto!important;
+}
+html body #app .vmp-snap-map .vmp-bottom {
+  bottom:calc(66px + env(safe-area-inset-bottom,0px))!important;
+  padding-bottom:.35rem!important;background:none!important;
+}
+html body #app .vmp-snap-map .vmp-fabs {
+  top:calc(1rem + env(safe-area-inset-top,0px))!important;
+  right:.8rem!important;
+}
+html body #app .vmp-snap-map .vmp-locate {
+  margin-bottom:.55rem!important;
+}
+#bottomNav.lv-snap-nav {
+  position:fixed!important;z-index:1200!important;
+  left:0!important;right:0!important;bottom:0!important;
+  width:100%!important;max-width:none!important;
+  height:calc(64px + env(safe-area-inset-bottom,0px))!important;
+  min-height:64px!important;
+  padding:5px 12px calc(5px + env(safe-area-inset-bottom,0px))!important;
+  display:flex!important;align-items:center!important;justify-content:space-around!important;
+  gap:0!important;border:0!important;border-top:1px solid rgba(255,255,255,.10)!important;
+  border-radius:0!important;background:rgba(17,24,39,.94)!important;color:#fff!important;
+  box-shadow:0 -6px 24px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(20px) saturate(150%)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(150%)!important;
+  transform:none!important;opacity:1!important;visibility:visible!important;
+}
+#bottomNav.lv-snap-nav .lv-snap-nav-item {
+  position:relative!important;flex:1 1 20%!important;min-width:0!important;
+  height:52px!important;min-height:52px!important;max-width:100px!important;
+  padding:5px 2px!important;margin:0!important;border:0!important;
+  border-radius:16px!important;background:transparent!important;
+  color:rgba(255,255,255,.72)!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:2px!important;box-shadow:none!important;
+}
+#bottomNav.lv-snap-nav .lv-snap-nav-item .bn-icon {
+  width:30px!important;height:28px!important;padding:0!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  background:transparent!important;color:inherit!important;border-radius:0!important;
+}
+#bottomNav.lv-snap-nav .lv-snap-nav-item .bn-icon svg {width:25px!important;height:25px!important}
+#bottomNav.lv-snap-nav .lv-snap-nav-item.active {color:#27c58a!important;background:rgba(39,197,138,.10)!important}
+#bottomNav.lv-snap-nav .lv-snap-nav-label {display:block!important;font-size:.62rem!important;line-height:1.1!important;font-weight:650!important;color:inherit!important}
+#bottomNav.lv-snap-nav .lv-snap-nav-primary .bn-icon {
+  width:42px!important;height:42px!important;border-radius:50%!important;
+  background:#12a875!important;color:#fff!important;
+  box-shadow:0 4px 14px rgba(18,168,117,.35)!important;
+}
+#bottomNav.lv-snap-nav .lv-snap-nav-primary .bn-icon svg {width:24px!important;height:24px!important}
+#bottomNav.lv-snap-nav .bn-badge {top:-4px!important;right:-7px!important}
+body:has(.vmp-snap-map) #bottomNav.lv-snap-nav {background:rgba(13,20,33,.96)!important}
+@media(prefers-reduced-motion:reduce) {
+  #bottomNav.lv-snap-nav .lv-snap-nav-item {transition:none!important}
+}
