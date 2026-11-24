@@ -14,7 +14,7 @@ export const RPC_READS: ReadonlySet<string> = new Set([
   "can_call_in_conversation", "compute_monthly_billing_amount", "conversation_is_open", "get_call_party",
   "get_comment_authors", "get_conversation_other_party", "get_conversation_presence", "get_favorite_counts",
   "get_legal_terms_consent", "get_manual_password_reset_status", "get_my_account_appeal", "get_my_points_activity",
-  "get_my_points_summary", "get_order_buyer_contact", "get_orders_buyer_names", "get_owned_product_variants",
+  "get_my_points_summary", "get_points_cashout_status", "convert_points_to_wallet", "get_order_buyer_contact", "get_orders_buyer_names", "get_owned_product_variants",
   "get_package_comment_counts", "get_package_favorite_counts", "get_past_week_winners", "get_platform_suggestions",
   "get_points_leaderboard", "get_product_comment_counts", "get_product_reviews", "get_reviewable_order_for_product",
   "get_service_price_hint", "get_shared_ai_conversation", "get_vendor_commission_breakdown",

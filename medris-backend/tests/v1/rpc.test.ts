@@ -15,7 +15,7 @@ describe("/api/v1/rpc/{name}", () => {
   afterAll(async () => db?.close());
 
   it("covers every function the app calls in the browser, except those only the server may run", () => {
-    expect(RPC_NAMES.length).toBe(216);
+    expect(RPC_NAMES.length).toBe(218);
     for (const serverOnly of ["increment_chat_usage", "apply_referral_internal", "delete_my_account", "process_listing_billing_reminders"]) {
       expect(RPC_NAMES).not.toContain(serverOnly);
     }

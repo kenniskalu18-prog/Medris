@@ -90,7 +90,7 @@ export class PointsService {
         vendor_id: shop?.id ?? null,
         business_name: shop?.business_name ?? null,
         logo_url: shop?.logo_url ?? null,
-        referral_code: shop?.referral_code ?? null,
+        referral_code: shop?.referral_code ?? (await reads.userCodeOf(me.userId)),
         rank,
         vendor_total: total,
         week_leader_points: leaderPoints,
@@ -127,6 +127,18 @@ export class PointsService {
     return this.db().onBehalfOf(me, (tx) => new ReferralsRepository(tx).changeCode(me.userId, code));
   }
 
+  /** Points to wallet cash (migration 0077): what the caller can convert now. The rules live in the database function. */
+  async cashoutStatus(me: Identity | null): Promise<Record<string, unknown>> {
+    if (!me) return { signed_in: false };
+    return this.db().onBehalfOf(me, (tx) => new PointsReadsRepository(tx).cashoutStatus());
+  }
+
+  /** Converts points to wallet money: 1 point = ₦1, 100 points a day, points at least 24 hours old. */
+  async convertPoints(me: Identity | null, points: number | null): Promise<Record<string, unknown>> {
+    if (!me) return { ok: false, error: "not_signed_in" };
+    return this.db().onBehalfOf(me, (tx) => new PointsReadsRepository(tx).convertPoints(points));
+  }
+
   /** Replaces: public.validate_referral_code(text) - whether a code belongs to a live shop (and which). */
   validateCode(code: string | null): Promise<Record<string, unknown>> {
     return this.db().asService(async (tx) => {
@@ -134,8 +146,11 @@ export class PointsService {
       const c = await reads.normaliseCode(code);
       if ([...c].length < 4) return { valid: false };
       const shop = await reads.shopByCode(c);
-      if (!shop) return { valid: false };
-      return { valid: true, business_name: shop.business_name, logo_url: shop.logo_url };
+      if (shop) return { valid: true, business_name: shop.business_name, logo_url: shop.logo_url };
+      const member = await reads.userByCode(c);
+      if (!member) return { valid: false };
+      const first = (member.name ?? "").trim().split(/\s+/)[0] ?? "";
+      return { valid: true, business_name: first === "" ? "A Levromart member" : first, logo_url: member.avatar_url };
     });
   }
 

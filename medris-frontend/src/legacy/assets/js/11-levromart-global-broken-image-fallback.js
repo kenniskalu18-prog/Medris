@@ -824,6 +824,7 @@ function hideLeviFromPanel() {
   async function loadSummary() {
     if (!signedIn()) { LB.summary = null; return; }
     try { const { data, error } = await sb.rpc("get_my_points_summary"); if (error) throw error; LB.summary = data; } catch (e) { console.warn("[Levromart] points summary", e); }
+    try { const { data: cs } = await sb.rpc("get_points_cashout_status"); if (cs && cs.signed_in) LB.cash = cs; } catch (_) {}
   }
   async function loadRules() {
     if (LB.rules) return;
@@ -1102,6 +1103,28 @@ function hideLeviFromPanel() {
     return { series: d.map((x) => x.points), labels: d.map((x) => "SMTWTFS"[new Date(x.date + "T00:00:00").getDay()]), tips: d.map((x) => new Date(x.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })), total: d.reduce((a, x) => a + x.points, 0), range: "Last 14 days" };
   }
 
+  // Points to wallet cash: 1 point = ₦1, up to 100 points a day, points at least 24 hours old. The rules are enforced in the database.
+  function cashHtml() {
+    const c = LB.cash; if (!c) return "";
+    const can = c.can_convert || 0, wait = c.waiting || 0;
+    const note = can > 0 ? `Ready to convert: <b>${num(can)} points</b> = <b>₦${num(can)}</b>` : (c.converted_today >= c.daily_limit ? "You have converted the most you can today. Come back tomorrow." : "No points ready yet. Points can be converted 24 hours after you earn them.");
+    return `<div class="lb-card lb-cash"><h3>Convert points to cash</h3><p class="lb-sub">100 points = ₦100, straight into your Levromart wallet. Up to ${num(c.daily_limit)} points a day.</p>
+      <p style="margin:.2rem 0 .6rem">${note}</p>${wait > 0 ? `<p class="lb-sub" style="margin:0 0 .6rem">${num(wait)} more points will be ready within 24 hours.</p>` : ""}
+      <button type="button" class="btn" ${can > 0 ? "" : "disabled"} onclick="lbConvertPoints()"><i class="fa-solid fa-wallet"></i> Convert ${can > 0 ? num(can) + " points" : "points"}</button></div>`;
+  }
+  window.lbConvertPoints = async function () {
+    const can = LB.cash?.can_convert || 0; if (can <= 0) return;
+    const ok = await showConfirmDialog("Convert " + can + " points to ₦" + can + " in your wallet? This cannot be undone.", { title: "Convert points", okLabel: "Convert" });
+    if (!ok) return;
+    try {
+      const { data, error } = await sb.rpc("convert_points_to_wallet", { p_points: can }); if (error) throw error;
+      if (!data?.ok) { showToast(data?.message || "Could not convert your points.", "error"); }
+      else { showToast("₦" + num(can) + " added to your wallet.", "success"); }
+      await loadSummary();
+    } catch (e) { showToast(e?.message || "Could not convert your points.", "error"); }
+    if (LB.tab === "mine") renderBody(false);
+  };
+
   function mineHtml() {
     if (!signedIn()) return loginCta("Sign in to see your points, activity and progress.");
     const s = LB.summary;
@@ -1110,7 +1133,7 @@ function hideLeviFromPanel() {
     const cd = chartData();
     const bd = (LB.bdMode === "all" ? s.breakdown_all : s.breakdown_week) || [];
     const bdMax = Math.max(1, ...bd.map((x) => Math.abs(x.points)));
-    let html = `<div class="lb-card"><div class="lb-total"><div class="lb-total-num"><small>All-time points</small><span data-count="${s.all}">0</span></div><span class="lb-tier"><i class="fa-solid ${t.icon}"></i> ${t.name}</span></div>
+    let html = cashHtml() + `<div class="lb-card"><div class="lb-total"><div class="lb-total-num"><small>All-time points</small><span data-count="${s.all}">0</span></div><span class="lb-tier"><i class="fa-solid ${t.icon}"></i> ${t.name}</span></div>
       <div class="lb-tier-bar"><i data-w="${t.pct}"></i></div><div class="lb-tier-note">${t.next ? `${num(t.need)} more points to reach ${t.next[1]}` : "You have reached the top tier"}</div></div>
       <div class="lb-stats">
         <div class="lb-stat"><small><i class="fa-solid fa-sun"></i>Today</small><b data-count="${s.today}">0</b></div>

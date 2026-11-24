@@ -4,6 +4,12 @@ import type { Executor } from "../client.js";
 import { jsonRow } from "../json.js";
 import { PointsReadsRepository, PointsRepository } from "./points.repository.js";
 
+/** A customer's first name (or a friendly stand-in), as shown to the person they invited. */
+function firstNameOf(name: string | null): string {
+  const first = (name ?? "").trim().split(/\s+/)[0] ?? "";
+  return first === "" ? "A Levromart member" : first;
+}
+
 /** Referral codes: who brought whom to Levromart, and the points for it. */
 export class ReferralsRepository {
   constructor(private readonly db: Executor) {}
@@ -20,7 +26,11 @@ export class ReferralsRepository {
     if (!user) return { ok: false, error: "no_profile" };
     if (await reads.referralOf(userId)) return { ok: false, error: "already_used", message: "You have already used a referral code." };
     if (user.too_late) return { ok: false, error: "too_late", message: "Referral codes can only be added within 7 days of creating your account." };
-    const shop = await reads.shopByCode(c);
+    let shop: { id: string | null; user_id: string; business_name: string | null } | null = await reads.shopByCode(c);
+    if (!shop) {
+      const member = await reads.userByCode(c);
+      if (member) shop = { id: null, user_id: member.id, business_name: firstNameOf(member.name) };
+    }
     if (!shop) return { ok: false, error: "invalid", message: "That referral code was not found." };
     const owner = await reads.profile(shop.user_id);
     if (shop.user_id === userId || ((user.phone ?? "") !== "" && user.phone === owner?.phone)) {
@@ -37,7 +47,7 @@ export class ReferralsRepository {
           kind: "ref2_customer",
           key: `refc2:${userId}`,
           sourceUserId: userId,
-          note: "Your referred vendor brought in a customer",
+          note: "Your referred member brought in a customer",
         });
       }
     }
@@ -56,7 +66,7 @@ export class ReferralsRepository {
     if (base.length < 3) base = "LEVRO";
     for (let attempt = 1; ; attempt += 1) {
       const code = attempt > 20 ? base + hex() : base + String(digits()).padStart(3, "0");
-      if (!(await jsonRow(this.db, sql`select 1 as x from public.vendors where referral_code = ${code}`))) return code;
+      if (!(await jsonRow(this.db, sql`select 1 as x from public.vendors where referral_code = ${code} union all select 1 from public.users where referral_code = ${code}`))) return code;
     }
   }
 

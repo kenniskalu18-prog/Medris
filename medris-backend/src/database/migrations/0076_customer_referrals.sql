@@ -5,10 +5,13 @@
 --             2. referrals.referrer_vendor_id may be empty (a customer referrer has no shop).
 --             3. generate_referral_code() makes sure the code is free in BOTH vendors and users.
 --             4. apply_referral_internal() and validate_referral_code() accept a customer's code as well as a vendor's.
---             5. get_my_points_summary() gives customers their code (created on first look) and the name of whoever referred them.
+--             5. get_my_points_summary() gives customers their code and the name of whoever referred them.
 --             6. A small trigger stops a signed-in customer from editing their own referral_code directly.
+--             7. Every existing user gets a code now (one-time backfill below) and every new user gets one on sign-up.
+--             8. A shop can no longer pick a code that a customer already has.
 -- Applying:   run once by the engineer on production after review. Safe to re-run (if not exists / create or replace).
 --             Rollback: re-run the functions from baseline/01-public-schema.sql, then
+--               drop trigger if exists trg_users_new_referral_code on public.users; drop trigger if exists trg_vendor_referral_zcheck on public.vendors;
 --               drop trigger if exists trg_users_keep_referral_code on public.users; drop function if exists public.trg_users_keep_referral_code();
 --               alter table public.referrals alter column referrer_vendor_id set not null;  (only if no customer referrals exist yet)
 --               drop index if exists users_referral_code_key; alter table public.users drop column if exists referral_code;
@@ -46,6 +49,42 @@ begin
   end loop;
   return v_code;
 end $$;
+
+-- Every new user gets a code on sign-up ...
+CREATE OR REPLACE FUNCTION public.trg_users_new_referral_code() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+begin
+  if NEW.referral_code is null or NEW.referral_code = '' then NEW.referral_code := public.generate_referral_code(NEW.name); end if;
+  return NEW;
+end $$;
+DROP TRIGGER IF EXISTS trg_users_new_referral_code ON public.users;
+CREATE TRIGGER trg_users_new_referral_code BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION public.trg_users_new_referral_code();
+
+-- ... and everyone who is already here gets one now (one time; people who have a code are skipped).
+DO $$
+declare r record;
+begin
+  for r in select id, name from public.users where referral_code is null loop
+    update public.users set referral_code = public.generate_referral_code(r.name) where id = r.id and referral_code is null;
+  end loop;
+end $$;
+
+-- A shop cannot pick a code a customer already has (generate_referral_code already avoids it).
+CREATE OR REPLACE FUNCTION public.trg_vendor_code_free_of_users() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+begin
+  if NEW.referral_code is not null and NEW.referral_code is distinct from (case when tg_op = 'UPDATE' then OLD.referral_code end)
+     and exists (select 1 from public.users where referral_code = NEW.referral_code) then
+    raise exception 'That referral code is already in use.';
+  end if;
+  return NEW;
+end $$;
+DROP TRIGGER IF EXISTS trg_vendor_referral_zcheck ON public.vendors;
+CREATE TRIGGER trg_vendor_referral_zcheck BEFORE INSERT OR UPDATE OF referral_code ON public.vendors FOR EACH ROW EXECUTE FUNCTION public.trg_vendor_code_free_of_users();
 
 CREATE OR REPLACE FUNCTION public.validate_referral_code(p_code text) RETURNS jsonb
     LANGUAGE plpgsql STABLE SECURITY DEFINER
@@ -116,18 +155,10 @@ declare
   tz text := 'Africa/Lagos'; today date := (now() at time zone 'Africa/Lagos')::date;
   s_today bigint; s_week bigint; s_month bigint; s_all bigint;
   my_rank int; nxt_name text; nxt_pts bigint; lead_pts bigint; total_v int;
-  bd_all jsonb; bd_week jsonb; daily jsonb; weekly jsonb; streak int := 0; d date; refs jsonb; socials jsonb; won int; ucode text;
+  bd_all jsonb; bd_week jsonb; daily jsonb; weekly jsonb; streak int := 0; d date; refs jsonb; socials jsonb; won int;
 begin
   if uid is null then return jsonb_build_object('signed_in', false); end if;
   select * into v from public.vendors where user_id = uid and deleted_at is null limit 1;
-  -- Customers get their own referral code the first time they look (vendors keep vendors.referral_code).
-  if v.id is null then
-    select referral_code into ucode from public.users where id = uid;
-    if ucode is null then
-      ucode := public.generate_referral_code((select name from public.users where id = uid));
-      update public.users set referral_code = ucode where id = uid and referral_code is null;
-    end if;
-  end if;
   select coalesce(sum(points) filter (where (created_at at time zone tz)::date = today),0),
          coalesce(sum(points) filter (where week_start = cur),0),
          coalesce(sum(points) filter (where created_at >= (date_trunc('month', now() at time zone tz) at time zone tz)),0),
@@ -187,7 +218,7 @@ begin
 
   return jsonb_build_object(
     'signed_in', true, 'is_vendor', v.id is not null, 'vendor_id', v.id, 'business_name', v.business_name, 'logo_url', v.logo_url,
-    'referral_code', coalesce(v.referral_code, ucode),
+    'referral_code', coalesce(v.referral_code, (select referral_code from public.users where id = uid)),
     'today', s_today, 'week', s_week, 'month', s_month, 'all', s_all,
     'rank', my_rank, 'vendor_total', total_v, 'week_leader_points', lead_pts,
     'next_name', nxt_name, 'next_points', nxt_pts,

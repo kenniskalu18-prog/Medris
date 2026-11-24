@@ -41,7 +41,7 @@ export interface WalletWithdrawal {
   reject_reason: string | null;
   created_at: string;
 }
-export type Kind = "topup" | "transfer_in" | "transfer_out" | "order_payment" | "refund_in" | "refund_out" | "earnings_in" | "withdrawal" | "withdrawal_return" | "fee" | "fee_return";
+export type Kind = "topup" | "transfer_in" | "transfer_out" | "order_payment" | "refund_in" | "refund_out" | "earnings_in" | "withdrawal" | "withdrawal_return" | "fee" | "fee_return" | "points_in";
 
 /** The Levromart wallet (migration 0033): balances, the ledger, transfers and bank withdrawals. Service role only. */
 export class WalletRepository {
