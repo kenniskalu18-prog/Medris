@@ -8876,7 +8876,7 @@ window.lvNoImageHtml = function (seed) {
     if (!near) { near = document.createElement("section"); near.id = "lvNear"; near.className = "lv-near"; grid.before(near); }
     var head = document.getElementById("lvAllHead");
     if (!head) { head = document.createElement("div"); head.id = "lvAllHead"; head.className = "lv-sec"; grid.before(head); }
-    var nh = list.length ? '<div class="lv-sec"><b>Near you</b><button type="button" data-lvmap>See map</button></div><div class="lv-near-row">' + list.map(function (x) { var u = pic(x.v); return '<button type="button" class="lv-nc" onclick="navigate(\'storefront\',{vendorId:\'' + E(x.v.id) + '\'})">' + (u ? '<img src="' + E(u) + '" alt="" loading="lazy" onerror="this.remove()">' : '<span class="lv-nc-i">' + E(String(x.v.business_name || "?").charAt(0).toUpperCase()) + "</span>") + "<b>" + E(x.v.business_name) + "</b><small>" + (x.d != null ? dist(x.d) : E(x.v.city || "Lagos")) + "</small></button>"; }).join("") + "</div>" : '<div class="lv-sec"><b>Near you</b><button type="button" data-lvmap>See map</button></div><div class="lv-near-row">' + [1, 2, 3, 4].map(function () { return '<span class="lv-nc sk"></span>'; }).join("") + "</div>";
+    var nh = list.length ? '<div class="lv-sec"><b>Near you</b><button type="button" data-lvmap>See map</button></div><div class="lv-near-row">' + list.map(function (x) { var u = pic(x.v); return '<button type="button" class="lv-nc" onclick="navigate(\'storefront\',{vendorId:\'' + E(x.v.id) + '\'})">' + (u ? '<img src="' + E(u) + '" alt="" loading="lazy" onerror="this.remove()">' : (typeof avatarFallbackHtml === "function" ? avatarFallbackHtml(x.v.business_name || "Vendor", "3.3rem", "lv-nc-fb", x.v.business_name || "Vendor") : '<span class="lv-nc-i">' + E(String(x.v.business_name || "?").charAt(0).toUpperCase()) + "</span>")) + "<b>" + E(x.v.business_name) + "</b><small>" + (x.d != null ? dist(x.d) : E(x.v.city || "Lagos")) + "</small></button>"; }).join("") + "</div>" : '<div class="lv-sec"><b>Near you</b><button type="button" data-lvmap>See map</button></div><div class="lv-near-row">' + [1, 2, 3, 4].map(function () { return '<span class="lv-nc sk"></span>'; }).join("") + "</div>";
     if (near.__h !== nh) { near.__h = nh; near.innerHTML = nh; }
     var hh = "<b>All shops</b><button type=\"button\" data-lvsort>Sort: " + E(LABEL[window.__lvVdSort || "rated"]) + " ▾</button>";
     if (head.__h !== hh) { head.__h = hh; head.innerHTML = hh; }
@@ -9178,6 +9178,18 @@ window.lvNoImageHtml = function (seed) {
   "use strict";
   var raf = 0;
   function onVendors() { return document.body.getAttribute("data-view") === "vendors" || !!document.querySelector("#app .vd-page"); }
+  function onNotifs() { return document.body.getAttribute("data-view") === "notifications" || !!document.querySelector("#app .notifications-page-shell"); }
+  // Notifications search: plain words match the whole row; from:name matches the headline (who it is from), like Gmail
+  function filterNotifs(raw) {
+    var q = String(raw || "").trim().toLowerCase(), from = "";
+    var m = /(?:^|\s)from:(\S+)/.exec(q); if (m) { from = m[1]; q = q.replace(m[0], " ").trim(); }
+    document.querySelectorAll("#app .notif-item-wrap").forEach(function (w) {
+      var head = ((w.querySelector(".notif-copy strong") || {}).textContent || "").toLowerCase(), all = (w.textContent || "").toLowerCase();
+      var ok = (!from || head.indexOf(from) >= 0) && (!q || all.indexOf(q) >= 0);
+      w.style.display = ok ? "" : "none";
+    });
+  }
+  window.lvFilterNotifs = filterNotifs;
   function ensure() {
     var btn = document.querySelector(".header-search-row"); if (!btn) return;
     var inp = document.getElementById("lvVdSearch");
@@ -9185,6 +9197,7 @@ window.lvNoImageHtml = function (seed) {
       inp = document.createElement("input"); inp.id = "lvVdSearch"; inp.type = "search"; inp.className = "lv-vd-search"; inp.placeholder = "Search updates and shops"; inp.setAttribute("aria-label", "Search updates and shops"); inp.autocomplete = "off";
       btn.insertAdjacentElement("afterend", inp);
       inp.addEventListener("input", function () {
+        if (onNotifs()) { filterNotifs(inp.value); return; }
         var q = inp.value.trim().toLowerCase(), g = document.getElementById("vendorSearchInput");
         if (g) { g.value = inp.value; try { filterVendorsDirectory(); } catch (_) {} }
         document.querySelectorAll("#lvStStrip .lvu-card:not(.lvu-all)").forEach(function (c) { var n = (c.textContent || "").toLowerCase(); c.style.display = !q || n.indexOf(q) >= 0 || c.classList.contains("own") ? "" : "none"; });
@@ -9201,10 +9214,14 @@ window.lvNoImageHtml = function (seed) {
       pen.onclick = function () { try { window.lvStatusOpen(); } catch (_) {} };
       right.prepend(pen);
     }
-    pen.hidden = !isVendor;
-    var on = onVendors();
+    var onN = onNotifs();
+    pen.hidden = !isVendor || onN;
+    var on = onVendors() || onN;
+    var ph = onN ? "Search notifications" : "Search updates and shops";
+    if (inp.placeholder !== ph) { inp.placeholder = ph; inp.setAttribute("aria-label", ph); inp.value = ""; }
     document.body.classList.toggle("lv-vd-bar", on);
-    document.body.classList.toggle("lv-vd-cust", on && !isVendor);   // shoppers get the cart beside the search bar; shops get "add a status"
+    document.body.classList.toggle("lv-vd-cust", on && (!isVendor || onN));   // the notifications page always shows the cart, never the pen
+    if (onN && inp.value) filterNotifs(inp.value);   // shoppers get the cart beside the search bar; shops get "add a status"
     if (!on && inp.value) { inp.value = ""; }
   }
   new MutationObserver(function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; try { ensure(); } catch (_) {} }); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-view"] });
@@ -9216,4 +9233,37 @@ window.lvNoImageHtml = function (seed) {
     if (y > lastY + 6 && y > 60) b.classList.add("lv-vd-away"); else if (y < lastY - 6 || y < 30) b.classList.remove("lv-vd-away");
     lastY = y;
   }, { passive: true });
+})();
+
+/* ===== Notifications about a product (new listing, price, discount...): the product photo with the shop's picture as a small badge on it ===== */
+(function () {
+  "use strict";
+  var photos = {}, asked = {}, raf = 0;
+  function pidOf(el) { try { var p = JSON.parse(el.getAttribute("data-params") || "{}"); return p && p.productId ? String(p.productId) : ""; } catch (_) { return ""; } }
+  function apply() {
+    var rows = [].slice.call(document.querySelectorAll("#app .notif-item:not([data-lvnp]), .notif-item:not([data-lvnp])"));
+    if (!rows.length) return;
+    var need = [];
+    rows.forEach(function (r) { var id = pidOf(r); if (!id) { r.setAttribute("data-lvnp", "0"); return; } if (photos[id] === undefined && !asked[id]) { asked[id] = 1; need.push(id); } });
+    var paint = function () {
+      rows.forEach(function (r) {
+        if (r.getAttribute("data-lvnp")) return;
+        var id = pidOf(r), url = photos[id]; if (url === undefined) return;
+        r.setAttribute("data-lvnp", url ? "1" : "0"); if (!url) return;
+        var av = r.querySelector(":scope > img.avatar-circle, :scope > .avatar-circle, :scope > .notification-system-icon, :scope > svg"); if (!av) return;
+        var box = document.createElement("span"); box.className = "lvnp";
+        var img = document.createElement("img"); img.className = "lvnp-img"; img.alt = ""; img.loading = "lazy"; img.draggable = false; img.src = url;
+        img.onerror = function () { var b = box.querySelector(".lvnp-badge"); if (b && box.parentNode) { box.parentNode.insertBefore(b.firstElementChild || b, box); box.remove(); } };
+        var badge = document.createElement("span"); badge.className = "lvnp-badge";
+        av.parentNode.insertBefore(box, av); box.appendChild(img); box.appendChild(badge); badge.appendChild(av);
+      });
+    };
+    if (!need.length) return paint();
+    Promise.resolve(sb.from("products").select("id,photos").in("id", need)).then(function (r) {
+      (r && r.data || []).forEach(function (p) { photos[String(p.id)] = (Array.isArray(p.photos) && p.photos[0]) || ""; });
+      need.forEach(function (id) { if (photos[id] === undefined) photos[id] = ""; });
+      paint();
+    }).catch(function () { need.forEach(function (id) { photos[id] = ""; }); paint(); });
+  }
+  new MutationObserver(function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; try { apply(); } catch (_) {} }); }).observe(document.body, { childList: true, subtree: true });
 })();
