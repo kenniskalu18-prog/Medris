@@ -9219,6 +9219,7 @@ window.lvNoImageHtml = function (seed) {
     var on = onVendors() || onN;
     var ph = onN ? "Search notifications" : "Search updates and shops";
     if (inp.placeholder !== ph) { inp.placeholder = ph; inp.setAttribute("aria-label", ph); inp.value = ""; }
+    document.body.classList.add("lv-flat");   // every page: the top bar lies flat on the page and slides away when you scroll down
     document.body.classList.toggle("lv-vd-bar", on);
     document.body.classList.toggle("lv-vd-cust", on && (!isVendor || onN));   // the notifications page always shows the cart, never the pen
     if (onN && inp.value) filterNotifs(inp.value);   // shoppers get the cart beside the search bar; shops get "add a status"
@@ -9229,7 +9230,7 @@ window.lvNoImageHtml = function (seed) {
   var lastY = 0;
   window.addEventListener("scroll", function () {
     var y = window.pageYOffset || document.documentElement.scrollTop || 0, b = document.body;
-    if (!b.classList.contains("lv-vd-bar")) { b.classList.remove("lv-vd-away"); lastY = y; return; }
+    if (!b.classList.contains("lv-vd-bar") && !b.classList.contains("lv-flat")) { b.classList.remove("lv-vd-away"); lastY = y; return; }
     if (y > lastY + 6 && y > 60) b.classList.add("lv-vd-away"); else if (y < lastY - 6 || y < 30) b.classList.remove("lv-vd-away");
     lastY = y;
   }, { passive: true });
