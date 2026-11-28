@@ -4151,7 +4151,7 @@ window.lvAskCancel = async function (orderId) {
   var KIND = {
     topup: ["Money added", "fa-plus", "in"], transfer_in: ["Received", "fa-arrow-down", "in"], transfer_out: ["Sent", "fa-arrow-up", "out"],
     order_payment: ["Order payment", "fa-bag-shopping", "pay"], refund_in: ["Refund", "fa-rotate-left", "in"], refund_out: ["Refunded to a buyer", "fa-rotate-right", "out"],
-    earnings_in: ["Shop earnings", "fa-store", "in"], withdrawal: ["Withdrawal", "fa-building-columns", "bank"], withdrawal_return: ["Returned to wallet", "fa-reply", "in"]
+    earnings_in: ["Shop earnings", "fa-store", "in"], withdrawal: ["Withdrawal", "fa-building-columns", "bank"], withdrawal_return: ["Returned to wallet", "fa-reply", "in"], points_in: ["Points converted", "fa-star", "in"]
   };
   function entryTitle(e) {
     var k = KIND[e.kind] || ["Wallet", "fa-wallet", "in"];
@@ -7351,7 +7351,7 @@ window.adminUnverifyVendor = async function (id, filterStatus, name) {
   function nair(k) { return "₦" + (Number(k || 0) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function E(s) { return typeof esc === "function" ? esc(s) : String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function when(d) { try { return new Date(d || Date.now()).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } }
-  var KINDS = { topup: "Money added", transfer_in: "Received", transfer_out: "Transfer", order_payment: "Order payment", refund_in: "Refund", refund_out: "Refund to a buyer", earnings_in: "Shop earnings", withdrawal: "Withdrawal", withdrawal_return: "Returned to wallet" };
+  var KINDS = { topup: "Money added", transfer_in: "Received", transfer_out: "Transfer", order_payment: "Order payment", refund_in: "Refund", refund_out: "Refund to a buyer", earnings_in: "Shop earnings", withdrawal: "Withdrawal", withdrawal_return: "Returned to wallet", points_in: "Points converted" };
   function favs() { try { return JSON.parse(localStorage.getItem("lv-fav-people") || "[]"); } catch (_) { return []; } }
   function fromEntry(e) {
     var k = e.kind, amt = Math.abs(Number(e.amount_kobo || 0)), s = { kind: k, amountKobo: amt, when: e.created_at, ref: e.id, detail: true, status: "Successful", received: Number(e.amount_kobo) > 0 };

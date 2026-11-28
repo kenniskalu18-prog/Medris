@@ -469,7 +469,9 @@ export class PointsReadsRepository {
                                    'at', rr.created_at) order by rr.created_at desc)
                                  from (select * from public.referrals where referrer_user_id = ${uid} and code <> 'VOID' order by created_at desc limit 8) rr
                                  join public.users u on u.id = rr.referred_user_id), '[]'::jsonb),
-              'referred_by', (select vv.business_name from public.referrals rf join public.vendors vv on vv.id = rf.referrer_vendor_id where rf.referred_user_id = ${uid} and rf.code <> 'VOID')
+              'referred_by', coalesce(
+                (select vv.business_name from public.referrals rf join public.vendors vv on vv.id = rf.referrer_vendor_id where rf.referred_user_id = ${uid} and rf.code <> 'VOID'),
+                (select coalesce(nullif(split_part(coalesce(uu.name,''),' ',1),''),'A Levromart member') from public.referrals rf join public.users uu on uu.id = rf.referrer_user_id where rf.referred_user_id = ${uid} and rf.code <> 'VOID'))
             ) as referrals,
             (select coalesce(jsonb_agg(substring(event_key from 8)), '[]'::jsonb) from public.points_ledger where user_id = ${uid} and event_key like 'social:%') as socials,
             (select cur from k) as week_start,
@@ -575,6 +577,26 @@ export class PointsReadsRepository {
     return jsonRows(this.db, sql`select id, name from public.users where right(regexp_replace(coalesce(phone,''), '[^0-9]', '', 'g'), 10) = ${digits10}`);
   }
 
+  /** get_points_cashout_status() (migration 0077): what the caller can convert to wallet money now. */
+  async cashoutStatus(): Promise<Record<string, unknown>> {
+    return (await jsonRow<{ r: Record<string, unknown> }>(this.db, sql`select public.get_points_cashout_status() as r`))!.r;
+  }
+
+  /** convert_points_to_wallet(integer) (migration 0077): the database function checks every rule and moves the money. */
+  async convertPoints(points: number | null): Promise<Record<string, unknown>> {
+    return (await jsonRow<{ r: Record<string, unknown> }>(this.db, sql`select public.convert_points_to_wallet(${points}::integer) as r`))!.r;
+  }
+
+  /** A member's own referral code (customers use this; shops use their shop code). */
+  userCodeOf(userId: string): Promise<string | null> {
+    return jsonRow<{ referral_code: string | null }>(this.db, sql`select referral_code from public.users where id = ${userId}`).then((r) => r?.referral_code ?? null);
+  }
+
+  /** The member who owns this referral code (a customer's code; shops are found with shopByCode). */
+  userByCode(code: string): Promise<{ id: string; name: string | null; avatar_url: string | null; phone: string | null } | null> {
+    return jsonRow(this.db, sql`select id, name, avatar_url, phone from public.users where referral_code = ${code}`);
+  }
+
   userExists(userId: string): Promise<boolean> {
     return jsonRow(this.db, sql`select 1 as x from public.users where id = ${userId}`).then((r) => r !== null);
   }
@@ -600,7 +622,7 @@ export class PointsReadsRepository {
   }
 
   /** Records the referral; replaces only a voided one. */
-  async recordReferral(userId: string, shop: { id: string; user_id: string }, code: string): Promise<void> {
+  async recordReferral(userId: string, shop: { id: string | null; user_id: string }, code: string): Promise<void> {
     await this.db.execute(sql`
       insert into public.referrals (referred_user_id, referrer_user_id, referrer_vendor_id, code)
       values (${userId}, ${shop.user_id}, ${shop.id}, ${code})
