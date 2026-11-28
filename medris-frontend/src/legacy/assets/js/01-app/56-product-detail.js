@@ -309,6 +309,8 @@ function deliveryFieldsHtml(prefix, deliveryFee, vendorLat, vendorLng, feeMode, 
     <div id="${prefix}DeliveryFields" class="dyn-delivery-fields" style="margin-bottom:0.9rem;" data-vendor-lat="${vendorLat ?? ""}" data-vendor-lng="${vendorLng ?? ""}" data-fee="${fee}" data-fee-mode="${esc(feeMode || "flat")}" data-per-km="${Number(perKm) || 0}" data-pickup-label="${esc(pickupLabel || "Pickup")}" data-item-total="${fixedItemTotal != null ? Number(fixedItemTotal) : ""}">
       <label class="df-label" for="${prefix}Address"><i class="fa-solid fa-location-dot"></i> Delivery address</label>
       <input type="text" id="${prefix}Address" placeholder="Delivery address" value="${esc(profile?.address || "")}" />
+      <button type="button" class="df-map-btn" onclick="lvPickDelivery('${prefix}')"><i class="fa-solid fa-map-location-dot"></i> Choose delivery location on the map</button>
+      <p class="df-pin-note muted" id="${prefix}PinNote" hidden></p>
       ${!isDistance && fee > 0 ? `<p class="delivery-fee-line" style="margin:0.35rem 0 0;"><i class="fa-solid fa-truck"></i> <strong>${naira(fee)}</strong> delivery fee</p>` : ""}
       ${isDistance || hasVendorLoc ? `<p class="delivery-fee-line" style="margin:0.35rem 0 0;" id="${prefix}FeeLine">${deliveryInfoLineHtml(prefix, isDistance, hasVendorLoc, vendorLat, vendorLng, perKm)}</p>` : ""}
       <div id="${prefix}PriceBreakdown" class="price-breakdown-table" aria-live="polite"></div>
@@ -459,6 +461,36 @@ function updateDeliveryEta(prefix) {
   const isDistance = wrap.dataset.feeMode === "distance" && Number(wrap.dataset.perKm) > 0;
   feeEl.innerHTML = deliveryInfoLineHtml(prefix, isDistance, true, vLat, vLng, wrap.dataset.perKm);
   refreshPriceBreakdown(prefix);
+}
+// The buyer picks where it should be delivered (drag the map): the fee is worked out from that spot, in a straight line from the shop.
+// The server recalculates the fee from the same coordinates when the order is placed (create_cart_order).
+function lvPickDelivery(prefix) {
+  const wrap = byId(`${prefix}DeliveryFields`);
+  if (!wrap || typeof lvPickShopLocation !== "function") return;
+  const vLat = parseFloat(wrap.dataset.vendorLat), vLng = parseFloat(wrap.dataset.vendorLng);
+  lvPickShopLocation({
+    lat: buyerLocation?.lat, lng: buyerLocation?.lng, noSchool: true,
+    title: "Where should it be delivered?",
+    body: "Drag the map so the pin sits where you want it delivered. The delivery fee is worked out from this spot.",
+    placeholder: "Search a street, area or landmark", saveLabel: "Deliver here",
+    shop: isNaN(vLat) || isNaN(vLng) ? null : { lat: vLat, lng: vLng },
+    onSave: async (pt) => {
+      if (!window.__deliveryPin) window.__gpsLoc = buyerLocation;
+      window.__deliveryPin = pt; buyerLocation = pt;
+      let label = "";
+      try {
+        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 4000);
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&lat=${pt.lat}&lon=${pt.lng}`, { headers: { Accept: "application/json" }, signal: ctl.signal });
+        clearTimeout(tm); const j = await r.json(); label = String(j?.display_name || "").split(",").slice(0, 3).join(",").trim();
+      } catch (_) {}
+      document.querySelectorAll(".dyn-delivery-fields").forEach((w) => {
+        const p = w.id.replace(/DeliveryFields$/, "");
+        const inp = byId(`${p}Address`); if (inp && !inp.value.trim() && label) inp.value = label;
+        const note = byId(`${p}PinNote`); if (note) { note.hidden = false; note.innerHTML = `<i class="fa-solid fa-location-dot"></i> Delivering to the spot you pinned${label ? ": " + esc(label) : ""}.`; }
+        try { updateDeliveryEta(p); } catch (_) {}
+      });
+    }
+  });
 }
 async function requestDeliveryEta(prefix) {
   try {

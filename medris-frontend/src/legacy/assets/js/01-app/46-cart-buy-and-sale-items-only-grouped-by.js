@@ -44,6 +44,19 @@ async function renderCart() {
     return `<div class="cart-page">${typeof lvPageHero === "function" ? lvPageHero("cart") : ""}${cartHead(0)}<div class="vd-empty"><span class="vd-empty-ico lv-empty-illus">${typeof lvIllus === "function" ? lvIllus("cart", 76) : '<i class="fa-solid fa-cart-shopping"></i>'}</span><strong>Your cart is empty</strong><p>Add items from any product page, or tell Levi what you want and it'll add them for you.</p><button type="button" class="vl-add" onclick="navigate('home')"><i class="fa-solid fa-bag-shopping"></i> Start shopping</button></div></div>`;
   }
 
+  // The shop picture in each store header is the one on its storefront: the account picture, else the logo, else the initials.
+  try {
+    const vIds = [...new Set(items.map((it) => it.product?.vendor?.id).filter(Boolean))];
+    if (vIds.length) {
+      const [logos, owners] = await Promise.all([
+        withRouteTimeout(sb.from("vendors").select("id,logo_url").in("id", vIds), 4000, { data: null }),
+        withRouteTimeout(sb.rpc("get_vendor_owner_avatars", { p_vendor_ids: vIds }), 4000, { data: null })
+      ]);
+      const logoBy = new Map((logos?.data || []).map((r) => [String(r.id), r.logo_url]));
+      const ownerBy = new Map((owners?.data || []).map((r) => [String(r.vendor_id || r.id), r.avatar_url]));
+      items.forEach((it) => { const v = it.product?.vendor; if (v) { v.logo_url = v.logo_url || logoBy.get(String(v.id)) || null; v.profile_avatar_url = ownerBy.get(String(v.id)) || null; } });
+    }
+  } catch (_) {}
   const valid = items.filter((it) => it.product && it.product.status === "active" && it.product.vendor?.verification_status === "verified" && it.product.vendor?.is_active);
   const ownItems = valid.filter((it) => isOwnVendorId(it.product.vendor?.id));
   if (ownItems.length) {
@@ -79,7 +92,7 @@ async function renderCart() {
     const deliveryNoBreakdown = deliveryHtml.replace(breakdownRe, "");
     const itemCount = vItems.reduce((n, it) => n + it.quantity, 0);
     html += `<section class="cart-vendor-card ${ownCartVendor ? "own-cart-vendor" : ""}" data-cart-vendor="${esc(v.id)}">
-      <a href="#" class="cart-vendor-head" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;"><span class="cart-vh-ico"><i class="fa-solid fa-store cart-ico-vendor"></i></span><span class="cart-vh-txt"><b>${vendorNameWithFormerly(v)}</b><small>${vItems.length} item${vItems.length === 1 ? "" : "s"} from this store</small></span><span class="cart-vh-btn">View Store <i class="fa-solid fa-chevron-right"></i></span></a>
+      <a href="#" class="cart-vendor-head" onclick="navigate('storefront',{vendorId:'${v.id}'});return false;"><span class="cart-vh-ico cart-vh-pic">${(v.profile_avatar_url || v.logo_url) ? `<img src="${esc(v.profile_avatar_url || v.logo_url)}" alt="" data-lvimg onload="this.classList.add('lv-ld')" loading="eager" draggable="false" />` : avatarFallbackHtml(v.business_name || "Vendor", "100%", "", v.business_name || "Vendor", v.id)}</span><span class="cart-vh-txt"><b>${vendorNameWithFormerly(v)}</b><small>${vItems.length} item${vItems.length === 1 ? "" : "s"} from this store</small></span><span class="cart-vh-btn">View Store <i class="fa-solid fa-chevron-right"></i></span></a>
       ${ownCartVendor ? `<p class="error-text" style="margin:.5rem .9rem;"><i class="fa-solid fa-ban"></i> Your own products can't be purchased from your shop.</p>` : ""}
       <div class="cart-items">${vItems.map(cartItemRowHtml).join("")}</div>
     </section>

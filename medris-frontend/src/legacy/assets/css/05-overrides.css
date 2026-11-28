@@ -9667,3 +9667,13 @@ html:root:root:root body .lvst-sf-live.lvst-sf-seen:not(img),html:root:root:root
 .lvsp-card button:active{background:color-mix(in srgb,var(--text) 8%,transparent)}
 .lvsp-card button i{width:1.6rem;text-align:center;font-size:1.2rem;color:#8438e8}
 @keyframes lvspUp{from{transform:translateY(100%)}to{transform:none}}
+
+/* Cart: the store header shows the shop's own picture (like its storefront), not a generic blue icon */
+html:root:root:root body #app .cart-page .cart-vh-pic{background:transparent;overflow:hidden;padding:0}
+html:root:root:root body #app .cart-page .cart-vh-pic img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+
+/* Delivery place: choose it on the map */
+html:root:root:root body .df-map-btn{display:inline-flex;align-items:center;gap:.5rem;margin:.5rem 0 0;padding:.6rem .9rem;border:1.5px solid color-mix(in srgb,var(--primary,#16a34a) 55%,transparent);border-radius:12px;background:color-mix(in srgb,var(--primary,#16a34a) 8%,transparent);color:var(--primary,#16a34a);font-weight:700;font-size:.9rem;cursor:pointer}
+html:root:root:root body .df-pin-note{margin:.4rem 0 0;font-size:.8rem}
+html:root:root:root body .lvlp-dist{margin:.1rem 0 .6rem;font-size:.9rem;color:var(--text)}
+html:root:root:root body .lvlp-dist i{color:var(--primary,#16a34a);margin-right:.3rem}

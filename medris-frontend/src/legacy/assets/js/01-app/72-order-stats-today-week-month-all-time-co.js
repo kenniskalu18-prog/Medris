@@ -241,8 +241,8 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo, persp
     return { salesCount, purchaseCount };
   }).catch(() => null);
   const [{ data: __allOrdersRaw0, error: allOrdersError0 }, { data: statsOrders0, error: statsError }] = await Promise.all([
-    ordersTabCached(`vo:${vendor.id}:${dateFrom}:${dateTo}`, () => withRouteTimeout(query.order("created_at", { ascending: false }), 5000, { data: null, error: new Error("order query timeout") })),
-    ordersTabCached(`vs2:${vendor.id}`, () => withRouteTimeout(sb.from("orders").select("status, created_at, status_changed_at, completed_at, cancelled_at, order_type, delivery_method, awaiting_confirmation_since, payments(payment_type,status)").eq("vendor_id", vendor.id), 5000, { data: null, error: new Error("stats query timeout") })),
+    ordersTabCached(`vo:${vendor.id}:${dateFrom}:${dateTo}`, () => withRouteTimeout(query.order("created_at", { ascending: false }), 14000, { data: null, error: new Error("order query timeout") })),
+    ordersTabCached(`vs2:${vendor.id}`, () => withRouteTimeout(sb.from("orders").select("status, created_at, status_changed_at, completed_at, cancelled_at, order_type, delivery_method, awaiting_confirmation_since, payments(payment_type,status)").eq("vendor_id", vendor.id), 14000, { data: null, error: new Error("stats query timeout") })),
   ]);
   // Delivered and paid, just waiting out the buyer's 24-hour window: for the vendor it counts as Completed,
   // so it stops mixing with the orders still needing their attention. A dispute moves it to Disputed as usual.
@@ -266,7 +266,7 @@ async function renderVendorOrders(status, type, payment, dateFrom, dateTo, persp
     if (status !== "all") fallback = fallback.eq("status", status);
     if (dateFrom) fallback = fallback.gte("created_at", `${dateFrom}T00:00:00`);
     if (dateTo) fallback = fallback.lte("created_at", `${dateTo}T23:59:59`);
-    const r = await withRouteTimeout(fallback.order("created_at", { ascending: false }), 5000, { data: null, error: new Error("order query timeout") });
+    const r = await withRouteTimeout(fallback.order("created_at", { ascending: false }), 14000, { data: null, error: new Error("order query timeout") });
     if (r.error || !Array.isArray(r.data)) {
       // Never show "no orders" just because the server was slow: keep what was loaded a moment ago, or say it could not load.
       const good = window.__lastGoodVendorOrders?.[vendor.id];
@@ -375,7 +375,7 @@ async function renderCustomerOrders(status, type, payment, dateFrom, dateTo, emb
   let query = sb.from("orders").select("*, vendor:vendors(business_name,city,logo_url), items:order_items(*,product:products(id,is_service,name,photos)), payments(payment_type,status)").eq("buyer_id", session.user.id);
   if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
   if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
-  const { data: allOrdersRaw, error: allOrdersError } = await ordersTabCached(`bo:${session.user.id}:${dateFrom}:${dateTo}`, () => withRouteTimeout(query.order("created_at", { ascending: false }), 5000, { data: null, error: new Error("order query timeout") }));
+  const { data: allOrdersRaw, error: allOrdersError } = await ordersTabCached(`bo:${session.user.id}:${dateFrom}:${dateTo}`, () => withRouteTimeout(query.order("created_at", { ascending: false }), 14000, { data: null, error: new Error("order query timeout") }));
   const allOrders = allOrdersRaw && status !== "all" ? allOrdersRaw.filter((o) => o.status === status) : allOrdersRaw;
   let safeAllOrders = allOrders;
   if (allOrdersError) {
@@ -384,7 +384,7 @@ async function renderCustomerOrders(status, type, payment, dateFrom, dateTo, emb
     if (status !== "all") fallback = fallback.eq("status", status);
     if (dateFrom) fallback = fallback.gte("created_at", `${dateFrom}T00:00:00`);
     if (dateTo) fallback = fallback.lte("created_at", `${dateTo}T23:59:59`);
-    const r = await withRouteTimeout(fallback.order("created_at", { ascending: false }), 5000, { data: null, error: new Error("order query timeout") });
+    const r = await withRouteTimeout(fallback.order("created_at", { ascending: false }), 14000, { data: null, error: new Error("order query timeout") });
     if (r.error || !Array.isArray(r.data)) {
       // Never show "no orders" just because the server was slow: keep what was loaded a moment ago, or say it could not load.
       const good = window.__lastGoodBuyerOrders?.[session.user.id];

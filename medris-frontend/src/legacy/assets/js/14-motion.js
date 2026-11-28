@@ -1861,12 +1861,12 @@
     opts = opts || {};
     var old = document.getElementById("lvLocPick"); if (old) old.remove();
     var w = document.createElement("div"); w.id = "lvLocPick"; w.className = "lvlp";
-    var school = opts.school || campusName();
+    var school = opts.noSchool ? "" : (opts.school || campusName());
     w.innerHTML = '<div class="lvlp-map" id="lvlpMap"></div><div class="lvlp-pin" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>' +
-      '<div class="lvlp-top"><button type="button" class="lvlp-x" aria-label="Close"><i class="fa-solid fa-xmark"></i></button><div class="lvlp-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="lvlpQ" placeholder="Search your school or area" value="' + esc2(school) + '" autocomplete="off"></div></div>' +
-      '<div class="lvlp-card"><strong>Set your shop location</strong><p>Drag the map so the pin sits exactly where your shop is. This stays your location until you change it yourself.</p>' +
+      '<div class="lvlp-top"><button type="button" class="lvlp-x" aria-label="Close"><i class="fa-solid fa-xmark"></i></button><div class="lvlp-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="lvlpQ" placeholder="' + esc2(opts.placeholder || "Search your school or area") + '" value="' + esc2(school) + '" autocomplete="off"></div></div>' +
+      '<div class="lvlp-card"><strong>' + esc2(opts.title || "Set your shop location") + '</strong><p>' + esc2(opts.body || "Drag the map so the pin sits exactly where your shop is. This stays your location until you change it yourself.") + '</p>' + (opts.shop ? '<p class="lvlp-dist" id="lvlpDist"></p>' : "") +
       '<div class="lvlp-row"><button type="button" class="lvlp-alt" id="lvlpMe"><i class="fa-solid fa-location-crosshairs"></i> Use my location now</button>' + (school ? '<button type="button" class="lvlp-alt" id="lvlpSchool"><i class="fa-solid fa-graduation-cap"></i> My school</button>' : "") + '</div>' +
-      '<button type="button" class="lvlp-save" id="lvlpSave"><i class="fa-solid fa-check"></i> Save this location</button></div>';
+      '<button type="button" class="lvlp-save" id="lvlpSave"><i class="fa-solid fa-check"></i> ' + esc2(opts.saveLabel || "Save this location") + '</button></div>';
     document.body.appendChild(w); document.documentElement.style.overflow = "hidden";
     var map = null, close = function () { try { map && map.remove(); } catch (_) {} w.remove(); document.documentElement.style.overflow = ""; };
     w.querySelector(".lvlp-x").onclick = close;
@@ -1875,6 +1875,12 @@
       var start = opts.lat != null && opts.lng != null ? [Number(opts.lat), Number(opts.lng)] : [6.5244, 3.3792];
       map = window.L.map("lvlpMap", { zoomControl: false, attributionControl: true, tap: false }).setView(start, opts.lat != null ? 17 : 12);
       map.attributionControl.setPrefix(false);
+      if (opts.shop && opts.shop.lat != null) {
+        var distEl = w.querySelector("#lvlpDist"), hav = typeof haversineKm === "function" ? haversineKm : null;
+        var showDist = function () { var c = map.getCenter(); if (!distEl || !hav) return; var km = hav(c.lat, c.lng, Number(opts.shop.lat), Number(opts.shop.lng)); distEl.innerHTML = '<i class="fa-solid fa-route"></i> About <b>' + km.toFixed(2) + ' km</b> from the shop in a straight line'; };
+        map.on("move", showDist); showDist();
+        window.L.circleMarker([Number(opts.shop.lat), Number(opts.shop.lng)], { radius: 7, color: "#fff", weight: 2, fillColor: "#16a34a", fillOpacity: 1 }).addTo(map).bindTooltip("The shop");
+      }
       (typeof addBasemapTileLayer === "function" ? addBasemapTileLayer(map) : window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map));
       if (opts.lat == null && school) geocode(school).then(function (g) { if (g) go(g.lat, g.lng, 16); });
     });
@@ -8741,6 +8747,8 @@ window.lvNoImageHtml = function (seed) {
   }
   window.lvStatusOpen = openPage; window.lvStatusAdd = openAdd;
   /* ---- the same ring on a shop's picture on its storefront and in chats: tap it to see the status ---- */
+  // The ring belongs on a small round picture only; never on a product photo or any big box.
+  function ringOK(el) { var r = el.getBoundingClientRect(); return r.width > 0 && r.width <= 120 && r.height <= 120; }
   function liveFor(vid) { var g = groups(cache.rows).filter(function (x) { return x.id === vid; })[0]; return g || null; }
   function decorate() {
     if (Date.now() - cache.at > 60000) { load(false).then(decorate); return; }
@@ -8762,7 +8770,7 @@ window.lvNoImageHtml = function (seed) {
       if (!c || !c.vendor_id || !av) return;
       var g = liveFor(c.vendor_id), host = av.closest("button,span,div") || av;
       if (host === row || host.querySelector("strong,b,h3,h4,small,p")) host = av;
-      host.classList.toggle("lvst-chat-live", !!g); host.classList.toggle("lvst-sf-seen", !!g && !g.unseen);
+      g = g && ringOK(host) ? g : null; host.classList.toggle("lvst-chat-live", !!g); host.classList.toggle("lvst-sf-seen", !!g && !g.unseen);
       if (g) host.setAttribute("data-lvst", c.vendor_id); else host.removeAttribute("data-lvst");
     });
   }
@@ -8802,7 +8810,7 @@ window.lvNoImageHtml = function (seed) {
       // the ring belongs on the little picture only: when the picture sits straight in the row (like the Hall of fame), the nearest box is the
       // whole row, and the ring was drawn as a big oval around the shop's name and points
       if (host === row || host.querySelector("strong,b,h3,h4,small,p,button")) host = av;
-      host.classList.toggle("lvst-chat-live", !!g); host.classList.toggle("lvst-sf-seen", !!g && !g.unseen);
+      g = g && ringOK(host) ? g : null; host.classList.toggle("lvst-chat-live", !!g); host.classList.toggle("lvst-sf-seen", !!g && !g.unseen);
     });
   }
   var dt = 0; new MutationObserver(function () { if (dt) return; dt = setTimeout(function () { dt = 0; decorate(); try { decorateSearch(); } catch (_) {} }, 150); }).observe(document.documentElement, { childList: true, subtree: true });

@@ -165,7 +165,8 @@ function getCustomerLocation(forceRefresh = false) {
   if (buyerLocationRequest) return buyerLocationRequest;
   buyerLocationRequest = getCurrentPositionOnce()
     .then((loc) => {
-      buyerLocation = loc;
+      // While a delivery place is picked on the map, a fresh GPS reading must not move it.
+      if (window.__deliveryPin) window.__gpsLoc = loc; else buyerLocation = loc;
       buyerLocationLastUpdatedAt = Date.now();
       buyerLocationLastError = null;
       writeCachedCustomerLocation(loc);
